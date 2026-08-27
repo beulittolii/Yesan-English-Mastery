@@ -763,12 +763,20 @@
 
 <!-- Firebase -->
 <script type="module">
-  // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
+  import {
+    getFirestore,
+    collection,
+    doc,
+    getDocs,
+    setDoc,
+    deleteDoc,
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+
+  // Firebase 설정
   const firebaseConfig = {
     apiKey: "AIzaSyArb5c7wTysH58fhBOt8O569WkC6qaUxDE",
     authDomain: "english-mastery-d4427.firebaseapp.com",
@@ -778,12 +786,33 @@
     appId: "1:1081996404794:web:979b0f018e78c39e47ad03"
   };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
+
+  // Firebase 초기화
+  const firebaseApp = initializeApp(firebaseConfig);
+
+
+  // Cloud Firestore 연결
+  const db = getFirestore(firebaseApp);
+
+
+  // 일반 JavaScript 파일(data.js, app.js)에서도 사용할 수 있도록 등록
+  window.firebaseDB = db;
+
+  window.firebaseFns = {
+    collection,
+    doc,
+    getDocs,
+    setDoc,
+    deleteDoc,
+    onSnapshot
+  };
+
+  console.log("Firebase DB:", window.firebaseDB);
 </script>
 
-  <!-- Scripts -->
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+
+<!-- Scripts -->
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
