@@ -1,6 +1,7 @@
 /**
  * 영어과외 학습 관리 & 캘린더 시스템 - 메인 애플리케이션 로직 (app.js)
  */
+console.log("Firebase DB:", window.firebaseDB);
 
 const App = {
   // 상태 관리 (State)
