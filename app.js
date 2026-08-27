@@ -6,10 +6,11 @@ console.log("Firebase DB:", window.firebaseDB);
 const App = {
   // 상태 관리 (State)
   state: {
-    view: 'landing', // 'landing' | 'student' | 'admin' | 'vocabTest'
+    view: 'landing', // 'landing' | 'student' | 'admin' | 'vocabTest' | 'practiceTest'
     selectedStudentId: 1,
     adminSelectedStudentId: 1,
     isAdminLoggedIn: false,
+    isStudentLoggedIn: false,
     calendarDate: new Date(),
     studentViewTab: 'calendar', // 'calendar' | 'list'
     studentListFilter: 'ALL', // 'ALL' | 'SCHEDULED' | 'PASS' | 'RETEST'
@@ -25,7 +26,19 @@ const App = {
       timeRemaining: 5
     },
     vocabSetReturnToTestForm: false,
-    vocabResultSelectedDate: null
+    vocabResultSelectedDate: null,
+    // 문제풀이 시험 상태
+    practiceTest: {
+      testId: null,
+      studentId: null,
+      title: '',
+      questions: [],
+      cutoffScore: 80,
+      currentIndex: 0,
+      answers: {}, // { [qIndex]: choiceNumber(1~5) }
+      startedAt: null
+    },
+    editingPracticeQuestions: []
   },
 
   // 초기화 (Init)
@@ -38,7 +51,22 @@ const App = {
     // 키보드 ESC로 모달 닫기
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        // 시험 등록/수정 모달은 작성 중 날아가는 것을 방지하기 위해 ESC로 닫지 않음
+        const testFormModal = document.getElementById('adminTestFormModal');
+        if (testFormModal && !testFormModal.classList.contains('hidden')) {
+          return;
+        }
         this.closeAllModals();
+      }
+    });
+
+    // 시험 진행 중 페이지 이탈(새로고침, 탭 닫기) 시 경고 및 포기 처리
+    window.addEventListener('beforeunload', (e) => {
+      const vt = this.state.vocabTest;
+      if (vt && !vt.isCompleted) {
+        this.forfeitVocabTest();
+        e.preventDefault();
+        e.returnValue = '시험 진행 중 페이지를 벗어나면 불합격(0점) 처리됩니다.';
       }
     });
 
@@ -46,7 +74,11 @@ const App = {
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
-          this.closeAllModals();
+          // 시험 등록/수정 모달은 여백(배경) 클릭으로 꺼지지 않도록 방지 (X 버튼 또는 취소 버튼으로만 닫힘)
+          if (overlay.id === 'adminTestFormModal') {
+            return;
+          }
+          this.hideModal(overlay.id);
         }
       });
     });
@@ -57,18 +89,35 @@ const App = {
   // ========================================================
   showLanding() {
     this.clearVocabQuestionTimer();
+    this.state.isStudentLoggedIn = false;
+    this.state.isAdminLoggedIn = false;
     this.state.view = 'landing';
     document.getElementById('landingView').classList.remove('hidden');
     document.getElementById('studentDashboardView').classList.add('hidden');
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
+    document.getElementById('practiceTestView')?.classList.add('hidden');
+    this.updateHeaderActions();
     this.renderLanding();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
+  logoutStudent() {
+    this.state.isStudentLoggedIn = false;
+    this.toast('로그아웃되었습니다.', 'info');
+    this.showLanding();
+  },
+
   selectStudent(studentId) {
+    const normalizedStudentId = Number(studentId);
+    if (!this.state.isAdminLoggedIn && (!this.state.isStudentLoggedIn || this.state.selectedStudentId !== normalizedStudentId)) {
+      this.toast('학생 계정으로 로그인한 후 이용해주세요.', 'info');
+      this.showLanding();
+      return;
+    }
+
     this.clearVocabQuestionTimer();
-    this.state.selectedStudentId = Number(studentId);
+    this.state.selectedStudentId = normalizedStudentId;
     this.state.view = 'student';
     this.state.calendarDate = new Date(); // 오늘 기준으로 캘린더 초기화
     this.state.studentViewTab = 'calendar';
@@ -78,6 +127,8 @@ const App = {
     document.getElementById('studentDashboardView').classList.remove('hidden');
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
+    document.getElementById('practiceTestView')?.classList.add('hidden');
+    this.updateHeaderActions();
 
     this.renderStudentDashboard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -90,6 +141,8 @@ const App = {
     document.getElementById('studentDashboardView').classList.add('hidden');
     document.getElementById('adminDashboardView').classList.remove('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
+    document.getElementById('practiceTestView')?.classList.add('hidden');
+    this.updateHeaderActions();
 
     this.renderAdminDashboard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -100,98 +153,101 @@ const App = {
     document.getElementById('studentDashboardView').classList.add('hidden');
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.remove('hidden');
+    document.getElementById('practiceTestView')?.classList.add('hidden');
+    this.updateHeaderActions();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
+  showPracticeTestView() {
+    this.clearVocabQuestionTimer();
+    this.state.view = 'practiceTest';
+    document.getElementById('landingView').classList.add('hidden');
+    document.getElementById('studentDashboardView').classList.add('hidden');
+    document.getElementById('adminDashboardView').classList.add('hidden');
+    document.getElementById('vocabTestView').classList.add('hidden');
+    document.getElementById('practiceTestView')?.classList.remove('hidden');
+    this.updateHeaderActions();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  updateHeaderActions() {
+    const container = document.getElementById('headerNavActions');
+    if (!container) return;
+
+    container.innerHTML = this.state.view === 'student' && this.state.isStudentLoggedIn
+      ? `
+        <button onclick="App.logoutStudent()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>로그아웃</span>
+        </button>
+      `
+      : '';
+  },
+
   // ========================================================
-  // 2. 랜딩 화면 렌더링 (Profile Selection Grid)
+  // 2. 랜딩 화면 렌더링 (Unified Login)
   // ========================================================
   renderLanding() {
-    const grid = document.getElementById('studentCardsGrid');
-    if (!grid) return;
+    const errorEl = document.getElementById('loginError');
+    if (errorEl) errorEl.classList.add('hidden');
 
-    const students = AppData.getStudents();
-    const allTests = AppData.getTests();
-    const todayStr = this.getTodayDateString();
+    const idInput = document.getElementById('studentLoginId');
+    const pwInput = document.getElementById('studentLoginPassword');
+    if (idInput) idInput.value = '';
+    if (pwInput) pwInput.value = '';
 
-    grid.innerHTML = students.map(student => {
-      const studentTests = allTests.filter(t => t.studentId === student.id);
-      const totalTests = studentTests.length;
-      const passCount = studentTests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS').length;
-      const retestPendingCount = studentTests.filter(t => t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS')).length;
-      
-      // 다가오는 가장 빠른 시험
-      const upcomingTests = studentTests
-        .filter(t => t.date >= todayStr && t.status === 'SCHEDULED')
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-      const nextTest = upcomingTests[0];
+    this.focusLoginInput();
+  },
 
-      let nextTestHtml = '';
-      if (nextTest) {
-        const dDay = this.calculateDDay(nextTest.date);
-        const dDayBadgeClass = dDay === 'D-Day' ? 'bg-rose-500 text-white animate-pulse' : 'bg-indigo-100 text-indigo-700';
-        nextTestHtml = `
-          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <div class="truncate mr-2">
-              <span class="text-slate-400 block text-[11px]">다음 예정 시험</span>
-              <span class="font-bold text-slate-800 truncate block">${this.escapeHtml(nextTest.title)}</span>
-            </div>
-            <span class="px-2 py-0.5 rounded-full font-extrabold text-[11px] whitespace-nowrap ${dDayBadgeClass}">${dDay}</span>
-          </div>
-        `;
-      } else {
-        nextTestHtml = `
-          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-            <span>예정된 시험이 없습니다.</span>
-            <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check"></i> 완료</span>
-          </div>
-        `;
+  focusLoginInput() {
+    setTimeout(() => {
+      const idInput = document.getElementById('studentLoginId');
+      if (idInput && (this.state.view === 'landing' || !this.state.view)) {
+        idInput.focus();
       }
+    }, 50);
+  },
 
-      return `
-        <div onclick="App.selectStudent(${student.id})" class="glass-card rounded-2xl p-6 cursor-pointer profile-card relative group border hover:border-indigo-300">
-          <!-- Top Tag & Avatar -->
-          <div class="flex items-start justify-between">
-            <div class="flex items-center space-x-3.5">
-              <div class="w-14 h-14 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 flex items-center justify-center text-white shadow-inner flex-shrink-0 border border-slate-200/80">
-                <i class="fa-solid fa-user text-xl text-white/90"></i>
-              </div>
-              <div>
-                <h3 class="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition">${this.escapeHtml(student.name)}</h3>
-                <span class="text-xs text-slate-400 font-medium">학생 #${student.id}</span>
-              </div>
-            </div>
-            <div class="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-400 flex items-center justify-center transition">
-              <i class="fa-solid fa-arrow-right text-xs"></i>
-            </div>
-          </div>
+  handleLogin(e) {
+    e.preventDefault();
+    const loginId = document.getElementById('studentLoginId').value.trim();
+    const password = document.getElementById('studentLoginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    const normalizedLoginId = loginId.toLocaleLowerCase('en-US');
 
-          <!-- Target / Goal -->
-          <p class="text-xs text-slate-500 mt-3 font-medium flex items-center gap-1.5">
-            <i class="fa-solid fa-bullseye text-indigo-500"></i>
-            <span class="truncate">${this.escapeHtml(student.target)}</span>
-          </p>
+    if (!/^\d{4}$/.test(password)) {
+      errorEl?.classList.remove('hidden');
+      this.toast('비밀번호는 숫자 4자리를 입력해주세요.', 'error');
+      return;
+    }
 
-          <!-- Badges Summary -->
-          <div class="flex items-center gap-2 mt-4 flex-wrap">
-            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">
-              전체 <strong class="text-indigo-600">${totalTests}</strong>
-            </span>
-            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-              통과 <strong class="text-emerald-700">${passCount}</strong>
-            </span>
-            ${retestPendingCount > 0 ? `
-              <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 pulse-badge">
-                ⚠️ 재시험 ${retestPendingCount}
-              </span>
-            ` : ''}
-          </div>
+    if (
+      normalizedLoginId === TEACHER_LOGIN_ID.toLocaleLowerCase('en-US') &&
+      password === TEACHER_PASSWORD
+    ) {
+      this.state.isAdminLoggedIn = true;
+      this.state.isStudentLoggedIn = false;
+      this.toast('선생님 관리자 모드로 로그인되었습니다.', 'success');
+      this.showAdminDashboard();
+      return;
+    }
 
-          <!-- Next Test Footer -->
-          ${nextTestHtml}
-        </div>
-      `;
-    }).join('');
+    const student = AppData.getStudents().find(item =>
+      String(item.loginId || '').toLocaleLowerCase('en-US') === normalizedLoginId &&
+      String(item.password || '') === password
+    );
+
+    if (!student) {
+      errorEl?.classList.remove('hidden');
+      this.toast('아이디 또는 비밀번호를 확인해주세요.', 'error');
+      return;
+    }
+
+    this.state.isStudentLoggedIn = true;
+    this.state.isAdminLoggedIn = false;
+    this.state.selectedStudentId = student.id;
+    this.toast(`${student.name} 학생, 환영합니다!`, 'success');
+    this.selectStudent(student.id);
   },
 
   // ========================================================
@@ -207,7 +263,7 @@ const App = {
     // 1. 학생 배너 렌더링
     const banner = document.getElementById('studentBanner');
     banner.innerHTML = `
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
         <div class="flex items-center space-x-4">
           <div class="w-16 h-16 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 flex items-center justify-center text-white shadow-md flex-shrink-0 border-2 border-white">
             <i class="fa-solid fa-user text-2xl text-white/90"></i>
@@ -222,11 +278,6 @@ const App = {
             </p>
           </div>
         </div>
-
-        <button onclick="App.showLanding()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center gap-2">
-          <i class="fa-solid fa-users"></i>
-          <span>다른 학생 선택</span>
-        </button>
       </div>
     `;
 
@@ -289,11 +340,25 @@ const App = {
       </div>
     `;
 
-    // 3. 현재 탭 렌더링
-    if (this.state.studentViewTab === 'calendar') {
-      this.renderCalendar();
-    } else {
-      this.renderStudentTestsList();
+    // 3. 탭 컨테이너 visible 상태 동기화 (계정 전환 시 스테일 목록 버그 방지)
+    const calContainer = document.getElementById('studentCalendarContainer');
+    const listContainer = document.getElementById('studentListContainer');
+    const calTabBtn = document.getElementById('viewTabCalendar');
+    const listTabBtn = document.getElementById('viewTabList');
+    if (calContainer && listContainer) {
+      if (this.state.studentViewTab === 'calendar') {
+        calContainer.classList.remove('hidden');
+        listContainer.classList.add('hidden');
+        if (calTabBtn) calTabBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-slate-900 shadow-sm flex items-center gap-1.5';
+        if (listTabBtn) listTabBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
+        this.renderCalendar();
+      } else {
+        calContainer.classList.add('hidden');
+        listContainer.classList.remove('hidden');
+        if (listTabBtn) listTabBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-slate-900 shadow-sm flex items-center gap-1.5';
+        if (calTabBtn) calTabBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
+        this.renderStudentTestsList();
+      }
     }
 
     const existingVocabSection = document.getElementById('studentVocabSection');
@@ -397,9 +462,20 @@ const App = {
       if (test.type === 'VOCAB') {
         if (test.date === dateStr) {
           const badgeStyle = this.getTestBadgeStyle(test, false);
+          const vocabCalendarLabel = '단어 테스트';
           testsHtml += `
-            <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="단어장 확인 및 단어 테스트 시작">
-              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">단어 테스트</span></div>
+            <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="단어 테스트 · ${badgeStyle.tag}">
+              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
+            </div>`;
+        }
+        return;
+      }
+      if (test.type === 'PRACTICE') {
+        if (test.date === dateStr) {
+          const badgeStyle = this.getTestBadgeStyle(test, false);
+          testsHtml += `
+            <div onclick="App.openPracticeTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="문제풀이 시험 확인 및 응시">
+              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-pen-to-square"></i></span><span class="truncate">${this.escapeHtml(test.title || '문제풀이 시험')}</span></div>
             </div>`;
         }
         return;
@@ -443,6 +519,12 @@ const App = {
       } else {
         return { class: 'bg-amber-100 text-amber-800 border border-amber-300', icon: '🔄', tag: '재시험 예정' };
       }
+    }
+
+    // 단어 테스트를 끝내지 못한 채 마감된 경우에는 예정/불합격 대신
+    // 달력에서도 명확히 '마감' 상태를 표시한다.
+    if (test.type === 'VOCAB' && test.status !== 'PASS' && this.getTestTimeStatus(test).status === 'EXPIRED') {
+      return { class: 'bg-rose-100 text-rose-800 border border-rose-300', icon: '⏰', tag: '마감' };
     }
 
     if (test.status === 'PASS') {
@@ -506,7 +588,9 @@ const App = {
       const badge = this.getTestBadgeStyle(test);
       const detailHandler = test.type === 'VOCAB'
         ? `App.openVocabTestScheduleModal('${test.id}')`
-        : `App.openTestDetailModal('${test.id}')`;
+        : (test.type === 'PRACTICE'
+            ? `App.openPracticeTestScheduleModal('${test.id}')`
+            : `App.openTestDetailModal('${test.id}')`);
 
       return `
         <div onclick="${detailHandler}" class="glass-card rounded-2xl p-5 hover:border-indigo-300 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -545,6 +629,15 @@ const App = {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
     if (!test) return;
+
+    if (test.type === 'VOCAB') {
+      this.openVocabTestScheduleModal(testId);
+      return;
+    }
+    if (test.type === 'PRACTICE') {
+      this.openPracticeTestScheduleModal(testId);
+      return;
+    }
 
     const student = AppData.getStudentById(test.studentId);
     const dDay = this.calculateDDay(test.date);
@@ -657,19 +750,81 @@ const App = {
     const set = test && AppData.getVocabSets().find(item => item.id === test.vocabSetId);
     if (!test || !set) { this.toast('연결된 단어 세트를 찾을 수 없습니다.', 'error'); return; }
 
-    document.getElementById('detailModalStudentBadge').innerText = '단어 테스트';
-    document.getElementById('detailModalTitle').innerText = '단어 테스트';
+    const isAdmin = Boolean(this.state.isAdminLoggedIn);
+    const student = AppData.getStudentById(test.studentId);
+    const timeStatus = this.getTestTimeStatus(test);
+    const statusBadge = test.allowLate
+      ? { class: 'bg-emerald-100 text-emerald-800', label: '⚡ 상시 응시 허용됨' }
+      : (timeStatus.status === 'EXPIRED'
+          ? { class: 'bg-rose-100 text-rose-800', label: '마감' }
+          : (timeStatus.status === 'NOT_STARTED'
+              ? { class: 'bg-blue-100 text-blue-800', label: '시작 전' }
+              : (timeStatus.status === 'COMPLETED'
+                  ? { class: 'bg-emerald-100 text-emerald-800', label: '완료됨' }
+                  : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' })));
+    const baseTimeStr = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : (test.endTime ? `~ ${test.endTime}까지` : '23:59까지');
+    const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
+
+    document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
+    document.getElementById('detailModalTitle').innerText = test.title || set.title;
     document.getElementById('detailModalBody').innerHTML = `
       <div class="p-4 rounded-2xl bg-violet-50 border border-violet-200">
-        <p class="text-xs font-bold text-violet-700">${this.escapeHtml(set.title)}</p>
-        <p class="text-xs text-slate-600 mt-1">${set.words.length}개 단어 · ${set.words.length >= 40 ? '매 응시 40개 무작위 출제 · ' : ''}문제당 제한시간 5초 · 커트라인 ${this.escapeHtml(test.cutoff)}</p>
+        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+          <p class="text-xs font-bold text-violet-900">${this.escapeHtml(set.title)}</p>
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">
+            ${statusBadge.label}
+          </span>
+        </div>
+        <p class="text-xs text-slate-600 mt-1">
+          시험일: <strong>${test.date}</strong>${
+            test.extendedDate
+              ? ` · 마감: <strong>${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장됨)</strong>`
+              : (test.endTime ? ` · 마감: <strong>${test.endTime}</strong>` : '')
+          } · ${set.words.length}개 단어 · 커트라인 <strong>${this.escapeHtml(test.cutoff || '미지정')}</strong>
+        </p>
       </div>
+
+      ${isAdmin ? `
+      <!-- 관리자 전용 시간 연장 카드 -->
+      <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-xs">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-amber-950">시험 시간 / 마감 연장 설정</h4>
+              <p class="text-[11px] text-amber-800">
+                ${test.allowLate ? '✅ 상시 응시 허용 중 (마감 없음)' : `원래 시험일: ${test.date}${test.extendedDate ? ` · 마감: ${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장)` : (test.endTime ? ` · 마감: ${test.endTime}` : '')}`}
+              </p>
+            </div>
+          </div>
+          <button onclick="App.openExtendTestModal('${test.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>시간 연장하기</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap pt-1 border-t border-amber-200/60">
+          <span class="text-[11px] font-bold text-amber-900">빠른 연장:</span>
+          <button onclick="App.quickExtendTestDirect('${test.id}', 'today_midnight')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold transition">
+            오늘 자정까지
+          </button>
+          <button onclick="App.quickExtendTestDirect('${test.id}', 'plus_1hour')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold transition">
+            +1시간
+          </button>
+          <button onclick="App.quickExtendTestDirect('${test.id}', 'tomorrow_midnight')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold transition">
+            내일 자정까지
+          </button>
+        </div>
+      </div>` : ''}
+
       <div class="space-y-2">
         <h4 class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-book-open text-violet-600"></i> 단어장</h4>
-        <div class="max-h-56 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+        <div class="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
           ${set.words.map((word, index) => `<div class="grid grid-cols-[2rem_1fr_1fr] gap-2 p-3 text-xs"><span class="font-bold text-slate-400">${index + 1}</span><strong class="text-slate-800 break-words">${this.escapeHtml(word.en)}</strong><span class="text-slate-600 break-words">${this.escapeHtml(word.ko)}</span></div>`).join('')}
         </div>
       </div>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
         ${this.renderVocabTestButton(set, test.studentId, 1, '한글 → 영어', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
         ${this.renderVocabTestButton(set, test.studentId, 2, '영어 → 한글', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
@@ -677,39 +832,884 @@ const App = {
     this.showModal('testDetailModal');
   },
 
-  // ========================================================
-  // 5. 관리자 인증 & 관리자 대시보드 (Admin Management)
-  // ========================================================
-  openAdminAuthModal() {
-    document.getElementById('adminPasswordInput').value = '';
-    document.getElementById('adminAuthError').classList.add('hidden');
-    this.showModal('adminAuthModal');
-    setTimeout(() => {
-      document.getElementById('adminPasswordInput').focus();
-    }, 150);
-  },
+  // ── 시험 시간 연장 모달 컨트롤러 ────────────────────────
+  openExtendTestModal(testId) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) { this.toast('시험을 찾을 수 없습니다.', 'error'); return; }
 
-  closeAdminAuthModal() {
-    this.hideModal('adminAuthModal');
-  },
+    const student = AppData.getStudentById(test.studentId);
+    const timeStatus = this.getTestTimeStatus(test);
 
-  handleAdminAuth(e) {
-    e.preventDefault();
-    const input = document.getElementById('adminPasswordInput').value.trim();
-    const errorEl = document.getElementById('adminAuthError');
+    document.getElementById('extendTestId').value = test.id;
+    document.getElementById('extendTestStudentName').innerText = student ? `${student.name} 학생` : '';
+    document.getElementById('extendTestTitle').innerText = test.title || (test.type === 'VOCAB' ? '단어 테스트' : '시험');
+    document.getElementById('extendModalSubtitle').innerText = `${student ? student.name : '학생'} 시험의 마감 시간 연장 (원래 시험일: ${test.date})`;
+    
+    const deadlineText = test.allowLate
+      ? '상시 응시 허용 (마감 없음)'
+      : (test.extendedDate
+          ? `시험일: ${test.date} (연장 마감: ${test.extendedDate} ${test.extendedEndTime || '23:59'})`
+          : `${test.date} ${test.endTime || '23:59'}`);
+    document.getElementById('extendCurrentDeadline').innerText = deadlineText;
 
-    if (input === ADMIN_PASSWORD) {
-      this.state.isAdminLoggedIn = true;
-      this.closeAdminAuthModal();
-      this.toast('선생님 관리자 모드로 인증되었습니다.', 'success');
-      this.showAdminDashboard();
+    const badge = document.getElementById('extendCurrentStatusBadge');
+    if (test.allowLate) {
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
+      badge.innerText = '상시 허용';
+    } else if (timeStatus.status === 'EXPIRED') {
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800';
+      badge.innerText = '시간 종료됨';
+    } else if (timeStatus.status === 'NOT_STARTED') {
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800';
+      badge.innerText = '시작 전';
     } else {
-      errorEl.classList.remove('hidden');
-      document.getElementById('adminPasswordInput').classList.add('border-rose-500', 'bg-rose-50');
-      this.toast('비밀번호가 일치하지 않습니다.', 'error');
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
+      badge.innerText = '진행 중';
+    }
+
+    // 기본 타겟 날짜 & 시간 채우기 (원래 날짜는 건드리지 않고 연장일시만 세팅)
+    const today = this.getTodayDateString();
+    document.getElementById('extendTargetDate').value = test.extendedDate || (test.date >= today ? test.date : today);
+    document.getElementById('extendTargetEndTime').value = test.extendedEndTime || test.endTime || '23:59';
+
+    // 연장 일시 또는 상시 응시 허용이 설정된 경우에만 취소 버튼을 노출한다.
+    const cancelButton = document.getElementById('cancelTestExtensionButton');
+    if (cancelButton) {
+      const hasExtension = Boolean(test.extendedDate || test.extendedEndTime || test.allowLate);
+      cancelButton.classList.toggle('hidden', !hasExtension);
+    }
+
+    this.showModal('extendTestModal');
+  },
+
+  closeExtendTestModal() {
+    this.hideModal('extendTestModal');
+  },
+
+  async quickExtendTest(preset) {
+    const testId = document.getElementById('extendTestId').value;
+    await this.quickExtendTestDirect(testId, preset);
+    this.closeExtendTestModal();
+  },
+
+  async quickExtendTestDirect(testId, preset) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) return;
+
+    const today = this.getTodayDateString();
+    let extendedDate = test.extendedDate || today;
+    let extendedEndTime = test.extendedEndTime || test.endTime || '23:59';
+    let allowLate = false;
+
+    const now = new Date();
+
+    if (preset === 'today_midnight') {
+      extendedDate = today;
+      extendedEndTime = '23:59';
+      allowLate = false;
+    } else if (preset === 'plus_1hour') {
+      const future = new Date(now.getTime() + 60 * 60 * 1000);
+      const y = future.getFullYear();
+      const m = String(future.getMonth() + 1).padStart(2, '0');
+      const d = String(future.getDate()).padStart(2, '0');
+      const hh = String(future.getHours()).padStart(2, '0');
+      const mm = String(future.getMinutes()).padStart(2, '0');
+      extendedDate = `${y}-${m}-${d}`;
+      extendedEndTime = `${hh}:${mm}`;
+      allowLate = false;
+    } else if (preset === 'tomorrow_midnight') {
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const y = tomorrow.getFullYear();
+      const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const d = String(tomorrow.getDate()).padStart(2, '0');
+      extendedDate = `${y}-${m}-${d}`;
+      extendedEndTime = '23:59';
+      allowLate = false;
+    } else if (preset === 'unlimited') {
+      allowLate = true;
+    }
+
+    try {
+      await AppData.writeDocument('tests', testId, {
+        ...test,
+        // 원래 test.date는 보존하고 연장 일시만 별도 필드로 저장
+        extendedDate: extendedDate,
+        extendedEndTime: extendedEndTime,
+        allowLate: allowLate
+      });
+      await AppData.loadCollection('tests');
+
+      this.toast(`✅ '${test.title || '시험'}' 시험일(${test.date})은 유지되며 마감이 ${allowLate ? '상시 응시 가능으로' : `${extendedDate} ${extendedEndTime}까지`} 연장되었습니다!`, 'success');
+      
+      // 화면 갱신
+      if (this.state.isAdminLoggedIn) {
+        this.renderAdminTestsTab();
+      }
+      if (this.state.selectedStudentId) {
+        this.renderStudentDashboard(this.state.selectedStudentId);
+      }
+      
+      // 모달이 열려있다면 새로고침
+      const detailModal = document.getElementById('testDetailModal');
+      if (detailModal && !detailModal.classList.contains('hidden')) {
+        if (test.type === 'VOCAB') {
+          this.openVocabTestScheduleModal(testId);
+        } else if (test.type === 'PRACTICE') {
+          this.openPracticeTestScheduleModal(testId);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      this.toast('시간 연장에 실패했습니다.', 'error');
     }
   },
 
+  async applyCustomExtendTest() {
+    const testId = document.getElementById('extendTestId').value;
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) return;
+
+    const targetDate = document.getElementById('extendTargetDate').value;
+    const targetEndTime = document.getElementById('extendTargetEndTime').value;
+
+    if (!targetDate) {
+      this.toast('마감 날짜를 선택해주세요.', 'error');
+      return;
+    }
+
+    try {
+      await AppData.writeDocument('tests', testId, {
+        ...test,
+        // 원래 test.date는 보존
+        extendedDate: targetDate,
+        extendedEndTime: targetEndTime || '23:59',
+        allowLate: false
+      });
+      await AppData.loadCollection('tests');
+
+      this.toast(`✅ '${test.title || '시험'}' 시험일(${test.date})은 유지되며 마감이 ${targetDate} ${targetEndTime || '23:59'}까지 연장되었습니다.`, 'success');
+      this.closeExtendTestModal();
+
+      if (this.state.isAdminLoggedIn) {
+        this.renderAdminTestsTab();
+      }
+      if (this.state.selectedStudentId) {
+        this.renderStudentDashboard(this.state.selectedStudentId);
+      }
+
+      const detailModal = document.getElementById('testDetailModal');
+      if (detailModal && !detailModal.classList.contains('hidden')) {
+        if (test.type === 'VOCAB') {
+          this.openVocabTestScheduleModal(testId);
+        } else if (test.type === 'PRACTICE') {
+          this.openPracticeTestScheduleModal(testId);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      this.toast('시간 연장 저장에 실패했습니다.', 'error');
+    }
+  },
+
+  async cancelTestExtension() {
+    const testId = document.getElementById('extendTestId').value;
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) return;
+
+    const hasExtension = Boolean(test.extendedDate || test.extendedEndTime || test.allowLate);
+    if (!hasExtension) {
+      this.toast('취소할 연장 설정이 없습니다.', 'info');
+      return;
+    }
+
+    if (!confirm(`'${test.title || '시험'}'의 연장을 취소하고 원래 마감(${test.date} ${test.endTime || '23:59'})으로 되돌릴까요?`)) {
+      return;
+    }
+
+    try {
+      await AppData.writeDocument('tests', testId, {
+        ...test,
+        extendedDate: null,
+        extendedEndTime: null,
+        allowLate: false
+      });
+      await AppData.loadCollection('tests');
+
+      this.toast(`'${test.title || '시험'}'의 연장이 취소되어 원래 마감(${test.date} ${test.endTime || '23:59'})이 적용되었습니다.`, 'success');
+      this.closeExtendTestModal();
+
+      if (this.state.isAdminLoggedIn) {
+        this.renderAdminTestsTab();
+      }
+      if (this.state.selectedStudentId) {
+        this.renderStudentDashboard(this.state.selectedStudentId);
+      }
+
+      const detailModal = document.getElementById('testDetailModal');
+      if (detailModal && !detailModal.classList.contains('hidden')) {
+        if (test.type === 'VOCAB') {
+          this.openVocabTestScheduleModal(testId);
+        } else if (test.type === 'PRACTICE') {
+          this.openPracticeTestScheduleModal(testId);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      this.toast('연장 취소에 실패했습니다.', 'error');
+    }
+  },
+
+  // ========================================================
+  // 시험 시간 범위 및 응시 가능 여부 판별 헬퍼
+  // ========================================================
+  getTestTimeStatus(test) {
+    if (!test || !test.date) {
+      return { status: 'IN_PROGRESS', label: '응시 가능', canStart: true, message: '' };
+    }
+
+    const now = new Date();
+    const testDate = test.date;
+
+    // 시작 시간 (원래 시험 날짜 기준)
+    let startDateTime = null;
+    if (test.time) {
+      startDateTime = new Date(`${testDate}T${test.time}:00`);
+    } else {
+      startDateTime = new Date(`${testDate}T00:00:00`);
+    }
+
+    // 종료 시간 (연장일시가 있으면 연장일시 우선, 없으면 기본 마감일시)
+    const effectiveEndDate = test.extendedDate || testDate;
+    const effectiveEndTime = test.extendedEndTime || test.endTime || '23:59';
+    const endDateTime = new Date(`${effectiveEndDate}T${effectiveEndTime}:59`);
+
+    if (test.allowLate) {
+      return { status: 'IN_PROGRESS', label: '응시 가능 (상시 허용)', canStart: true, message: '' };
+    }
+
+    // 마감이 지난 경우에는 통과 기록이 있더라도 화면에 마감 상태를 우선 표시한다.
+    // 실제 응시 버튼은 결과 상태에 따라 계속 완료로 유지된다.
+    if (now > endDateTime) {
+      return {
+        status: 'EXPIRED',
+        label: '응시 시간 종료',
+        canStart: false,
+        message: '응시 시간이 종료되었습니다.'
+      };
+    }
+
+    if (test.status === 'PASS' || test.practiceResult?.passed) {
+      return { status: 'COMPLETED', label: '통과 완료 (PASS)', canStart: false, message: '이미 통과한 시험입니다.' };
+    }
+
+    if (now < startDateTime) {
+      const timeStr = test.time ? `${test.time}` : '시험 당일';
+      return {
+        status: 'NOT_STARTED',
+        label: `시작 전 (${timeStr}부터 가능)`,
+        canStart: false,
+        message: `시험 시작 시간이 아닙니다. ${test.date} ${test.time || ''}부터 응시할 수 있습니다.`
+      };
+    }
+
+    return {
+      status: 'IN_PROGRESS',
+      label: '응시 가능',
+      canStart: true,
+      message: ''
+    };
+  },
+
+  openPracticeTestScheduleModal(testId) {
+    const test = AppData.getTests().find(item => item.id === testId);
+    if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    const student = AppData.getStudentById(test.studentId);
+    const questions = test.questions || [];
+    const timeStatus = this.getTestTimeStatus(test);
+    const result = test.practiceResult;
+    const isCompleted = test.status === 'PASS' || result?.passed;
+    const timeDisplay = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : '시간 미지정';
+    const isAdmin = this.state.isAdminLoggedIn;
+
+    document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 문제풀이 시험` : '문제풀이 시험';
+    document.getElementById('detailModalTitle').innerText = test.title;
+
+    let actionButtonHtml = '';
+    if (isAdmin) {
+      actionButtonHtml = `
+        <div class="space-y-2.5 pt-2">
+          ${result ? `
+            <div class="p-3.5 rounded-xl ${result.passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'} text-xs font-semibold flex items-center justify-between">
+              <span>학생 점수: <strong>${result.score}점 (${result.correctCount}/${result.totalCount} 정답)</strong></span>
+              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${result.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${result.passed ? 'PASS 통과' : '불합격'}</span>
+            </div>
+
+            <!-- 관리자 재시험 허용 토글 카드 (불합격 시) -->
+            ${!result.passed ? `
+              <div class="p-3 rounded-xl border flex items-center justify-between gap-3 ${test.allowRetest ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-200'}">
+                <div>
+                  <span class="text-xs font-bold ${test.allowRetest ? 'text-indigo-900' : 'text-slate-700'}">
+                    <i class="fa-solid fa-rotate-right mr-1"></i>재시험 응시 허용
+                  </span>
+                  <p class="text-[11px] ${test.allowRetest ? 'text-indigo-700 font-semibold' : 'text-slate-400'}">
+                    ${test.allowRetest ? '✅ 허용 중 — 학생이 재시험을 풀 수 있습니다.' : '현재 비허용 — 학생이 다시 풀 수 없습니다.'}
+                  </p>
+                </div>
+                <button onclick="App.togglePracticeTestAllowRetest('${test.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}">
+                  ${test.allowRetest ? '허용 취소' : '재시험 허용하기'}
+                </button>
+              </div>
+            ` : ''}
+
+            <button onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+              <i class="fa-solid fa-file-circle-check"></i> 학생 풀이 답안 & 채점 결과 보기
+            </button>
+          ` : (isCompleted ? `
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
+              <i class="fa-solid fa-circle-check mr-1"></i>본시험 통과 처리됨 · 완료
+            </div>
+          ` : `
+            <div class="p-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold text-center">
+              <i class="fa-solid fa-clock mr-1"></i>아직 학생이 시험에 응시하지 않았습니다. (${timeStatus.label})
+            </div>
+          `)}
+          <div class="flex items-center gap-2">
+            <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+              <i class="fa-solid fa-clock-rotate-left"></i> 시험 시간 연장
+            </button>
+            <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-pen-to-square"></i> 문제/설정 수정
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      if (result) {
+        actionButtonHtml = `
+          <div class="space-y-2.5 pt-2">
+            <div class="p-3.5 rounded-xl ${result.passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'} text-xs font-semibold flex items-center justify-between">
+              <span>내 점수: <strong>${result.score}점 (${result.correctCount}/${result.totalCount} 정답)</strong></span>
+              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${result.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${result.passed ? 'PASS 통과' : '불합격'}</span>
+            </div>
+
+            ${!result.passed ? `
+              <div class="p-3 rounded-xl border ${test.allowRetest ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-slate-50 border-slate-200 text-slate-500'} text-xs text-center font-medium">
+                ${test.allowRetest
+                  ? '<strong class="text-indigo-700 font-bold">✨ 선생님이 재시험을 허용했습니다. 다시 도전해보세요!</strong>'
+                  : '<i class="fa-solid fa-lock mr-1"></i>커트라인 미달로 불합격하였습니다. 빽빽이 검사 후 다시 풀 수 있습니다.'}
+              </div>
+            ` : ''}
+
+            ${!result.passed && test.allowRetest ? `
+              <button onclick="App.startPracticeTest('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                <i class="fa-solid fa-rotate-right"></i> 재시험 응시하기
+              </button>
+            ` : ''}
+          </div>
+        `;
+      } else if (isCompleted) {
+        actionButtonHtml = `
+          <div class="pt-2">
+            <div class="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
+              <i class="fa-solid fa-circle-check"></i> 문제풀이 시험 완료
+            </div>
+          </div>
+        `;
+      } else if (timeStatus.status === 'NOT_STARTED') {
+        actionButtonHtml = `
+          <div class="space-y-2 pt-2">
+            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+              <i class="fa-solid fa-lock"></i> ${timeStatus.label}
+            </button>
+            <p class="text-[11px] text-center text-slate-400">시험 시작 시간 이후에 응시 버튼이 활성화됩니다.</p>
+          </div>
+        `;
+      } else if (timeStatus.status === 'EXPIRED') {
+        actionButtonHtml = `
+          <div class="space-y-2 pt-2">
+            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+              <i class="fa-solid fa-clock"></i> 응시 시간이 종료되었습니다
+            </button>
+            <p class="text-[11px] text-center text-slate-400">지정된 시험 종료 시각(${test.endTime || test.date})이 지났습니다.</p>
+          </div>
+        `;
+      } else {
+        actionButtonHtml = `
+          <div class="pt-2">
+            <button onclick="App.startPracticeTest('${test.id}')" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-emerald-200">
+              <i class="fa-solid fa-pencil"></i> 문제풀이 시험 시작하기
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    document.getElementById('detailModalBody').innerHTML = `
+      <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-emerald-900"><i class="fa-solid fa-file-lines mr-1 text-emerald-600"></i>${this.escapeHtml(test.title)}</span>
+          <div class="flex items-center gap-1.5">
+            ${isCompleted ? '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">완료</span>' : ''}
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">총 ${questions.length}문항</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">${this.escapeHtml(test.scope || '선생님이 출제한 5지선다 객관식 문제입니다.')}</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-bold block mb-0.5">응시 가능 일시</span>
+          <strong class="text-slate-800 font-extrabold">${test.date} (${timeDisplay})</strong>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-bold block mb-0.5">통과 커트라인</span>
+          <strong class="text-slate-800 font-extrabold">${this.escapeHtml(test.cutoff || '80점 이상')}</strong>
+        </div>
+      </div>
+
+      ${questions.length > 0 && isAdmin ? `
+        <details class="text-xs border border-slate-200 rounded-xl p-3 bg-slate-50">
+          <summary class="cursor-pointer font-bold text-slate-700 flex items-center justify-between">
+            <span>출제된 문제 목록 미리보기 (${questions.length}문항)</span>
+            <span class="text-[11px] text-indigo-600">열기/닫기</span>
+          </summary>
+          <div class="mt-2 space-y-2 pt-2 border-t border-slate-200 max-h-48 overflow-y-auto pr-1">
+            ${questions.map((q, idx) => `
+              <div class="p-2 rounded-lg bg-white border border-slate-200 text-[11px] leading-snug">
+                <strong>${idx + 1}. ${this.renderRichText(q.question)}</strong>
+                <div class="text-slate-500 mt-0.5">정답: ${q.answer}번 (${this.renderRichText(q.choices?.[q.answer - 1] || '')})</div>
+              </div>
+            `).join('')}
+          </div>
+        </details>
+      ` : ''}
+
+      ${actionButtonHtml}
+    `;
+
+    this.showModal('testDetailModal');
+  },
+
+  async togglePracticeTestAllowRetest(testId) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) return;
+    const newVal = !test.allowRetest;
+    test.allowRetest = newVal;
+    try {
+      await AppData.saveOrUpdateTest(test);
+      this.toast(newVal ? '✅ 학생의 재시험 응시가 허용되었습니다.' : '재시험 허용이 취소되었습니다.', newVal ? 'success' : 'info');
+      
+      const detailModal = document.getElementById('testDetailModal');
+      if (detailModal && !detailModal.classList.contains('hidden')) {
+        this.openPracticeTestScheduleModal(testId);
+      }
+      if (this.state.isAdminLoggedIn) {
+        this.renderAdminTestsTab();
+      }
+      if (this.state.selectedStudentId) {
+        this.renderStudentDashboard(this.state.selectedStudentId);
+      }
+    } catch (err) {
+      console.error(err);
+      this.toast('재시험 설정 변경에 실패했습니다.', 'error');
+    }
+  },
+
+  // ── 학생: 문제풀이 시험 응시 엔진 ──────────────────────────
+  startPracticeTest(testId) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    const questions = test.questions || [];
+    if (questions.length === 0) {
+      this.toast('출제된 문제가 없습니다.', 'error');
+      return;
+    }
+
+    const timeStatus = this.getTestTimeStatus(test);
+    if (!timeStatus.canStart && !test.practiceResult) {
+      this.toast(timeStatus.message || '현재 응시할 수 없는 시간입니다.', 'error');
+      return;
+    }
+
+    if (test.practiceResult?.passed) {
+      this.toast('이미 통과 완료된 시험입니다.', 'info');
+      this.viewPracticeTestResultDetail(testId);
+      return;
+    }
+
+    // 불합격 후 선생님의 재시험 허용이 없는 경우 차단
+    if (test.practiceResult && !test.practiceResult.passed && !test.allowRetest) {
+      this.toast('빽빽이 검사 후 다시 응시할 수 있습니다.', 'info');
+      return;
+    }
+
+    this.closeTestDetailModal();
+    this.state.practiceTest = {
+      testId: test.id,
+      studentId: Number(test.studentId),
+      title: test.title,
+      questions: questions,
+      cutoffScore: Number(test.cutoffScore || test.practiceCutoff || 80),
+      currentIndex: 0,
+      answers: {},
+      startedAt: new Date().toISOString()
+    };
+
+    this.showPracticeTestView();
+    this.renderPracticeQuestion(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  renderPracticeQuestion(index) {
+    const pt = this.state.practiceTest;
+    if (!pt || !pt.questions || pt.questions.length === 0) return;
+
+    if (index < 0) index = 0;
+    if (index >= pt.questions.length) index = pt.questions.length - 1;
+    pt.currentIndex = index;
+
+    const total = pt.questions.length;
+    const q = pt.questions[index];
+    const choices = q.choices || ['', '', '', '', ''];
+    const currentAnswer = pt.answers[index];
+    const answeredCount = Object.keys(pt.answers).length;
+    const progressPct = ((answeredCount) / total) * 100;
+
+    // 상단 네비 바 정보
+    document.getElementById('practiceTestTopInfo').innerHTML = `
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <span class="font-bold text-slate-900 text-sm">${this.escapeHtml(pt.title)}</span>
+          <span class="ml-2 text-xs text-slate-500">문제 ${index + 1} / ${total}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">커트라인 ${pt.cutoffScore}점</span>
+          <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">${answeredCount}/${total} 풀이완료</span>
+        </div>
+      </div>
+    `;
+
+    // 문제 뷰 본문
+    document.getElementById('practiceTestContent').innerHTML = `
+      <div class="space-y-6">
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-200 rounded-full h-2">
+          <div class="bg-emerald-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-5">
+          <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <span class="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-black">문제 ${index + 1}</span>
+            <span class="text-xs text-slate-400 font-semibold">${currentAnswer ? '✅ 답안 선택됨' : '선택지를 골라주세요'}</span>
+          </div>
+
+          <!-- 1. 문제 (Question) -->
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+            ${this.renderRichText(q.question)}
+          </h3>
+
+          <!-- 2. 제시문 (Passage - 있을 때만 슬림하고 깔끔하게 노출) -->
+          ${q.passage && q.passage.trim() ? `
+            <div class="py-2.5 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-snug font-serif break-words">
+              ${this.renderRichText(q.passage)}
+            </div>
+          ` : ''}
+
+          <!-- 3. 선지 (5 Choices) -->
+          <div class="space-y-2.5 pt-1">
+            ${choices.map((choice, cIdx) => {
+              const choiceNum = cIdx + 1;
+              const isSelected = currentAnswer === choiceNum;
+              const choiceLabels = ['①', '②', '③', '④', '⑤'];
+              return `
+                <button
+                  onclick="App.selectPracticeChoice(${choiceNum})"
+                  class="w-full p-4 rounded-xl border-2 transition text-left flex items-center gap-3.5 ${isSelected ? 'border-emerald-600 bg-emerald-50 shadow-sm text-emerald-950 font-bold' : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50 text-slate-800 font-medium'}"
+                >
+                  <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}">
+                    ${choiceLabels[cIdx]}
+                  </span>
+                  <span class="text-xs sm:text-sm flex-1 break-words">${this.renderRichText(choice)}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Question Index Bar & Actions -->
+        <div class="glass-card rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <span class="text-xs font-bold text-slate-700">문제 번호 바로가기</span>
+            <span class="text-[11px] text-slate-400">초록색 = 답안 마킹 완료</span>
+          </div>
+
+          <div class="flex items-center gap-2 overflow-x-auto" style="padding: 6px 6px;">
+            ${pt.questions.map((_, qIdx) => {
+              const isCurr = qIdx === index;
+              const isAnswered = pt.answers[qIdx] !== undefined;
+              const currStyle = isCurr ? 'style="box-shadow: 0 0 0 2px white, 0 0 0 4px #059669;"' : '';
+              return `
+                <button
+                  onclick="App.goToPracticeQuestion(${qIdx})"
+                  ${currStyle}
+                  class="w-9 h-9 rounded-xl text-xs font-black transition flex-shrink-0 flex items-center justify-center ${isAnswered ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
+                >
+                  ${qIdx + 1}
+                </button>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <button
+              onclick="App.goToPracticeQuestion(${index - 1})"
+              ${index === 0 ? 'disabled' : ''}
+              class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              <i class="fa-solid fa-arrow-left"></i> 이전 문제
+            </button>
+
+            ${index < total - 1 ? `
+              <button
+                onclick="App.goToPracticeQuestion(${index + 1})"
+                class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+              >
+                다음 문제 <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            ` : `
+              <button
+                onclick="App.submitPracticeTest()"
+                class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-200"
+              >
+                <i class="fa-solid fa-check"></i> 답안 최종 제출하기
+              </button>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  selectPracticeChoice(choiceNum) {
+    const pt = this.state.practiceTest;
+    if (!pt) return;
+    pt.answers[pt.currentIndex] = choiceNum;
+    this.renderPracticeQuestion(pt.currentIndex);
+  },
+
+  goToPracticeQuestion(index) {
+    this.renderPracticeQuestion(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const viewEl = document.getElementById('practiceTestView');
+    if (viewEl) {
+      viewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  },
+
+  async submitPracticeTest() {
+    const pt = this.state.practiceTest;
+    if (!pt) return;
+
+    const total = pt.questions.length;
+    const answeredCount = Object.keys(pt.answers).length;
+    const unAnsweredCount = total - answeredCount;
+
+    if (unAnsweredCount > 0) {
+      if (!confirm(`아직 풀지 않은 문제가 ${unAnsweredCount}개 남아있습니다.\n그대로 시험을 제출하시겠습니까?`)) {
+        return;
+      }
+    } else {
+      if (!confirm('모든 문제를 다 푸셨습니까?\n답안을 제출하고 채점을 진행하시겠습니까?')) {
+        return;
+      }
+    }
+
+    // 채점 진행
+    let correctCount = 0;
+    const reviewItems = pt.questions.map((q, idx) => {
+      const studentAnswer = pt.answers[idx] || null;
+      const isCorrect = studentAnswer === Number(q.answer);
+      if (isCorrect) correctCount++;
+      return {
+        questionNumber: idx + 1,
+        question: q.question,
+        passage: q.passage || '',
+        choices: q.choices || [],
+        studentAnswer,
+        correctAnswer: Number(q.answer),
+        isCorrect,
+        explanation: q.explanation || ''
+      };
+    });
+
+    const score = Math.round((correctCount / total) * 100);
+    const passed = score >= pt.cutoffScore;
+    const completedAt = new Date().toISOString();
+
+    const practiceResult = {
+      studentId: pt.studentId,
+      testId: pt.testId,
+      score,
+      correctCount,
+      totalCount: total,
+      passed,
+      cutoffScore: pt.cutoffScore,
+      answers: pt.answers,
+      reviewItems,
+      startedAt: pt.startedAt || completedAt,
+      completedAt
+    };
+
+    // 시험 객체 업데이트
+    const allTests = AppData.getTests();
+    const test = allTests.find(t => t.id === pt.testId);
+    if (test) {
+      test.practiceResult = practiceResult;
+      test.status = passed ? 'PASS' : 'FAIL';
+      test.score = `${score}점 (${correctCount}/${total})`;
+      test.allowRetest = false;
+      try {
+        await AppData.saveOrUpdateTest(test);
+      } catch (error) {
+        console.error(error);
+        this.toast('결과 저장에 실패했습니다. 다시 시도해주세요.', 'error');
+        return;
+      }
+    }
+
+    this.renderPracticeResult(practiceResult, test);
+  },
+
+  renderPracticeResult(result, test) {
+    const passed = result.passed;
+    const reviewItems = result.reviewItems || [];
+    const choiceLabels = ['①', '②', '③', '④', '⑤'];
+
+    document.getElementById('practiceTestTopInfo').innerHTML = `
+      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(test?.title || '문제풀이 시험')} — 시험 완료</span>
+    `;
+
+    document.getElementById('practiceTestContent').innerHTML = `
+      <div class="space-y-6">
+        <!-- Result Summary Card -->
+        <div class="glass-card rounded-2xl p-8 text-center space-y-4">
+          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+            <i class="fa-solid ${passed ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+          </div>
+
+          <div>
+            <h3 class="text-2xl font-black ${passed ? 'text-emerald-700' : 'text-rose-700'}">
+              ${passed ? '축하합니다! 시험에 통과하였습니다 🎉' : '아쉽게도 커트라인에 도달하지 못했습니다.'}
+            </h3>
+            <p class="text-slate-500 text-xs mt-1">커트라인: ${result.cutoffScore || 80}점 이상</p>
+          </div>
+
+          <div class="flex items-center justify-center gap-4 pt-2">
+            <div class="px-5 py-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <span class="text-[11px] text-slate-400 font-bold block">획득 점수</span>
+              <strong class="text-2xl font-black ${passed ? 'text-emerald-600' : 'text-rose-600'}">${result.score}점</strong>
+            </div>
+            <div class="px-5 py-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <span class="text-[11px] text-slate-400 font-bold block">정답 수</span>
+              <strong class="text-2xl font-black text-slate-800">${result.correctCount} / ${result.totalCount}</strong>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button onclick="App.exitPracticeTest()" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-2">
+              <i class="fa-solid fa-arrow-left"></i> 학습 대시보드로 돌아가기
+            </button>
+          </div>
+        </div>
+
+        <!-- Detailed Review / Answer Key Card -->
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          <h4 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-indigo-600"></i>
+            문항별 정답 및 오답노트 해설
+          </h4>
+
+          <div class="space-y-4">
+            ${reviewItems.map((item, idx) => {
+              return `
+                <div class="p-4 rounded-xl border ${item.isCorrect ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'} space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="w-6 h-6 rounded-full ${item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'} text-xs font-black flex items-center justify-center">${idx + 1}</span>
+                      <span class="font-bold text-xs ${item.isCorrect ? 'text-emerald-900' : 'text-rose-900'}">${item.isCorrect ? '정답' : '오답'}</span>
+                    </div>
+                    <span class="text-xs font-bold ${item.isCorrect ? 'text-emerald-700' : 'text-rose-600'}">
+                      학생 선택: ${item.studentAnswer ? `${choiceLabels[item.studentAnswer - 1]} (${item.studentAnswer}번)` : '미응답'} · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)
+                    </span>
+                  </div>
+
+                  <!-- 1. 문제 -->
+                  <p class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${this.renderRichText(item.question)}</p>
+
+                  <!-- 2. 제시문 (있을 때만) -->
+                  ${item.passage && item.passage.trim() ? `
+                    <div class="py-2 px-3 rounded-lg bg-white/90 border border-slate-200 text-xs text-slate-700 leading-snug font-serif break-words">
+                      ${this.renderRichText(item.passage)}
+                    </div>
+                  ` : ''}
+
+                  <div class="space-y-1 text-xs">
+                    ${(item.choices || []).map((ch, cIdx) => {
+                      const cNum = cIdx + 1;
+                      const isCorrectChoice = cNum === item.correctAnswer;
+                      const isStudentChoice = cNum === item.studentAnswer;
+                      let choiceStyle = 'bg-white text-slate-700 border-slate-200';
+                      if (isCorrectChoice) choiceStyle = 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
+                      else if (isStudentChoice && !item.isCorrect) choiceStyle = 'bg-rose-100 text-rose-900 border-rose-300 line-through';
+
+                      return `
+                        <div class="p-2 rounded-lg border flex items-center gap-2 ${choiceStyle}">
+                          <span class="font-bold flex-shrink-0">${choiceLabels[cIdx]}</span>
+                          <span class="flex-1">${this.renderRichText(ch)}</span>
+                          ${isCorrectChoice ? '<span class="text-[10px] font-black text-emerald-700">★ 정답</span>' : ''}
+                          ${isStudentChoice && !item.isCorrect ? '<span class="text-[10px] font-black text-rose-600">내 오답</span>' : ''}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+
+                  ${item.explanation ? `
+                    <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-xs text-indigo-950 space-y-0.5">
+                      <strong class="font-bold text-indigo-700 flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> 선생님 해설:</strong>
+                      <p>${this.renderRichText(item.explanation)}</p>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  viewPracticeTestResultDetail(testId) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test || !test.practiceResult) {
+      this.toast('응시 결과가 없습니다.', 'info');
+      return;
+    }
+    this.closeTestDetailModal();
+    this.showPracticeTestView();
+    this.renderPracticeResult(test.practiceResult, test);
+  },
+
+  exitPracticeTest() {
+    const studentId = this.state.practiceTest.studentId || this.state.selectedStudentId;
+    this.selectStudent(studentId);
+  },
+
+  // ========================================================
+  // 5. 관리자 대시보드 (Admin Management)
+  // ========================================================
   logoutAdmin() {
     this.state.isAdminLoggedIn = false;
     this.toast('관리자 모드를 종료했습니다.', 'info');
@@ -803,25 +1803,37 @@ const App = {
     }
 
     tbody.innerHTML = tests.map(test => {
+      const timeStatus = this.getTestTimeStatus(test);
+      const timeStr = test.time ? (test.endTime ? `${test.time}~${test.endTime}` : `${test.time}`) : (test.endTime ? `~${test.endTime}` : '');
+
       return `
         <tr class="hover:bg-slate-50/80 transition">
           <!-- 일시 -->
           <td class="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
-            <div>${test.date}</div>
-            <div class="text-[11px] font-normal text-slate-400">${test.time || '시간 미지정'}</div>
+            <div class="flex items-center gap-1.5">
+              <span>${test.date}</span>
+              ${test.allowLate ? '<span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">상시</span>' : (timeStatus.status === 'EXPIRED' ? '<span class="text-[10px] px-1.5 py-0.2 rounded bg-rose-100 text-rose-700 font-bold">마감</span>' : '')}
+            </div>
+            <div class="text-[11px] font-normal text-slate-400 flex items-center gap-1">
+              <span>${test.extendedDate ? `<span class="text-amber-700 font-bold">~${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장)</span>` : (timeStr || '23:59까지')}</span>
+              <button onclick="App.openExtendTestModal('${test.id}')" class="text-amber-600 hover:text-amber-800 font-bold hover:underline ml-1" title="마감 시간 연장">
+                [연장]
+              </button>
+            </div>
           </td>
 
           <!-- 시험명 & 범위 -->
           <td class="py-3.5 px-4 max-w-xs">
-            <div class="font-bold text-slate-900 text-sm hover:text-indigo-600 cursor-pointer" onclick="App.openTestDetailModal('${test.id}')">
-              ${this.escapeHtml(test.title)}
+            <div class="font-bold text-slate-900 text-sm hover:text-indigo-600 cursor-pointer flex items-center gap-1.5" onclick="App.openTestDetailModal('${test.id}')">
+              ${test.type === 'VOCAB' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">단어</span>' : (test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">일반</span>')}
+              <span>${this.escapeHtml(test.title)}</span>
             </div>
             <div class="text-xs text-slate-500 truncate mt-0.5">${this.escapeHtml(test.scope || '-')}</div>
           </td>
 
           <!-- 커트라인 / 점수 -->
           <td class="py-3.5 px-4 whitespace-nowrap">
-            <div class="text-xs text-slate-600">컷: <strong class="text-slate-800">${this.escapeHtml(test.cutoff)}</strong></div>
+            <div class="text-xs text-slate-600">컷: <strong class="text-slate-800">${this.escapeHtml(test.cutoff || '-')}</strong></div>
             <div class="text-xs">점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.score || '-'}</strong></div>
           </td>
 
@@ -834,20 +1846,31 @@ const App = {
             </div>
           </td>
 
-          <!-- 재시험 결과 (빠른 상태 변경 토글) -->
+          <!-- 재시험 결과 / 허용 관리 -->
           <td class="py-3.5 px-4 whitespace-nowrap">
-            <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
-              <button onclick="App.quickUpdateRetestStatus('${test.id}', 'NONE')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'NONE' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">없음</button>
-              <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_PENDING')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_PENDING' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">대기</button>
-              <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_PASS')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_PASS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">통과</button>
-              <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_FAIL')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_FAIL' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">탈락</button>
-            </div>
-            ${test.retestDate ? `<div class="text-[11px] text-slate-400 mt-1 font-medium">재시험일: ${test.retestDate}</div>` : ''}
+            ${test.type === 'PRACTICE' ? `
+              <div class="flex items-center gap-1.5">
+                <button onclick="App.togglePracticeTestAllowRetest('${test.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}">
+                  <i class="fa-solid ${test.allowRetest ? 'fa-check' : 'fa-rotate-right'} mr-1"></i>${test.allowRetest ? '재시험 허용중' : '재시험 허용하기'}
+                </button>
+              </div>
+            ` : `
+              <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
+                <button onclick="App.quickUpdateRetestStatus('${test.id}', 'NONE')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'NONE' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">없음</button>
+                <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_PENDING')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_PENDING' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">대기</button>
+                <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_PASS')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_PASS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">통과</button>
+                <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_FAIL')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_FAIL' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">탈락</button>
+              </div>
+              ${test.retestDate ? `<div class="text-[11px] text-slate-400 mt-1 font-medium">재시험일: ${test.retestDate}</div>` : ''}
+            `}
           </td>
 
           <!-- 관리 버튼 -->
           <td class="py-3.5 px-4 text-center whitespace-nowrap">
             <div class="flex items-center justify-center space-x-1.5">
+              <button onclick="App.openExtendTestModal('${test.id}')" class="p-1.5 rounded-lg text-amber-600 hover:text-amber-800 hover:bg-amber-50 transition" title="마감 시간 연장">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </button>
               <button onclick="App.openEditTestModal('${test.id}')" class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition" title="수정">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -872,18 +1895,36 @@ const App = {
     const test = allTests.find(t => t.id === testId);
     if (!test) return;
 
-    test.status = newStatus;
-    // 불합격 선택 시 재시험 대기로 자동 편의 설정
-    if (newStatus === 'FAIL' && test.retestStatus === 'NONE') {
-      test.retestStatus = 'RETEST_PENDING';
-    } else if (newStatus === 'PASS') {
-      test.retestStatus = 'NONE';
-    }
-
     try {
+      let resetVocabResultCount = 0;
+
+      // 대기로 되돌릴 때는 이전 결과가 새 시험에 남지 않도록 초기화한다.
+      // 단어 테스트는 방향별 응시 이력도 함께 지워야 다시 처음부터 응시할 수 있다.
+      if (newStatus === 'SCHEDULED') {
+        if (test.type === 'VOCAB') {
+          resetVocabResultCount = await AppData.deleteVocabTestResultsByTestId(testId);
+        }
+        test.score = '';
+        test.retestStatus = 'NONE';
+        test.retestDate = '';
+        test.practiceResult = null;
+        test.allowRetest = false;
+      }
+
+      test.status = newStatus;
+      // 불합격 선택 시 재시험 대기로 자동 편의 설정
+      if (newStatus === 'FAIL' && test.retestStatus === 'NONE') {
+        test.retestStatus = 'RETEST_PENDING';
+      } else if (newStatus === 'PASS') {
+        test.retestStatus = 'NONE';
+      }
+
       await AppData.saveOrUpdateTest(test);
       this.renderAdminTestsTab();
-      this.toast(`'${test.title}' 상태가 업데이트되었습니다.`, 'success');
+      const resetMessage = newStatus === 'SCHEDULED'
+        ? ` 대기로 되돌리고${resetVocabResultCount > 0 ? ` 단어 응시 기록 ${resetVocabResultCount}건을` : ' 이전 결과를'} 초기화했습니다.`
+        : ' 상태가 업데이트되었습니다.';
+      this.toast(`'${test.title}'${resetMessage}`, 'success');
     } catch (error) {
       console.error(error);
     }
@@ -904,7 +1945,7 @@ const App = {
     }
   },
 
-  // 관리자 탭 2: 전체 6명 현황판 (Overview Matrix)
+  // 관리자 탭 2: 전체 학생 현황판 (Overview Matrix)
   renderAdminOverviewTab() {
     const container = document.getElementById('adminOverviewCards');
     if (!container) return;
@@ -987,7 +2028,44 @@ const App = {
     if (!container) return;
 
     const students = AppData.getStudents();
-    container.innerHTML = students.map(student => {
+    container.innerHTML = `
+      <div class="p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm shadow-sm flex-shrink-0">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-indigo-600">새 학생 계정</span>
+            <h4 class="font-bold text-slate-900">학생 추가</h4>
+          </div>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="block font-bold text-slate-600 mb-0.5">학생 이름</label>
+            <input type="text" id="newStudentName" placeholder="예: 홍길동" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-0.5">학습 목표</label>
+            <input type="text" id="newStudentTarget" placeholder="예: 내신 영어 1등급" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-slate-600 mb-0.5">로그인 아이디</label>
+              <input type="text" id="newStudentLoginId" autocomplete="off" placeholder="영문/숫자" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-0.5">비밀번호</label>
+              <input type="password" id="newStudentPassword" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" placeholder="숫자 4자리" oninput="this.value=this.value.replace(/[^0-9]/g, '').slice(0, 4)" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
+            </div>
+          </div>
+        </div>
+        <div class="pt-2 flex justify-end">
+          <button onclick="App.handleAddStudentProfile()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition shadow-sm">
+            학생 계정 추가
+          </button>
+        </div>
+      </div>
+      ${students.map(student => {
       return `
         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
           <div class="flex items-center space-x-3">
@@ -1009,33 +2087,108 @@ const App = {
               <label class="block font-bold text-slate-600 mb-0.5">학습 목표</label>
               <input type="text" id="editStudentTarget_${student.id}" value="${this.escapeHtml(student.target)}" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
             </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-bold text-slate-600 mb-0.5">로그인 아이디</label>
+                <input type="text" id="editStudentLoginId_${student.id}" value="${this.escapeHtml(student.loginId || '')}" autocomplete="off" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-600 mb-0.5">비밀번호</label>
+                <input type="password" id="editStudentPassword_${student.id}" value="${this.escapeHtml(student.password || '')}" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" oninput="this.value=this.value.replace(/[^0-9]/g, '').slice(0, 4)" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
+              </div>
+            </div>
           </div>
 
-          <div class="pt-2 flex justify-end">
+          <div class="pt-2 flex items-center justify-between gap-3">
+            <button onclick="App.confirmDeleteStudentProfile(${student.id})" class="px-3 py-2 rounded-xl text-rose-600 border border-rose-200 bg-white font-bold text-xs hover:bg-rose-50 transition">
+              <i class="fa-solid fa-trash-can mr-1"></i>삭제
+            </button>
             <button onclick="App.handleSaveStudentProfile(${student.id})" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition shadow-sm">
               프로필 저장
             </button>
           </div>
         </div>
       `;
-    }).join('');
+      }).join('')}
+    `;
   },
 
   async handleSaveStudentProfile(studentId) {
     const name = document.getElementById(`editStudentName_${studentId}`).value.trim();
     const target = document.getElementById(`editStudentTarget_${studentId}`).value.trim();
+    const loginId = document.getElementById(`editStudentLoginId_${studentId}`).value.trim();
+    const password = document.getElementById(`editStudentPassword_${studentId}`).value;
 
-    if (!name) {
-      this.toast('학생 이름을 입력해주세요.', 'error');
+    if (!this.validateStudentAccount({ name, loginId, password }, studentId)) {
       return;
     }
 
     try {
-      await AppData.updateStudent({ id: studentId, name, target });
+      await AppData.updateStudent({ id: studentId, name, target, loginId, password });
       this.toast(`학생 #${studentId} 프로필이 저장되었습니다.`, 'success');
     } catch (error) {
       console.error(error);
       this.toast('학생 프로필 저장에 실패했습니다.', 'error');
+    }
+  },
+
+  validateStudentAccount({ name, loginId, password }, excludingStudentId = null) {
+    if (!name || !loginId || !password) {
+      this.toast('학생 이름, 로그인 아이디, 비밀번호를 모두 입력해주세요.', 'error');
+      return false;
+    }
+    if (!/^\d{4}$/.test(password)) {
+      this.toast('비밀번호는 숫자 4자리로 설정해주세요.', 'error');
+      return false;
+    }
+    const normalizedLoginId = loginId.toLocaleLowerCase('en-US');
+    if (normalizedLoginId === TEACHER_LOGIN_ID.toLocaleLowerCase('en-US')) {
+      this.toast('선생님 계정 아이디는 학생 계정으로 사용할 수 없습니다.', 'error');
+      return false;
+    }
+    const duplicated = AppData.getStudents().some(student =>
+      student.id !== Number(excludingStudentId) &&
+      String(student.loginId || '').toLocaleLowerCase('en-US') === normalizedLoginId
+    );
+    if (duplicated) {
+      this.toast('이미 사용 중인 로그인 아이디입니다.', 'error');
+      return false;
+    }
+    return true;
+  },
+
+  async handleAddStudentProfile() {
+    const name = document.getElementById('newStudentName').value.trim();
+    const target = document.getElementById('newStudentTarget').value.trim();
+    const loginId = document.getElementById('newStudentLoginId').value.trim();
+    const password = document.getElementById('newStudentPassword').value;
+    if (!this.validateStudentAccount({ name, loginId, password })) return;
+
+    try {
+      const student = await AppData.addStudent({ name, target, loginId, password });
+      this.state.adminSelectedStudentId = student.id;
+      this.toast(`${student.name} 학생 계정이 추가되었습니다.`, 'success');
+      this.renderAdminStudentsTab();
+    } catch (error) {
+      console.error(error);
+      this.toast('학생 계정 추가에 실패했습니다.', 'error');
+    }
+  },
+
+  async confirmDeleteStudentProfile(studentId) {
+    const student = AppData.getStudentById(studentId);
+    if (!student) return;
+    if (!confirm(`'${student.name}' 학생 계정을 삭제할까요?\n해당 학생의 시험 일정과 단어 시험 결과도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+
+    try {
+      await AppData.deleteStudent(studentId);
+      const remainingStudents = AppData.getStudents();
+      this.state.adminSelectedStudentId = remainingStudents[0]?.id || null;
+      this.toast(`${student.name} 학생 계정과 관련 기록이 삭제되었습니다.`, 'info');
+      this.renderAdminStudentsTab();
+    } catch (error) {
+      console.error(error);
+      this.toast('학생 계정 삭제에 실패했습니다.', 'error');
     }
   },
 
@@ -1105,13 +2258,16 @@ const App = {
     document.getElementById('formTitle').value = '';
     document.getElementById('formDate').value = this.getTodayDateString();
     document.getElementById('formTime').value = '18:00';
+    document.getElementById('formEndTime').value = '19:00';
     document.getElementById('formScope').value = '';
     document.getElementById('formCutoff').value = '90점 이상';
     document.getElementById('formVocabCutoff').value = '';
+    document.getElementById('formPracticeCutoff').value = '80';
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
     document.getElementById('formTeacherNote').value = '';
     this.renderFormVocabSetSelect();
+    this.initPracticeQuestionsForm([]);
 
     // 라디오 버튼 초기화
     document.querySelector('input[name="formStatus"][value="SCHEDULED"]').checked = true;
@@ -1141,13 +2297,16 @@ const App = {
     document.getElementById('formTitle').value = test.title || '';
     document.getElementById('formDate').value = test.date || '';
     document.getElementById('formTime').value = test.time || '';
+    document.getElementById('formEndTime').value = test.endTime || '';
     document.getElementById('formScope').value = test.scope || '';
     document.getElementById('formCutoff').value = test.cutoff || '';
     document.getElementById('formVocabCutoff').value = test.vocabCutoff ?? this.getVocabCutoffScore(test);
+    document.getElementById('formPracticeCutoff').value = test.cutoffScore || test.practiceCutoff || 80;
     document.getElementById('formScore').value = test.score || '';
     document.getElementById('formRetestDate').value = test.retestDate || '';
     document.getElementById('formTeacherNote').value = test.teacherNote || '';
     this.renderFormVocabSetSelect(test.vocabSetId || '');
+    this.initPracticeQuestionsForm(test.questions || []);
 
     // 라디오 버튼 설정
     const statusRadio = document.querySelector(`input[name="formStatus"][value="${test.status || 'SCHEDULED'}"]`);
@@ -1155,7 +2314,8 @@ const App = {
 
     const retestRadio = document.querySelector(`input[name="formRetestStatus"][value="${test.retestStatus || 'NONE'}"]`);
     if (retestRadio) retestRadio.checked = true;
-    const typeRadio = document.querySelector(`input[name="formTestType"][value="${test.type === 'VOCAB' ? 'VOCAB' : 'REGULAR'}"]`);
+    const typeValue = ['VOCAB', 'PRACTICE'].includes(test.type) ? test.type : 'REGULAR';
+    const typeRadio = document.querySelector(`input[name="formTestType"][value="${typeValue}"]`);
     if (typeRadio) typeRadio.checked = true;
     this.toggleTestFormType();
 
@@ -1183,17 +2343,252 @@ const App = {
   },
 
   toggleTestFormType() {
-    const isVocab = document.querySelector('input[name="formTestType"]:checked')?.value === 'VOCAB';
-    document.querySelectorAll('.form-regular-only').forEach(element => element.classList.toggle('hidden', isVocab));
+    const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'REGULAR';
+    const isVocab = testType === 'VOCAB';
+    const isPractice = testType === 'PRACTICE';
+    const isRegular = testType === 'REGULAR';
+
+    document.querySelectorAll('.form-regular-only').forEach(element => element.classList.toggle('hidden', !isRegular));
+    document.querySelectorAll('.form-regular-or-practice').forEach(element => element.classList.toggle('hidden', isVocab));
+    document.querySelectorAll('.form-time-applicable').forEach(element => element.classList.remove('hidden'));
+    
     document.getElementById('formVocabSetSection').classList.toggle('hidden', !isVocab);
     document.getElementById('formVocabCutoffSection').classList.toggle('hidden', !isVocab);
-    document.getElementById('formTimeSection').classList.toggle('hidden', isVocab);
+    document.getElementById('formPracticeCutoffSection').classList.toggle('hidden', !isPractice);
+    document.getElementById('formPracticeSection').classList.toggle('hidden', !isPractice);
+
     const title = document.getElementById('formTitle');
     const regularCutoff = document.getElementById('formCutoff');
     const vocabCutoff = document.getElementById('formVocabCutoff');
+    const practiceCutoff = document.getElementById('formPracticeCutoff');
+
     title.required = !isVocab;
-    regularCutoff.required = !isVocab;
-    vocabCutoff.required = isVocab;
+    if (regularCutoff) regularCutoff.required = isRegular;
+    if (vocabCutoff) vocabCutoff.required = isVocab;
+    if (practiceCutoff) practiceCutoff.required = isPractice;
+  },
+
+  initPracticeQuestionsForm(questions = []) {
+    this.state.editingPracticeQuestions = Array.isArray(questions) && questions.length > 0
+      ? JSON.parse(JSON.stringify(questions))
+      : [];
+    if (this.state.editingPracticeQuestions.length === 0) {
+      this.addPracticeQuestionRow();
+    } else {
+      this.renderPracticeQuestionsForm();
+    }
+  },
+
+  addPracticeQuestionRow(data = null) {
+    const newQuestion = data || {
+      id: 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      question: '',
+      passage: '',
+      choices: ['', '', '', '', ''],
+      answer: 1,
+      explanation: ''
+    };
+    this.state.editingPracticeQuestions.push(newQuestion);
+    this.renderPracticeQuestionsForm();
+  },
+
+  removePracticeQuestionRow(index) {
+    if (this.state.editingPracticeQuestions.length <= 1) {
+      this.toast('문제풀이 시험은 최소 1개 이상의 문제가 필요합니다.', 'info');
+      return;
+    }
+    this.state.editingPracticeQuestions.splice(index, 1);
+    this.renderPracticeQuestionsForm();
+  },
+
+  updatePracticeQuestionField(qIndex, field, value) {
+    const q = this.state.editingPracticeQuestions[qIndex];
+    if (!q) return;
+    q[field] = value;
+  },
+
+  updatePracticeChoice(qIndex, choiceIndex, value) {
+    const q = this.state.editingPracticeQuestions[qIndex];
+    if (!q) return;
+    if (!Array.isArray(q.choices)) q.choices = ['', '', '', '', ''];
+    q.choices[choiceIndex] = value;
+  },
+
+  updatePracticeAnswer(qIndex, answerNumber) {
+    const q = this.state.editingPracticeQuestions[qIndex];
+    if (!q) return;
+    q.answer = Number(answerNumber);
+    this.renderPracticeQuestionsForm();
+  },
+
+  // ── 서식 파서 및 텍스트 편집 툴바 헬퍼 ────────────────────────
+  renderRichText(text) {
+    if (!text) return '';
+    let trimmed = String(text).trim();
+    let escaped = this.escapeHtml(trimmed);
+    // 1. 볼드: **text**
+    escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-slate-950">$1</strong>');
+    // 2. 밑줄: __text__ → 일반 밑줄
+    escaped = escaped.replace(/__(.+?)__/g, '<u>$1</u>');
+    // 3. 이탤릭: *text* (단, **는 제외)
+    escaped = escaped.replace(/(?<!\*)\*(?!\*)([^\*\n]+?)(?<!\*)\*(?!\*)/g, '<em class="italic text-slate-800">$1</em>');
+    // 4. 형광펜: ==text==
+    escaped = escaped.replace(/==(.+?)==/g, '<mark class="bg-amber-200/90 text-amber-950 px-1 py-0.5 rounded font-medium">$1</mark>');
+    // 5. 지문 내 줄바꿈 지원
+    escaped = escaped.replace(/\n/g, '<br>');
+    return escaped;
+  },
+
+  renderTextFormatToolbar(qIndex, field) {
+    return `
+      <div class="flex items-center gap-1 mb-1.5 flex-wrap">
+        <span class="text-[10px] font-bold text-slate-400 mr-1 flex items-center gap-1"><i class="fa-solid fa-pen-nib"></i> 서식:</span>
+        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'bold')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-black border border-slate-200 transition active:scale-95" title="굵게 (**굵은글씨**)">
+          <strong class="font-black">B</strong> 굵게
+        </button>
+        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'underline')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 transition active:scale-95" title="밑줄 (__밑줄__)">
+          <u class="underline decoration-2">U</u> 밑줄
+        </button>
+        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'italic')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 transition active:scale-95" title="기울임 (*기울임*)">
+          <em class="italic">I</em> 기울임
+        </button>
+        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'blank')" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold border border-indigo-200 transition active:scale-95" title="빈칸 만들기">
+          <span class="font-mono tracking-tight">( __ )</span> 빈칸
+        </button>
+        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'highlight')" class="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200 transition active:scale-95" title="형광펜 강조 (==강조==)">
+          <i class="fa-solid fa-highlighter text-[10px]"></i> 형광펜
+        </button>
+      </div>
+    `;
+  },
+
+  applyFormatToField(qIndex, field, formatType) {
+    const inputEl = document.getElementById(`practice_${field}_${qIndex}`);
+    if (!inputEl) return;
+
+    const start = inputEl.selectionStart;
+    const end = inputEl.selectionEnd;
+    const val = inputEl.value || '';
+    const selected = val.substring(start, end);
+
+    let before = '', after = '', insertText = '';
+    switch (formatType) {
+      case 'bold':
+        before = '**';
+        after = '**';
+        insertText = selected || '굵은글씨';
+        break;
+      case 'underline':
+        before = '__';
+        after = '__';
+        insertText = selected || '밑줄';
+        break;
+      case 'italic':
+        before = '*';
+        after = '*';
+        insertText = selected || '기울임';
+        break;
+      case 'blank':
+        before = '';
+        after = '';
+        insertText = selected ? `(${selected})` : '(          )';
+        break;
+      case 'highlight':
+        before = '==';
+        after = '==';
+        insertText = selected || '강조';
+        break;
+    }
+
+    const newVal = val.substring(0, start) + before + insertText + after + val.substring(end);
+    inputEl.value = newVal;
+    this.updatePracticeQuestionField(qIndex, field, newVal);
+
+    // 커서 위치 재설정 & 포커스 유지
+    inputEl.focus();
+    if (selected) {
+      inputEl.setSelectionRange(start + before.length, start + before.length + insertText.length);
+    } else {
+      inputEl.setSelectionRange(start + before.length, start + before.length + insertText.length);
+    }
+  },
+
+  renderPracticeQuestionsForm() {
+    const container = document.getElementById('formPracticeQuestionsList');
+    const badge = document.getElementById('formPracticeQuestionCountBadge');
+    if (!container) return;
+
+    const questions = this.state.editingPracticeQuestions;
+    if (badge) badge.innerText = `${questions.length}문항`;
+
+    container.innerHTML = questions.map((q, qIndex) => {
+      const choices = Array.isArray(q.choices) && q.choices.length === 5 ? q.choices : ['', '', '', '', ''];
+      const qAnswer = Number(q.answer) || 1;
+
+      return `
+        <div class="p-4 rounded-xl border border-emerald-200 bg-white shadow-xs space-y-3">
+          <div class="flex items-center justify-between gap-2 border-b border-emerald-100 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center">${qIndex + 1}</span>
+              <span class="text-xs font-bold text-slate-800">문제 ${qIndex + 1}</span>
+            </div>
+            <button type="button" onclick="App.removePracticeQuestionRow(${qIndex})" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition text-xs flex items-center gap-1">
+              <i class="fa-solid fa-trash-can"></i> 문제 삭제
+            </button>
+          </div>
+
+          <!-- 문제 질문 (Question) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-[11px] font-bold text-slate-700">문제 질문 <span class="text-rose-500">*</span></label>
+              <span class="text-[10px] text-slate-400 font-medium">드래그 후 서식 버튼 클릭 가능</span>
+            </div>
+            ${this.renderTextFormatToolbar(qIndex, 'question')}
+            <input id="practice_question_${qIndex}" type="text" placeholder="예: 다음 글의 밑줄 친 __8__이 가리키는 것으로 알맞은 것은?" value="${this.escapeHtml(q.question || '')}" oninput="App.updatePracticeQuestionField(${qIndex}, 'question', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-xs font-semibold" />
+          </div>
+
+          <!-- 지문 / 본문 (선택) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-[11px] font-bold text-slate-600">지문 / 제시문 (선택사항)</label>
+              <span class="text-[10px] text-slate-400 font-medium">지문이 없는 문항은 비워두세요</span>
+            </div>
+            ${this.renderTextFormatToolbar(qIndex, 'passage')}
+            <textarea id="practice_passage_${qIndex}" rows="3" placeholder="예: In 1990, she **was born** in London. She wanted to __study__ math." oninput="App.updatePracticeQuestionField(${qIndex}, 'passage', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs bg-slate-50 font-mono leading-relaxed">${this.escapeHtml(q.passage || '')}</textarea>
+          </div>
+
+          <!-- 5지선다 보기 및 정답 선택 -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-[11px] font-bold text-slate-700">5지선다 보기 입력 & 정답 체크 <span class="text-rose-500">*</span></label>
+              <span class="text-[10px] text-emerald-700 font-semibold">정답인 번호의 라디오를 선택하세요</span>
+            </div>
+            <div class="space-y-1.5">
+              ${choices.map((choice, cIndex) => {
+                const choiceNum = cIndex + 1;
+                const isCorrect = qAnswer === choiceNum;
+                const choiceLabels = ['①', '②', '③', '④', '⑤'];
+                return `
+                  <div class="flex items-center gap-2 p-1.5 rounded-lg border transition ${isCorrect ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-white'}">
+                    <label class="flex items-center gap-1.5 cursor-pointer flex-shrink-0 px-1">
+                      <input type="radio" name="practiceAnswer_${qIndex}" value="${choiceNum}" ${isCorrect ? 'checked' : ''} onchange="App.updatePracticeAnswer(${qIndex}, ${choiceNum})" class="text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer" />
+                      <span class="text-xs font-bold ${isCorrect ? 'text-emerald-800' : 'text-slate-600'}">${choiceLabels[cIndex]} 정답</span>
+                    </label>
+                    <input type="text" placeholder="${choiceNum}번 보기 입력 (서식 지원: **굵게**, __밑줄__)" value="${this.escapeHtml(choice || '')}" oninput="App.updatePracticeChoice(${qIndex}, ${cIndex}, this.value)" class="flex-1 py-1.5 px-2.5 rounded-md border border-slate-200 focus:ring-1 focus:ring-emerald-500 text-xs bg-white" />
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- 해설 / 오답노트 코멘트 -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">선생님 문제 해설 / 풀이 팁 (선택사항)</label>
+            <input type="text" placeholder="예: 관계대명사 뒤에는 불완전한 절이 와야 하므로 that이 적절합니다." value="${this.escapeHtml(q.explanation || '')}" oninput="App.updatePracticeQuestionField(${qIndex}, 'explanation', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs bg-slate-50" />
+          </div>
+        </div>
+      `;
+    }).join('');
   },
 
   closeAdminTestFormModal() {
@@ -1206,49 +2601,110 @@ const App = {
     const id = document.getElementById('formTestId').value.trim();
     const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'REGULAR';
     const isVocabTest = testType === 'VOCAB';
+    const isPracticeTest = testType === 'PRACTICE';
+    const isRegularTest = testType === 'REGULAR';
+
     const title = isVocabTest ? '단어 테스트' : document.getElementById('formTitle').value.trim();
     const date = document.getElementById('formDate').value;
-    const time = isVocabTest ? '' : document.getElementById('formTime').value.trim();
-    const scope = isVocabTest ? '단어 세트 기반 5지선다 테스트' : document.getElementById('formScope').value.trim();
+    const time = document.getElementById('formTime').value.trim();
+    const endTime = document.getElementById('formEndTime').value.trim();
+    const scope = isVocabTest
+      ? '단어 세트 기반 5지선다 테스트'
+      : (isPracticeTest ? (document.getElementById('formScope').value.trim() || '선생님 출제 5지선다 객관식 문제풀이') : document.getElementById('formScope').value.trim());
+
     const regularCutoff = document.getElementById('formCutoff').value.trim();
     const vocabCutoff = Number(document.getElementById('formVocabCutoff').value);
-    const cutoff = isVocabTest ? `${vocabCutoff}점` : regularCutoff;
-    const score = isVocabTest ? '' : document.getElementById('formScore').value.trim();
-    const retestDate = isVocabTest ? '' : document.getElementById('formRetestDate').value;
-    const teacherNote = isVocabTest ? '' : document.getElementById('formTeacherNote').value.trim();
-    const vocabSetId = document.getElementById('formVocabSetId').value;
+    const practiceCutoff = Number(document.getElementById('formPracticeCutoff').value);
 
-    const status = isVocabTest ? 'SCHEDULED' : (document.querySelector('input[name="formStatus"]:checked')?.value || 'SCHEDULED');
-    const retestStatus = isVocabTest ? 'NONE' : (document.querySelector('input[name="formRetestStatus"]:checked')?.value || 'NONE');
+    let cutoff = regularCutoff;
+    let cutoffScore = null;
+    if (isVocabTest) {
+      cutoff = `${vocabCutoff}점`;
+      cutoffScore = vocabCutoff;
+    } else if (isPracticeTest) {
+      cutoff = `${practiceCutoff}점 이상`;
+      cutoffScore = practiceCutoff;
+    }
 
-    if (!title || !date || !cutoff || (isVocabTest && !vocabSetId)) {
-      this.toast(isVocabTest ? '단어 세트, 날짜, 커트라인은 필수 입력 항목입니다.' : '시험 제목, 날짜, 커트라인은 필수 입력 항목입니다.', 'error');
+    const score = isRegularTest ? document.getElementById('formScore').value.trim() : '';
+    const retestDate = isRegularTest ? document.getElementById('formRetestDate').value : '';
+    const teacherNote = isRegularTest ? document.getElementById('formTeacherNote').value.trim() : '';
+    const vocabSetId = isVocabTest ? document.getElementById('formVocabSetId').value : null;
+
+    const status = isRegularTest ? (document.querySelector('input[name="formStatus"]:checked')?.value || 'SCHEDULED') : 'SCHEDULED';
+    const retestStatus = isRegularTest ? (document.querySelector('input[name="formRetestStatus"]:checked')?.value || 'NONE') : 'NONE';
+
+    // 공통 검사
+    if (!title || !date) {
+      this.toast('시험 제목과 날짜는 필수 입력 항목입니다.', 'error');
       return;
     }
 
-    if (isVocabTest && (!Number.isInteger(vocabCutoff) || vocabCutoff < 1 || vocabCutoff > 100)) {
-      this.toast('단어 시험 커트라인은 1~100점 사이의 정수로 입력해주세요.', 'error');
-      return;
+    if (isVocabTest) {
+      if (!vocabSetId || !Number.isInteger(vocabCutoff) || vocabCutoff < 1 || vocabCutoff > 100) {
+        this.toast('단어 세트를 선택하고 1~100점 사이의 커트라인을 입력해주세요.', 'error');
+        return;
+      }
     }
+
+    if (isPracticeTest) {
+      if (!Number.isInteger(practiceCutoff) || practiceCutoff < 1 || practiceCutoff > 100) {
+        this.toast('문제풀이 커트라인은 1~100점 사이의 정수로 입력해주세요.', 'error');
+        return;
+      }
+
+      const questions = this.state.editingPracticeQuestions;
+      if (!Array.isArray(questions) || questions.length === 0) {
+        this.toast('최소 1개 이상의 문제를 출제해야 합니다.', 'error');
+        return;
+      }
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.question || !q.question.trim()) {
+          this.toast(`${i + 1}번 문제의 질문 내용을 입력해주세요.`, 'error');
+          return;
+        }
+        if (!Array.isArray(q.choices) || q.choices.some(c => !String(c).trim())) {
+          this.toast(`${i + 1}번 문제의 1~5번 보기를 모두 입력해주세요.`, 'error');
+          return;
+        }
+        if (!q.answer || q.answer < 1 || q.answer > 5) {
+          this.toast(`${i + 1}번 문제의 정답 번호를 선택해주세요.`, 'error');
+          return;
+        }
+      }
+    }
+
+    const practiceQuestions = isPracticeTest ? JSON.parse(JSON.stringify(this.state.editingPracticeQuestions)) : null;
 
     if (id) {
       // 1. 기존 시험 단일 수정 모드
       const studentId = Number(document.getElementById('formStudentId').value);
+      const existingTest = AppData.getTests().find(t => t.id === id);
       const testData = {
         id,
         studentId,
         title,
         date,
         time,
+        endTime,
         scope,
         cutoff,
-        score,
-        status,
+        cutoffScore,
+        score: isPracticeTest ? (existingTest?.score || '') : score,
+        status: isPracticeTest ? (existingTest?.status || 'SCHEDULED') : status,
         retestStatus,
         retestDate,
         teacherNote,
         vocabSetId,
         vocabCutoff: isVocabTest ? vocabCutoff : null,
+        practiceCutoff: isPracticeTest ? practiceCutoff : null,
+        questions: isPracticeTest ? practiceQuestions : null,
+        practiceResult: isPracticeTest ? existingTest?.practiceResult : null,
+        extendedDate: existingTest?.extendedDate || null,
+        extendedEndTime: existingTest?.extendedEndTime || null,
+        allowLate: existingTest?.allowLate || false,
         type: testType
       };
       try {
@@ -1276,8 +2732,10 @@ const App = {
           title,
           date,
           time,
+          endTime,
           scope,
           cutoff,
+          cutoffScore,
           score,
           status,
           retestStatus,
@@ -1285,6 +2743,9 @@ const App = {
           teacherNote,
           vocabSetId,
           vocabCutoff: isVocabTest ? vocabCutoff : null,
+          practiceCutoff: isPracticeTest ? practiceCutoff : null,
+          questions: isPracticeTest ? practiceQuestions : null,
+          practiceResult: null,
           type: testType
         };
         return AppData.saveOrUpdateTest(newTest);
@@ -1296,9 +2757,7 @@ const App = {
         console.error(error);
         return;
       }
-
       this.closeAdminTestFormModal();
-
       if (selectedStudentIds.length === 1) {
         this.toast(`'${title}' 일정이 성공적으로 등록되었습니다!`, 'success');
         this.state.adminSelectedStudentId = selectedStudentIds[0];
@@ -1307,8 +2766,7 @@ const App = {
       }
     }
 
-    // 탭 및 테이블 새로고침
-    this.renderAdminTestsTab();
+    this.renderAdminDashboard();
   },
 
   async confirmDeleteTest(testId) {
@@ -1410,7 +2868,7 @@ const App = {
   },
 
   closeAllModals() {
-    ['adminAuthModal', 'testDetailModal', 'adminTestFormModal', 'vocabSetModal'].forEach(id => {
+    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal'].forEach(id => {
       this.hideModal(id);
     });
   },
@@ -1496,7 +2954,7 @@ const App = {
     const students = AppData.getStudents();
     const sets = AppData.getVocabSets();
 
-    // 결과의 실제 응시일(completedAt)을 기준으로 날짜별로 묶습니다.
+    // 결과의 실제 응시 시작일(startedAt)을 기준으로 날짜별로 묶습니다.
     // 아직 결과가 없는 일정도 날짜 위젯에서 확인할 수 있도록 시험일도 포함합니다.
     const dateSet = new Set();
 
@@ -1592,9 +3050,7 @@ const App = {
         const directionLabel = Number(result.direction) === 1 ? '한글 → 영어' : '영어 → 한글';
         const wrongAnswers = result.wrongAnswers || [];
         const attemptCount = result.attempts ? result.attempts.length : 1;
-        const completedTime = result.completedAt
-          ? new Date(result.completedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-          : '-';
+        const completedTime = this.getVocabResultTimeString(result);
 
         return `
           <div class="rounded-xl border ${result.passed ? 'border-emerald-200 bg-emerald-50/70' : 'border-amber-200 bg-amber-50/70'} p-3.5 space-y-2">
@@ -1720,19 +3176,38 @@ const App = {
   },
 
   getVocabResultDate(result) {
-    if (result?.completedAt) {
-      const date = new Date(result.completedAt);
-      if (!Number.isNaN(date.getTime())) {
-        return this.formatDate(date);
-      }
-    }
-
+    // 1. 배정된 시험 일정이 있는 경우 해당 시험의 날짜(test.date)를 최우선 기준일로 사용
     if (result?.testId) {
       const test = AppData.getTests().find(item => item.id === result.testId);
       if (test?.date) return test.date;
     }
 
+    // 2. 시험 일정이 없는 자율 테스트의 경우 응시 시작(startedAt) 또는 완료(completedAt) 시점 기준
+    const targetTimestamp = result?.startedAt || result?.completedAt;
+    if (targetTimestamp) {
+      const date = new Date(targetTimestamp);
+      if (!Number.isNaN(date.getTime())) {
+        return this.formatDate(date);
+      }
+    }
+
     return '';
+  },
+
+  getVocabResultTimeString(result) {
+    const resultTime = result?.startedAt || result?.completedAt;
+    if (!resultTime) return '-';
+    const resultDateObj = new Date(resultTime);
+    if (Number.isNaN(resultDateObj.getTime())) return '-';
+
+    const timeStr = resultDateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    const resultTargetDate = this.getVocabResultDate(result);
+    const actualDateStr = this.formatDate(resultDateObj);
+
+    if (resultTargetDate && actualDateStr > resultTargetDate) {
+      return `다음날 ${timeStr}`;
+    }
+    return timeStr;
   },
 
   formatVocabResultDateLong(dateString) {
@@ -1901,18 +3376,23 @@ const App = {
   },
 
   renderVocabTestButton(set, studentId, direction, label, colorClass, testId = null) {
+    const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
     const result = AppData.getVocabTestResult(studentId, set.id, direction, testId);
-    if (result && result.passed) {
+    // 관리자가 본시험 결과를 통과로 처리한 일정은 두 방향 모두 완료로 표시한다.
+    if (scheduledTest?.status === 'PASS' || result?.passed) {
       return `
         <div class="w-full py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
           <i class="fa-solid fa-circle-check"></i> ${label} · 완료
         </div>`;
     }
-    const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
-    if (scheduledTest && this.isVocabTestExpired(scheduledTest)) {
+    const timeStatus = scheduledTest && this.getTestTimeStatus(scheduledTest);
+    if (scheduledTest && !timeStatus.canStart) {
+      const unavailableLabel = timeStatus.status === 'EXPIRED'
+        ? '응시 시간 종료'
+        : (timeStatus.status === 'NOT_STARTED' ? '응시 시작 전' : '응시 불가');
       return `
-        <button onclick="App.notifyExpiredVocabTest()" class="w-full py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-clock"></i> ${label} · 응시 시간 종료
+        <button onclick="App.notifyUnavailableVocabTest('${timeStatus.status}')" class="w-full py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-clock"></i> ${label} · ${unavailableLabel}
         </button>`;
     }
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
@@ -1926,12 +3406,20 @@ const App = {
       </button>`;
   },
 
-  isVocabTestExpired(test) {
-    return Boolean(test?.date) && test.date < this.getTodayDateString();
+  notifyExpiredVocabTest() {
+    this.toast('응시 시간이 종료되었습니다. 단어장은 계속 확인할 수 있습니다.', 'info');
   },
 
-  notifyExpiredVocabTest() {
-    this.toast('시험일이 지나 응시 시간이 종료되었습니다. 단어장은 계속 확인할 수 있습니다.', 'info');
+  notifyUnavailableVocabTest(status) {
+    if (status === 'EXPIRED') {
+      this.notifyExpiredVocabTest();
+      return;
+    }
+    if (status === 'NOT_STARTED') {
+      this.toast('아직 응시 시작 시간이 아닙니다.', 'info');
+      return;
+    }
+    this.toast('이미 완료되어 응시할 수 없습니다.', 'info');
   },
 
   // ── 학생: 단어 테스트 시작 ──────────────────────────────
@@ -1940,9 +3428,12 @@ const App = {
     if (!set || set.words.length < 5) { this.toast('단어가 부족합니다. (최소 5개)', 'error'); return; }
     if (![1, 2].includes(direction)) { this.toast('올바른 테스트 방향이 아닙니다.', 'error'); return; }
     const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
-    if (scheduledTest && this.isVocabTestExpired(scheduledTest)) {
-      this.notifyExpiredVocabTest();
-      return;
+    if (scheduledTest) {
+      const timeStatus = this.getTestTimeStatus(scheduledTest);
+      if (!timeStatus.canStart) {
+        this.notifyUnavailableVocabTest(timeStatus.status);
+        return;
+      }
     }
     const existingResult = AppData.getVocabTestResult(studentId, setId, direction, testId);
     if (existingResult?.passed) {
@@ -1955,12 +3446,14 @@ const App = {
       return;
     }
 
+    const startedAt = new Date().toISOString();
     const testWords = this.selectVocabTestWords(set.words);
     this.state.vocabTest = {
       setId,
       studentId: Number(studentId),
       setTitle: set.title,
       testId,
+      startedAt,
       allWords: testWords,
       sourceWordCount: set.words.length,
       direction,
@@ -1968,7 +3461,8 @@ const App = {
       currentIndex: 0,
       score: 0,
       timerId: null,
-      timeRemaining: 5
+      timeRemaining: 5,
+      isCompleted: false
     };
 
     this.closeTestDetailModal();
@@ -2092,22 +3586,19 @@ const App = {
     const chosen = timedOut ? '시간 초과' : q.choices[choiceIndex];
     q.answered = chosen;
     const isCorrect = !timedOut && chosen === q.correct;
+    if (isCorrect) vt.score++;
 
-    // 선택지 스타일 업데이트
+    // 정답/오답을 알려주지 않고 선택한 버튼만 살짝 표시 후 즉시 다음 문제로 전환
     q.choices.forEach((choice, i) => {
       const btn = document.getElementById(`vocabChoice_${i}`);
       if (!btn) return;
       btn.disabled = true;
-      if (choice === q.correct) {
-        btn.className = 'vocab-choice-btn w-full p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-sm font-semibold text-emerald-900 transition text-left flex items-center gap-3';
-      } else if (!timedOut && i === choiceIndex) {
-        btn.className = 'vocab-choice-btn w-full p-4 rounded-xl border-2 border-rose-500 bg-rose-50 text-sm font-semibold text-rose-900 transition text-left flex items-center gap-3';
+      if (!timedOut && i === choiceIndex) {
+        btn.className = 'vocab-choice-btn w-full p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50 text-sm font-bold text-indigo-900 transition text-left flex items-center gap-3';
       }
     });
 
-    if (isCorrect) vt.score++;
-
-    // 잠시 후 다음 문제 or 결과
+    // 딜레이 없이 빠르게 다음 문제로 이동 (150ms 부드러운 전환)
     setTimeout(() => {
       vt.currentIndex++;
       if (vt.currentIndex < vt.questions.length) {
@@ -2115,12 +3606,13 @@ const App = {
       } else {
         this.renderVocabResult();
       }
-    }, 900);
+    }, 120);
   },
 
   async renderVocabResult() {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
+    vt.isCompleted = true;
     const total = vt.allWords.length;
     const score = Math.round((vt.score / total) * 100);
     const directionLabel = vt.direction === 1 ? '한글 → 영어' : '영어 → 한글';
@@ -2132,6 +3624,8 @@ const App = {
       answer: q.answered || '시간 초과',
       correct: q.correct
     }));
+    const completedAt = new Date().toISOString();
+    const startedAt = vt.startedAt || completedAt;
     try {
       await AppData.saveVocabTestResult({
         studentId: vt.studentId,
@@ -2144,7 +3638,8 @@ const App = {
         passed,
         wrongAnswers,
         retryAvailableAt: passed ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-        completedAt: new Date().toISOString()
+        startedAt,
+        completedAt
       });
       if (test) await this.updateVocabScheduleStatus(test.id);
     } catch (error) {
@@ -2156,33 +3651,109 @@ const App = {
       <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)} — 테스트 완료</span>`;
 
     document.getElementById('vocabTestContent').innerHTML = `
-      <div class="glass-card rounded-2xl p-8 space-y-8 text-center">
-        <div class="mx-auto w-24 h-24 rounded-full flex items-center justify-center text-5xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">
-          <i class="fa-solid ${passed ? 'fa-circle-check' : 'fa-rotate-left'}"></i>
+      <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6 text-center max-w-2xl mx-auto">
+        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+          <i class="fa-solid ${passed ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
         </div>
 
         <div>
-          <h3 class="text-2xl font-black ${passed ? 'text-emerald-700' : 'text-amber-700'}">${passed ? '완료!' : '다시 한번 도전해보세요!'}</h3>
-          <p class="text-slate-500 text-sm mt-2">${directionLabel}</p>
+          <h3 class="text-2xl font-black ${passed ? 'text-emerald-700' : 'text-rose-700'}">${passed ? '테스트 통과 (PASS)!' : '불합격 (FAIL)'}</h3>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${vt.score} / ${total} 정답</p>
+          <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
         </div>
 
-        <div class="p-4 rounded-xl ${passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'} text-sm font-semibold">
-          ${passed ? `${cutoffScore}점 이상으로 완료되었습니다. 완료된 테스트는 다시 응시할 수 없습니다.` : `${cutoffScore}점 이상이 되면 완료됩니다. 10분 후 다시 도전해보세요!`}
+        <div class="p-4 rounded-xl ${passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'} text-xs sm:text-sm font-semibold">
+          ${passed ? `축하합니다! 커트라인(${cutoffScore}점)을 통과하여 테스트가 완료되었습니다.` : `커트라인(${cutoffScore}점)에 미달하였습니다. 10분 후 다시 도전할 수 있습니다.`}
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <!-- 오답 노트 섹션 -->
+        ${wrongAnswers.length > 0 ? `
+          <div class="text-left space-y-3 pt-2">
+            <h4 class="text-xs font-bold text-rose-700 flex items-center gap-1.5 uppercase tracking-wider">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span>틀린 단어 오답 노트 (${wrongAnswers.length}개)</span>
+            </h4>
+            <div class="max-h-60 overflow-y-auto rounded-xl border border-rose-100 divide-y divide-slate-100 bg-rose-50/30 text-xs">
+              ${wrongAnswers.map((item, idx) => `
+                <div class="p-3 grid grid-cols-[auto_1fr_1fr] gap-2 items-center">
+                  <span class="font-bold text-slate-400 w-6">${idx + 1}</span>
+                  <div>
+                    <span class="font-bold text-slate-800">${this.escapeHtml(item.question)}</span>
+                    <div class="text-[11px] text-rose-600 mt-0.5">내가 고른 답: <strong>${this.escapeHtml(item.answer)}</strong></div>
+                  </div>
+                  <div class="text-right sm:text-left">
+                    <span class="text-[11px] text-slate-500">정답:</span>
+                    <span class="font-bold text-emerald-700 ml-1">${this.escapeHtml(item.correct)}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : `
+          <div class="p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">
+            🎉 모든 문제를 맞혔습니다! 완벽합니다.
+          </div>
+        `}
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
           ${passed ? '' : `<button disabled class="px-6 py-3 rounded-xl bg-slate-200 text-slate-500 font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-clock"></i> 10분 후 재응시 가능</button>`}
-          <button onclick="App.exitVocabTest()" class="px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition flex items-center justify-center gap-2">
-            <i class="fa-solid fa-arrow-left"></i> 대시보드로
+          <button onclick="App.exitVocabTest()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-sm">
+            <i class="fa-solid fa-arrow-left"></i> 대시보드로 돌아가기
           </button>
         </div>
       </div>`;
   },
 
-  exitVocabTest() {
+  async exitVocabTest() {
+    const vt = this.state.vocabTest;
+    if (vt && !vt.isCompleted) {
+      const confirmExit = confirm('⚠️ 시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 시험을 종료하고 나가시겠습니까?');
+      if (!confirmExit) return;
+      await this.forfeitVocabTest();
+    }
     this.clearVocabQuestionTimer();
-    const studentId = this.state.vocabTest.studentId || this.state.selectedStudentId;
+    const studentId = vt?.studentId || this.state.selectedStudentId;
+    this.state.vocabTest = null;
     this.selectStudent(studentId);
+  },
+
+  async forfeitVocabTest() {
+    const vt = this.state.vocabTest;
+    if (!vt || vt.isCompleted) return;
+    this.clearVocabQuestionTimer();
+    vt.isCompleted = true;
+
+    const total = vt.allWords.length;
+    const test = vt.testId && AppData.getTests().find(item => item.id === vt.testId);
+    const completedAt = new Date().toISOString();
+    const startedAt = vt.startedAt || completedAt;
+
+    const wrongAnswers = vt.questions.map(q => ({
+      question: q.question,
+      answer: q.answered || '중도 이탈',
+      correct: q.correct
+    }));
+
+    try {
+      await AppData.saveVocabTestResult({
+        studentId: vt.studentId,
+        setId: vt.setId,
+        testId: vt.testId,
+        direction: vt.direction,
+        score: 0,
+        correctCount: 0,
+        total,
+        passed: false,
+        wrongAnswers,
+        retryAvailableAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        startedAt,
+        completedAt
+      });
+      if (test) await this.updateVocabScheduleStatus(test.id);
+      this.toast('시험 중도 이탈로 0점(불합격) 처리되었습니다. (10분 후 재응시 가능)', 'error');
+    } catch (error) {
+      console.error(error);
+    }
   },
 
   getVocabCutoffScore(test) {
