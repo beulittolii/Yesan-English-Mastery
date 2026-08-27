@@ -1,5 +1,20 @@
 /**
  * 영어과외 관리 웹사이트 - 기본 데이터 및 저장소 관리
+ *
+ * 현재 구조
+ * - 학생 데이터: Firebase Cloud Firestore
+ * - 시험 데이터: 기존 localStorage
+ * - 단어 세트: 기존 localStorage
+ * - 단어 테스트 결과: 기존 localStorage
+ *
+ * Firestore 구조
+ * students/
+ *   1
+ *   2
+ *   3
+ *   4
+ *   5
+ *   6
  */
 
 const STORAGE_KEY_STUDENTS = 'eng_tutoring_students';
@@ -8,7 +23,22 @@ const STORAGE_KEY_VOCAB = 'eng_tutoring_vocab_sets';
 const STORAGE_KEY_VOCAB_TEST_RESULTS = 'eng_tutoring_vocab_test_results';
 const ADMIN_PASSWORD = '090927';
 
+
+// ========================================================
+// Firebase 학생 데이터 캐시
+// ========================================================
+
+const FirebaseStore = {
+  students: [],
+  studentsLoaded: false,
+  studentListenerStarted: false
+};
+
+
+// ========================================================
 // 기본 6명 학생 프로필
+// ========================================================
+
 const DEFAULT_STUDENTS = [
   {
     id: 1,
@@ -42,22 +72,32 @@ const DEFAULT_STUDENTS = [
   }
 ];
 
-// 기본 샘플 시험 데이터 생성 (현재 날짜 기준 풍부한 샘플 데이터)
+
+// ========================================================
+// 기본 샘플 시험 데이터 생성
+// ========================================================
+
 function generateDefaultTests() {
   const today = new Date();
 
-  // 날짜 헬퍼: 같은 달 내 특정 일자 포맷 (YYYY-MM-DD)
+  // 날짜 헬퍼: YYYY-MM-DD
   const getDateStr = (dayOffset) => {
     const d = new Date(today);
     d.setDate(today.getDate() + dayOffset);
+
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
+
     return `${yyyy}-${mm}-${dd}`;
   };
 
   return [
+
+    // ======================================================
     // 학생 1: 김민준
+    // ======================================================
+
     {
       id: 'test_1_1',
       studentId: 1,
@@ -72,6 +112,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '어휘 암기 상태 매우 우수함. 파생어 형태 변화 문제도 완벽하게 풀어냄! 👏'
     },
+
     {
       id: 'test_1_2',
       studentId: 1,
@@ -86,6 +127,7 @@ function generateDefaultTests() {
       retestDate: getDateStr(2),
       teacherNote: '복합관계대명사와 전치사+관계대명사 해석에서 감점 발생. 재시험 전 개념 요약노트 복습 필수!'
     },
+
     {
       id: 'test_1_3',
       studentId: 1,
@@ -101,7 +143,11 @@ function generateDefaultTests() {
       teacherNote: '패러프레이징 원리와 연결사 전후 논리 관계를 집중적으로 점검할 예정입니다.'
     },
 
+
+    // ======================================================
     // 학생 2: 이서연
+    // ======================================================
+
     {
       id: 'test_2_1',
       studentId: 2,
@@ -116,6 +162,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '성실하게 암기함. 다의어 문맥별 의미 파악 우수.'
     },
+
     {
       id: 'test_2_2',
       studentId: 2,
@@ -130,6 +177,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '서술형 조건 영작까지 완벽하게 소화했습니다. 지금 페이스 유지하세요!'
     },
+
     {
       id: 'test_2_3',
       studentId: 2,
@@ -145,7 +193,11 @@ function generateDefaultTests() {
       teacherNote: '도치구문 수일치와 사역/지각동사 수동태 주의해서 준비해오기!'
     },
 
+
+    // ======================================================
     // 학생 3: 박도현
+    // ======================================================
+
     {
       id: 'test_3_1',
       studentId: 3,
@@ -160,6 +212,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '시제 일치 개념을 잘 잡았습니다. 혼합가정법 예외만 한 번 더 체크!'
     },
+
     {
       id: 'test_3_2',
       studentId: 3,
@@ -174,6 +227,7 @@ function generateDefaultTests() {
       retestDate: getDateStr(-1),
       teacherNote: '1차에서는 스펠링 실수가 많았으나, 재시험에서 96점으로 성실히 만회하여 통과!'
     },
+
     {
       id: 'test_3_3',
       studentId: 3,
@@ -189,7 +243,11 @@ function generateDefaultTests() {
       teacherNote: '동명사의 의미상 주어(목적격/소유격) 표기법 유의하여 복습해올 것.'
     },
 
+
+    // ======================================================
     // 학생 4: 최지우
+    // ======================================================
+
     {
       id: 'test_4_1',
       studentId: 4,
@@ -204,6 +262,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '글의 흐름과 논리적 단서(지시사, 대명사)를 잘 파악하고 있음.'
     },
+
     {
       id: 'test_4_2',
       studentId: 4,
@@ -219,7 +278,11 @@ function generateDefaultTests() {
       teacherNote: '철학/인문 계열 지문에 자주 출제되는 핵심 추상어휘 집중 암기 요망.'
     },
 
+
+    // ======================================================
     // 학생 5: 정현우
+    // ======================================================
+
     {
       id: 'test_5_1',
       studentId: 5,
@@ -234,6 +297,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '시간 관리 훌륭함! 오답 2문항(순서, 어법) 1:1 심층 피드백 완료.'
     },
+
     {
       id: 'test_5_2',
       studentId: 5,
@@ -248,6 +312,7 @@ function generateDefaultTests() {
       retestDate: getDateStr(3),
       teacherNote: '대동사(do/be)와 형용사/부사 구별 문제 헷갈리지 않게 재시험 대비 철저히 하기!'
     },
+
     {
       id: 'test_5_3',
       studentId: 5,
@@ -263,7 +328,11 @@ function generateDefaultTests() {
       teacherNote: '실전 수능과 동일한 환경으로 OMR 마킹 포함 시험 진행.'
     },
 
+
+    // ======================================================
     // 학생 6: 한유진
+    // ======================================================
+
     {
       id: 'test_6_1',
       studentId: 6,
@@ -278,6 +347,7 @@ function generateDefaultTests() {
       retestDate: '',
       teacherNote: '기초 단어를 성실히 외워왔습니다. 칭찬 스티커 2장 지급!'
     },
+
     {
       id: 'test_6_2',
       studentId: 6,
@@ -295,225 +365,911 @@ function generateDefaultTests() {
   ];
 }
 
+
+// ========================================================
 // Data Storage Helper Object
+// ========================================================
+
 const AppData = {
+
+  // ======================================================
+  // Firebase 준비 확인
+  // ======================================================
+
+  isFirebaseReady() {
+    return (
+      typeof window !== 'undefined' &&
+      !!window.firebaseDB &&
+      !!window.firebaseFns
+    );
+  },
+
+
+  // ======================================================
   // 학생 목록 가져오기
+  // ======================================================
+
   getStudents() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY_STUDENTS);
-      if (data) {
-        return JSON.parse(data);
-      }
-    } catch (e) {
-      console.error('Failed to parse students from localStorage', e);
+    return FirebaseStore.students;
+  },
+
+
+  // ======================================================
+  // 학생 목록 Firestore 저장
+  // ======================================================
+
+  async saveStudents(students) {
+
+    if (!this.isFirebaseReady()) {
+      console.error('❌ Firebase가 준비되지 않았습니다.');
+      throw new Error('Firebase가 준비되지 않았습니다.');
     }
-    this.saveStudents(DEFAULT_STUDENTS);
-    return DEFAULT_STUDENTS;
+
+    try {
+
+      const {
+        collection,
+        doc,
+        setDoc
+      } = window.firebaseFns;
+
+      const db = window.firebaseDB;
+
+      // 캐시 먼저 업데이트
+      FirebaseStore.students = [...students];
+      FirebaseStore.studentsLoaded = true;
+
+      // Firestore에 각각의 학생 저장
+      for (const student of students) {
+
+        await setDoc(
+          doc(
+            collection(db, 'students'),
+            String(student.id)
+          ),
+          student
+        );
+
+      }
+
+      console.log(
+        `✅ Firestore 학생 데이터 저장 완료 (${students.length}명)`
+      );
+
+      return students;
+
+    } catch (error) {
+
+      console.error(
+        '❌ Firestore 학생 데이터 저장 실패:',
+        error
+      );
+
+      throw error;
+    }
   },
 
-  // 학생 목록 저장
-  saveStudents(students) {
-    localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(students));
+
+  // ======================================================
+  // Firestore에서 학생 목록 가져오기
+  // ======================================================
+
+  async loadStudentsFromFirestore() {
+
+    if (!this.isFirebaseReady()) {
+      console.error('❌ Firebase가 준비되지 않았습니다.');
+      throw new Error('Firebase가 준비되지 않았습니다.');
+    }
+
+    try {
+
+      const {
+        collection,
+        getDocs
+      } = window.firebaseFns;
+
+      const db = window.firebaseDB;
+
+      console.log(
+        '☁️ Firestore에서 학생 데이터를 불러오는 중...'
+      );
+
+      const snapshot = await getDocs(
+        collection(db, 'students')
+      );
+
+      const students = snapshot.docs.map(
+        document => document.data()
+      );
+
+      // ID를 숫자로 정리
+      students.forEach(student => {
+        student.id = Number(student.id);
+      });
+
+      // ID 순서대로 정렬
+      students.sort(
+        (a, b) => a.id - b.id
+      );
+
+      FirebaseStore.students = students;
+      FirebaseStore.studentsLoaded = true;
+
+      console.log(
+        `✅ Firestore에서 학생 ${students.length}명 로드 완료`
+      );
+
+      return students;
+
+    } catch (error) {
+
+      console.error(
+        '❌ Firestore 학생 데이터 로드 실패:',
+        error
+      );
+
+      throw error;
+    }
   },
 
+
+  // ======================================================
+  // 학생 데이터 최초 초기화
+  // ======================================================
+
+  async initializeStudents() {
+
+    try {
+
+      const students =
+        await this.loadStudentsFromFirestore();
+
+      // Firestore에 학생 데이터가 아직 없는 경우
+      if (students.length === 0) {
+
+        console.log(
+          '📦 Firestore에 학생 데이터가 없습니다.'
+        );
+
+        console.log(
+          '📤 기본 학생 6명을 Firestore에 저장합니다.'
+        );
+
+        await this.saveStudents(
+          DEFAULT_STUDENTS
+        );
+
+        FirebaseStore.students =
+          [...DEFAULT_STUDENTS];
+
+        console.log(
+          '✅ 기본 학생 데이터 초기 저장 완료'
+        );
+      }
+
+      return FirebaseStore.students;
+
+    } catch (error) {
+
+      console.error(
+        '❌ 학생 데이터 초기화 실패:',
+        error
+      );
+
+      // Firebase 연결에 문제가 있더라도
+      // 사이트 자체가 완전히 깨지지 않도록 기본 데이터 사용
+      FirebaseStore.students =
+        [...DEFAULT_STUDENTS];
+
+      FirebaseStore.studentsLoaded = true;
+
+      return FirebaseStore.students;
+    }
+  },
+
+
+  // ======================================================
+  // 학생 데이터 실시간 동기화
+  // ======================================================
+
+  startStudentListener() {
+
+    if (FirebaseStore.studentListenerStarted) {
+      return;
+    }
+
+    if (!this.isFirebaseReady()) {
+      console.error(
+        '❌ Firebase가 준비되지 않아 listener를 시작할 수 없습니다.'
+      );
+
+      return;
+    }
+
+    try {
+
+      const {
+        collection,
+        onSnapshot
+      } = window.firebaseFns;
+
+      const db = window.firebaseDB;
+
+      onSnapshot(
+        collection(db, 'students'),
+
+        snapshot => {
+
+          const students =
+            snapshot.docs.map(
+              document => document.data()
+            );
+
+          students.forEach(student => {
+            student.id = Number(student.id);
+          });
+
+          students.sort(
+            (a, b) => a.id - b.id
+          );
+
+          FirebaseStore.students = students;
+          FirebaseStore.studentsLoaded = true;
+
+          console.log(
+            '🔄 학생 데이터 실시간 업데이트:',
+            students
+          );
+
+          // 현재 화면 갱신
+          this.refreshStudentScreens();
+
+        },
+
+        error => {
+
+          console.error(
+            '❌ 학생 데이터 실시간 동기화 실패:',
+            error
+          );
+
+        }
+      );
+
+      FirebaseStore.studentListenerStarted = true;
+
+      console.log(
+        '👂 학생 데이터 실시간 감시 시작'
+      );
+
+    } catch (error) {
+
+      console.error(
+        '❌ 학생 listener 시작 실패:',
+        error
+      );
+    }
+  },
+
+
+  // ======================================================
+  // 학생 관련 화면 새로고침
+  // ======================================================
+
+  refreshStudentScreens() {
+
+    if (
+      typeof App === 'undefined'
+    ) {
+      return;
+    }
+
+    try {
+
+      // 메인 학생 선택 화면
+      if (
+        typeof App.renderLanding === 'function'
+      ) {
+        App.renderLanding();
+      }
+
+      // 학생 대시보드
+      if (
+        App.state &&
+        App.state.view === 'student' &&
+        typeof App.renderStudentDashboard === 'function'
+      ) {
+        App.renderStudentDashboard();
+      }
+
+      // 관리자 화면
+      if (
+        App.state &&
+        App.state.view === 'admin' &&
+        typeof App.renderAdminDashboard === 'function'
+      ) {
+        App.renderAdminDashboard();
+      }
+
+    } catch (error) {
+
+      console.error(
+        '❌ 학생 화면 새로고침 실패:',
+        error
+      );
+
+    }
+  },
+
+
+  // ======================================================
   // 특정 학생 가져오기
+  // ======================================================
+
   getStudentById(id) {
-    const students = this.getStudents();
-    return students.find(s => s.id === Number(id)) || null;
-  },
 
-  // 시험 목록 가져오기
-  getTests() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY_TESTS);
-      if (data) {
-        return JSON.parse(data);
-      }
-    } catch (e) {
-      console.error('Failed to parse tests from localStorage', e);
-    }
-    const defaultTests = generateDefaultTests();
-    this.saveTests(defaultTests);
-    return defaultTests;
-  },
+    const students =
+      this.getStudents();
 
-  // 시험 목록 저장
-  saveTests(tests) {
-    localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(tests));
-  },
-
-  // 특정 학생의 시험 목록 가져오기
-  getTestsByStudentId(studentId) {
-    const tests = this.getTests();
-    return tests
-      .filter(t => t.studentId === Number(studentId))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-  },
-
-  // 시험 추가 또는 수정
-  saveOrUpdateTest(testData) {
-    const tests = this.getTests();
-    if (!testData.id) {
-      testData.id = 'test_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-      tests.push(testData);
-    } else {
-      const idx = tests.findIndex(t => t.id === testData.id);
-      if (idx >= 0) {
-        tests[idx] = { ...tests[idx], ...testData };
-      } else {
-        tests.push(testData);
-      }
-    }
-    this.saveTests(tests);
-    return testData;
-  },
-
-  // 시험 삭제
-  deleteTest(testId) {
-    let tests = this.getTests();
-    tests = tests.filter(t => t.id !== testId);
-    this.saveTests(tests);
-  },
-
-  // 학생 정보 업데이트
-  updateStudent(studentData) {
-    const students = this.getStudents();
-    const idx = students.findIndex(s => s.id === Number(studentData.id));
-    if (idx >= 0) {
-      students[idx] = { ...students[idx], ...studentData };
-      this.saveStudents(students);
-      return students[idx];
-    }
-    return null;
-  },
-
-  // 전체 데이터 초기화
-  resetToDefaults() {
-    this.saveStudents(DEFAULT_STUDENTS);
-    const defTests = generateDefaultTests();
-    this.saveTests(defTests);
-    localStorage.removeItem(STORAGE_KEY_VOCAB_TEST_RESULTS);
-  },
-
-  // 데이터 백업 내보내기 (JSON 객체 반환)
-  exportData() {
-    return {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      students: this.getStudents(),
-      tests: this.getTests(),
-      vocabSets: this.getVocabSets(),
-      vocabTestResults: this.getVocabTestResults()
-    };
-  },
-
-  // 데이터 복원 가져오기
-  importData(importedObj) {
-    if (importedObj && Array.isArray(importedObj.students) && Array.isArray(importedObj.tests)) {
-      this.saveStudents(importedObj.students);
-      this.saveTests(importedObj.tests);
-      if (Array.isArray(importedObj.vocabSets)) {
-        this.saveVocabSets(importedObj.vocabSets);
-      }
-      if (Array.isArray(importedObj.vocabTestResults)) {
-        localStorage.setItem(STORAGE_KEY_VOCAB_TEST_RESULTS, JSON.stringify(importedObj.vocabTestResults));
-      } else {
-        localStorage.removeItem(STORAGE_KEY_VOCAB_TEST_RESULTS);
-      }
-      return true;
-    }
-    return false;
-  },
-
-  // ─── 단어 세트 (Vocab Sets) ───────────────────────────────
-  getVocabSets() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY_VOCAB);
-      if (data) return JSON.parse(data);
-    } catch (e) {
-      console.error('Failed to parse vocab sets', e);
-    }
-    return [];
-  },
-
-  saveVocabSets(sets) {
-    localStorage.setItem(STORAGE_KEY_VOCAB, JSON.stringify(sets));
-  },
-
-  saveOrUpdateVocabSet(setData) {
-    const sets = this.getVocabSets();
-    if (!setData.id) {
-      setData.id = 'vocab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-      sets.push(setData);
-    } else {
-      const idx = sets.findIndex(s => s.id === setData.id);
-      if (idx >= 0) {
-        sets[idx] = { ...sets[idx], ...setData };
-      } else {
-        sets.push(setData);
-      }
-    }
-    this.saveVocabSets(sets);
-    return setData;
-  },
-
-  deleteVocabSet(setId) {
-    let sets = this.getVocabSets();
-    sets = sets.filter(s => s.id !== setId);
-    this.saveVocabSets(sets);
-  },
-
-  getVocabSetsByStudentId(studentId) {
-    return this.getVocabSets().filter(s => s.studentIds && s.studentIds.includes(Number(studentId)));
-  },
-
-  // ─── 단어 테스트 완료 이력 ───────────────────────────────
-  getVocabTestResults() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY_VOCAB_TEST_RESULTS);
-      if (data) return JSON.parse(data);
-    } catch (e) {
-      console.error('Failed to parse vocab test results', e);
-    }
-    return [];
-  },
-
-  getVocabTestResult(studentId, setId, direction, testId = null) {
-    return this.getVocabTestResults().find(result =>
-      result.studentId === Number(studentId) &&
-      result.setId === setId &&
-      result.direction === direction &&
-      (testId === null || result.testId === testId)
+    return students.find(
+      s => s.id === Number(id)
     ) || null;
   },
 
-  saveVocabTestResult(resultData) {
-    const results = this.getVocabTestResults();
-    const index = results.findIndex(result =>
-      result.studentId === Number(resultData.studentId) &&
-      result.setId === resultData.setId &&
-      result.direction === resultData.direction &&
-      result.testId === resultData.testId
-    );
-    const attempt = {
-      score: resultData.score,
-      correctCount: resultData.correctCount,
-      total: resultData.total,
-      passed: resultData.passed,
-      wrongAnswers: resultData.wrongAnswers || [],
-      completedAt: resultData.completedAt
-    };
-    if (index >= 0) {
-      const previous = results[index];
-      results[index] = {
-        ...previous,
-        ...resultData,
-        attempts: [...(previous.attempts || []), attempt]
-      };
-    } else {
-      results.push({ ...resultData, attempts: [attempt] });
+
+  // ======================================================
+  // 시험 목록 가져오기
+  // ======================================================
+
+  getTests() {
+
+    try {
+
+      const data =
+        localStorage.getItem(
+          STORAGE_KEY_TESTS
+        );
+
+      if (data) {
+        return JSON.parse(data);
+      }
+
+    } catch (e) {
+
+      console.error(
+        'Failed to parse tests from localStorage',
+        e
+      );
+
     }
-    localStorage.setItem(STORAGE_KEY_VOCAB_TEST_RESULTS, JSON.stringify(results));
+
+    const defaultTests =
+      generateDefaultTests();
+
+    this.saveTests(defaultTests);
+
+    return defaultTests;
+  },
+
+
+  // ======================================================
+  // 시험 목록 저장
+  // ======================================================
+
+  saveTests(tests) {
+
+    localStorage.setItem(
+      STORAGE_KEY_TESTS,
+      JSON.stringify(tests)
+    );
+
+  },
+
+
+  // ======================================================
+  // 특정 학생의 시험 목록
+  // ======================================================
+
+  getTestsByStudentId(studentId) {
+
+    const tests =
+      this.getTests();
+
+    return tests
+
+      .filter(
+        t => t.studentId === Number(studentId)
+      )
+
+      .sort(
+        (a, b) =>
+          new Date(a.date) -
+          new Date(b.date)
+      );
+
+  },
+
+
+  // ======================================================
+  // 시험 추가 또는 수정
+  // ======================================================
+
+  saveOrUpdateTest(testData) {
+
+    const tests =
+      this.getTests();
+
+    if (!testData.id) {
+
+      testData.id =
+        'test_' +
+        Date.now() +
+        '_' +
+        Math.random()
+          .toString(36)
+          .substr(2, 5);
+
+      tests.push(testData);
+
+    } else {
+
+      const idx =
+        tests.findIndex(
+          t => t.id === testData.id
+        );
+
+      if (idx >= 0) {
+
+        tests[idx] = {
+          ...tests[idx],
+          ...testData
+        };
+
+      } else {
+
+        tests.push(testData);
+
+      }
+    }
+
+    this.saveTests(tests);
+
+    return testData;
+  },
+
+
+  // ======================================================
+  // 시험 삭제
+  // ======================================================
+
+  deleteTest(testId) {
+
+    let tests =
+      this.getTests();
+
+    tests =
+      tests.filter(
+        t => t.id !== testId
+      );
+
+    this.saveTests(tests);
+
+  },
+
+
+  // ======================================================
+  // 학생 정보 업데이트
+  // ======================================================
+
+  async updateStudent(studentData) {
+
+    const students =
+      this.getStudents();
+
+    const idx =
+      students.findIndex(
+        s => s.id === Number(studentData.id)
+      );
+
+    if (idx >= 0) {
+
+      students[idx] = {
+        ...students[idx],
+        ...studentData,
+        id: Number(studentData.id)
+      };
+
+      await this.saveStudents(
+        students
+      );
+
+      return students[idx];
+    }
+
+    return null;
+  },
+
+
+  // ======================================================
+  // 전체 데이터 초기화
+  // ======================================================
+
+  async resetToDefaults() {
+
+    await this.saveStudents(
+      DEFAULT_STUDENTS
+    );
+
+    const defTests =
+      generateDefaultTests();
+
+    this.saveTests(
+      defTests
+    );
+
+    localStorage.removeItem(
+      STORAGE_KEY_VOCAB_TEST_RESULTS
+    );
+
+  },
+
+
+  // ======================================================
+  // 데이터 백업 내보내기
+  // ======================================================
+
+  exportData() {
+
+    return {
+
+      version: '1.0',
+
+      exportedAt:
+        new Date().toISOString(),
+
+      students:
+        this.getStudents(),
+
+      tests:
+        this.getTests(),
+
+      vocabSets:
+        this.getVocabSets(),
+
+      vocabTestResults:
+        this.getVocabTestResults()
+
+    };
+
+  },
+
+
+  // ======================================================
+  // 데이터 복원 가져오기
+  // ======================================================
+
+  async importData(importedObj) {
+
+    if (
+      importedObj &&
+      Array.isArray(importedObj.students) &&
+      Array.isArray(importedObj.tests)
+    ) {
+
+      await this.saveStudents(
+        importedObj.students
+      );
+
+      this.saveTests(
+        importedObj.tests
+      );
+
+      if (
+        Array.isArray(
+          importedObj.vocabSets
+        )
+      ) {
+
+        this.saveVocabSets(
+          importedObj.vocabSets
+        );
+
+      }
+
+      if (
+        Array.isArray(
+          importedObj.vocabTestResults
+        )
+      ) {
+
+        localStorage.setItem(
+          STORAGE_KEY_VOCAB_TEST_RESULTS,
+          JSON.stringify(
+            importedObj.vocabTestResults
+          )
+        );
+
+      } else {
+
+        localStorage.removeItem(
+          STORAGE_KEY_VOCAB_TEST_RESULTS
+        );
+
+      }
+
+      return true;
+
+    }
+
+    return false;
+  },
+
+
+  // ======================================================
+  // 단어 세트
+  // ======================================================
+
+  getVocabSets() {
+
+    try {
+
+      const data =
+        localStorage.getItem(
+          STORAGE_KEY_VOCAB
+        );
+
+      if (data) {
+        return JSON.parse(data);
+      }
+
+    } catch (e) {
+
+      console.error(
+        'Failed to parse vocab sets',
+        e
+      );
+
+    }
+
+    return [];
+  },
+
+
+  saveVocabSets(sets) {
+
+    localStorage.setItem(
+      STORAGE_KEY_VOCAB,
+      JSON.stringify(sets)
+    );
+
+  },
+
+
+  saveOrUpdateVocabSet(setData) {
+
+    const sets =
+      this.getVocabSets();
+
+    if (!setData.id) {
+
+      setData.id =
+        'vocab_' +
+        Date.now() +
+        '_' +
+        Math.random()
+          .toString(36)
+          .substr(2, 5);
+
+      sets.push(setData);
+
+    } else {
+
+      const idx =
+        sets.findIndex(
+          s => s.id === setData.id
+        );
+
+      if (idx >= 0) {
+
+        sets[idx] = {
+          ...sets[idx],
+          ...setData
+        };
+
+      } else {
+
+        sets.push(setData);
+
+      }
+    }
+
+    this.saveVocabSets(
+      sets
+    );
+
+    return setData;
+  },
+
+
+  deleteVocabSet(setId) {
+
+    let sets =
+      this.getVocabSets();
+
+    sets =
+      sets.filter(
+        s => s.id !== setId
+      );
+
+    this.saveVocabSets(
+      sets
+    );
+
+  },
+
+
+  getVocabSetsByStudentId(studentId) {
+
+    return this
+      .getVocabSets()
+      .filter(
+        s =>
+          s.studentIds &&
+          s.studentIds.includes(
+            Number(studentId)
+          )
+      );
+
+  },
+
+
+  // ======================================================
+  // 단어 테스트 완료 이력
+  // ======================================================
+
+  getVocabTestResults() {
+
+    try {
+
+      const data =
+        localStorage.getItem(
+          STORAGE_KEY_VOCAB_TEST_RESULTS
+        );
+
+      if (data) {
+        return JSON.parse(data);
+      }
+
+    } catch (e) {
+
+      console.error(
+        'Failed to parse vocab test results',
+        e
+      );
+
+    }
+
+    return [];
+  },
+
+
+  getVocabTestResult(
+    studentId,
+    setId,
+    direction,
+    testId = null
+  ) {
+
+    return this
+      .getVocabTestResults()
+      .find(result =>
+
+        result.studentId ===
+          Number(studentId) &&
+
+        result.setId ===
+          setId &&
+
+        result.direction ===
+          direction &&
+
+        (
+          testId === null ||
+          result.testId === testId
+        )
+
+      ) || null;
+  },
+
+
+  saveVocabTestResult(resultData) {
+
+    const results =
+      this.getVocabTestResults();
+
+    const index =
+      results.findIndex(result =>
+
+        result.studentId ===
+          Number(resultData.studentId) &&
+
+        result.setId ===
+          resultData.setId &&
+
+        result.direction ===
+          resultData.direction &&
+
+        result.testId ===
+          resultData.testId
+
+      );
+
+    const attempt = {
+
+      score:
+        resultData.score,
+
+      correctCount:
+        resultData.correctCount,
+
+      total:
+        resultData.total,
+
+      passed:
+        resultData.passed,
+
+      wrongAnswers:
+        resultData.wrongAnswers || [],
+
+      completedAt:
+        resultData.completedAt
+
+    };
+
+
+    if (index >= 0) {
+
+      const previous =
+        results[index];
+
+      results[index] = {
+
+        ...previous,
+
+        ...resultData,
+
+        attempts: [
+
+          ...(previous.attempts || []),
+
+          attempt
+
+        ]
+
+      };
+
+    } else {
+
+      results.push({
+
+        ...resultData,
+
+        attempts: [
+          attempt
+        ]
+
+      });
+
+    }
+
+
+    localStorage.setItem(
+      STORAGE_KEY_VOCAB_TEST_RESULTS,
+      JSON.stringify(results)
+    );
+
     return resultData;
+
   }
+
 };
