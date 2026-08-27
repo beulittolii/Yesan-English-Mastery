@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>예산고등학교 1등급 만들기 프로젝트 | English Mastery</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Global Navigation Bar -->
+  <header class="sticky top-0 z-40 glass-nav shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex min-w-0 items-center space-x-2 sm:space-x-3 cursor-pointer" onclick="App.showLanding()">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="fa-solid fa-graduation-cap text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-bold text-sm sm:text-lg text-slate-900 tracking-tight flex items-center gap-2">
+            <span class="truncate">English Mastery</span>
+            <span class="hidden sm:inline text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">과외 관리</span>
+          </h1>
+          <p class="hidden sm:block text-xs text-indigo-600 font-semibold">예산고등학교 1등급 만들기 프로젝트</p>
+        </div>
+      </div>
+
+      <!-- Header Right Actions -->
+      <div class="flex items-center space-x-2 sm:space-x-3" id="headerNavActions">
+        <!-- Will be dynamically populated or managed by JS -->
+        <button onclick="App.showLanding()" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-house"></i>
+          <span class="hidden sm:inline">홈으로</span>
+        </button>
+        <button id="headerAdminBtn" onclick="App.openAdminAuthModal()" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-lock"></i>
+          <span class="hidden sm:inline">선생님 관리자</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ========================================== -->
+    <!-- 1. LANDING VIEW: PROFILE SELECTION (메인 프로필 선택) -->
+    <!-- ========================================== -->
+    <section id="landingView" class="space-y-8">
+      <!-- Hero Intro -->
+      <div class="text-center max-w-2xl mx-auto pt-4 pb-2">
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          학습할 <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">학생 프로필</span>을 선택하세요
+        </h2>
+        <p class="mt-2 text-sm sm:text-base text-slate-600">
+          본인의 프로필을 선택하면 시험 일정 캘린더와 통과 여부 및 커트라인을 확인할 수 있습니다.
+        </p>
+      </div>
+
+      <!-- 6 Students Profile Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="studentCardsGrid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Admin Access Banner (하단 관리자 진입 안내) -->
+      <div class="mt-12 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-700">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-2xl text-indigo-300">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+              <span>선생님 관리자 모드</span>
+              <span class="text-xs font-normal px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">Admin</span>
+            </h3>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              학생별 시험 일정 추가, 본시험/재시험 통과 여부 및 커트라인 점수를 설정할 수 있습니다.
+            </p>
+          </div>
+        </div>
+        <button onclick="App.openAdminAuthModal()" class="w-full md:w-auto px-6 py-3 rounded-xl bg-white text-slate-900 font-bold hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center justify-center gap-2 shadow-lg whitespace-nowrap">
+          <i class="fa-solid fa-key text-amber-500"></i>
+          <span>관리자 설정 들어가기</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 2. STUDENT DASHBOARD VIEW (학생별 캘린더 & 일정 대시보드) -->
+    <!-- ========================================== -->
+    <section id="studentDashboardView" class="hidden space-y-6">
+      <!-- Student Banner -->
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden" id="studentBanner">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Student Stats Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="studentStatsGrid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- View Selector (Calendar vs List) -->
+      <div class="flex items-center justify-between flex-wrap gap-4 pt-2">
+        <div class="flex p-1 rounded-xl bg-slate-200/80 max-w-xs">
+          <button id="viewTabCalendar" onclick="App.switchStudentViewTab('calendar')" class="px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-slate-900 shadow-sm flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar-days"></i>
+            <span>월간 캘린더</span>
+          </button>
+          <button id="viewTabList" onclick="App.switchStudentViewTab('list')" class="px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check"></i>
+            <span>시험 목록 보기</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 통과</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 재시험 대기</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 불합격</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> 시험 예정</span>
+        </div>
+      </div>
+
+      <!-- Tab Content 1: Calendar View -->
+      <div id="studentCalendarContainer" class="glass-card rounded-2xl p-4 sm:p-6 shadow-sm">
+        <!-- Calendar Header (Month Nav) -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-2">
+            <button onclick="App.prevMonth()" class="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <h3 class="text-lg sm:text-xl font-bold text-slate-900 px-2" id="calendarMonthTitle">2026년 8월</h3>
+            <button onclick="App.nextMonth()" class="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="App.goToToday()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>오늘</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Days of Week Header -->
+        <div class="grid grid-cols-7 gap-1 text-center font-semibold text-xs sm:text-sm text-slate-500 mb-2">
+          <div class="text-rose-500 py-1">일</div>
+          <div class="py-1">월</div>
+          <div class="py-1">화</div>
+          <div class="py-1">수</div>
+          <div class="py-1">목</div>
+          <div class="py-1">금</div>
+          <div class="text-blue-500 py-1">토</div>
+        </div>
+
+        <!-- Calendar Days Grid -->
+        <div class="calendar-grid border border-slate-200 rounded-xl overflow-hidden bg-slate-200 gap-[1px]" id="calendarDaysGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <p class="text-xs text-slate-400 text-center mt-4">
+          💡 캘린더에 표시된 테스트 일정을 클릭하면 커트라인, 통과여부, 선생님 피드백 등 상세 정보를 볼 수 있습니다.
+        </p>
+      </div>
+
+      <!-- Tab Content 2: List View -->
+      <div id="studentListContainer" class="hidden space-y-4">
+        <!-- List Filter Buttons -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2">
+          <button onclick="App.filterStudentTests('ALL')" id="filterBtnALL" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-900 text-white shadow-sm transition">
+            전체 보기
+          </button>
+          <button onclick="App.filterStudentTests('SCHEDULED')" id="filterBtnSCHEDULED" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition">
+            예정된 시험
+          </button>
+          <button onclick="App.filterStudentTests('PASS')" id="filterBtnPASS" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition">
+            통과 완료
+          </button>
+          <button onclick="App.filterStudentTests('RETEST')" id="filterBtnRETEST" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition">
+            재시험 대상 / 불합격
+          </button>
+        </div>
+
+        <!-- Test List Cards -->
+        <div class="space-y-3" id="studentTestsListContent">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 3. ADMIN DASHBOARD VIEW (관리자 설정 패널) -->
+    <!-- ========================================== -->
+    <section id="adminDashboardView" class="hidden space-y-6">
+      <!-- Admin Top Banner -->
+      <div class="bg-gradient-to-r from-slate-900 to-indigo-900 text-white rounded-2xl p-6 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center text-xl text-indigo-300">
+            <i class="fa-solid fa-chalkboard-user"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-bold">선생님 관리자 대시보드</h2>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500 text-white">인증됨</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">학생별 테스트 일정, 커트라인, 통과 및 재시험 여부를 손쉽게 관리하세요.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 self-end sm:self-auto">
+          <button onclick="App.logoutAdmin()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>관리자 종료</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Tab Navigation -->
+      <div class="border-b border-slate-200 flex items-center gap-2 sm:gap-4 overflow-x-auto">
+        <button id="adminTabBtnTests" onclick="App.switchAdminTab('tests')" class="pb-3 px-2 border-b-2 border-indigo-600 font-bold text-xs sm:text-sm text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-list-check"></i>
+          <span>학생별 시험 & 성적 관리</span>
+        </button>
+        <button id="adminTabBtnOverview" onclick="App.switchAdminTab('overview')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-table-cells"></i>
+          <span>전체 6명 현황판</span>
+        </button>
+        <button id="adminTabBtnStudents" onclick="App.switchAdminTab('students')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-user-pen"></i>
+          <span>학생 프로필 수정</span>
+        </button>
+        <button id="adminTabBtnBackup" onclick="App.switchAdminTab('backup')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-database"></i>
+          <span>데이터 백업 & 초기화</span>
+        </button>
+        <button id="adminTabBtnVocab" onclick="App.switchAdminTab('vocab')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-spell-check"></i>
+          <span>단어 세트 관리</span>
+        </button>
+      </div>
+
+      <!-- ================= Admin Tab 1: Tests Management ================= -->
+      <div id="adminTabContentTests" class="space-y-6">
+        <!-- Student Selection Pills -->
+        <div class="glass-card rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
+          <div class="flex items-center gap-2 overflow-x-auto" id="adminStudentPills">
+            <!-- Populated by JS -->
+          </div>
+          <button onclick="App.openAddTestModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-plus"></i>
+            <span>새 시험 일정 추가</span>
+          </button>
+        </div>
+
+        <!-- Selected Student Summary Card -->
+        <div id="adminSelectedStudentInfo" class="glass-card rounded-2xl p-5 border-l-4 border-indigo-600">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Tests Table Card -->
+        <div class="glass-card rounded-2xl p-5 overflow-hidden shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-indigo-600"></i>
+              <span id="adminTableTitle">등록된 시험 일정 목록</span>
+            </h3>
+            <span class="text-xs text-slate-500 font-medium" id="adminTestCountBadge">총 0개 시험</span>
+          </div>
+
+          <div class="overflow-x-auto -mx-5">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead class="bg-slate-100/75 text-slate-600 font-semibold border-y border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">일시</th>
+                  <th class="py-3 px-4">시험명 & 범위</th>
+                  <th class="py-3 px-4">커트라인 / 점수</th>
+                  <th class="py-3 px-4">본시험 결과</th>
+                  <th class="py-3 px-4">재시험 결과</th>
+                  <th class="py-3 px-4 text-center">관리</th>
+                </tr>
+              </thead>
+              <tbody id="adminTestsTableBody" class="divide-y divide-slate-100">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Admin Tab 2: Overview Matrix ================= -->
+      <div id="adminTabContentOverview" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="adminOverviewCards">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ================= Admin Tab 3: Student Profiles ================= -->
+      <div id="adminTabContentStudents" class="hidden space-y-6">
+        <div class="glass-card rounded-2xl p-6">
+          <div class="mb-4">
+            <h3 class="text-base font-bold text-slate-900">학생 정보 커스터마이징</h3>
+            <p class="text-xs text-slate-500 mt-1">학생의 이름과 목표를 실제 학생 정보에 맞게 변경할 수 있습니다.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="adminStudentsEditGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Admin Tab 4: Backup & Reset ================= -->
+      <div id="adminTabContentBackup" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Export Card -->
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-download"></i>
+              </div>
+              <h4 class="font-bold text-slate-900">데이터 백업 (JSON 다운로드)</h4>
+              <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                현재 등록된 모든 학생 정보 및 시험 일정/결과 데이터를 JSON 파일로 내보내 안전하게 보관합니다.
+              </p>
+            </div>
+            <button onclick="App.exportDataFile()" class="mt-6 w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs sm:text-sm hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
+              <i class="fa-solid fa-file-arrow-down"></i>
+              <span>JSON 데이터 백업하기</span>
+            </button>
+          </div>
+
+          <!-- Import Card -->
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-upload"></i>
+              </div>
+              <h4 class="font-bold text-slate-900">데이터 복원 (JSON 가져오기)</h4>
+              <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                이전에 백업해둔 JSON 파일을 불러와 시험 일정 및 학생 데이터를 즉시 복원합니다.
+              </p>
+            </div>
+            <div class="mt-6">
+              <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="App.handleImportFile(event)" />
+              <button onclick="document.getElementById('importJsonInput').click()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-sm">
+                <i class="fa-solid fa-file-arrow-up"></i>
+                <span>JSON 파일 선택 및 복원</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Reset Card -->
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between border border-rose-100">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl mb-4">
+                <i class="fa-solid fa-rotate-left"></i>
+              </div>
+              <h4 class="font-bold text-rose-900">기본 샘플 데이터로 리셋</h4>
+              <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                모든 변경 사항을 초기화하고 처음 제공된 6명 학생의 풍부한 샘플 시험 데이터로 되돌립니다.
+              </p>
+            </div>
+            <button onclick="App.confirmResetData()" class="mt-6 w-full py-2.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 font-semibold text-xs sm:text-sm hover:bg-rose-100 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span>샘플 데이터로 초기화</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Admin Tab 5: Vocab Set Management ================= -->
+      <div id="adminTabContentVocab" class="hidden space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">단어 세트 관리</h3>
+            <p class="text-xs text-slate-500 mt-0.5">단어 세트를 만들어 학생에게 배정하세요. 방향별 테스트 결과와 오답은 아래에서 확인할 수 있습니다.</p>
+          </div>
+          <button onclick="App.openVocabSetModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-plus"></i>
+            <span>새 단어 세트 추가</span>
+          </button>
+        </div>
+        <div id="adminVocabSetsList" class="space-y-4">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 4. VOCAB TEST VIEW (단어 테스트 뷰) -->
+    <!-- ========================================== -->
+    <section id="vocabTestView" class="hidden space-y-6">
+      <!-- Top Nav Bar -->
+      <div class="glass-card rounded-2xl p-4 flex items-center gap-4">
+        <button onclick="App.exitVocabTest()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>돌아가기</span>
+        </button>
+        <div id="vocabTestTopInfo" class="flex-1"><!-- JS --></div>
+      </div>
+      <!-- Test Content -->
+      <div id="vocabTestContent"><!-- JS --></div>
+    </section>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- Admin Vocab Tab Content (inside adminDashboardView, appended by JS) -->
+  <!-- ========================================== -->
+
+  <!-- Footer -->
+
+  <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>Made by. 송규인</p>
+      <p class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>로컬 스토리지 실시간 동기화 지원</span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- MODALS -->
+  <!-- ========================================== -->
+
+  <!-- 1. Admin Password Authentication Modal -->
+  <div id="adminAuthModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl modal-content transform scale-95 opacity-0 text-center border border-slate-100">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4 border border-indigo-100">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900">선생님 관리자 인증</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-6">설정을 변경하려면 관리자 비밀번호를 입력해주세요.</p>
+
+      <form onsubmit="App.handleAdminAuth(event)" class="space-y-4">
+        <div>
+          <input
+            type="password"
+            id="adminPasswordInput"
+            maxlength="10"
+            placeholder="● ● ● ● ● ●"
+            class="w-full py-3 px-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 pin-input bg-slate-50 text-slate-900"
+            autocomplete="current-password"
+            required
+          />
+          <p id="adminAuthError" class="text-xs text-rose-500 font-semibold mt-2 hidden">
+            <i class="fa-solid fa-circle-exclamation mr-1"></i>비밀번호가 올바르지 않습니다.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button type="button" onclick="App.closeAdminAuthModal()" class="py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition">
+            취소
+          </button>
+          <button type="submit" class="py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-200">
+            인증하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Test Details Modal (시험 상세 보기 모달) -->
+  <div id="testDetailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-6 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-indigo-300">
+            <i class="fa-solid fa-file-signature"></i>
+          </div>
+          <div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-400/30" id="detailModalStudentBadge">학생 이름</span>
+            <h3 class="text-lg font-bold mt-1 text-white" id="detailModalTitle">시험명</h3>
+          </div>
+        </div>
+        <button onclick="App.closeTestDetailModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto" id="detailModalBody">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+        <button onclick="App.closeTestDetailModal()" class="px-5 py-2 rounded-xl bg-slate-900 text-white font-semibold text-xs sm:text-sm hover:bg-slate-800 transition">
+          확인 완료
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Add / Edit Test Modal (선생님 시험 등록/수정 모달) -->
+  <div id="adminTestFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden">
+      <div class="p-6 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-lg text-white">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white" id="adminFormModalTitle">새 시험 일정 등록</h3>
+            <p class="text-xs text-slate-400">시험 일정, 범위, 커트라인 및 통과 여부를 설정합니다.</p>
+          </div>
+        </div>
+        <button onclick="App.closeAdminTestFormModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="App.handleSaveTestForm(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <input type="hidden" id="formTestId" />
+
+        <div class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-2">
+          <label class="block text-xs font-bold text-indigo-900">추가할 일정 유형</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-indigo-300 bg-white cursor-pointer text-xs font-bold text-indigo-800">
+              <input type="radio" name="formTestType" value="REGULAR" class="mr-1.5" checked onchange="App.toggleTestFormType()" /> 일반 시험
+            </label>
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-violet-300 bg-violet-50 cursor-pointer text-xs font-bold text-violet-800">
+              <input type="radio" name="formTestType" value="VOCAB" class="mr-1.5" onchange="App.toggleTestFormType()" /> 단어 테스트
+            </label>
+          </div>
+        </div>
+
+        <!-- Student Selector: Checkbox Grid for Add Mode, Single Select for Edit Mode -->
+        <div id="formStudentSection" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-800">
+                대상 학생 선택 <span class="text-rose-500">*</span>
+              </label>
+              <span id="formStudentSelectCount" class="text-[11px] text-indigo-600 font-semibold">1명 선택됨</span>
+            </div>
+            <div id="formStudentSelectAllActions" class="flex items-center gap-1.5">
+              <button type="button" onclick="App.toggleAllFormStudents(true)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition flex items-center gap-1">
+                <i class="fa-solid fa-check-double"></i> 전체 선택 (6명)
+              </button>
+              <button type="button" onclick="App.toggleAllFormStudents(false)" class="text-[11px] font-medium text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition">
+                선택 해제
+              </button>
+            </div>
+          </div>
+
+          <!-- Checkbox Grid for Multi-Select (Add Mode) -->
+          <div id="formStudentCheckboxGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <!-- Populated dynamically by JS -->
+          </div>
+
+          <!-- Single Select for Edit Mode (hidden in Add mode) -->
+          <div id="formStudentSingleSelectContainer" class="hidden">
+            <select id="formStudentId" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm bg-white font-medium">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div id="formTitleSection" class="form-regular-only">
+          <label class="block text-xs font-bold text-slate-700 mb-1">시험 제목 <span class="text-rose-500">*</span></label>
+          <input type="text" id="formTitle" placeholder="예: 수능특강 영단어 Day 1-5" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" required />
+        </div>
+
+        <div id="formVocabSetSection" class="hidden p-4 rounded-xl bg-violet-50/70 border border-violet-200 space-y-2">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <label class="text-xs font-bold text-violet-900"><i class="fa-solid fa-spell-check mr-1"></i>연결할 단어 세트</label>
+            <button type="button" onclick="App.openVocabSetFromTestForm()" class="text-[11px] font-bold text-violet-700 bg-white border border-violet-200 rounded-lg px-2.5 py-1 hover:bg-violet-100 transition"><i class="fa-solid fa-plus mr-1"></i>새 단어 세트 만들기</button>
+          </div>
+          <select id="formVocabSetId" class="w-full py-2.5 px-3 rounded-xl border border-violet-200 bg-white focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm"></select>
+          <p class="text-[11px] text-violet-700">단어 테스트 일정에 사용할 단어장을 선택하세요.</p>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">시험 날짜 <span class="text-rose-500">*</span></label>
+            <input type="date" id="formDate" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" required />
+          </div>
+          <div id="formTimeSection" class="form-regular-only">
+            <label class="block text-xs font-bold text-slate-700 mb-1">시험 시간</label>
+            <input type="time" id="formTime" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
+          </div>
+        </div>
+
+        <!-- Scope / Description -->
+        <div class="form-regular-only">
+          <label class="block text-xs font-bold text-slate-700 mb-1">시험 범위 및 상세 안내</label>
+          <textarea id="formScope" rows="2" placeholder="예: Day 1~5 표제어 150개 중 40문항 출제 (동의어/반의어 포함)" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"></textarea>
+        </div>
+
+        <!-- Cutoff & Score -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">커트라인 (기준점수) <span class="text-rose-500">*</span></label>
+            <input type="text" id="formCutoff" placeholder="예: 90점 이상 (36/40)" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" required />
+          </div>
+          <div class="form-regular-only">
+            <label class="block text-xs font-bold text-slate-700 mb-1">학생 획득 점수</label>
+            <input type="text" id="formScore" placeholder="예: 94점 (미응시 시 공란)" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
+          </div>
+        </div>
+
+        <!-- Test Pass Status -->
+        <div class="form-regular-only p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+          <label class="block text-xs font-bold text-slate-800">1차 본시험 결과 (통과 여부)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition text-xs font-semibold text-slate-700">
+              <input type="radio" name="formStatus" value="SCHEDULED" class="mr-1.5 text-indigo-600" checked />
+              <span>대기/예정</span>
+            </label>
+            <label class="flex items-center justify-center p-2 rounded-lg border border-emerald-200 bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 transition text-xs font-semibold text-emerald-700">
+              <input type="radio" name="formStatus" value="PASS" class="mr-1.5 text-emerald-600" />
+              <span>통과 (Pass)</span>
+            </label>
+            <label class="flex items-center justify-center p-2 rounded-lg border border-rose-200 bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 transition text-xs font-semibold text-rose-700">
+              <input type="radio" name="formStatus" value="FAIL" class="mr-1.5 text-rose-600" />
+              <span>불합격 (Fail)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Retest Section -->
+        <div class="form-regular-only p-4 rounded-xl bg-amber-50/60 border border-amber-200 space-y-3">
+          <label class="block text-xs font-bold text-amber-900">재시험 설정 및 결과 (통과 여부)</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label class="flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white cursor-pointer text-xs font-medium text-slate-700">
+              <input type="radio" name="formRetestStatus" value="NONE" class="mr-1.5" checked />
+              <span>해당없음</span>
+            </label>
+            <label class="flex items-center justify-center p-2 rounded-lg border border-amber-300 bg-amber-100/70 cursor-pointer text-xs font-semibold text-amber-800">
+              <input type="radio" name="formRetestStatus" value="RETEST_PENDING" class="mr-1.5" />
+              <span>재시험 대기</span>
+            </label>
+            <label class="flex items-center justify-center p-2 rounded-lg border border-emerald-300 bg-emerald-100/70 cursor-pointer text-xs font-semibold text-emerald-800">
+              <input type="radio" name="formRetestStatus" value="RETEST_PASS" class="mr-1.5" />
+              <span>재시험 통과</span>
+            </label>
+            <label class="flex items-center justify-center p-2 rounded-lg border border-rose-300 bg-rose-100/70 cursor-pointer text-xs font-semibold text-rose-800">
+              <input type="radio" name="formRetestStatus" value="RETEST_FAIL" class="mr-1.5" />
+              <span>재시험 탈락</span>
+            </label>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-amber-900 mb-1">재시험 예정일</label>
+            <input type="date" id="formRetestDate" class="w-full py-2 px-3 rounded-xl border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 text-xs" />
+          </div>
+        </div>
+
+        <!-- Teacher Note -->
+        <div class="form-regular-only">
+          <label class="block text-xs font-bold text-slate-700 mb-1">선생님 피드백 / 코멘트</label>
+          <textarea id="formTeacherNote" rows="2" placeholder="학생에게 전달할 격려의 말이나 취약점 복습 가이드를 작성하세요." class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"></textarea>
+        </div>
+
+        <!-- Submit Actions -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="App.closeAdminTestFormModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-200">
+            저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Vocab Set Modal (단어 세트 등록/수정 모달) -->
+  <div id="vocabSetModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
+      <!-- Modal Header -->
+      <div class="p-6 bg-gradient-to-r from-indigo-900 to-violet-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-spell-check text-indigo-200"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white" id="vocabModalTitle">새 단어 세트 등록</h3>
+            <p class="text-xs text-indigo-200">단어를 입력하고 대상 학생을 선택하세요</p>
+          </div>
+        </div>
+        <button onclick="App.closeVocabSetModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-5 overflow-y-auto flex-1">
+        <input type="hidden" id="vocabSetId" />
+
+        <!-- Set Title -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">세트 제목 <span class="text-rose-500">*</span></label>
+          <input type="text" id="vocabSetTitle" placeholder="예: 수능특강 Day 1-5 단어" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
+        </div>
+
+        <!-- Student Selector -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <label class="block text-xs font-bold text-slate-800">대상 학생 선택 <span class="text-rose-500">*</span></label>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="App.toggleAllVocabStudents(true)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition">전체 선택</button>
+              <button type="button" onclick="App.toggleAllVocabStudents(false)" class="text-[11px] font-medium text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition">선택 해제</button>
+            </div>
+          </div>
+          <div id="vocabStudentCheckboxGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Word List -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold text-slate-700">단어 목록 <span class="text-rose-500">*</span> <span class="text-slate-400 font-normal" id="vocabWordCount">(0개)</span></label>
+            <button type="button" onclick="App.addVocabWordRow()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> 단어 추가
+            </button>
+          </div>
+          <!-- Column Headers -->
+          <div class="grid grid-cols-[1fr_1fr_auto] gap-2 px-2 mb-1">
+            <span class="text-[11px] font-bold text-slate-500">영어 단어</span>
+            <span class="text-[11px] font-bold text-slate-500">한국어 뜻</span>
+            <span class="w-6"></span>
+          </div>
+          <div id="vocabWordRows" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
+        <button onclick="App.closeVocabSetModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition">취소</button>
+        <button onclick="App.handleSaveVocabSet()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-200">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer"></div>
+
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
