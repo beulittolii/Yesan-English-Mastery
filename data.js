@@ -867,6 +867,10 @@ const AppData = {
         localStorage.removeItem(LEGACY_STORAGE_KEYS.vocabTestResults);
       }
     }
+
+    // 이미 삭제된 단어 테스트에 남아 있는 고아 결과를 한 번 정리합니다.
+    // testId가 없는 구형 데이터는 건드리지 않습니다.
+    await this.cleanupOrphanVocabTestResults();
   },
 
   startCloudListeners() {
@@ -990,21 +994,28 @@ const AppData = {
 
   async deleteTest(testId) {
 
-    let tests =
-      this.getTests();
+    const existingTest =
+      this.getTests().find(t => t.id === testId);
 
-    tests =
-      tests.filter(
-        t => t.id !== testId
-      );
+    if (!existingTest) {
+      return;
+    }
 
-    FirebaseStore.tests = tests;
+    // 단어 테스트 일정이면 연결된 응시 결과도 함께 삭제합니다.
+    // 결과 문서는 testId를 기준으로 연결되어 있으므로
+    // 같은 단어 세트를 사용하는 다른 시험의 결과는 건드리지 않습니다.
     try {
+      await this.deleteVocabTestResultsByTestId(testId);
       await this.removeDocument('tests', testId);
     } catch (error) {
-      this.reportCloudWriteError('시험 일정', error);
+      this.reportCloudWriteError('시험 일정 또는 단어 테스트 결과', error);
       throw error;
     }
+
+    FirebaseStore.tests =
+      this.getTests().filter(
+        t => t.id !== testId
+      );
 
   },
 
@@ -1308,6 +1319,68 @@ const AppData = {
       result => this.getVocabTestResultDocumentId(result)
     );
     return FirebaseStore.vocabTestResults;
+  },
+
+  // 특정 단어 테스트 일정에 연결된 모든 응시 결과 삭제
+  async deleteVocabTestResultsByTestId(testId) {
+    const results = this.getVocabTestResults();
+    const targetResults = results.filter(result => result.testId === testId);
+
+    if (targetResults.length === 0) {
+      return 0;
+    }
+
+    try {
+      await Promise.all(
+        targetResults.map(result =>
+          this.removeDocument(
+            'vocabTestResults',
+            this.getVocabTestResultDocumentId(result)
+          )
+        )
+      );
+    } catch (error) {
+      console.error('❌ 연결된 단어 테스트 결과 삭제 실패:', error);
+      throw error;
+    }
+
+    FirebaseStore.vocabTestResults = results.filter(
+      result => result.testId !== testId
+    );
+
+    return targetResults.length;
+  },
+
+  async cleanupOrphanVocabTestResults() {
+    const tests = this.getTests();
+    const results = this.getVocabTestResults();
+    const validTestIds = new Set(tests.map(test => test.id));
+    const orphanResults = results.filter(
+      result => result.testId && !validTestIds.has(result.testId)
+    );
+
+    if (orphanResults.length === 0) return 0;
+
+    try {
+      await Promise.all(
+        orphanResults.map(result =>
+          this.removeDocument(
+            'vocabTestResults',
+            this.getVocabTestResultDocumentId(result)
+          )
+        )
+      );
+    } catch (error) {
+      console.error('❌ 고아 단어 테스트 결과 정리 실패:', error);
+      return 0;
+    }
+
+    FirebaseStore.vocabTestResults = results.filter(
+      result => !(result.testId && !validTestIds.has(result.testId))
+    );
+
+    console.log(`🧹 삭제된 시험에 연결된 단어 테스트 결과 ${orphanResults.length}건 정리 완료`);
+    return orphanResults.length;
   },
 
   async saveVocabTestResult(resultData) {
