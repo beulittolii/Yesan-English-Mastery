@@ -504,9 +504,12 @@ const App = {
     container.innerHTML = tests.map(test => {
       const dDay = this.calculateDDay(test.date);
       const badge = this.getTestBadgeStyle(test);
+      const detailHandler = test.type === 'VOCAB'
+        ? `App.openVocabTestScheduleModal('${test.id}')`
+        : `App.openTestDetailModal('${test.id}')`;
 
       return `
-        <div onclick="App.openTestDetailModal('${test.id}')" class="glass-card rounded-2xl p-5 hover:border-indigo-300 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div onclick="${detailHandler}" class="glass-card rounded-2xl p-5 hover:border-indigo-300 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${badge.class}">
@@ -659,7 +662,7 @@ const App = {
     document.getElementById('detailModalBody').innerHTML = `
       <div class="p-4 rounded-2xl bg-violet-50 border border-violet-200">
         <p class="text-xs font-bold text-violet-700">${this.escapeHtml(set.title)}</p>
-        <p class="text-xs text-slate-600 mt-1">${set.words.length}개 단어 · 문제당 제한시간 5초 · 커트라인 ${this.escapeHtml(test.cutoff)}</p>
+        <p class="text-xs text-slate-600 mt-1">${set.words.length}개 단어 · ${set.words.length >= 40 ? '매 응시 40개 무작위 출제 · ' : ''}문제당 제한시간 5초 · 커트라인 ${this.escapeHtml(test.cutoff)}</p>
       </div>
       <div class="space-y-2">
         <h4 class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-book-open text-violet-600"></i> 단어장</h4>
@@ -864,7 +867,7 @@ const App = {
   },
 
   // 빠른 상태 업데이트
-  quickUpdateTestStatus(testId, newStatus) {
+  async quickUpdateTestStatus(testId, newStatus) {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
     if (!test) return;
@@ -877,20 +880,28 @@ const App = {
       test.retestStatus = 'NONE';
     }
 
-    AppData.saveOrUpdateTest(test);
-    this.renderAdminTestsTab();
-    this.toast(`'${test.title}' 상태가 업데이트되었습니다.`, 'success');
+    try {
+      await AppData.saveOrUpdateTest(test);
+      this.renderAdminTestsTab();
+      this.toast(`'${test.title}' 상태가 업데이트되었습니다.`, 'success');
+    } catch (error) {
+      console.error(error);
+    }
   },
 
-  quickUpdateRetestStatus(testId, newRetestStatus) {
+  async quickUpdateRetestStatus(testId, newRetestStatus) {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
     if (!test) return;
 
     test.retestStatus = newRetestStatus;
-    AppData.saveOrUpdateTest(test);
-    this.renderAdminTestsTab();
-    this.toast(`'${test.title}' 재시험 상태가 업데이트되었습니다.`, 'success');
+    try {
+      await AppData.saveOrUpdateTest(test);
+      this.renderAdminTestsTab();
+      this.toast(`'${test.title}' 재시험 상태가 업데이트되었습니다.`, 'success');
+    } catch (error) {
+      console.error(error);
+    }
   },
 
   // 관리자 탭 2: 전체 6명 현황판 (Overview Matrix)
@@ -1010,7 +1021,7 @@ const App = {
     }).join('');
   },
 
-  handleSaveStudentProfile(studentId) {
+  async handleSaveStudentProfile(studentId) {
     const name = document.getElementById(`editStudentName_${studentId}`).value.trim();
     const target = document.getElementById(`editStudentTarget_${studentId}`).value.trim();
 
@@ -1019,8 +1030,13 @@ const App = {
       return;
     }
 
-    AppData.updateStudent({ id: studentId, name, target });
-    this.toast(`학생 #${studentId} 프로필이 저장되었습니다.`, 'success');
+    try {
+      await AppData.updateStudent({ id: studentId, name, target });
+      this.toast(`학생 #${studentId} 프로필이 저장되었습니다.`, 'success');
+    } catch (error) {
+      console.error(error);
+      this.toast('학생 프로필 저장에 실패했습니다.', 'error');
+    }
   },
 
   // ========================================================
@@ -1091,6 +1107,7 @@ const App = {
     document.getElementById('formTime').value = '18:00';
     document.getElementById('formScope').value = '';
     document.getElementById('formCutoff').value = '90점 이상';
+    document.getElementById('formVocabCutoff').value = '';
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
     document.getElementById('formTeacherNote').value = '';
@@ -1126,6 +1143,7 @@ const App = {
     document.getElementById('formTime').value = test.time || '';
     document.getElementById('formScope').value = test.scope || '';
     document.getElementById('formCutoff').value = test.cutoff || '';
+    document.getElementById('formVocabCutoff').value = test.vocabCutoff ?? this.getVocabCutoffScore(test);
     document.getElementById('formScore').value = test.score || '';
     document.getElementById('formRetestDate').value = test.retestDate || '';
     document.getElementById('formTeacherNote').value = test.teacherNote || '';
@@ -1168,17 +1186,21 @@ const App = {
     const isVocab = document.querySelector('input[name="formTestType"]:checked')?.value === 'VOCAB';
     document.querySelectorAll('.form-regular-only').forEach(element => element.classList.toggle('hidden', isVocab));
     document.getElementById('formVocabSetSection').classList.toggle('hidden', !isVocab);
+    document.getElementById('formVocabCutoffSection').classList.toggle('hidden', !isVocab);
     document.getElementById('formTimeSection').classList.toggle('hidden', isVocab);
     const title = document.getElementById('formTitle');
+    const regularCutoff = document.getElementById('formCutoff');
+    const vocabCutoff = document.getElementById('formVocabCutoff');
     title.required = !isVocab;
-    if (isVocab) document.getElementById('formCutoff').value = document.getElementById('formCutoff').value || '80점 이상';
+    regularCutoff.required = !isVocab;
+    vocabCutoff.required = isVocab;
   },
 
   closeAdminTestFormModal() {
     this.hideModal('adminTestFormModal');
   },
 
-  handleSaveTestForm(e) {
+  async handleSaveTestForm(e) {
     e.preventDefault();
 
     const id = document.getElementById('formTestId').value.trim();
@@ -1188,7 +1210,9 @@ const App = {
     const date = document.getElementById('formDate').value;
     const time = isVocabTest ? '' : document.getElementById('formTime').value.trim();
     const scope = isVocabTest ? '단어 세트 기반 5지선다 테스트' : document.getElementById('formScope').value.trim();
-    const cutoff = document.getElementById('formCutoff').value.trim();
+    const regularCutoff = document.getElementById('formCutoff').value.trim();
+    const vocabCutoff = Number(document.getElementById('formVocabCutoff').value);
+    const cutoff = isVocabTest ? `${vocabCutoff}점` : regularCutoff;
     const score = isVocabTest ? '' : document.getElementById('formScore').value.trim();
     const retestDate = isVocabTest ? '' : document.getElementById('formRetestDate').value;
     const teacherNote = isVocabTest ? '' : document.getElementById('formTeacherNote').value.trim();
@@ -1199,6 +1223,11 @@ const App = {
 
     if (!title || !date || !cutoff || (isVocabTest && !vocabSetId)) {
       this.toast(isVocabTest ? '단어 세트, 날짜, 커트라인은 필수 입력 항목입니다.' : '시험 제목, 날짜, 커트라인은 필수 입력 항목입니다.', 'error');
+      return;
+    }
+
+    if (isVocabTest && (!Number.isInteger(vocabCutoff) || vocabCutoff < 1 || vocabCutoff > 100)) {
+      this.toast('단어 시험 커트라인은 1~100점 사이의 정수로 입력해주세요.', 'error');
       return;
     }
 
@@ -1219,9 +1248,15 @@ const App = {
         retestDate,
         teacherNote,
         vocabSetId,
+        vocabCutoff: isVocabTest ? vocabCutoff : null,
         type: testType
       };
-      AppData.saveOrUpdateTest(testData);
+      try {
+        await AppData.saveOrUpdateTest(testData);
+      } catch (error) {
+        console.error(error);
+        return;
+      }
       this.closeAdminTestFormModal();
       this.toast(`'${title}' 일정이 성공적으로 수정되었습니다!`, 'success');
       this.state.adminSelectedStudentId = studentId;
@@ -1235,7 +1270,7 @@ const App = {
         return;
       }
 
-      selectedStudentIds.forEach(sId => {
+      const newTests = selectedStudentIds.map(sId => {
         const newTest = {
           studentId: sId,
           title,
@@ -1249,10 +1284,18 @@ const App = {
           retestDate,
           teacherNote,
           vocabSetId,
+          vocabCutoff: isVocabTest ? vocabCutoff : null,
           type: testType
         };
-        AppData.saveOrUpdateTest(newTest);
+        return AppData.saveOrUpdateTest(newTest);
       });
+
+      try {
+        await Promise.all(newTests);
+      } catch (error) {
+        console.error(error);
+        return;
+      }
 
       this.closeAdminTestFormModal();
 
@@ -1268,15 +1311,19 @@ const App = {
     this.renderAdminTestsTab();
   },
 
-  confirmDeleteTest(testId) {
+  async confirmDeleteTest(testId) {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
     if (!test) return;
 
     if (confirm(`'${test.title}' 시험 일정을 정말 삭제하시겠습니까?`)) {
-      AppData.deleteTest(testId);
-      this.toast('시험 일정이 삭제되었습니다.', 'info');
-      this.renderAdminTestsTab();
+      try {
+        await AppData.deleteTest(testId);
+        this.toast('시험 일정이 삭제되었습니다.', 'info');
+        this.renderAdminTestsTab();
+      } catch (error) {
+        console.error(error);
+      }
     }
   },
 
@@ -1303,10 +1350,10 @@ const App = {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const json = JSON.parse(e.target.result);
-        const ok = AppData.importData(json);
+        const ok = await AppData.importData(json);
         if (ok) {
           this.toast('데이터가 성공적으로 복원되었습니다!', 'success');
           this.renderAdminDashboard();
@@ -1315,18 +1362,23 @@ const App = {
         }
       } catch (err) {
         console.error(err);
-        this.toast('JSON 파일 파싱 중 오류가 발생했습니다.', 'error');
+        this.toast('데이터 복원 중 오류가 발생했습니다.', 'error');
       }
     };
     reader.readAsText(file);
     event.target.value = ''; // Reset input
   },
 
-  confirmResetData() {
+  async confirmResetData() {
     if (confirm('모든 시험 일정 및 학생 프로필을 기본 샘플 데이터로 초기화하시겠습니까? (이 작업은 되돌릴 수 없습니다)')) {
-      AppData.resetToDefaults();
-      this.toast('기본 샘플 데이터로 초기화되었습니다.', 'success');
-      this.renderAdminDashboard();
+      try {
+        await AppData.resetToDefaults();
+        this.toast('기본 샘플 데이터로 초기화되었습니다.', 'success');
+        this.renderAdminDashboard();
+      } catch (error) {
+        console.error(error);
+        this.toast('기본 데이터 초기화에 실패했습니다.', 'error');
+      }
     }
   },
 
@@ -1600,7 +1652,7 @@ const App = {
     if (el) el.innerText = `(${filled}개)`;
   },
 
-  handleSaveVocabSet() {
+  async handleSaveVocabSet() {
     const setId = document.getElementById('vocabSetId').value.trim();
     const title = document.getElementById('vocabSetTitle').value.trim();
     if (!title) { this.toast('세트 제목을 입력해주세요.', 'error'); return; }
@@ -1615,7 +1667,13 @@ const App = {
 
     if (words.length < 5) { this.toast('5지선다 시험을 위해 단어를 최소 5개 입력해주세요.', 'error'); return; }
 
-    const savedSet = AppData.saveOrUpdateVocabSet({ id: setId || undefined, title, studentIds: checkedStudents, words, createdAt: new Date().toISOString().split('T')[0] });
+    let savedSet;
+    try {
+      savedSet = await AppData.saveOrUpdateVocabSet({ id: setId || undefined, title, studentIds: checkedStudents, words, createdAt: new Date().toISOString().split('T')[0] });
+    } catch (error) {
+      console.error(error);
+      return;
+    }
     this.closeVocabSetModal();
     this.toast(`'${title}' 세트가 저장되었습니다! (${words.length}개 단어)`, 'success');
     if (this.state.vocabSetReturnToTestForm) {
@@ -1626,13 +1684,17 @@ const App = {
     }
   },
 
-  confirmDeleteVocabSet(setId) {
+  async confirmDeleteVocabSet(setId) {
     const set = AppData.getVocabSets().find(s => s.id === setId);
     if (!set) return;
     if (confirm(`'${set.title}' 단어 세트를 삭제하시겠습니까?`)) {
-      AppData.deleteVocabSet(setId);
-      this.toast('단어 세트가 삭제되었습니다.', 'info');
-      this.renderAdminVocabTab();
+      try {
+        await AppData.deleteVocabSet(setId);
+        this.toast('단어 세트가 삭제되었습니다.', 'info');
+        this.renderAdminVocabTab();
+      } catch (error) {
+        console.error(error);
+      }
     }
   },
 
@@ -1671,6 +1733,13 @@ const App = {
           <i class="fa-solid fa-circle-check"></i> ${label} · 완료
         </div>`;
     }
+    const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
+    if (scheduledTest && this.isVocabTestExpired(scheduledTest)) {
+      return `
+        <button onclick="App.notifyExpiredVocabTest()" class="w-full py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-clock"></i> ${label} · 응시 시간 종료
+        </button>`;
+    }
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
       const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
       return `<div class="w-full py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold text-center"><i class="fa-solid fa-clock mr-1"></i>${label} · ${minutes}분 후 재응시</div>`;
@@ -1682,11 +1751,24 @@ const App = {
       </button>`;
   },
 
+  isVocabTestExpired(test) {
+    return Boolean(test?.date) && test.date < this.getTodayDateString();
+  },
+
+  notifyExpiredVocabTest() {
+    this.toast('시험일이 지나 응시 시간이 종료되었습니다. 단어장은 계속 확인할 수 있습니다.', 'info');
+  },
+
   // ── 학생: 단어 테스트 시작 ──────────────────────────────
   startVocabTest(setId, studentId, direction, testId = null) {
     const set = AppData.getVocabSets().find(s => s.id === setId);
     if (!set || set.words.length < 5) { this.toast('단어가 부족합니다. (최소 5개)', 'error'); return; }
     if (![1, 2].includes(direction)) { this.toast('올바른 테스트 방향이 아닙니다.', 'error'); return; }
+    const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
+    if (scheduledTest && this.isVocabTestExpired(scheduledTest)) {
+      this.notifyExpiredVocabTest();
+      return;
+    }
     const existingResult = AppData.getVocabTestResult(studentId, setId, direction, testId);
     if (existingResult?.passed) {
       this.toast('완료된 테스트는 다시 볼 수 없습니다.', 'info');
@@ -1698,14 +1780,16 @@ const App = {
       return;
     }
 
+    const testWords = this.selectVocabTestWords(set.words);
     this.state.vocabTest = {
       setId,
       studentId: Number(studentId),
       setTitle: set.title,
       testId,
-      allWords: set.words,
+      allWords: testWords,
+      sourceWordCount: set.words.length,
       direction,
-      questions: this.buildVocabQuestions(set.words, direction),
+      questions: this.buildVocabQuestions(testWords, direction, set.words),
       currentIndex: 0,
       score: 0,
       timerId: null,
@@ -1717,15 +1801,27 @@ const App = {
     this.renderVocabQuestion();
   },
 
-  buildVocabQuestions(words, direction) {
-    // 모든 단어를 섞어 문제 생성
-    const shuffled = [...words].sort(() => Math.random() - 0.5);
+  shuffleItems(items) {
+    const shuffled = [...items];
+    for (let index = shuffled.length - 1; index > 0; index--) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+    }
+    return shuffled;
+  },
+
+  selectVocabTestWords(words) {
+    return this.shuffleItems(words).slice(0, Math.min(words.length, 40));
+  },
+
+  buildVocabQuestions(words, direction, choicePool = words) {
+    const shuffled = this.shuffleItems(words);
     return shuffled.map(word => {
       // 이 단어를 제외한 나머지에서 오답 4개 추출
-      const others = words.filter(w => w !== word).sort(() => Math.random() - 0.5).slice(0, 4);
+      const others = this.shuffleItems(choicePool.filter(w => w !== word)).slice(0, 4);
       const correctChoice = direction === 1 ? word.en : word.ko;
       const wrongChoices = others.map(w => direction === 1 ? w.en : w.ko);
-      const allChoices = [correctChoice, ...wrongChoices].sort(() => Math.random() - 0.5);
+      const allChoices = this.shuffleItems([correctChoice, ...wrongChoices]);
       return {
         question: direction === 1 ? word.ko : word.en,
         correct: correctChoice,
@@ -1847,34 +1943,39 @@ const App = {
     }, 900);
   },
 
-  renderVocabResult() {
+  async renderVocabResult() {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
     const total = vt.allWords.length;
     const score = Math.round((vt.score / total) * 100);
     const directionLabel = vt.direction === 1 ? '한글 → 영어' : '영어 → 한글';
     const test = vt.testId && AppData.getTests().find(item => item.id === vt.testId);
-    const cutoffScore = this.getVocabCutoffScore(test?.cutoff);
+    const cutoffScore = this.getVocabCutoffScore(test);
     const passed = score >= cutoffScore;
     const wrongAnswers = vt.questions.filter(q => q.answered !== q.correct).map(q => ({
       question: q.question,
       answer: q.answered || '시간 초과',
       correct: q.correct
     }));
-    AppData.saveVocabTestResult({
-      studentId: vt.studentId,
-      setId: vt.setId,
-      testId: vt.testId,
-      direction: vt.direction,
-      score,
-      correctCount: vt.score,
-      total,
-      passed,
-      wrongAnswers,
-      retryAvailableAt: passed ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      completedAt: new Date().toISOString()
-    });
-    if (test) this.updateVocabScheduleStatus(test.id);
+    try {
+      await AppData.saveVocabTestResult({
+        studentId: vt.studentId,
+        setId: vt.setId,
+        testId: vt.testId,
+        direction: vt.direction,
+        score,
+        correctCount: vt.score,
+        total,
+        passed,
+        wrongAnswers,
+        retryAvailableAt: passed ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        completedAt: new Date().toISOString()
+      });
+      if (test) await this.updateVocabScheduleStatus(test.id);
+    } catch (error) {
+      console.error(error);
+      return;
+    }
 
     document.getElementById('vocabTestTopInfo').innerHTML = `
       <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)} — 테스트 완료</span>`;
@@ -1909,12 +2010,18 @@ const App = {
     this.selectStudent(studentId);
   },
 
-  getVocabCutoffScore(cutoff) {
-    const match = String(cutoff || '').match(/(\d+)\s*점/);
-    return match ? Number(match[1]) : 80;
+  getVocabCutoffScore(test) {
+    const configuredCutoff = Number(test?.vocabCutoff);
+    if (Number.isInteger(configuredCutoff) && configuredCutoff >= 1 && configuredCutoff <= 100) {
+      return configuredCutoff;
+    }
+
+    const match = String(test?.cutoff || '').match(/(\d+)/);
+    const legacyCutoff = match ? Number(match[1]) : null;
+    return Number.isInteger(legacyCutoff) && legacyCutoff >= 1 && legacyCutoff <= 100 ? legacyCutoff : 80;
   },
 
-  updateVocabScheduleStatus(testId) {
+  async updateVocabScheduleStatus(testId) {
     const test = AppData.getTests().find(item => item.id === testId);
     if (!test || test.type !== 'VOCAB') return;
     const results = AppData.getVocabTestResults().filter(result => result.testId === testId);
@@ -1926,7 +2033,7 @@ const App = {
       .map(result => `${result.direction === 1 ? '한→영' : '영→한'} ${result.score}점`)
       .join(' · ');
     test.retestStatus = 'NONE';
-    AppData.saveOrUpdateTest(test);
+    await AppData.saveOrUpdateTest(test);
   },
 
 
@@ -1944,10 +2051,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('👨‍🎓 학생 데이터 준비 완료');
     console.log('학생 목록:', AppData.getStudents());
 
-    // 2. Firestore 학생 데이터 실시간 감시 시작
-    AppData.startStudentListener();
+    // 2. 시험 / 단어 데이터도 Firestore에서 준비
+    await AppData.initializeCloudData();
 
-    // 3. 기존 앱 시작
+    // 3. Firestore 실시간 감시 시작
+    AppData.startStudentListener();
+    AppData.startCloudListeners();
+
+    // 4. 기존 앱 시작
     App.init();
 
     console.log('✅ 사이트 초기화 완료');
