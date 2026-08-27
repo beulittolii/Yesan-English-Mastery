@@ -1932,7 +1932,33 @@ const App = {
 
 };
 
-// 페이지 로드 시 앱 시작
-document.addEventListener('DOMContentLoaded', () => {
-  App.init();
+document.addEventListener('DOMContentLoaded', async () => {
+
+  console.log('🚀 사이트 초기화 시작');
+
+  try {
+
+    // 1. Firestore에서 학생 데이터 불러오기
+    await AppData.initializeStudents();
+
+    console.log('👨‍🎓 학생 데이터 준비 완료');
+    console.log('학생 목록:', AppData.getStudents());
+
+    // 2. Firestore 학생 데이터 실시간 감시 시작
+    AppData.startStudentListener();
+
+    // 3. 기존 앱 시작
+    App.init();
+
+    console.log('✅ 사이트 초기화 완료');
+
+  } catch (error) {
+
+    console.error('❌ 사이트 초기화 실패:', error);
+
+    // Firebase 오류가 발생하더라도
+    // 기존 사이트 화면은 실행
+    App.init();
+  }
+
 });
