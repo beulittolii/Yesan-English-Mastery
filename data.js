@@ -1,11 +1,9 @@
 /**
  * 영어과외 관리 웹사이트 - 기본 데이터 및 저장소 관리
  *
- * 현재 구조
- * - 학생 데이터: Firebase Cloud Firestore
- * - 시험 데이터: 기존 localStorage
- * - 단어 세트: 기존 localStorage
- * - 단어 테스트 결과: 기존 localStorage
+ * 현재 구조: 모든 앱 데이터는 Firebase Cloud Firestore에 저장됩니다.
+ * 기존 localStorage 데이터는 Firestore 컬렉션이 비어 있는 첫 실행 때만
+ * 안전하게 이전한 뒤 제거합니다.
  *
  * Firestore 구조
  * students/
@@ -17,21 +15,28 @@
  *   6
  */
 
-const STORAGE_KEY_STUDENTS = 'eng_tutoring_students';
-const STORAGE_KEY_TESTS = 'eng_tutoring_tests';
-const STORAGE_KEY_VOCAB = 'eng_tutoring_vocab_sets';
-const STORAGE_KEY_VOCAB_TEST_RESULTS = 'eng_tutoring_vocab_test_results';
+const LEGACY_STORAGE_KEYS = {
+  tests: 'eng_tutoring_tests',
+  vocabSets: 'eng_tutoring_vocab_sets',
+  vocabTestResults: 'eng_tutoring_vocab_test_results'
+};
 const ADMIN_PASSWORD = '090927';
 
 
 // ========================================================
-// Firebase 학생 데이터 캐시
+// Firebase 데이터 캐시
 // ========================================================
 
 const FirebaseStore = {
   students: [],
+  tests: [],
+  vocabSets: [],
+  vocabTestResults: [],
   studentsLoaded: false,
-  studentListenerStarted: false
+  studentListenerStarted: false,
+  testsListenerStarted: false,
+  vocabSetsListenerStarted: false,
+  vocabTestResultsListenerStarted: false
 };
 
 
@@ -718,37 +723,175 @@ const AppData = {
 
 
   // ======================================================
+  // 공통 Firestore 컬렉션 도우미
+  // ======================================================
+
+  getLegacyArray(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      const value = raw ? JSON.parse(raw) : null;
+      return Array.isArray(value) ? value : null;
+    } catch (error) {
+      console.warn(`기존 ${key} 데이터를 읽지 못했습니다.`, error);
+      return null;
+    }
+  },
+
+  async loadCollection(collectionName, normalize = item => item) {
+    if (!this.isFirebaseReady()) {
+      throw new Error('Firebase가 준비되지 않았습니다.');
+    }
+
+    const { collection, getDocs } = window.firebaseFns;
+    const snapshot = await getDocs(collection(window.firebaseDB, collectionName));
+    return snapshot.docs.map(document => normalize({
+      ...document.data(),
+      id: document.data().id || document.id
+    }));
+  },
+
+  async writeDocument(collectionName, id, data) {
+    if (!this.isFirebaseReady()) {
+      throw new Error('Firebase가 준비되지 않았습니다.');
+    }
+
+    const { collection, doc, setDoc } = window.firebaseFns;
+    await setDoc(doc(collection(window.firebaseDB, collectionName), String(id)), data);
+  },
+
+  async removeDocument(collectionName, id) {
+    if (!this.isFirebaseReady()) {
+      throw new Error('Firebase가 준비되지 않았습니다.');
+    }
+
+    const { collection, doc, deleteDoc } = window.firebaseFns;
+    await deleteDoc(doc(collection(window.firebaseDB, collectionName), String(id)));
+  },
+
+  async replaceCollection(collectionName, items, getId) {
+    if (!this.isFirebaseReady()) {
+      throw new Error('Firebase가 준비되지 않았습니다.');
+    }
+
+    const { collection, doc, getDocs, setDoc, deleteDoc } = window.firebaseFns;
+    const db = window.firebaseDB;
+    const targetIds = new Set(items.map(item => String(getId(item))));
+    const existing = await getDocs(collection(db, collectionName));
+
+    await Promise.all([
+      ...items.map(item => setDoc(
+        doc(collection(db, collectionName), String(getId(item))),
+        item
+      )),
+      ...existing.docs
+        .filter(document => !targetIds.has(document.id))
+        .map(document => deleteDoc(document.ref))
+    ]);
+  },
+
+  startCollectionListener({ collectionName, cacheKey, listenerKey, normalize, sort }) {
+    if (FirebaseStore[listenerKey] || !this.isFirebaseReady()) return;
+
+    const { collection, onSnapshot } = window.firebaseFns;
+    onSnapshot(collection(window.firebaseDB, collectionName), snapshot => {
+      const items = snapshot.docs.map(document => normalize({
+        ...document.data(),
+        id: document.data().id || document.id
+      }));
+      if (sort) items.sort(sort);
+      FirebaseStore[cacheKey] = items;
+      this.refreshCloudScreens();
+    }, error => {
+      console.error(`Firestore ${collectionName} 실시간 동기화 실패:`, error);
+    });
+
+    FirebaseStore[listenerKey] = true;
+  },
+
+  refreshCloudScreens() {
+    if (typeof App === 'undefined' || !App.state) return;
+
+    if (App.state.view === 'landing') App.renderLanding?.();
+    if (App.state.view === 'student') App.renderStudentDashboard?.();
+    if (App.state.view === 'admin') App.renderAdminDashboard?.();
+  },
+
+  reportCloudWriteError(label, error) {
+    console.error(`${label} Firestore 저장 실패:`, error);
+    if (typeof App !== 'undefined' && typeof App.toast === 'function') {
+      App.toast(`${label} 저장에 실패했습니다. 인터넷 연결과 Firebase 권한을 확인해주세요.`, 'error');
+    }
+  },
+
+
+  // ======================================================
+  // 시험 / 단어 데이터 최초 초기화 및 실시간 동기화
+  // ======================================================
+
+  async initializeCloudData() {
+    const [tests, vocabSets, vocabTestResults] = await Promise.all([
+      this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })),
+      this.loadCollection('vocabSets', set => ({
+        ...set,
+        studentIds: (set.studentIds || []).map(Number)
+      })),
+      this.loadCollection('vocabTestResults', result => ({
+        ...result,
+        studentId: Number(result.studentId),
+        direction: Number(result.direction)
+      }))
+    ]);
+
+    FirebaseStore.tests = tests;
+    FirebaseStore.vocabSets = vocabSets;
+    FirebaseStore.vocabTestResults = vocabTestResults;
+
+    if (tests.length === 0) {
+      const legacyTests = this.getLegacyArray(LEGACY_STORAGE_KEYS.tests);
+      await this.saveTests(legacyTests || generateDefaultTests());
+      if (legacyTests) localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
+    }
+
+    if (vocabSets.length === 0) {
+      const legacySets = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabSets);
+      if (legacySets) {
+        await this.saveVocabSets(legacySets);
+        localStorage.removeItem(LEGACY_STORAGE_KEYS.vocabSets);
+      }
+    }
+
+    if (vocabTestResults.length === 0) {
+      const legacyResults = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabTestResults);
+      if (legacyResults) {
+        await this.saveVocabTestResults(legacyResults);
+        localStorage.removeItem(LEGACY_STORAGE_KEYS.vocabTestResults);
+      }
+    }
+  },
+
+  startCloudListeners() {
+    this.startCollectionListener({
+      collectionName: 'tests', cacheKey: 'tests', listenerKey: 'testsListenerStarted',
+      normalize: test => ({ ...test, studentId: Number(test.studentId) }),
+      sort: (a, b) => new Date(a.date) - new Date(b.date)
+    });
+    this.startCollectionListener({
+      collectionName: 'vocabSets', cacheKey: 'vocabSets', listenerKey: 'vocabSetsListenerStarted',
+      normalize: set => ({ ...set, studentIds: (set.studentIds || []).map(Number) })
+    });
+    this.startCollectionListener({
+      collectionName: 'vocabTestResults', cacheKey: 'vocabTestResults', listenerKey: 'vocabTestResultsListenerStarted',
+      normalize: result => ({ ...result, studentId: Number(result.studentId), direction: Number(result.direction) })
+    });
+  },
+
+
+  // ======================================================
   // 시험 목록 가져오기
   // ======================================================
 
   getTests() {
-
-    try {
-
-      const data =
-        localStorage.getItem(
-          STORAGE_KEY_TESTS
-        );
-
-      if (data) {
-        return JSON.parse(data);
-      }
-
-    } catch (e) {
-
-      console.error(
-        'Failed to parse tests from localStorage',
-        e
-      );
-
-    }
-
-    const defaultTests =
-      generateDefaultTests();
-
-    this.saveTests(defaultTests);
-
-    return defaultTests;
+    return FirebaseStore.tests;
   },
 
 
@@ -756,13 +899,10 @@ const AppData = {
   // 시험 목록 저장
   // ======================================================
 
-  saveTests(tests) {
-
-    localStorage.setItem(
-      STORAGE_KEY_TESTS,
-      JSON.stringify(tests)
-    );
-
+  async saveTests(tests) {
+    FirebaseStore.tests = tests.map(test => ({ ...test, studentId: Number(test.studentId) }));
+    await this.replaceCollection('tests', FirebaseStore.tests, test => test.id);
+    return FirebaseStore.tests;
   },
 
 
@@ -794,7 +934,7 @@ const AppData = {
   // 시험 추가 또는 수정
   // ======================================================
 
-  saveOrUpdateTest(testData) {
+  async saveOrUpdateTest(testData) {
 
     const tests =
       this.getTests();
@@ -832,7 +972,13 @@ const AppData = {
       }
     }
 
-    this.saveTests(tests);
+    FirebaseStore.tests = tests;
+    try {
+      await this.writeDocument('tests', testData.id, testData);
+    } catch (error) {
+      this.reportCloudWriteError('시험 일정', error);
+      throw error;
+    }
 
     return testData;
   },
@@ -842,7 +988,7 @@ const AppData = {
   // 시험 삭제
   // ======================================================
 
-  deleteTest(testId) {
+  async deleteTest(testId) {
 
     let tests =
       this.getTests();
@@ -852,7 +998,13 @@ const AppData = {
         t => t.id !== testId
       );
 
-    this.saveTests(tests);
+    FirebaseStore.tests = tests;
+    try {
+      await this.removeDocument('tests', testId);
+    } catch (error) {
+      this.reportCloudWriteError('시험 일정', error);
+      throw error;
+    }
 
   },
 
@@ -903,13 +1055,9 @@ const AppData = {
     const defTests =
       generateDefaultTests();
 
-    this.saveTests(
-      defTests
-    );
-
-    localStorage.removeItem(
-      STORAGE_KEY_VOCAB_TEST_RESULTS
-    );
+    await this.saveTests(defTests);
+    await this.saveVocabSets([]);
+    await this.saveVocabTestResults([]);
 
   },
 
@@ -960,9 +1108,7 @@ const AppData = {
         importedObj.students
       );
 
-      this.saveTests(
-        importedObj.tests
-      );
+      await this.saveTests(importedObj.tests);
 
       if (
         Array.isArray(
@@ -970,9 +1116,9 @@ const AppData = {
         )
       ) {
 
-        this.saveVocabSets(
-          importedObj.vocabSets
-        );
+        await this.saveVocabSets(importedObj.vocabSets);
+      } else {
+        await this.saveVocabSets([]);
 
       }
 
@@ -982,18 +1128,11 @@ const AppData = {
         )
       ) {
 
-        localStorage.setItem(
-          STORAGE_KEY_VOCAB_TEST_RESULTS,
-          JSON.stringify(
-            importedObj.vocabTestResults
-          )
-        );
+        await this.saveVocabTestResults(importedObj.vocabTestResults);
 
       } else {
 
-        localStorage.removeItem(
-          STORAGE_KEY_VOCAB_TEST_RESULTS
-        );
+        await this.saveVocabTestResults([]);
 
       }
 
@@ -1010,42 +1149,21 @@ const AppData = {
   // ======================================================
 
   getVocabSets() {
-
-    try {
-
-      const data =
-        localStorage.getItem(
-          STORAGE_KEY_VOCAB
-        );
-
-      if (data) {
-        return JSON.parse(data);
-      }
-
-    } catch (e) {
-
-      console.error(
-        'Failed to parse vocab sets',
-        e
-      );
-
-    }
-
-    return [];
+    return FirebaseStore.vocabSets;
   },
 
 
-  saveVocabSets(sets) {
-
-    localStorage.setItem(
-      STORAGE_KEY_VOCAB,
-      JSON.stringify(sets)
-    );
-
+  async saveVocabSets(sets) {
+    FirebaseStore.vocabSets = sets.map(set => ({
+      ...set,
+      studentIds: (set.studentIds || []).map(Number)
+    }));
+    await this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id);
+    return FirebaseStore.vocabSets;
   },
 
 
-  saveOrUpdateVocabSet(setData) {
+  async saveOrUpdateVocabSet(setData) {
 
     const sets =
       this.getVocabSets();
@@ -1083,15 +1201,19 @@ const AppData = {
       }
     }
 
-    this.saveVocabSets(
-      sets
-    );
+    FirebaseStore.vocabSets = sets;
+    try {
+      await this.writeDocument('vocabSets', setData.id, setData);
+    } catch (error) {
+      this.reportCloudWriteError('단어 세트', error);
+      throw error;
+    }
 
     return setData;
   },
 
 
-  deleteVocabSet(setId) {
+  async deleteVocabSet(setId) {
 
     let sets =
       this.getVocabSets();
@@ -1101,9 +1223,13 @@ const AppData = {
         s => s.id !== setId
       );
 
-    this.saveVocabSets(
-      sets
-    );
+    FirebaseStore.vocabSets = sets;
+    try {
+      await this.removeDocument('vocabSets', setId);
+    } catch (error) {
+      this.reportCloudWriteError('단어 세트', error);
+      throw error;
+    }
 
   },
 
@@ -1128,28 +1254,7 @@ const AppData = {
   // ======================================================
 
   getVocabTestResults() {
-
-    try {
-
-      const data =
-        localStorage.getItem(
-          STORAGE_KEY_VOCAB_TEST_RESULTS
-        );
-
-      if (data) {
-        return JSON.parse(data);
-      }
-
-    } catch (e) {
-
-      console.error(
-        'Failed to parse vocab test results',
-        e
-      );
-
-    }
-
-    return [];
+    return FirebaseStore.vocabTestResults;
   },
 
 
@@ -1182,7 +1287,30 @@ const AppData = {
   },
 
 
-  saveVocabTestResult(resultData) {
+  getVocabTestResultDocumentId(result) {
+    return [
+      Number(result.studentId),
+      encodeURIComponent(String(result.setId)),
+      Number(result.direction),
+      encodeURIComponent(String(result.testId || 'none'))
+    ].join('_');
+  },
+
+  async saveVocabTestResults(results) {
+    FirebaseStore.vocabTestResults = results.map(result => ({
+      ...result,
+      studentId: Number(result.studentId),
+      direction: Number(result.direction)
+    }));
+    await this.replaceCollection(
+      'vocabTestResults',
+      FirebaseStore.vocabTestResults,
+      result => this.getVocabTestResultDocumentId(result)
+    );
+    return FirebaseStore.vocabTestResults;
+  },
+
+  async saveVocabTestResult(resultData) {
 
     const results =
       this.getVocabTestResults();
@@ -1263,10 +1391,18 @@ const AppData = {
     }
 
 
-    localStorage.setItem(
-      STORAGE_KEY_VOCAB_TEST_RESULTS,
-      JSON.stringify(results)
-    );
+    FirebaseStore.vocabTestResults = results;
+    const savedResult = results[index >= 0 ? index : results.length - 1];
+    try {
+      await this.writeDocument(
+        'vocabTestResults',
+        this.getVocabTestResultDocumentId(savedResult),
+        savedResult
+      );
+    } catch (error) {
+      this.reportCloudWriteError('단어 테스트 결과', error);
+      throw error;
+    }
 
     return resultData;
 
