@@ -20,7 +20,8 @@ const LEGACY_STORAGE_KEYS = {
   vocabSets: 'eng_tutoring_vocab_sets',
   vocabTestResults: 'eng_tutoring_vocab_test_results'
 };
-const ADMIN_PASSWORD = '090927';
+const TEACHER_LOGIN_ID = 'admin';
+const TEACHER_PASSWORD = '1357';
 
 
 // ========================================================
@@ -48,32 +49,44 @@ const DEFAULT_STUDENTS = [
   {
     id: 1,
     name: '김민준',
-    target: '수능 1등급 & 내신 1등급'
+    target: '수능 1등급 & 내신 1등급',
+    loginId: 'student1',
+    password: '1234'
   },
   {
     id: 2,
     name: '이서연',
-    target: '내신 영어 100점 & 모의고사 1등급'
+    target: '내신 영어 100점 & 모의고사 1등급',
+    loginId: 'student2',
+    password: '1234'
   },
   {
     id: 3,
     name: '박도현',
-    target: '고등 선행 문법 & 천일문 마스터'
+    target: '고등 선행 문법 & 천일문 마스터',
+    loginId: 'student3',
+    password: '1234'
   },
   {
     id: 4,
     name: '최지우',
-    target: '수능 어휘 완성 & 구문 독해 정복'
+    target: '수능 어휘 완성 & 구문 독해 정복',
+    loginId: 'student4',
+    password: '1234'
   },
   {
     id: 5,
     name: '정현우',
-    target: '수능 연계 교재 완벽 분석'
+    target: '수능 연계 교재 완벽 분석',
+    loginId: 'student5',
+    password: '1234'
   },
   {
     id: 6,
     name: '한유진',
-    target: '내신 영문법 기초 & 필수 단어 1500'
+    target: '내신 영문법 기초 & 필수 단어 1500',
+    loginId: 'student6',
+    password: '1234'
   }
 ];
 
@@ -412,30 +425,17 @@ const AppData = {
 
     try {
 
-      const {
-        collection,
-        doc,
-        setDoc
-      } = window.firebaseFns;
-
-      const db = window.firebaseDB;
-
       // 캐시 먼저 업데이트
       FirebaseStore.students = [...students];
       FirebaseStore.studentsLoaded = true;
 
-      // Firestore에 각각의 학생 저장
-      for (const student of students) {
-
-        await setDoc(
-          doc(
-            collection(db, 'students'),
-            String(student.id)
-          ),
-          student
-        );
-
-      }
+      // 현재 학생 목록으로 Firestore 컬렉션을 동기화합니다.
+      // 목록에서 제거된 학생 문서도 함께 정리되어 학생 삭제가 반영됩니다.
+      await this.replaceCollection(
+        'students',
+        students,
+        student => student.id
+      );
 
       console.log(
         `✅ Firestore 학생 데이터 저장 완료 (${students.length}명)`
@@ -550,6 +550,25 @@ const AppData = {
         console.log(
           '✅ 기본 학생 데이터 초기 저장 완료'
         );
+      } else {
+        // 기존 프로필 선택 방식에서 사용하던 학생 문서에
+        // 로그인 정보가 없을 때만 최초 로그인용 기본 계정을 부여합니다.
+        const migratedStudents = students.map(student => ({
+          ...student,
+          loginId: student.loginId || `student${student.id}`,
+          password: /^\d{4}$/.test(String(student.password || ''))
+            ? String(student.password)
+            : '1234'
+        }));
+        const needsCredentialMigration = migratedStudents.some((student, index) =>
+          student.loginId !== students[index].loginId ||
+          student.password !== students[index].password
+        );
+
+        if (needsCredentialMigration) {
+          await this.saveStudents(migratedStudents);
+          console.log('✅ 기존 학생 계정에 로그인 정보 초기 설정 완료');
+        }
       }
 
       return FirebaseStore.students;
@@ -756,7 +775,8 @@ const AppData = {
     }
 
     const { collection, doc, setDoc } = window.firebaseFns;
-    await setDoc(doc(collection(window.firebaseDB, collectionName), String(id)), data);
+    const cleanData = JSON.parse(JSON.stringify(data, (key, value) => value === undefined ? null : value));
+    await setDoc(doc(collection(window.firebaseDB, collectionName), String(id)), cleanData);
   },
 
   async removeDocument(collectionName, id) {
@@ -1050,6 +1070,61 @@ const AppData = {
     }
 
     return null;
+  },
+
+
+  // ======================================================
+  // 학생 계정 추가 / 삭제
+  // ======================================================
+
+  async addStudent(studentData) {
+    const students = this.getStudents();
+    const nextId = students.reduce(
+      (maxId, student) => Math.max(maxId, Number(student.id) || 0),
+      0
+    ) + 1;
+    const newStudent = {
+      id: nextId,
+      name: studentData.name,
+      target: studentData.target || '',
+      loginId: studentData.loginId,
+      password: studentData.password
+    };
+
+    await this.saveStudents([...students, newStudent]);
+    return newStudent;
+  },
+
+  async deleteStudent(studentId) {
+    const normalizedStudentId = Number(studentId);
+    const students = this.getStudents();
+    if (!students.some(student => student.id === normalizedStudentId)) {
+      return false;
+    }
+
+    const remainingStudents = students.filter(
+      student => student.id !== normalizedStudentId
+    );
+    const remainingTests = this.getTests().filter(
+      test => Number(test.studentId) !== normalizedStudentId
+    );
+    const remainingVocabSets = this.getVocabSets().map(set => ({
+      ...set,
+      studentIds: (set.studentIds || []).filter(
+        id => Number(id) !== normalizedStudentId
+      )
+    }));
+    const remainingVocabResults = this.getVocabTestResults().filter(
+      result => Number(result.studentId) !== normalizedStudentId
+    );
+
+    await Promise.all([
+      this.saveStudents(remainingStudents),
+      this.saveTests(remainingTests),
+      this.saveVocabSets(remainingVocabSets),
+      this.saveVocabTestResults(remainingVocabResults)
+    ]);
+    return true;
   },
 
 
@@ -1421,6 +1496,10 @@ const AppData = {
 
       wrongAnswers:
         resultData.wrongAnswers || [],
+
+      startedAt:
+        resultData.startedAt ||
+        resultData.completedAt,
 
       completedAt:
         resultData.completedAt
