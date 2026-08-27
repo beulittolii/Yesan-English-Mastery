@@ -24,7 +24,8 @@ const App = {
       timerId: null,
       timeRemaining: 5
     },
-    vocabSetReturnToTestForm: false
+    vocabSetReturnToTestForm: false,
+    vocabResultSelectedDate: null
   },
 
   // 초기화 (Init)
@@ -399,7 +400,6 @@ const App = {
           testsHtml += `
             <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="단어장 확인 및 단어 테스트 시작">
               <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">단어 테스트</span></div>
-              <span class="text-[10px] font-bold opacity-80 whitespace-nowrap">${badgeStyle.tag}</span>
             </div>`;
         }
         return;
@@ -1490,80 +1490,255 @@ const App = {
   renderAdminVocabTab() {
     const container = document.getElementById('adminVocabSetsList');
     if (!container) return;
-    const sets = AppData.getVocabSets();
-    const students = AppData.getStudents();
 
-    if (sets.length === 0) {
+    const results = AppData.getVocabTestResults();
+    const tests = AppData.getTests().filter(test => test.type === 'VOCAB');
+    const students = AppData.getStudents();
+    const sets = AppData.getVocabSets();
+
+    // 결과의 실제 응시일(completedAt)을 기준으로 날짜별로 묶습니다.
+    // 아직 결과가 없는 일정도 날짜 위젯에서 확인할 수 있도록 시험일도 포함합니다.
+    const dateSet = new Set();
+
+    tests.forEach(test => {
+      if (test.date) dateSet.add(test.date);
+    });
+
+    results.forEach(result => {
+      const date = this.getVocabResultDate(result);
+      if (date) dateSet.add(date);
+    });
+
+    const dates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
+
+    if (dates.length === 0) {
       container.innerHTML = `
         <div class="glass-card rounded-2xl p-12 text-center text-slate-400">
-          <i class="fa-solid fa-spell-check text-4xl mb-3 opacity-30"></i>
-          <p class="text-sm font-semibold">등록된 단어 세트가 없습니다.</p>
-          <p class="text-xs mt-1">위의 '새 단어 세트 추가' 버튼을 눌러 만들어보세요.</p>
+          <i class="fa-solid fa-calendar-days text-4xl mb-3 opacity-30"></i>
+          <p class="text-sm font-semibold">아직 등록된 단어 테스트 일정이나 결과가 없습니다.</p>
+          <p class="text-xs mt-1">시험 일정에서 단어 테스트를 추가하면 날짜별 결과가 여기에 표시됩니다.</p>
         </div>`;
       return;
     }
 
-    container.innerHTML = sets.map(set => {
-      const assignedNames = (set.studentIds || [])
-        .map(id => { const s = students.find(st => st.id === id); return s ? s.name : ''; })
-        .filter(Boolean).join(', ');
-      const resultsHtml = (set.studentIds || []).map(studentId => {
-        const student = students.find(s => s.id === studentId);
-        const studentResults = AppData.getVocabTestResults().filter(result => result.setId === set.id && result.studentId === studentId);
-        if (!student) return '';
-        if (studentResults.length === 0) {
-          return `<div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500"><strong class="text-slate-700">${this.escapeHtml(student.name)}</strong> · 미응시</div>`;
-        }
-        return studentResults.map(result => {
-          const directionLabel = result.direction === 1 ? '한글 → 영어' : '영어 → 한글';
-          const wrongAnswers = result.wrongAnswers || [];
-          return `
-            <div class="p-3 rounded-xl border ${result.passed ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'} space-y-2">
-              <div class="flex items-center justify-between gap-3 text-xs">
-                <span class="font-bold text-slate-800">${this.escapeHtml(student.name)} · ${directionLabel}</span>
-                <span class="font-black ${result.passed ? 'text-emerald-700' : 'text-amber-700'}">${result.score}점 (${result.correctCount ?? '-'} / ${result.total}) · ${result.passed ? '완료' : '재응시 가능'}</span>
-              </div>
-              <p class="text-[11px] text-slate-500">응시 ${result.attempts ? result.attempts.length : 1}회 · ${new Date(result.completedAt).toLocaleString('ko-KR')}</p>
-              ${wrongAnswers.length ? `
-                <details class="text-xs">
-                  <summary class="cursor-pointer font-semibold text-rose-600">오답 ${wrongAnswers.length}개 보기</summary>
-                  <div class="mt-2 space-y-1.5 text-slate-700">
-                    ${wrongAnswers.map((wrong, index) => `<div class="rounded-lg bg-white/80 p-2 border border-rose-100"><strong>${index + 1}. ${this.escapeHtml(wrong.question)}</strong><br><span class="text-rose-600">학생 답: ${this.escapeHtml(wrong.answer)}</span><br><span class="text-emerald-700">정답: ${this.escapeHtml(wrong.correct)}</span></div>`).join('')}
-                  </div>
-                </details>` : '<p class="text-xs font-semibold text-emerald-700">오답 없음</p>'}
-            </div>`;
-        }).join('');
-      }).join('');
+    if (!this.state.vocabResultSelectedDate || !dates.includes(this.state.vocabResultSelectedDate)) {
+      this.state.vocabResultSelectedDate = dates[0];
+    }
+
+    const selectedDate = this.state.vocabResultSelectedDate;
+
+    const dateCardsHtml = dates.map(date => {
+      const dateResults = results.filter(result => this.getVocabResultDate(result) === date);
+      const dateTests = tests.filter(test => test.date === date);
+      const uniqueStudentIds = new Set([
+        ...dateResults.map(result => Number(result.studentId)),
+        ...dateTests.map(test => Number(test.studentId))
+      ]);
+      const passed = dateResults.filter(result => result.passed).length;
+      const resultCount = dateResults.length;
+      const isSelected = date === selectedDate;
+      const [, month, day] = date.split('-');
+
       return `
-        <div class="glass-card rounded-2xl p-5 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="space-y-1.5">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
-                <i class="fa-solid fa-book mr-1"></i>${this.escapeHtml(set.title)}
-              </span>
-              <span class="text-xs text-slate-500">${(set.words || []).length}개 단어</span>
+        <button onclick="App.selectVocabResultDate('${date}')"
+          class="text-left rounded-2xl border-2 p-4 transition ${isSelected
+            ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
+            : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'}">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">시험 결과</p>
+              <p class="text-2xl font-black text-slate-900 mt-0.5">${Number(month)}/${Number(day)}</p>
             </div>
-            <p class="text-xs text-slate-600">
-              <i class="fa-solid fa-users text-slate-400 mr-1"></i>
-              배정: <strong>${assignedNames || '없음'}</strong>
-            </p>
+            <span class="w-9 h-9 rounded-xl ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'} flex items-center justify-center">
+              <i class="fa-solid fa-calendar-check"></i>
+            </span>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="App.openVocabSetModal('${set.id}')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
-              <i class="fa-solid fa-pen"></i> 수정
-            </button>
-            <button onclick="App.confirmDeleteVocabSet('${set.id}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition flex items-center gap-1 border border-rose-200">
-              <i class="fa-solid fa-trash"></i> 삭제
-            </button>
+          <div class="mt-3 flex items-center gap-1.5 flex-wrap">
+            <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold">학생 ${uniqueStudentIds.size}명</span>
+            <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold">통과 ${passed}명</span>
+            <span class="px-2 py-1 rounded-lg bg-violet-50 text-violet-700 text-[11px] font-bold">결과 ${resultCount}건</span>
           </div>
-          </div>
-          <div class="border-t border-slate-100 pt-4 space-y-2">
-            <p class="text-xs font-bold text-slate-700"><i class="fa-solid fa-chart-simple text-indigo-500 mr-1"></i>학생별 테스트 결과</p>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">${resultsHtml || '<p class="text-xs text-slate-400">배정된 학생이 없습니다.</p>'}</div>
-          </div>
-        </div>`;
+        </button>`;
     }).join('');
+
+    const selectedTests = tests.filter(test => test.date === selectedDate);
+    const selectedResults = results.filter(result => this.getVocabResultDate(result) === selectedDate);
+
+    // 선택 날짜에 실제로 존재하는 학생/시험을 기준으로 카드 생성합니다.
+    // 결과가 없는 학생은 미응시로 표시합니다.
+    const studentCards = students.map(student => {
+      const studentTests = selectedTests.filter(test => Number(test.studentId) === Number(student.id));
+      const studentResults = selectedResults.filter(result => Number(result.studentId) === Number(student.id));
+
+      if (studentTests.length === 0 && studentResults.length === 0) return '';
+
+      if (studentResults.length === 0) {
+        const testNames = studentTests.map(test => this.escapeHtml(test.title || '단어 테스트')).join(', ');
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="font-extrabold text-slate-900">${this.escapeHtml(student.name)}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${testNames || '단어 테스트'}</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">미응시</span>
+            </div>
+          </div>`;
+      }
+
+      const resultHtml = studentResults.map(result => {
+        const test = tests.find(item => item.id === result.testId);
+        const set = sets.find(item => item.id === result.setId);
+        const directionLabel = Number(result.direction) === 1 ? '한글 → 영어' : '영어 → 한글';
+        const wrongAnswers = result.wrongAnswers || [];
+        const attemptCount = result.attempts ? result.attempts.length : 1;
+        const completedTime = result.completedAt
+          ? new Date(result.completedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          : '-';
+
+        return `
+          <div class="rounded-xl border ${result.passed ? 'border-emerald-200 bg-emerald-50/70' : 'border-amber-200 bg-amber-50/70'} p-3.5 space-y-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <p class="font-bold text-slate-900 text-sm">${this.escapeHtml(test?.title || '단어 테스트')}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${this.escapeHtml(set?.title || '연결된 단어 세트')} · ${directionLabel}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-lg font-black ${result.passed ? 'text-emerald-700' : 'text-amber-700'}">${result.score}점</p>
+                <span class="text-[11px] font-bold ${result.passed ? 'text-emerald-700' : 'text-amber-700'}">${result.passed ? 'PASS' : '재응시 가능'}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
+              <span>정답 ${result.correctCount ?? '-'} / ${result.total ?? '-'}문제</span>
+              <span>·</span>
+              <span>${attemptCount}회 응시</span>
+              <span>·</span>
+              <span>${completedTime}</span>
+            </div>
+            ${wrongAnswers.length ? `
+              <details class="text-xs pt-1">
+                <summary class="cursor-pointer font-bold text-rose-600">오답 ${wrongAnswers.length}개 보기</summary>
+                <div class="mt-2 space-y-1.5">
+                  ${wrongAnswers.map((wrong, index) => `
+                    <div class="rounded-lg bg-white/80 p-2 border border-rose-100">
+                      <strong>${index + 1}. ${this.escapeHtml(wrong.question)}</strong><br>
+                      <span class="text-rose-600">학생 답: ${this.escapeHtml(wrong.answer)}</span><br>
+                      <span class="text-emerald-700">정답: ${this.escapeHtml(wrong.correct)}</span>
+                    </div>`).join('')}
+                </div>
+              </details>` : '<p class="text-xs font-semibold text-emerald-700">오답 없음</p>'}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 text-white flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div>
+              <p class="font-extrabold text-slate-900">${this.escapeHtml(student.name)}</p>
+              <p class="text-[11px] text-slate-400">학생 #${student.id}</p>
+            </div>
+          </div>
+          <div class="space-y-2">${resultHtml}</div>
+        </div>`;
+    }).filter(Boolean).join('');
+
+    container.innerHTML = `
+      <div class="glass-card rounded-2xl p-5 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-days text-indigo-600"></i>
+              날짜별 단어 테스트 결과
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">날짜를 선택하면 해당 날짜의 각 학생 시험 결과를 확인할 수 있습니다.</p>
+          </div>
+          <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">${dates.length}개 날짜</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">${dateCardsHtml}</div>
+      </div>
+
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-xs font-bold text-indigo-600">선택한 날짜</p>
+            <h3 class="text-xl font-black text-slate-900 mt-0.5">${this.formatVocabResultDateLong(selectedDate)}</h3>
+          </div>
+          <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">${selectedResults.length}건 결과</span>
+        </div>
+        ${studentCards || `
+          <div class="rounded-2xl bg-slate-50 border border-slate-200 p-8 text-center text-slate-400">
+            <i class="fa-solid fa-user-clock text-3xl mb-2 opacity-30"></i>
+            <p class="text-sm font-semibold">이 날짜에는 표시할 학생 결과가 없습니다.</p>
+          </div>`}
+      </div>
+
+      <div class="glass-card rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-book text-violet-600"></i>
+              단어 세트
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">단어 세트 자체의 수정/삭제는 여기서 계속 관리합니다.</p>
+          </div>
+          <button onclick="App.openVocabSetModal()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition">
+            <i class="fa-solid fa-plus mr-1"></i> 새 단어 세트
+          </button>
+        </div>
+        ${sets.length ? `
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            ${sets.map(set => {
+              const assignedNames = (set.studentIds || [])
+                .map(id => students.find(st => st.id === id)?.name || '')
+                .filter(Boolean).join(', ');
+              return `
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="font-bold text-slate-900 text-sm">${this.escapeHtml(set.title)}</p>
+                      <p class="text-[11px] text-slate-500 mt-1">${(set.words || []).length}개 단어 · ${this.escapeHtml(assignedNames || '배정 학생 없음')}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <button onclick="App.openVocabSetModal('${set.id}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-100">수정</button>
+                      <button onclick="App.confirmDeleteVocabSet('${set.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold hover:bg-rose-100">삭제</button>
+                    </div>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>` : `
+          <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400">등록된 단어 세트가 없습니다.</div>`}
+      </div>`;
+  },
+
+  selectVocabResultDate(date) {
+    this.state.vocabResultSelectedDate = date;
+    this.renderAdminVocabTab();
+  },
+
+  getVocabResultDate(result) {
+    if (result?.completedAt) {
+      const date = new Date(result.completedAt);
+      if (!Number.isNaN(date.getTime())) {
+        return this.formatDate(date);
+      }
+    }
+
+    if (result?.testId) {
+      const test = AppData.getTests().find(item => item.id === result.testId);
+      if (test?.date) return test.date;
+    }
+
+    return '';
+  },
+
+  formatVocabResultDateLong(dateString) {
+    const [year, month, day] = String(dateString).split('-').map(Number);
+    if (!year || !month || !day) return dateString;
+    return `${year}년 ${month}월 ${day}일`;
   },
 
   // ── 관리자: 단어 세트 모달 열기 ──────────────────────────
