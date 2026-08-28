@@ -50,7 +50,7 @@ const App = {
         e.returnValue = '시험 진행 중 페이지를 벗어나면 불합격(0점) 처리됩니다.';
       }
       const pt = this.state.practiceTest;
-      if (this.state.view === 'practiceTest' && pt && pt.testId) {
+      if (this.state.view === 'practiceTest' && pt && pt.testId && !pt.isCompleted) {
         this.forceFailPracticeTest();
         e.preventDefault();
         e.returnValue = '시험 진행 중 페이지를 벗어나면 0점 불합격 처리됩니다.';
@@ -495,15 +495,25 @@ const App = {
     // 해당 날짜에 있는 시험 필터링 (본시험 날짜이거나 재시험 날짜인 경우)
     const dayTests = studentTests.filter(t => t.date === dateStr || t.retestDate === dateStr);
 
+    // 무조건 일반 시험 -> 문제풀이 시험 -> 단어 시험 순서로 정렬
+    const typeOrder = { 'REGULAR': 1, 'PRACTICE': 2, 'VOCAB': 3 };
+    dayTests.sort((a, b) => {
+      const orderA = typeOrder[a.type] || 1;
+      const orderB = typeOrder[b.type] || 1;
+      return orderA - orderB;
+    });
+
     let testsHtml = '';
     dayTests.forEach(test => {
       if (test.type === 'VOCAB') {
         if (test.date === dateStr) {
           const badgeStyle = this.getTestBadgeStyle(test, false);
           const vocabCalendarLabel = '단어 테스트';
+          const showTag = badgeStyle.tag && badgeStyle.tag.includes('재시험');
           testsHtml += `
             <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="단어 테스트 · ${badgeStyle.tag}">
               <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
+              ${showTag ? `<span class="text-[10px] font-bold opacity-80 whitespace-nowrap">${badgeStyle.tag}</span>` : ''}
             </div>`;
         }
         return;
@@ -511,15 +521,18 @@ const App = {
       if (test.type === 'PRACTICE') {
         if (test.date === dateStr) {
           const badgeStyle = this.getTestBadgeStyle(test, false);
+          const showTag = badgeStyle.tag && badgeStyle.tag.includes('재시험');
           testsHtml += `
             <div onclick="App.openPracticeTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="문제풀이 시험 확인 및 응시">
               <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-pen-to-square"></i></span><span class="truncate">${this.escapeHtml(test.title || '문제풀이 시험')}</span></div>
+              ${showTag ? `<span class="text-[10px] font-bold opacity-80 whitespace-nowrap">${badgeStyle.tag}</span>` : ''}
             </div>`;
         }
         return;
       }
       const isRetestDay = test.retestDate === dateStr && test.date !== dateStr;
       const badgeStyle = this.getTestBadgeStyle(test, isRetestDay);
+      const showTag = badgeStyle.tag && badgeStyle.tag.includes('재시험');
       
       testsHtml += `
         <div onclick="App.openTestDetailModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="클릭하여 상세 정보 확인">
@@ -527,7 +540,7 @@ const App = {
             <span>${badgeStyle.icon}</span>
             <span class="truncate">${this.escapeHtml(test.title)}</span>
           </div>
-          <span class="text-[10px] font-bold opacity-80 whitespace-nowrap">${badgeStyle.tag}</span>
+          ${showTag ? `<span class="text-[10px] font-bold opacity-80 whitespace-nowrap">${badgeStyle.tag}</span>` : ''}
         </div>
       `;
     });
@@ -559,18 +572,20 @@ const App = {
       }
     }
 
-    // 단어 테스트를 끝내지 못한 채 마감된 경우에는 예정/불합격 대신
-    // 달력에서도 명확히 '마감' 상태를 표시한다.
-    if (test.type === 'VOCAB' && test.status !== 'PASS' && this.getTestTimeStatus(test).status === 'EXPIRED') {
-      return { class: 'bg-rose-100 text-rose-800 border border-rose-300', icon: '⏰', tag: '마감' };
+    // 1. 통과/완료된 시험은 응시 가능 시간 여부와 무관하게 무조건 '완료'
+    if (test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed) {
+      return { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', icon: '✅', tag: '완료' };
     }
 
-    if (test.status === 'PASS') {
-      return { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', icon: '✅', tag: '통과' };
-    } else if (test.status === 'FAIL') {
-      if (test.retestStatus === 'RETEST_PASS') {
-        return { class: 'bg-emerald-50 text-emerald-700 border border-emerald-200', icon: '✨', tag: '재시험합격' };
-      } else if (test.retestStatus === 'RETEST_PENDING') {
+    // 단어 테스트 마감 처리
+    if (test.type === 'VOCAB') {
+      if (this.getTestTimeStatus(test).status === 'EXPIRED') {
+        return { class: 'bg-rose-100 text-rose-800 border border-rose-300', icon: '⏰', tag: '마감' };
+      }
+    }
+
+    if (test.status === 'FAIL') {
+      if (test.retestStatus === 'RETEST_PENDING') {
         return { class: 'bg-amber-100 text-amber-800 border border-amber-300', icon: '⚠️', tag: '재시험대기' };
       } else {
         return { class: 'bg-rose-100 text-rose-800 border border-rose-300', icon: '❌', tag: '불합격' };
@@ -622,7 +637,7 @@ const App = {
     }
 
     container.innerHTML = tests.map(test => {
-      const dDay = this.calculateDDay(test.date);
+      const dDayBadge = this.getTestDDayBadge(test);
       const badge = this.getTestBadgeStyle(test);
       const detailHandler = test.type === 'VOCAB'
         ? `App.openVocabTestScheduleModal('${test.id}')`
@@ -640,7 +655,7 @@ const App = {
               <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
                 <i class="fa-regular fa-calendar"></i> ${test.date} ${test.time ? `(${test.time})` : ''}
               </span>
-              <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${dDay}</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded ${dDayBadge.class}">${dDayBadge.text}</span>
             </div>
             <h4 class="text-base font-bold text-slate-900">${this.escapeHtml(test.title)}</h4>
             <p class="text-xs text-slate-600 line-clamp-1">${this.escapeHtml(test.scope || '시험 범위 미기재')}</p>
@@ -678,7 +693,7 @@ const App = {
     }
 
     const student = AppData.getStudentById(test.studentId);
-    const dDay = this.calculateDDay(test.date);
+    const dDayBadge = this.getTestDDayBadge(test);
 
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생` : '학생 시험 상세';
     document.getElementById('detailModalTitle').innerText = test.title;
@@ -718,7 +733,7 @@ const App = {
             <div class="text-sm font-bold text-slate-900">${test.date} ${test.time ? `(${test.time})` : ''}</div>
           </div>
         </div>
-        <span class="px-3 py-1 rounded-full font-black text-xs ${dDay === 'D-Day' ? 'bg-rose-500 text-white' : 'bg-indigo-600 text-white'}">${dDay}</span>
+        <span class="px-3 py-1 rounded-full text-xs ${dDayBadge.class}">${dDayBadge.text}</span>
       </div>
 
       <!-- Scope Section -->
@@ -727,9 +742,7 @@ const App = {
           <i class="fa-solid fa-book-open text-indigo-500"></i>
           <span>시험 범위 및 상세 설명</span>
         </h4>
-        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
-          ${this.escapeHtml(test.scope || '별도의 시험 범위 설명이 등록되지 않았습니다.')}
-        </div>
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-line leading-relaxed">${this.escapeHtml((test.scope || '별도의 시험 범위 설명이 등록되지 않았습니다.').trim())}</div>
       </div>
 
       <!-- Cutoff vs Score Grid -->
@@ -764,17 +777,6 @@ const App = {
         </div>
       </div>
 
-      <!-- Teacher Feedback Section -->
-      <div class="space-y-1.5">
-        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-          <i class="fa-solid fa-comment-dots text-indigo-500"></i>
-          <span>선생님 피드백 & 복습 가이드</span>
-        </h4>
-        <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
-          ${this.escapeHtml(test.teacherNote || '선생님의 코멘트가 아직 등록되지 않았습니다.')}
-        </div>
-      </div>
-
       ${Boolean(this.state.isAdminLoggedIn) ? `
         <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
           <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
@@ -802,14 +804,15 @@ const App = {
     const isAdmin = Boolean(this.state.isAdminLoggedIn);
     const student = AppData.getStudentById(test.studentId);
     const timeStatus = this.getTestTimeStatus(test);
-    const statusBadge = test.allowLate
-      ? { class: 'bg-emerald-100 text-emerald-800', label: '⚡ 상시 응시 허용됨' }
-      : (timeStatus.status === 'EXPIRED'
-          ? { class: 'bg-rose-100 text-rose-800', label: '마감' }
-          : (timeStatus.status === 'NOT_STARTED'
-              ? { class: 'bg-blue-100 text-blue-800', label: '시작 전' }
-              : (timeStatus.status === 'COMPLETED'
-                  ? { class: 'bg-emerald-100 text-emerald-800', label: '완료됨' }
+    const isPassed = test.status === 'PASS';
+    const statusBadge = isPassed
+      ? { class: 'bg-emerald-100 text-emerald-800', label: '완료' }
+      : (test.allowLate
+          ? { class: 'bg-emerald-100 text-emerald-800', label: '⚡ 상시 응시 허용됨' }
+          : (timeStatus.status === 'EXPIRED'
+              ? { class: 'bg-rose-100 text-rose-800', label: '마감' }
+              : (timeStatus.status === 'NOT_STARTED'
+                  ? { class: 'bg-blue-100 text-blue-800', label: '시작 전' }
                   : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' })));
     const baseTimeStr = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : (test.endTime ? `~ ${test.endTime}까지` : '23:59까지');
     const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
@@ -829,7 +832,7 @@ const App = {
             test.extendedDate
               ? ` · 마감: <strong>${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장됨)</strong>`
               : (test.endTime ? ` · 마감: <strong>${test.endTime}</strong>` : '')
-          } · ${set.words.length}개 단어 · 커트라인 <strong>${this.escapeHtml(test.cutoff || '미지정')}</strong>
+          } · <strong>${set.words.length}개 단어</strong>
         </p>
       </div>
 
@@ -870,13 +873,22 @@ const App = {
       <div class="space-y-2">
         <h4 class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-book-open text-violet-600"></i> 단어장</h4>
         <div class="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
-          ${set.words.map((word, index) => `<div class="grid grid-cols-[2rem_1fr_1fr] gap-2 p-3 text-xs"><span class="font-bold text-slate-400">${index + 1}</span><strong class="text-slate-800 break-words">${this.escapeHtml(word.en)}</strong><span class="text-slate-600 break-words">${this.escapeHtml(word.ko)}</span></div>`).join('')}
+          ${set.words.map((word, index) => `
+            <div class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 p-2.5 sm:p-3 text-xs hover:bg-slate-50 transition">
+              <span class="font-bold text-slate-400">${index + 1}</span>
+              <strong class="text-slate-800 break-words">${this.escapeHtml(word.en)}</strong>
+              <span class="text-slate-600 break-words">${this.escapeHtml(word.ko)}</span>
+              <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
+                <i class="fa-solid fa-volume-high text-[11px]"></i>
+              </button>
+            </div>`).join('')}
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        ${this.renderVocabTestButton(set, test.studentId, 1, '한글 → 영어', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
-        ${this.renderVocabTestButton(set, test.studentId, 2, '영어 → 한글', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        ${this.renderVocabTestButton(set, test.studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
+        ${this.renderVocabTestButton(set, test.studentId, 3, '스펠링', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
+        ${this.renderVocabTestButton(set, test.studentId, 4, '통합', 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200', test.id)}
       </div>
 
       ${isAdmin ? `
@@ -911,7 +923,10 @@ const App = {
     document.getElementById('extendCurrentDeadline').innerText = deadlineText;
 
     const badge = document.getElementById('extendCurrentStatusBadge');
-    if (test.allowLate) {
+    if (test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed) {
+      badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
+      badge.innerText = '완료';
+    } else if (test.allowLate) {
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
       badge.innerText = '상시 허용';
     } else if (timeStatus.status === 'EXPIRED') {
@@ -922,7 +937,7 @@ const App = {
       badge.innerText = '시작 전';
     } else {
       badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800';
-      badge.innerText = '진행 중';
+      badge.innerText = '응시 가능';
     }
 
     // 기본 타겟 날짜 & 시간 채우기 (원래 날짜는 건드리지 않고 연장일시만 세팅)
@@ -1150,22 +1165,38 @@ const App = {
     const effectiveEndTime = (test.extendedEndTime && String(test.extendedEndTime).trim()) ? String(test.extendedEndTime).trim() : (test.endTime || '23:59:59');
     const endDateTime = this.parseDateTime(effectiveEndDate, effectiveEndTime, true) || new Date(`${effectiveEndDate}T23:59:59`);
 
+    // 1. 이미 통과(PASS)한 경우 시간과 무관하게 무조건 '완료' (COMPLETED)
+    if (test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed) {
+      return { status: 'COMPLETED', label: '완료', canStart: false, message: '이미 통과한 시험입니다.' };
+    }
+
+    // 2. 재시험 허용된 문제풀이 시험은 본시험 종료시간이 지나도 언제든 재응시 가능
+    if (test.type === 'PRACTICE' && test.allowRetest && test.practiceResult && !test.practiceResult.passed) {
+      return { status: 'IN_PROGRESS', label: '재시험 응시 가능', canStart: true, message: '' };
+    }
+
     if (test.allowLate) {
       return { status: 'IN_PROGRESS', label: '응시 가능 (상시 허용)', canStart: true, message: '' };
     }
 
-    // 마감이 지난 경우 (어제 시험 등)
+    // 3. 마감이 지난 경우 (미통과 상태에서 시간 종료)
     if (now > endDateTime) {
       return {
         status: 'EXPIRED',
-        label: '응시 시간 종료',
+        label: '마감',
         canStart: false,
-        message: '응시 시간이 종료되었습니다.'
+        message: '응시 시간이 마감되었습니다.'
       };
     }
 
-    if (test.status === 'PASS' || test.practiceResult?.passed) {
-      return { status: 'COMPLETED', label: '통과 완료 (PASS)', canStart: false, message: '이미 통과한 시험입니다.' };
+    // 4. 단어 테스트(VOCAB)는 시험 날짜 이전이라도 언제든 사전 응시 가능
+    if (test.type === 'VOCAB') {
+      return {
+        status: 'IN_PROGRESS',
+        label: '응시 가능 (사전 응시 가능)',
+        canStart: true,
+        message: ''
+      };
     }
 
     if (now < startDateTime) {
@@ -1259,19 +1290,21 @@ const App = {
               <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${result.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${result.passed ? 'PASS 통과' : '불합격'}</span>
             </div>
 
-            ${!result.passed ? `
-              <div class="p-3 rounded-xl border ${test.allowRetest ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-slate-50 border-slate-200 text-slate-500'} text-xs text-center font-medium">
-                ${test.allowRetest
-                  ? '<strong class="text-indigo-700 font-bold">✨ 선생님이 재시험을 허용했습니다. 다시 도전해보세요!</strong>'
-                  : '<i class="fa-solid fa-lock mr-1"></i>커트라인 미달로 불합격하였습니다. 빽빽이 검사 후 다시 풀 수 있습니다.'}
-              </div>
-            ` : ''}
-
-            ${!result.passed && test.allowRetest ? `
-              <button onclick="App.startPracticeTest('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+            ${!result.passed ? (test.allowRetest ? `
+              <!-- 재시험 허용 시 즉시 재시험 응시하기 버튼 노출 -->
+              <button onclick="App.startPracticeTest('${test.id}')" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
                 <i class="fa-solid fa-rotate-right"></i> 재시험 응시하기
               </button>
-            ` : ''}
+            ` : `
+              <div class="p-3 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-xs text-center font-medium">
+                <i class="fa-solid fa-book-open mr-1"></i>불합격 처리되었습니다. 아래에서 오답과 해설을 확인하고 복습하세요.
+              </div>
+            `) : ''}
+
+            <!-- 풀이 답안 및 오답 해설 보기 (합격/불합격/재시험 관계없이 항상 확인 가능) -->
+            <button onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+              <i class="fa-solid fa-file-circle-check text-indigo-400"></i> ${result.passed ? '풀이 답안 및 해설 보기' : '오답노트 및 정답·해설 보기'}
+            </button>
           </div>
         `;
       } else if (isCompleted) {
@@ -1393,8 +1426,11 @@ const App = {
       return;
     }
 
+    const isRetest = Boolean(test.practiceResult && !test.practiceResult.passed && test.allowRetest);
     const timeStatus = this.getTestTimeStatus(test);
-    if (!timeStatus.canStart && !test.practiceResult) {
+
+    // 재시험이 아닌 일반 최초 응시일 때만 본시험 시간 체크 (재시험은 종료 시간 무관하게 응시 가능)
+    if (!isRetest && !timeStatus.canStart && !test.practiceResult) {
       this.toast(timeStatus.message || '현재 응시할 수 없는 시간입니다.', 'error');
       return;
     }
@@ -1421,7 +1457,8 @@ const App = {
       cutoffScore: cutoffScore,
       currentIndex: 0,
       answers: {},
-      startedAt: new Date().toISOString()
+      startedAt: new Date().toISOString(),
+      isCompleted: false
     };
 
     this.showPracticeTestView();
@@ -1623,6 +1660,7 @@ const App = {
       }
     }
 
+    pt.isCompleted = true;
     this.renderPracticeResult(practiceResult, test);
   },
 
@@ -1741,16 +1779,21 @@ const App = {
       return;
     }
     this.closeTestDetailModal();
+    this.state.practiceTest = {
+      testId: test.id,
+      studentId: Number(test.studentId),
+      isCompleted: true
+    };
     this.showPracticeTestView();
     this.renderPracticeResult(test.practiceResult, test);
   },
 
-  // 시험 도중 나가기/창닫기 시 0점 불합격 강제 처리
+  // 시험 도중 나가기/창닫기 시 0점 불합격 강제 처리 (진행 중일 때만)
   forceFailPracticeTest() {
     const pt = this.state.practiceTest;
-    if (!pt || !pt.testId) return;
+    if (!pt || !pt.testId || pt.isCompleted) return;
 
-    const total = pt.questions.length;
+    const total = pt.questions?.length || 0;
     const completedAt = new Date().toISOString();
     const practiceResult = {
       studentId: pt.studentId,
@@ -1760,13 +1803,13 @@ const App = {
       totalCount: total,
       passed: false,
       cutoffScore: pt.cutoffScore,
-      answers: pt.answers,
-      reviewItems: pt.questions.map((q, idx) => ({
+      answers: pt.answers || {},
+      reviewItems: (pt.questions || []).map((q, idx) => ({
         questionNumber: idx + 1,
         question: q.question,
         passage: q.passage || '',
         choices: q.choices || [],
-        studentAnswer: pt.answers[idx] || null,
+        studentAnswer: pt.answers?.[idx] || null,
         correctAnswer: Number(q.answer),
         isCorrect: false,
         explanation: q.explanation || ''
@@ -1785,11 +1828,12 @@ const App = {
       test.allowRetest = false;
       AppData.saveOrUpdateTest(test).catch(e => console.error('강제 불합격 저장 실패:', e));
     }
+    pt.isCompleted = true;
   },
 
   exitPracticeTest() {
     const pt = this.state.practiceTest;
-    if (pt && pt.testId) {
+    if (pt && pt.testId && !pt.isCompleted) {
       if (!confirm('시험을 종료하면 0점 불합격 처리됩니다.\n정말 나가시겠습니까?')) return;
       this.forceFailPracticeTest();
     }
@@ -1803,7 +1847,8 @@ const App = {
       cutoffScore: 80,
       currentIndex: 0,
       answers: {},
-      startedAt: null
+      startedAt: null,
+      isCompleted: false
     };
     if (this.state.isStudentLoggedIn) {
       this.selectStudent(studentId);
@@ -2390,8 +2435,8 @@ const App = {
     if (selectAllActions) selectAllActions.classList.remove('hidden');
     if (checkboxGrid) checkboxGrid.classList.remove('hidden');
 
-    // 현재 관리자 선택 학생을 기본 체크
-    this.renderStudentCheckboxes([this.state.adminSelectedStudentId || 1]);
+    // 처음엔 모두 해제 상태로 시작
+    this.renderStudentCheckboxes([]);
 
     // 기본 폼 값 초기화
     document.getElementById('formTitle').value = '';
@@ -2400,7 +2445,9 @@ const App = {
     document.getElementById('formEndTime').value = '19:00';
     document.getElementById('formScope').value = '';
     document.getElementById('formCutoff').value = '90점 이상';
-    document.getElementById('formVocabCutoff').value = '';
+    if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = '80';
+    if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = '80';
+    if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = '80';
     document.getElementById('formPracticeCutoff').value = '80';
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
@@ -2461,7 +2508,9 @@ const App = {
     document.getElementById('formEndTime').value = test.endTime || '';
     document.getElementById('formScope').value = test.scope || '';
     document.getElementById('formCutoff').value = test.cutoff || '';
-    document.getElementById('formVocabCutoff').value = test.vocabCutoff ?? this.getVocabCutoffScore(test);
+    if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = this.getVocabCutoffScore(test, 2);
+    if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = this.getVocabCutoffScore(test, 3);
+    if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = this.getVocabCutoffScore(test, 4);
     document.getElementById('formPracticeCutoff').value = test.cutoffScore || test.practiceCutoff || 80;
     document.getElementById('formScore').value = test.score || '';
     document.getElementById('formRetestDate').value = test.retestDate || '';
@@ -2514,12 +2563,10 @@ const App = {
 
     const title = document.getElementById('formTitle');
     const regularCutoff = document.getElementById('formCutoff');
-    const vocabCutoff = document.getElementById('formVocabCutoff');
     const practiceCutoff = document.getElementById('formPracticeCutoff');
 
     title.required = !isVocab;
     if (regularCutoff) regularCutoff.required = isRegular;
-    if (vocabCutoff) vocabCutoff.required = isVocab;
     if (practiceCutoff) practiceCutoff.required = isPractice;
   },
 
@@ -2768,14 +2815,17 @@ const App = {
       : (isPracticeTest ? (document.getElementById('formScope').value.trim() || '선생님 출제 5지선다 객관식 문제풀이') : document.getElementById('formScope').value.trim());
 
     const regularCutoff = document.getElementById('formCutoff').value.trim();
-    const vocabCutoff = Number(document.getElementById('formVocabCutoff').value);
+    const vocabCutoff2 = Number(document.getElementById('formVocabCutoff_2')?.value ?? 80);
+    const vocabCutoff3 = Number(document.getElementById('formVocabCutoff_3')?.value ?? 80);
+    const vocabCutoff4 = Number(document.getElementById('formVocabCutoff_4')?.value ?? 80);
+    const vocabCutoffs = { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4 };
     const practiceCutoff = Number(document.getElementById('formPracticeCutoff').value);
 
     let cutoff = regularCutoff;
     let cutoffScore = null;
     if (isVocabTest) {
-      cutoff = `${vocabCutoff}점`;
-      cutoffScore = vocabCutoff;
+      cutoff = `객관식 ${vocabCutoff2}점 · 스펠링 ${vocabCutoff3}점 · 통합 ${vocabCutoff4}점`;
+      cutoffScore = Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4);
     } else if (isPracticeTest) {
       cutoff = `${practiceCutoff}점 이상`;
       cutoffScore = practiceCutoff;
@@ -2796,8 +2846,9 @@ const App = {
     }
 
     if (isVocabTest) {
-      if (!vocabSetId || !Number.isInteger(vocabCutoff) || vocabCutoff < 1 || vocabCutoff > 100) {
-        this.toast('단어 세트를 선택하고 1~100점 사이의 커트라인을 입력해주세요.', 'error');
+      const allValid = [vocabCutoff2, vocabCutoff3, vocabCutoff4].every(v => Number.isInteger(v) && v >= 1 && v <= 100);
+      if (!vocabSetId || !allValid) {
+        this.toast('단어 세트를 선택하고 각 유형별 커트라인을 1~100점 사이로 입력해주세요.', 'error');
         return;
       }
     }
@@ -2869,7 +2920,8 @@ const App = {
             retestDate,
             teacherNote,
             vocabSetId,
-            vocabCutoff: isVocabTest ? vocabCutoff : null,
+            vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+            vocabCutoffs: isVocabTest ? vocabCutoffs : null,
             practiceCutoff: isPracticeTest ? practiceCutoff : null,
             questions: isPracticeTest ? practiceQuestions : null,
             practiceResult: isPracticeTest ? existingTest?.practiceResult : null,
@@ -2904,7 +2956,8 @@ const App = {
               cutoff,
               cutoffScore,
               vocabSetId,
-              vocabCutoff: isVocabTest ? vocabCutoff : null,
+              vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+              vocabCutoffs: isVocabTest ? vocabCutoffs : null,
               practiceCutoff: isPracticeTest ? practiceCutoff : null,
               questions: isPracticeTest ? practiceQuestions : null,
               type: testType
@@ -2934,7 +2987,8 @@ const App = {
               retestDate: isRegularTest ? retestDate : '',
               teacherNote: isRegularTest ? teacherNote : '',
               vocabSetId,
-              vocabCutoff: isVocabTest ? vocabCutoff : null,
+              vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+              vocabCutoffs: isVocabTest ? vocabCutoffs : null,
               practiceCutoff: isPracticeTest ? practiceCutoff : null,
               questions: isPracticeTest ? practiceQuestions : null,
               practiceResult: null,
@@ -2976,7 +3030,8 @@ const App = {
           retestDate,
           teacherNote,
           vocabSetId,
-          vocabCutoff: isVocabTest ? vocabCutoff : null,
+          vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+          vocabCutoffs: isVocabTest ? vocabCutoffs : null,
           practiceCutoff: isPracticeTest ? practiceCutoff : null,
           questions: isPracticeTest ? practiceQuestions : null,
           practiceResult: null,
@@ -3149,6 +3204,36 @@ const App = {
     return `D+${Math.abs(diffDays)}`;
   },
 
+  getTestDDayBadge(test) {
+    if (!test || !test.date) return { text: '-', class: 'bg-slate-100 text-slate-600' };
+
+    const target = new Date(test.date + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffMs = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return { text: 'D-Day', class: 'bg-rose-500 text-white font-black' };
+    }
+    if (diffDays > 0) {
+      return { text: `D-${diffDays}`, class: 'bg-indigo-600 text-white font-black' };
+    }
+
+    // D+1부터는 관리자가 결과를 설정했거나(응시했으면) '응시 완료', 아니면 '미응시'
+    const isTaken = (test.status === 'PASS' || test.status === 'FAIL') ||
+                    (test.score && test.score !== '미응시' && test.score.trim() !== '') ||
+                    Boolean(test.practiceResult) ||
+                    (test.retestStatus && test.retestStatus !== 'NONE');
+
+    if (isTaken) {
+      return { text: '응시 완료', class: 'bg-emerald-600 text-white font-bold' };
+    } else {
+      return { text: '미응시', class: 'bg-slate-500 text-white font-bold' };
+    }
+  },
+
   getTodayDateString() {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -3188,220 +3273,281 @@ const App = {
     const students = AppData.getStudents();
     const sets = AppData.getVocabSets();
 
-    // 결과의 실제 응시 시작일(startedAt)을 기준으로 날짜별로 묶습니다.
-    // 아직 결과가 없는 일정도 날짜 위젯에서 확인할 수 있도록 시험일도 포함합니다.
-    const dateSet = new Set();
+    // ── 1. 단어 세트 관리 섹션 HTML ───────────────────
+    const vocabSetsHtml = `
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">
+              <i class="fa-solid fa-book text-indigo-600"></i>
+              <span>단어 세트 목록</span>
+              <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">${sets.length}개</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">등록된 단어장을 관리하고 학생에게 배정할 수 있습니다.</p>
+          </div>
+          <button onclick="App.openVocabSetModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> 새 단어 세트 만들기
+          </button>
+        </div>
 
+        ${sets.length > 0 ? `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            ${sets.map(set => {
+              const assignedNames = (set.studentIds || [])
+                .map(id => students.find(st => String(st.id) === String(id))?.name || '')
+                .filter(Boolean).join(', ');
+              const wordCount = (set.words || []).length;
+              const wordSample = (set.words || []).slice(0, 5).map(w => `${w.en} (${w.ko})`).join(', ');
+
+              return `
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 hover:border-indigo-200 transition space-y-3 shadow-xs">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="space-y-1">
+                      <h4 class="font-black text-slate-900 text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-lines text-indigo-500 text-xs"></i>
+                        <span>${this.escapeHtml(set.title)}</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">${wordCount}단어</span>
+                        <span>·</span>
+                        <span>${assignedNames ? `배정: <strong class="text-slate-700">${this.escapeHtml(assignedNames)}</strong>` : '<span class="text-slate-400">배정 학생 없음</span>'}</span>
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                      <button onclick="App.openVocabSetModal('${set.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">
+                        <i class="fa-solid fa-pen-to-square text-[10px] mr-0.5"></i> 수정
+                      </button>
+                      <button onclick="App.confirmDeleteVocabSet('${set.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-100 transition">
+                        <i class="fa-solid fa-trash-can text-[10px] mr-0.5"></i> 삭제
+                      </button>
+                    </div>
+                  </div>
+
+                  ${wordCount > 0 ? `
+                    <details class="text-xs pt-1 border-t border-slate-100">
+                      <summary class="cursor-pointer font-semibold text-slate-500 hover:text-indigo-600 text-[11px] flex items-center justify-between">
+                        <span>단어 미리보기 (${wordCount}개)</span>
+                        <span class="text-[10px] text-slate-400">클릭하여 펼치기</span>
+                      </summary>
+                      <div class="mt-2.5 max-h-40 overflow-y-auto space-y-1 pr-1 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        ${set.words.map((w, idx) => `
+                          <div class="flex items-center justify-between text-[11px] py-1 px-1.5 rounded hover:bg-white transition gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(w.en)}'); event.stopPropagation();" class="text-indigo-600 hover:text-indigo-800 flex-shrink-0" title="발음 듣기">
+                                <i class="fa-solid fa-volume-high text-[10px]"></i>
+                              </button>
+                              <span class="font-bold text-slate-800 truncate">${idx + 1}. ${this.escapeHtml(w.en)}</span>
+                            </div>
+                            <span class="text-slate-500 font-medium text-right flex-shrink-0">${this.escapeHtml(w.ko)}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </details>
+                  ` : ''}
+                </div>`;
+            }).join('')}
+          </div>
+        ` : `
+          <div class="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center bg-slate-50/50">
+            <i class="fa-solid fa-book-open text-3xl text-slate-300 mb-2"></i>
+            <p class="text-xs font-bold text-slate-600">등록된 단어 세트가 없습니다.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">새 단어 세트를 만들어 학생들에게 배정해보세요.</p>
+            <button onclick="App.openVocabSetModal()" class="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition">
+              <i class="fa-solid fa-plus mr-1"></i> 새 단어 세트 만들기
+            </button>
+          </div>
+        `}
+      </div>`;
+
+    // ── 2. 날짜별 단어 테스트 결과 및 채점 섹션 ───────────
+    const dateSet = new Set();
     tests.forEach(test => {
       if (test.date) dateSet.add(test.date);
     });
-
     results.forEach(result => {
       const date = this.getVocabResultDate(result);
       if (date) dateSet.add(date);
     });
 
     const dates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
+    let resultsSectionHtml = '';
 
     if (dates.length === 0) {
-      container.innerHTML = `
-        <div class="glass-card rounded-2xl p-12 text-center text-slate-400">
-          <i class="fa-solid fa-calendar-days text-4xl mb-3 opacity-30"></i>
-          <p class="text-sm font-semibold">아직 등록된 단어 테스트 일정이나 결과가 없습니다.</p>
-          <p class="text-xs mt-1">시험 일정에서 단어 테스트를 추가하면 날짜별 결과가 여기에 표시됩니다.</p>
+      resultsSectionHtml = `
+        <div class="glass-card rounded-2xl p-8 text-center text-slate-400 space-y-2">
+          <i class="fa-solid fa-calendar-days text-3xl opacity-30"></i>
+          <p class="text-sm font-bold text-slate-700">아직 등록된 단어 테스트 일정이나 응시 결과가 없습니다.</p>
+          <p class="text-xs text-slate-500">학생 시험 일정에서 단어 테스트를 등록하면 학생별 시험 결과와 채점 버튼이 여기에 표시됩니다.</p>
         </div>`;
-      return;
-    }
-
-    if (!this.state.vocabResultSelectedDate || !dates.includes(this.state.vocabResultSelectedDate)) {
-      this.state.vocabResultSelectedDate = dates[0];
-    }
-
-    const selectedDate = this.state.vocabResultSelectedDate;
-
-    const dateCardsHtml = dates.map(date => {
-      const dateResults = results.filter(result => this.getVocabResultDate(result) === date);
-      const dateTests = tests.filter(test => test.date === date);
-      const uniqueStudentIds = new Set([
-        ...dateResults.map(result => Number(result.studentId)),
-        ...dateTests.map(test => Number(test.studentId))
-      ]);
-      const passed = dateResults.filter(result => result.passed).length;
-      const resultCount = dateResults.length;
-      const isSelected = date === selectedDate;
-      const [, month, day] = date.split('-');
-
-      return `
-        <button onclick="App.selectVocabResultDate('${date}')"
-          class="text-left rounded-2xl border-2 p-4 transition ${isSelected
-            ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
-            : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'}">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">시험 결과</p>
-              <p class="text-2xl font-black text-slate-900 mt-0.5">${Number(month)}/${Number(day)}</p>
-            </div>
-            <span class="w-9 h-9 rounded-xl ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'} flex items-center justify-center">
-              <i class="fa-solid fa-calendar-check"></i>
-            </span>
-          </div>
-          <div class="mt-3 flex items-center gap-1.5 flex-wrap">
-            <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold">학생 ${uniqueStudentIds.size}명</span>
-            <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold">통과 ${passed}명</span>
-            <span class="px-2 py-1 rounded-lg bg-violet-50 text-violet-700 text-[11px] font-bold">결과 ${resultCount}건</span>
-          </div>
-        </button>`;
-    }).join('');
-
-    const selectedTests = tests.filter(test => test.date === selectedDate);
-    const selectedResults = results.filter(result => this.getVocabResultDate(result) === selectedDate);
-
-    // 선택 날짜에 실제로 존재하는 학생/시험을 기준으로 카드 생성합니다.
-    // 결과가 없는 학생은 미응시로 표시합니다.
-    const studentCards = students.map(student => {
-      const studentTests = selectedTests.filter(test => Number(test.studentId) === Number(student.id));
-      const studentResults = selectedResults.filter(result => Number(result.studentId) === Number(student.id));
-
-      if (studentTests.length === 0 && studentResults.length === 0) return '';
-
-      if (studentResults.length === 0) {
-        const testNames = studentTests.map(test => this.escapeHtml(test.title || '단어 테스트')).join(', ');
-        return `
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="font-extrabold text-slate-900">${this.escapeHtml(student.name)}</p>
-                <p class="text-[11px] text-slate-500 mt-0.5">${testNames || '단어 테스트'}</p>
-              </div>
-              <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">미응시</span>
-            </div>
-          </div>`;
+    } else {
+      if (!this.state.vocabResultSelectedDate || !dates.includes(this.state.vocabResultSelectedDate)) {
+        this.state.vocabResultSelectedDate = dates[0];
       }
+      const selectedDate = this.state.vocabResultSelectedDate;
 
-      const resultHtml = studentResults.map(result => {
-        const test = tests.find(item => item.id === result.testId);
-        const set = sets.find(item => item.id === result.setId);
-        const directionLabel = Number(result.direction) === 1 ? '한글 → 영어' : '영어 → 한글';
-        const wrongAnswers = result.wrongAnswers || [];
-        const attemptCount = result.attempts ? result.attempts.length : 1;
-        const completedTime = this.getVocabResultTimeString(result);
+      const dateCardsHtml = dates.map(date => {
+        const dateResults = results.filter(result => this.getVocabResultDate(result) === date);
+        const dateTests = tests.filter(test => test.date === date);
+        const uniqueStudentIds = new Set([
+          ...dateResults.map(result => Number(result.studentId)),
+          ...dateTests.map(test => Number(test.studentId))
+        ]);
+        const passed = dateResults.filter(result => result.passed).length;
+        const resultCount = dateResults.length;
+        const isSelected = date === selectedDate;
+        const [, month, day] = date.split('-');
 
         return `
-          <div class="rounded-xl border ${result.passed ? 'border-emerald-200 bg-emerald-50/70' : 'border-amber-200 bg-amber-50/70'} p-3.5 space-y-2">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <button onclick="App.selectVocabResultDate('${date}')"
+            class="text-left rounded-2xl border-2 p-3.5 transition ${isSelected
+              ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
+              : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'}">
+            <div class="flex items-start justify-between gap-2">
               <div>
-                <p class="font-bold text-slate-900 text-sm">${this.escapeHtml(test?.title || '단어 테스트')}</p>
-                <p class="text-[11px] text-slate-500 mt-0.5">${this.escapeHtml(set?.title || '연결된 단어 세트')} · ${directionLabel}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">시험 날짜</p>
+                <p class="text-xl font-black text-slate-900 mt-0.5">${Number(month)}/${Number(day)}</p>
               </div>
-              <div class="text-right">
-                <p class="text-lg font-black ${result.passed ? 'text-emerald-700' : 'text-amber-700'}">${result.score}점</p>
-                <span class="text-[11px] font-bold ${result.passed ? 'text-emerald-700' : 'text-amber-700'}">${result.passed ? 'PASS' : '재응시 가능'}</span>
-              </div>
+              <span class="w-8 h-8 rounded-xl ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'} flex items-center justify-center text-xs">
+                <i class="fa-solid fa-calendar-check"></i>
+              </span>
             </div>
-            <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
-              <span>정답 ${result.correctCount ?? '-'} / ${result.total ?? '-'}문제</span>
-              <span>·</span>
-              <span>${attemptCount}회 응시</span>
-              <span>·</span>
-              <span>${completedTime}</span>
+            <div class="mt-2.5 flex items-center gap-1 flex-wrap">
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">학생 ${uniqueStudentIds.size}명</span>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">통과 ${passed}명</span>
+              <span class="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold">결과 ${resultCount}건</span>
             </div>
-            ${wrongAnswers.length ? `
-              <details class="text-xs pt-1">
-                <summary class="cursor-pointer font-bold text-rose-600">오답 ${wrongAnswers.length}개 보기</summary>
-                <div class="mt-2 space-y-1.5">
-                  ${wrongAnswers.map((wrong, index) => `
-                    <div class="rounded-lg bg-white/80 p-2 border border-rose-100">
-                      <strong>${index + 1}. ${this.escapeHtml(wrong.question)}</strong><br>
-                      <span class="text-rose-600">학생 답: ${this.escapeHtml(wrong.answer)}</span><br>
-                      <span class="text-emerald-700">정답: ${this.escapeHtml(wrong.correct)}</span>
-                    </div>`).join('')}
-                </div>
-              </details>` : '<p class="text-xs font-semibold text-emerald-700">오답 없음</p>'}
-          </div>`;
+          </button>`;
       }).join('');
 
-      return `
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-sm">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 text-white flex items-center justify-center flex-shrink-0">
-              <i class="fa-solid fa-user"></i>
+      const selectedTests = tests.filter(test => test.date === selectedDate);
+      const selectedResults = results.filter(result => this.getVocabResultDate(result) === selectedDate);
+
+      const studentCards = students.map(student => {
+        const studentTests = selectedTests.filter(test => String(test.studentId) === String(student.id));
+        const studentResults = selectedResults.filter(result => String(result.studentId) === String(student.id));
+
+        if (studentTests.length === 0 && studentResults.length === 0) return '';
+
+        if (studentResults.length === 0) {
+          const testNames = studentTests.map(test => this.escapeHtml(test.title || '단어 테스트')).join(', ');
+          return `
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="font-extrabold text-slate-900">${this.escapeHtml(student.name)}</p>
+                  <p class="text-[11px] text-slate-500 mt-0.5">${testNames || '단어 테스트'}</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">미응시</span>
+              </div>
+            </div>`;
+        }
+
+        const resultHtml = studentResults.map(result => {
+          const test = tests.find(item => String(item.id) === String(result.testId));
+          const set = sets.find(item => String(item.id) === String(result.setId));
+          const directionLabel = this.getVocabDirectionLabel(result.direction);
+          const wrongAnswers = result.wrongAnswers || [];
+          const attemptCount = result.attempts ? result.attempts.length : 1;
+          const completedTime = this.getVocabResultTimeString(result);
+          const canGrade = result.direction === 4;
+          const isPending = result.direction === 4 && result.waitingGrading && !result.gradedByAdmin;
+          const gradedBadge = result.gradedByAdmin ? `<span class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 ml-1">✅ 채점 완료</span>` : '';
+          const statusText = result.passed ? 'PASS' : (isPending ? '채점 대기' : '재응시 가능');
+          const statusColor = result.passed ? 'text-emerald-700' : (isPending ? 'text-amber-700' : 'text-slate-600');
+          const cardBorder = result.passed ? 'border-emerald-200 bg-emerald-50/70' : (isPending ? 'border-amber-300 bg-amber-50/80 shadow-xs' : 'border-slate-200 bg-slate-50/70');
+
+          return `
+            <div class="rounded-xl border ${cardBorder} p-3.5 space-y-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <p class="font-bold text-slate-900 text-sm">${this.escapeHtml(test?.title || '단어 테스트')}</p>
+                    ${isPending ? `<span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 animate-pulse">⏳ 채점 대기</span>` : ''}
+                    ${gradedBadge}
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-0.5">${this.escapeHtml(set?.title || '연결된 단어 세트')} · ${directionLabel}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${canGrade ? `<button type="button" onclick="App.openVocabGradingModal('${result.studentId}', '${result.testId || ''}', ${result.direction}, '${result.completedAt || ''}')" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-200 transition flex items-center gap-1 shadow-xs"><i class="fa-solid fa-clipboard-check text-[10px]"></i> ${result.gradedByAdmin ? '다시 채점하기' : '채점하기'}</button>` : ''}
+                  <div class="text-right">
+                    <p class="text-lg font-black ${statusColor}">${result.score}점</p>
+                    <span class="text-[11px] font-bold ${statusColor}">${statusText}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
+                <span>정답 ${result.correctCount ?? '-'} / ${result.total ?? '-'}문제</span>
+                <span>·</span>
+                <span>${attemptCount}회 응시</span>
+                <span>·</span>
+                <span>${completedTime}</span>
+              </div>
+              ${wrongAnswers.length ? `
+                <details class="text-xs pt-1">
+                  <summary class="cursor-pointer font-bold text-rose-600">오답 ${wrongAnswers.length}개 보기</summary>
+                  <div class="mt-2 space-y-1.5">
+                    ${wrongAnswers.map((wrong, index) => `
+                      <div class="rounded-lg bg-white/80 p-2 border border-rose-100">
+                        <strong>${index + 1}. ${this.escapeHtml(wrong.question)}</strong><br>
+                        <span class="text-rose-600">학생 답: ${this.escapeHtml(wrong.answer)}</span><br>
+                        <span class="text-emerald-700">정답: ${this.escapeHtml(wrong.correct)}</span>
+                      </div>`).join('')}
+                  </div>
+                </details>` : '<p class="text-xs font-semibold text-emerald-700">오답 없음</p>'}
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 text-white flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div>
+                <p class="font-extrabold text-slate-900">${this.escapeHtml(student.name)}</p>
+                <p class="text-[11px] text-slate-400">학생 #${student.id}</p>
+              </div>
             </div>
+            <div class="space-y-2">${resultHtml}</div>
+          </div>`;
+      }).filter(Boolean).join('');
+
+      resultsSectionHtml = `
+        <div class="glass-card rounded-2xl p-5 space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
-              <p class="font-extrabold text-slate-900">${this.escapeHtml(student.name)}</p>
-              <p class="text-[11px] text-slate-400">학생 #${student.id}</p>
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days text-indigo-600"></i>
+                <span>날짜별 단어 테스트 결과 & 채점</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">날짜를 선택하여 각 학생의 시험 결과 확인 및 [채점하기]를 진행하세요.</p>
             </div>
+            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">${dates.length}개 날짜</span>
           </div>
-          <div class="space-y-2">${resultHtml}</div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">${dateCardsHtml}</div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold text-indigo-600">선택한 날짜</p>
+              <h3 class="text-xl font-black text-slate-900 mt-0.5">${this.formatVocabResultDateLong(selectedDate)}</h3>
+            </div>
+            <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">${selectedResults.length}건 결과</span>
+          </div>
+          ${studentCards || `
+            <div class="rounded-2xl bg-slate-50 border border-slate-200 p-8 text-center text-slate-400">
+              <i class="fa-solid fa-user-clock text-3xl mb-2 opacity-30"></i>
+              <p class="text-sm font-semibold">이 날짜에는 표시할 학생 결과가 없습니다.</p>
+            </div>`}
         </div>`;
-    }).filter(Boolean).join('');
+    }
 
     container.innerHTML = `
-      <div class="glass-card rounded-2xl p-5 space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <i class="fa-solid fa-calendar-days text-indigo-600"></i>
-              날짜별 단어 테스트 결과
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">날짜를 선택하면 해당 날짜의 각 학생 시험 결과를 확인할 수 있습니다.</p>
-          </div>
-          <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">${dates.length}개 날짜</span>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">${dateCardsHtml}</div>
-      </div>
-
-      <div class="glass-card rounded-2xl p-5 space-y-4">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="text-xs font-bold text-indigo-600">선택한 날짜</p>
-            <h3 class="text-xl font-black text-slate-900 mt-0.5">${this.formatVocabResultDateLong(selectedDate)}</h3>
-          </div>
-          <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">${selectedResults.length}건 결과</span>
-        </div>
-        ${studentCards || `
-          <div class="rounded-2xl bg-slate-50 border border-slate-200 p-8 text-center text-slate-400">
-            <i class="fa-solid fa-user-clock text-3xl mb-2 opacity-30"></i>
-            <p class="text-sm font-semibold">이 날짜에는 표시할 학생 결과가 없습니다.</p>
-          </div>`}
-      </div>
-
-      <div class="glass-card rounded-2xl p-5 space-y-3">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h3 class="font-bold text-slate-900 flex items-center gap-2">
-              <i class="fa-solid fa-book text-violet-600"></i>
-              단어 세트
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">단어 세트 자체의 수정/삭제는 여기서 계속 관리합니다.</p>
-          </div>
-          <button onclick="App.openVocabSetModal()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition">
-            <i class="fa-solid fa-plus mr-1"></i> 새 단어 세트
-          </button>
-        </div>
-        ${sets.length ? `
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            ${sets.map(set => {
-              const assignedNames = (set.studentIds || [])
-                .map(id => students.find(st => st.id === id)?.name || '')
-                .filter(Boolean).join(', ');
-              return `
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
-                      <p class="font-bold text-slate-900 text-sm">${this.escapeHtml(set.title)}</p>
-                      <p class="text-[11px] text-slate-500 mt-1">${(set.words || []).length}개 단어 · ${this.escapeHtml(assignedNames || '배정 학생 없음')}</p>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                      <button onclick="App.openVocabSetModal('${set.id}')" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-100">수정</button>
-                      <button onclick="App.confirmDeleteVocabSet('${set.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold hover:bg-rose-100">삭제</button>
-                    </div>
-                  </div>
-                </div>`;
-            }).join('')}
-          </div>` : `
-          <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400">등록된 단어 세트가 없습니다.</div>`}
-      </div>`;
+      ${vocabSetsHtml}
+      ${resultsSectionHtml}
+    `;
   },
 
   selectVocabResultDate(date) {
@@ -3494,6 +3640,83 @@ const App = {
     this.showModal('vocabSetModal');
   },
 
+  vocabIpaCache: {},
+
+  // 단어 세트의 모든 단어 발음기호를 사전에 병렬 로드하여 렉/지연 완전 제거
+  async prefetchVocabPhonetics(words) {
+    if (!Array.isArray(words)) return;
+    const fetchPromises = words.map(w => {
+      const clean = (w.en || '').trim().toLowerCase();
+      if (!clean || this.vocabIpaCache[clean] !== undefined) return Promise.resolve();
+      return this.fetchWordPhonetic(clean).catch(() => {});
+    });
+    await Promise.allSettled(fetchPromises);
+  },
+
+  async fetchWordPhonetic(word) {
+    if (!word) return '';
+    const clean = word.trim().toLowerCase();
+    if (this.vocabIpaCache[clean] !== undefined) {
+      return this.vocabIpaCache[clean];
+    }
+
+    // 1차: Free Dictionary API
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(clean)}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        let ipa = '';
+        if (Array.isArray(data) && data[0]) {
+          if (data[0].phonetic) {
+            ipa = data[0].phonetic;
+          } else if (Array.isArray(data[0].phonetics)) {
+            const p = data[0].phonetics.find(item => item.text && item.text.trim());
+            if (p) ipa = p.text;
+          }
+        }
+        if (ipa) {
+          const formatted = ipa.startsWith('/') ? ipa : `/${ipa.replace(/[\[\]]/g, '')}/`;
+          this.vocabIpaCache[clean] = formatted;
+          return formatted;
+        }
+      }
+    } catch (e) {
+      // 1차 실패 시 2차 시도
+    }
+
+    // 2차: Datamuse IPA API (초고속 사전 발음기호 DB)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(clean)}&qe=sp&md=r&ipa=1&max=1`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data[0] && data[0].tags) {
+          const ipaTag = data[0].tags.find(t => t.startsWith('ipa_pron:'));
+          if (ipaTag) {
+            const rawIpa = ipaTag.replace('ipa_pron:', '').trim();
+            if (rawIpa) {
+              const formatted = `/${rawIpa}/`;
+              this.vocabIpaCache[clean] = formatted;
+              return formatted;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // 2차 실패
+    }
+
+    // Fallback: 깔끔한 대괄호 단어 포맷
+    const fallback = `/${clean}/`;
+    this.vocabIpaCache[clean] = fallback;
+    return fallback;
+  },
+
   closeVocabSetModal() {
     this.hideModal('vocabSetModal');
   },
@@ -3518,11 +3741,14 @@ const App = {
     const container = document.getElementById('vocabWordRows');
     const idx = Date.now() + Math.random();
     const div = document.createElement('div');
-    div.className = 'grid grid-cols-[1fr_1fr_auto] gap-2 items-center vocab-word-row';
+    div.className = 'grid grid-cols-[1fr_1fr_auto_auto] gap-1.5 items-center vocab-word-row';
     div.innerHTML = `
       <input type="text" placeholder="영어 단어" value="${this.escapeHtml(enVal)}" class="vocab-en py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs" oninput="App.updateVocabWordCount()" />
       <input type="text" placeholder="한국어 뜻" value="${this.escapeHtml(koVal)}" class="vocab-ko py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs" />
-      <button type="button" onclick="this.closest('.vocab-word-row').remove(); App.updateVocabWordCount();" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition text-sm">
+      <button type="button" onclick="App.playDictionaryAudio(this.closest('.vocab-word-row').querySelector('.vocab-en').value)" class="w-7 h-7 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 flex items-center justify-center transition text-xs" title="발음 듣기">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <button type="button" onclick="this.closest('.vocab-word-row').remove(); App.updateVocabWordCount();" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition text-sm" title="삭제">
         <i class="fa-solid fa-xmark"></i>
       </button>`;
     container.appendChild(div);
@@ -3597,11 +3823,12 @@ const App = {
             <div class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/50 flex flex-col gap-3">
               <div>
                 <p class="font-bold text-slate-900 text-sm">${this.escapeHtml(set.title)}</p>
-                <p class="text-xs text-slate-500 mt-0.5">${set.words.length}개 단어 · 방향별 5지선다</p>
+                <p class="text-xs text-slate-500 mt-0.5">${set.words.length}개 단어 · 객관식, 스펠링, 통합</p>
               </div>
-              <div class="grid grid-cols-1 gap-2">
-                ${this.renderVocabTestButton(set, studentId, 1, '한글 → 영어', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200')}
-                ${this.renderVocabTestButton(set, studentId, 2, '영어 → 한글', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200')}
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                ${this.renderVocabTestButton(set, studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200')}
+                ${this.renderVocabTestButton(set, studentId, 3, '스펠링', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200')}
+                ${this.renderVocabTestButton(set, studentId, 4, '통합', 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200')}
               </div>
             </div>
           `).join('')}
@@ -3609,35 +3836,138 @@ const App = {
       </div>`;
   },
 
+  isVocabTestUnlocked(studentId, setId, direction, testId = null) {
+    const dir = Number(direction);
+    if (dir === 2) return { unlocked: true };
+    if (dir === 3) {
+      const prevResult = AppData.getVocabTestResult(studentId, setId, 2, testId);
+      if (!prevResult?.passed) {
+        return { unlocked: false, requiredLabel: '객관식' };
+      }
+      return { unlocked: true };
+    }
+    if (dir === 4) {
+      const prevResult = AppData.getVocabTestResult(studentId, setId, 3, testId);
+      if (!prevResult?.passed) {
+        return { unlocked: false, requiredLabel: '스펠링' };
+      }
+      return { unlocked: true };
+    }
+    return { unlocked: true };
+  },
+
   renderVocabTestButton(set, studentId, direction, label, colorClass, testId = null) {
     const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
+    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction);
     const result = AppData.getVocabTestResult(studentId, set.id, direction, testId);
-    // 관리자가 본시험 결과를 통과로 처리한 일정은 두 방향 모두 완료로 표시한다.
-    if (scheduledTest?.status === 'PASS' || result?.passed) {
+
+    // 1. 통과 완료 상태
+    if (result?.passed) {
       return `
-        <div class="w-full py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
-          <i class="fa-solid fa-circle-check"></i> ${label} · 완료
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2 shadow-2xs">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-emerald-950">${label}</span>
+            <span class="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+              ${cutoffScore}점 이상 통과
+            </span>
+          </div>
+          <div class="w-full py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>${result.score}점 · 통과 완료</span>
+          </div>
         </div>`;
     }
+
+    // 2. 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
+    const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, testId);
+    if (!unlockCheck.unlocked) {
+      return `
+        <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs opacity-85">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-slate-500">${label}</span>
+            <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+              커트라인 ${cutoffScore}점
+            </span>
+          </div>
+          <button type="button" onclick="App.toast('이전 단계인 \\'${unlockCheck.requiredLabel}\\' 시험을 먼저 통과해야 합니다.', 'info')" class="w-full py-2.5 rounded-xl bg-slate-200/90 hover:bg-slate-300/80 text-slate-600 text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-lock text-[11px] text-slate-400"></i>
+            <span>${unlockCheck.requiredLabel} 통과 후 가능</span>
+          </button>
+        </div>`;
+    }
+
+    // 3. 주관식 채점 대기중 상태
+    if (result?.direction === 4 && result?.waitingGrading && !result?.gradedByAdmin) {
+      return `
+        <div class="rounded-2xl border border-amber-300 bg-amber-50/80 p-3 flex flex-col justify-between gap-2 shadow-2xs">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-amber-950">${label}</span>
+            <span class="text-[10px] font-bold text-amber-800 bg-white/90 px-2 py-0.5 rounded-full border border-amber-200">
+              커트라인 <strong>${cutoffScore}점</strong>
+            </span>
+          </div>
+          <div class="w-full py-2 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-hourglass-half text-amber-100 animate-pulse"></i>
+            <span>채점 대기중 (${result.spellingScore ?? result.score}점)</span>
+          </div>
+        </div>`;
+    }
+
+    // 4. 10분 재응시 대기 중
+    if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
+      const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
+      return `
+        <div class="rounded-2xl border border-rose-200 bg-rose-50/60 p-3 flex flex-col justify-between gap-2 shadow-2xs">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-slate-800">${label}</span>
+            <span class="text-[10px] font-bold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-200">
+              커트라인 <strong>${cutoffScore}점</strong>
+            </span>
+          </div>
+          <div class="w-full py-2 rounded-xl bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-clock"></i>
+            <span>${minutes}분 후 재응시 가능</span>
+          </div>
+        </div>`;
+    }
+
+    // 5. 시험 시간 불가 (종료 / 시작 전)
     const timeStatus = scheduledTest && this.getTestTimeStatus(scheduledTest);
     if (scheduledTest && !timeStatus.canStart) {
       const unavailableLabel = timeStatus.status === 'EXPIRED'
         ? '응시 시간 종료'
         : (timeStatus.status === 'NOT_STARTED' ? '응시 시작 전' : '응시 불가');
       return `
-        <button onclick="App.notifyUnavailableVocabTest('${timeStatus.status}')" class="w-full py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-clock"></i> ${label} · ${unavailableLabel}
-        </button>`;
+        <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 flex flex-col justify-between gap-2">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-slate-600">${label}</span>
+            <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+              커트라인 ${cutoffScore}점
+            </span>
+          </div>
+          <button onclick="App.notifyUnavailableVocabTest('${timeStatus.status}')" class="w-full py-2 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-lock text-[11px]"></i>
+            <span>${unavailableLabel}</span>
+          </button>
+        </div>`;
     }
-    if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
-      const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
-      return `<div class="w-full py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold text-center"><i class="fa-solid fa-clock mr-1"></i>${label} · ${minutes}분 후 재응시</div>`;
-    }
-    const buttonLabel = result ? `${label} 다시 도전하기` : `${label} 테스트 시작`;
+
+    // 6. 응시 가능 상태 (시작 / 재응시)
+    const buttonText = result ? '다시 도전하기' : '테스트 시작';
+    const buttonIcon = result ? 'fa-rotate-right' : 'fa-play';
     return `
-      <button onclick="App.startVocabTest('${set.id}', ${studentId}, ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-2 rounded-xl ${colorClass} text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
-        <i class="fa-solid ${result ? 'fa-rotate-right' : 'fa-play'}"></i> ${buttonLabel}
-      </button>`;
+      <div class="rounded-2xl border border-slate-200/90 bg-white p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
+        <div class="flex items-center justify-between gap-1">
+          <span class="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition">${label}</span>
+          <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+            커트라인 <strong>${cutoffScore}점</strong>
+          </span>
+        </div>
+        <button onclick="App.startVocabTest('${set.id}', ${studentId}, ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-2.5 rounded-xl ${colorClass} text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+          <i class="fa-solid ${buttonIcon} text-[11px]"></i>
+          <span>${buttonText}</span>
+        </button>
+      </div>`;
   },
 
   notifyExpiredVocabTest() {
@@ -3656,11 +3986,157 @@ const App = {
     this.toast('이미 완료되어 응시할 수 없습니다.', 'info');
   },
 
+  // ── 영어 스펠링 입력 필터 (영문/숫자/특수문자 허용, 한글/비ASCII 실시간 차단) ──
+  filterSpellingEnglishOnly(inputEl) {
+    if (!inputEl) return;
+    // ASCII 인쇄 가능 문자 범위(0x20~0x7E: 영문자, 숫자, 물결표(~), 하이픈, 어포스트로피, 공백, 기호 등)만 허용
+    const cleaned = inputEl.value.replace(/[^\x20-\x7E]/g, '');
+    if (inputEl.value !== cleaned) {
+      inputEl.value = cleaned;
+    }
+  },
+
+  // ── 사전식 실제 원어민 녹음 MP3 재생 & 발음기호(IPA) 헬퍼 ──────────────
+  playDictionaryAudio(word) {
+    if (!word) return;
+    const clean = word.trim().toLowerCase();
+
+    // 1. 고음질 사전 원어민 녹음 MP3 자동 1회 재생
+    try {
+      const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(clean)}&type=2`;
+      const audio = new Audio(audioUrl);
+      audio.volume = 1.0;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // 브라우저 자동재생 정책 또는 네트워크 이슈 시 fallback
+          this.speakWordFallback(clean);
+        });
+      }
+    } catch (e) {
+      this.speakWordFallback(clean);
+    }
+  },
+
+  speakWordFallback(word) {
+    if (!word || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('TTS Fallback Error:', e);
+    }
+  },
+
+  // ── 스마트 AI / 시맨틱 한국어 뜻 채점 엔진 ──────────────────
+  evaluateKoreanMeaningAI(studentMeaning, targetMeaning) {
+    if (!studentMeaning || !targetMeaning) {
+      return { match: false, score: 0, reason: '입력값 없음' };
+    }
+    const sClean = studentMeaning.trim().toLowerCase().replace(/[.,~!?]/g, '');
+    const tClean = targetMeaning.trim().toLowerCase().replace(/[.,~!?]/g, '');
+    if (!sClean || !tClean) {
+      return { match: false, score: 0, reason: '유효한 텍스트 없음' };
+    }
+
+    // 1. 단순 일치 및 후보별 일치 검사
+    const targetCandidates = targetMeaning
+      .split(/[,;\/\n]/)
+      .map(s => s.trim().toLowerCase().replace(/[.,~!?]/g, ''))
+      .filter(Boolean);
+
+    if (targetCandidates.some(c => c === sClean)) {
+      return { match: true, score: 1.0, reason: '완벽 일치' };
+    }
+
+    // 2. 포함 관계 (예: "버리다, 포기하다"에서 "버리다" 또는 "포기")
+    if (targetCandidates.some(c => c.includes(sClean) || sClean.includes(c))) {
+      return { match: true, score: 0.95, reason: '핵심 의미 일치' };
+    }
+
+    // 3. 한국어 조사 및 어미 정규화 (어간 비교)
+    const normalizeStem = (text) => {
+      return text
+        .replace(/(하다|되다|시키다|받다|거리다|이다|롭다|스럽다|맞다)$/g, '')
+        .replace(/(을|를|이|가|에|의|로|으로|에서|와|과|도)$/g, '')
+        .trim();
+    };
+
+    const sStem = normalizeStem(sClean);
+    if (sStem && sStem.length >= 2) {
+      const stemMatched = targetCandidates.some(c => {
+        const cStem = normalizeStem(c);
+        return cStem && (cStem.includes(sStem) || sStem.includes(cStem));
+      });
+      if (stemMatched) {
+        return { match: true, score: 0.9, reason: '어간/활용형 일치' };
+      }
+    }
+
+    // 4. 자주 쓰이는 유의어/동의어 매핑
+    const synonymDictionary = {
+      '포기': ['버리다', '단념', '체념', '그만두다', '손을떼다', '내버려두다'],
+      '버리다': ['포기', '유기', '내버리다', '단념'],
+      '획득': ['얻다', '취득', '구하다', '차지하다', '얻음'],
+      '얻다': ['획득', '취득', '구하다', '받다'],
+      '성공': ['이루다', '달성', '완수', '해내다'],
+      '실패': ['그르치다', '낙방', '패배', '틀리다'],
+      '돕다': ['도움', '원조', '지원', '협력', '거들다', '보조'],
+      '중요한': ['핵심', '필수', '중대한', '주요한', '귀중한'],
+      '시작': ['착수', '출발', '개시', '시작하다', '열다'],
+      '끝': ['종료', '완료', '마침', '결말'],
+      '거절': ['거부', '물리치다', '사양', '퇴짜'],
+      '수락': ['받아들이다', '승낙', '동의', '인정']
+    };
+
+    for (const [key, syns] of Object.entries(synonymDictionary)) {
+      const matchS = sClean.includes(key) || syns.some(syn => sClean.includes(syn));
+      const matchT = tClean.includes(key) || syns.some(syn => tClean.includes(syn));
+      if (matchS && matchT) {
+        return { match: true, score: 0.85, reason: '유의어/동의어 판정' };
+      }
+    }
+
+    return { match: false, score: 0.2, reason: '의미 불일치' };
+  },
+
+  checkKoreanMeaningMatch(input, targetKo) {
+    const evalResult = this.evaluateKoreanMeaningAI(input, targetKo);
+    return evalResult.match;
+  },
+
+  getVocabDirectionLabel(direction) {
+    const dir = Number(direction);
+    if (dir === 2) return '객관식';
+    if (dir === 3) return '스펠링';
+    if (dir === 4) return '통합';
+    return '단어 테스트';
+  },
+
+  getVocabDirectionShortLabel(direction) {
+    const dir = Number(direction);
+    if (dir === 2) return '객관식';
+    if (dir === 3) return '스펠링';
+    if (dir === 4) return '통합';
+    return '단어';
+  },
+
   // ── 학생: 단어 테스트 시작 ──────────────────────────────
   startVocabTest(setId, studentId, direction, testId = null) {
     const set = AppData.getVocabSets().find(s => s.id === setId);
     if (!set || set.words.length < 5) { this.toast('단어가 부족합니다. (최소 5개)', 'error'); return; }
-    if (![1, 2].includes(direction)) { this.toast('올바른 테스트 방향이 아닙니다.', 'error'); return; }
+    if (![2, 3, 4].includes(direction)) { this.toast('올바른 테스트 모드가 아닙니다.', 'error'); return; }
+    
+    // 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
+    const unlockCheck = this.isVocabTestUnlocked(studentId, setId, direction, testId);
+    if (!unlockCheck.unlocked) {
+      this.toast(`이전 단계인 '${unlockCheck.requiredLabel}' 시험을 먼저 통과해야 합니다.`, 'error');
+      return;
+    }
+
     const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
     if (scheduledTest) {
       const timeStatus = this.getTestTimeStatus(scheduledTest);
@@ -3682,6 +4158,13 @@ const App = {
 
     const startedAt = new Date().toISOString();
     const testWords = this.selectVocabTestWords(set.words);
+    const initialTime = direction === 2 ? 7 : (direction === 3 ? 15 : 20);
+
+    // 모드 3, 4인 경우 사전에 모든 단어의 발음기호를 즉시 백그라운드 프리페치하여 렉 완전 제거
+    if (direction === 3 || direction === 4) {
+      this.prefetchVocabPhonetics(testWords);
+    }
+
     this.state.vocabTest = {
       setId,
       studentId: Number(studentId),
@@ -3695,7 +4178,8 @@ const App = {
       currentIndex: 0,
       score: 0,
       timerId: null,
-      timeRemaining: 7,
+      timeRemaining: initialTime,
+      initialTimeLimit: initialTime,
       isCompleted: false
     };
 
@@ -3720,83 +4204,240 @@ const App = {
   buildVocabQuestions(words, direction, choicePool = words) {
     const shuffled = this.shuffleItems(words);
     return shuffled.map(word => {
-      // 이 단어를 제외한 나머지에서 오답 4개 추출
-      const others = this.shuffleItems(choicePool.filter(w => w !== word)).slice(0, 4);
-      const correctChoice = direction === 1 ? word.en : word.ko;
-      const wrongChoices = others.map(w => direction === 1 ? w.en : w.ko);
-      const allChoices = this.shuffleItems([correctChoice, ...wrongChoices]);
-      return {
-        question: direction === 1 ? word.ko : word.en,
-        correct: correctChoice,
-        choices: allChoices,
-        answered: null
-      };
+      if (direction === 2) {
+        const others = this.shuffleItems(choicePool.filter(w => w !== word)).slice(0, 4);
+        const correctChoice = word.ko;
+        const wrongChoices = others.map(w => w.ko);
+        const allChoices = this.shuffleItems([correctChoice, ...wrongChoices]);
+        return {
+          word,
+          question: word.en,
+          correct: correctChoice,
+          choices: allChoices,
+          answered: null,
+          isCorrect: false
+        };
+      } else if (direction === 3) {
+        return {
+          word,
+          question: word.en,
+          correct: word.en,
+          answered: null,
+          isCorrect: false
+        };
+      } else {
+        return {
+          word,
+          question: word.en,
+          correct: `${word.en} / ${word.ko}`,
+          answered: null,
+          isCorrect: false
+        };
+      }
     });
   },
 
-  renderVocabQuestion() {
+  async renderVocabQuestion() {
     const vt = this.state.vocabTest;
     const q = vt.questions[vt.currentIndex];
     const total = vt.questions.length;
+    const dir = vt.direction;
 
-    // Top info
+    // Top info bar
     document.getElementById('vocabTestTopInfo').innerHTML = `
-      <div class="flex items-center gap-3 flex-wrap">
-        <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)}</span>
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${vt.direction === 1 ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'}">
-          ${vt.direction === 1 ? '한글 → 영어' : '영어 → 한글'}
+      <div class="flex items-center gap-3 flex-wrap w-full">
+        <div>
+          <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)}</span>
+          <span class="text-xs text-slate-500 ml-2">문항 ${vt.currentIndex + 1} / ${total}</span>
+        </div>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${dir === 2 ? 'bg-violet-100 text-violet-700' : (dir === 3 ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700')}">
+          ${this.getVocabDirectionLabel(dir)}
         </span>
-        <span class="text-xs text-slate-500">${vt.currentIndex + 1} / ${total} 문제</span>
-        <span id="vocabTestTimer" class="ml-auto px-4 py-2 rounded-full bg-rose-100 text-rose-700 text-base sm:text-lg font-black"><i class="fa-regular fa-clock mr-1"></i>7초</span>
+        <span id="vocabTestTimer" class="ml-auto px-4 py-1.5 rounded-full bg-rose-100 text-rose-700 text-sm sm:text-base font-black flex items-center gap-1.5">
+          <i class="fa-regular fa-clock"></i>${vt.timeRemaining}초
+        </span>
       </div>`;
 
-    // Content
     const progressPct = ((vt.currentIndex) / total) * 100;
-    document.getElementById('vocabTestContent').innerHTML = `
-      <div class="space-y-6">
-        <!-- Progress Bar -->
-        <div class="w-full bg-slate-200 rounded-full h-2">
-          <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
-        </div>
+    const contentEl = document.getElementById('vocabTestContent');
 
-        <!-- Question Card -->
-        <div class="glass-card rounded-2xl p-8 text-center">
-          <p class="text-xs font-semibold text-slate-400 mb-3">
-            ${vt.direction === 1 ? '다음 한국어 뜻에 해당하는 영어 단어를 고르세요' : '다음 영어 단어의 한국어 뜻을 고르세요'}
-          </p>
-          <div class="text-3xl sm:text-4xl font-black text-slate-900 mb-8 py-4 px-6 bg-indigo-50 rounded-2xl border border-indigo-100 inline-block min-w-[200px]">
-            ${this.escapeHtml(q.question)}
+    if (dir === 2) {
+      // ── 모드 2: 영어 → 한글 (5지선다) ──────────────────────
+      contentEl.innerHTML = `
+        <div class="space-y-6 max-w-2xl mx-auto">
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
           </div>
 
-          <!-- 5 Choices -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-left mt-2">
-            ${q.choices.map((choice, i) => `
-              <button
-                id="vocabChoice_${i}"
-                onclick="App.selectVocabAnswer(${i})"
-                class="vocab-choice-btn w-full p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 text-sm font-semibold text-slate-800 transition text-left flex items-center gap-3"
-              >
-                <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold flex-shrink-0">${['①','②','③','④','⑤'][i]}</span>
-                <span>${this.escapeHtml(choice)}</span>
+          <div class="glass-card rounded-2xl p-6 sm:p-8 text-center space-y-6">
+            <p class="text-xs font-bold text-slate-400">
+              다음 영어 단어의 올바른 한국어 뜻을 고르세요
+            </p>
+            <div class="flex items-center justify-center gap-3 py-4 px-6 bg-indigo-50/80 rounded-2xl border border-indigo-100 inline-flex min-w-[220px] shadow-inner">
+              <span class="text-3xl sm:text-4xl font-black text-slate-900">${this.escapeHtml(q.word.en)}</span>
+              <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(q.word.en)}')" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-sm transition flex-shrink-0 cursor-pointer" title="발음 다시 듣기">
+                <i class="fa-solid fa-volume-high text-sm"></i>
               </button>
-            `).join('')}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-2">
+              ${q.choices.map((choice, i) => `
+                <button
+                  id="vocabChoice_${i}"
+                  onclick="App.selectVocabAnswer(${i})"
+                  class="vocab-choice-btn w-full p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 text-sm font-semibold text-slate-800 transition text-left flex items-center gap-3"
+                >
+                  <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold flex-shrink-0">${['①','②','③','④','⑤'][i]}</span>
+                  <span>${this.escapeHtml(choice)}</span>
+                </button>
+              `).join('')}
+            </div>
           </div>
-        </div>
-      </div>`;
+        </div>`;
+    } else if (dir === 3) {
+      // ── 모드 3: 발음/발음기호 → 영어 스펠링 쓰기 ────────────
+      const cachedIpa = this.vocabIpaCache[q.word.en.trim().toLowerCase()] || '';
+      contentEl.innerHTML = `
+        <div class="space-y-6 max-w-2xl mx-auto">
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
+          </div>
+
+          <div class="glass-card rounded-3xl p-6 sm:p-8 text-center space-y-6 border border-slate-200/80 shadow-md">
+            <!-- 심플 대형 발음기호 (유형 배지 없이 깔끔하게) -->
+            <div class="py-8 px-6 bg-slate-50 border border-slate-200/80 rounded-3xl text-center flex items-center justify-center min-h-[96px]">
+              <div id="vocabPhoneticBadge" class="font-ipa text-4xl sm:text-5xl font-bold text-slate-900 tracking-wider select-none">
+                ${cachedIpa ? this.escapeHtml(cachedIpa) : '<i class="fa-solid fa-spinner fa-spin text-slate-400 text-2xl"></i>'}
+              </div>
+            </div>
+
+            <!-- Input Box -->
+            <div class="pt-1">
+              <input
+                type="text"
+                id="vocabSpellingInput"
+                class="w-full p-4 rounded-2xl border-2 border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-center text-xl sm:text-2xl font-black text-slate-900 outline-none transition shadow-inner placeholder:text-slate-300 placeholder:font-normal"
+                placeholder="영어 단어 입력"
+                autofocus
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                oninput="App.filterSpellingEnglishOnly(this)"
+                onkeydown="if(event.key==='Enter') App.submitVocabSpellingAnswer(false)"
+              />
+            </div>
+
+            <button
+              type="button"
+              onclick="App.submitVocabSpellingAnswer(false)"
+              class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span>답안 제출 및 다음 문제 (Enter)</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>`;
+    } else if (dir === 4) {
+      // ── 모드 4: 발음/발음기호 → 스펠링 + 한글 뜻 쓰기 (일체형 가운데 정렬) ──────────
+      const cachedIpa = this.vocabIpaCache[q.word.en.trim().toLowerCase()] || '';
+      contentEl.innerHTML = `
+        <div class="space-y-6 max-w-2xl mx-auto">
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-emerald-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
+          </div>
+
+          <div class="glass-card rounded-3xl p-6 sm:p-8 text-center space-y-6 border border-slate-200/80 shadow-md">
+            <!-- 심플 대형 발음기호 (유형 배지 없이 깔끔하게) -->
+            <div class="py-8 px-6 bg-slate-50 border border-slate-200/80 rounded-3xl text-center flex items-center justify-center min-h-[96px]">
+              <div id="vocabPhoneticBadge" class="font-ipa text-4xl sm:text-5xl font-bold text-slate-900 tracking-wider select-none">
+                ${cachedIpa ? this.escapeHtml(cachedIpa) : '<i class="fa-solid fa-spinner fa-spin text-slate-400 text-2xl"></i>'}
+              </div>
+            </div>
+
+            <!-- Inputs Box: 위/아래 일체형 연결 & 가운데 정렬 -->
+            <div class="pt-1">
+              <div class="rounded-2xl border-2 border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100 overflow-hidden bg-white shadow-inner transition divide-y divide-slate-200">
+                <input
+                  type="text"
+                  id="vocabSpellingInput"
+                  class="w-full p-4 text-center text-xl sm:text-2xl font-black text-slate-900 outline-none bg-transparent placeholder:text-slate-300 placeholder:font-normal transition"
+                  placeholder="영어 스펠링 입력"
+                  autofocus
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  oninput="App.filterSpellingEnglishOnly(this)"
+                  onkeydown="if(event.key==='Enter') document.getElementById('vocabMeaningInput')?.focus()"
+                />
+                <input
+                  type="text"
+                  id="vocabMeaningInput"
+                  class="w-full p-4 text-center text-xl sm:text-2xl font-black text-slate-900 outline-none bg-transparent placeholder:text-slate-300 placeholder:font-normal transition"
+                  placeholder="한국어 뜻 입력"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  onkeydown="if(event.key==='Enter') App.submitVocabComprehensiveAnswer(false)"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onclick="App.submitVocabComprehensiveAnswer(false)"
+              class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span>답안 제출 및 다음 문제 (Enter)</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>`;
+    }
+
+    // 모든 시험(객관식, 스펠링, 통합): 사전식 MP3 자동 1회 재생
+    setTimeout(() => {
+      this.playDictionaryAudio(q.word.en);
+      const inputEl = document.getElementById('vocabSpellingInput');
+      if (inputEl) inputEl.focus();
+    }, 50);
+
+    // 스펠링/통합 시험인 경우: 대형 발음기호 비동기 주입
+    if (dir === 3 || dir === 4) {
+      this.fetchWordPhonetic(q.word.en).then(ipa => {
+        const badgeEl = document.getElementById('vocabPhoneticBadge');
+        if (badgeEl) {
+          badgeEl.innerHTML = ipa
+            ? `<span class="tracking-wider">${this.escapeHtml(ipa)}</span>`
+            : `<span class="text-xl font-mono text-slate-500 font-bold">[${this.escapeHtml(q.word.en)}]</span>`;
+        }
+      });
+    }
+
     this.startVocabQuestionTimer();
   },
 
   startVocabQuestionTimer() {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
-    vt.timeRemaining = 7;
+    vt.timeRemaining = vt.initialTimeLimit || (vt.direction === 2 ? 7 : (vt.direction === 3 ? 15 : 20));
     const timer = document.getElementById('vocabTestTimer');
-    if (timer) timer.innerHTML = '<i class="fa-regular fa-clock mr-1"></i>7초';
+    if (timer) timer.innerHTML = `<i class="fa-regular fa-clock"></i>${vt.timeRemaining}초`;
     vt.timerId = setInterval(() => {
       vt.timeRemaining--;
       const timerEl = document.getElementById('vocabTestTimer');
-      if (timerEl) timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${vt.timeRemaining}초`;
-      if (vt.timeRemaining <= 0) this.submitVocabAnswer(null, true);
+      if (timerEl) timerEl.innerHTML = `<i class="fa-regular fa-clock"></i>${vt.timeRemaining}초`;
+      if (vt.timeRemaining <= 0) {
+        if (vt.direction === 2) {
+          this.submitVocabAnswer(null, true);
+        } else if (vt.direction === 3) {
+          this.submitVocabSpellingAnswer(true);
+        } else {
+          this.submitVocabComprehensiveAnswer(true);
+        }
+      }
     }, 1000);
   },
 
@@ -3807,6 +4448,7 @@ const App = {
     }
   },
 
+  // ── 모드 2 답안 제출 (5지선다) ──────────────────────────
   selectVocabAnswer(choiceIndex) {
     this.submitVocabAnswer(choiceIndex, false);
   },
@@ -3814,15 +4456,15 @@ const App = {
   submitVocabAnswer(choiceIndex, timedOut) {
     const vt = this.state.vocabTest;
     const q = vt.questions[vt.currentIndex];
-    if (q.answered !== null) return; // 이미 답변함
+    if (q.answered !== null) return;
     this.clearVocabQuestionTimer();
 
     const chosen = timedOut ? '시간 초과' : q.choices[choiceIndex];
     q.answered = chosen;
     const isCorrect = !timedOut && chosen === q.correct;
+    q.isCorrect = isCorrect;
     if (isCorrect) vt.score++;
 
-    // 정답/오답을 알려주지 않고 선택한 버튼만 살짝 표시 후 즉시 다음 문제로 전환
     q.choices.forEach((choice, i) => {
       const btn = document.getElementById(`vocabChoice_${i}`);
       if (!btn) return;
@@ -3832,7 +4474,6 @@ const App = {
       }
     });
 
-    // 딜레이 없이 빠르게 다음 문제로 이동 (150ms 부드러운 전환)
     setTimeout(() => {
       vt.currentIndex++;
       if (vt.currentIndex < vt.questions.length) {
@@ -3843,23 +4484,145 @@ const App = {
     }, 120);
   },
 
+  // ── 모드 3 답안 제출 (스펠링 주관식) ────────────────────
+  submitVocabSpellingAnswer(timedOut) {
+    const vt = this.state.vocabTest;
+    const q = vt.questions[vt.currentIndex];
+    if (q.answered !== null) return;
+    this.clearVocabQuestionTimer();
+
+    const inputVal = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
+    const isCorrect = !timedOut && inputVal.toLowerCase() === q.word.en.trim().toLowerCase();
+    q.answered = timedOut ? '시간 초과' : (inputVal || '(미입력)');
+    q.isCorrect = isCorrect;
+    if (isCorrect) vt.score++;
+
+    const inputEl = document.getElementById('vocabSpellingInput');
+    if (inputEl) {
+      inputEl.disabled = true;
+    }
+
+    setTimeout(() => {
+      vt.currentIndex++;
+      if (vt.currentIndex < vt.questions.length) {
+        this.renderVocabQuestion();
+      } else {
+        this.renderVocabResult();
+      }
+    }, 120);
+  },
+
+  // ── 모드 4 답안 제출 (스펠링 + 뜻 종합) ──────────────────
+  submitVocabComprehensiveAnswer(timedOut) {
+    const vt = this.state.vocabTest;
+    const q = vt.questions[vt.currentIndex];
+    if (q.answered !== null) return;
+    this.clearVocabQuestionTimer();
+
+    const spelling = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
+    const meaning = timedOut ? '' : (document.getElementById('vocabMeaningInput')?.value || '').trim();
+
+    // 1단계: 스펠링 우선 검증 (틀리면 즉시 오답)
+    const spellingCorrect = !timedOut && Boolean(spelling) && spelling.toLowerCase() === q.word.en.trim().toLowerCase();
+    
+    // 2단계: 스펠링이 맞았을 때 한국어 뜻 검증
+    const meaningCorrect = spellingCorrect ? this.checkKoreanMeaningMatch(meaning, q.word.ko) : false;
+    const isCorrect = spellingCorrect && meaningCorrect;
+
+    q.spellingInput = spelling;
+    q.meaningInput = meaning;
+    q.spellingCorrect = spellingCorrect;
+    q.meaningCorrect = meaningCorrect;
+    q.answered = timedOut ? '시간 초과' : `${spelling || '(스펠링 미입력)'} / ${meaning || '(뜻 미입력)'}`;
+    q.isCorrect = isCorrect;
+    if (isCorrect) vt.score++;
+
+    const spellingEl = document.getElementById('vocabSpellingInput');
+    const meaningEl = document.getElementById('vocabMeaningInput');
+    if (spellingEl) spellingEl.disabled = true;
+    if (meaningEl) meaningEl.disabled = true;
+
+    setTimeout(() => {
+      vt.currentIndex++;
+      if (vt.currentIndex < vt.questions.length) {
+        this.renderVocabQuestion();
+      } else {
+        this.renderVocabResult();
+      }
+    }, 120);
+  },
+
+  // ── 단어 테스트 결과 렌더링 ──────────────────────────────
   async renderVocabResult() {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
     vt.isCompleted = true;
     const total = vt.allWords.length;
-    const score = Math.round((vt.score / total) * 100);
-    const directionLabel = vt.direction === 1 ? '한글 → 영어' : '영어 → 한글';
+    const directionLabel = this.getVocabDirectionLabel(vt.direction);
     const test = vt.testId && AppData.getTests().find(item => item.id === vt.testId);
-    const cutoffScore = this.getVocabCutoffScore(test);
-    const passed = score >= cutoffScore;
-    const wrongAnswers = vt.questions.filter(q => q.answered !== q.correct).map(q => ({
-      question: q.question,
-      answer: q.answered || '시간 초과',
-      correct: q.correct
+    const cutoffScore = this.getVocabCutoffScore(test, vt.direction);
+
+    const questionDetails = vt.questions.map((q, idx) => ({
+      index: idx,
+      word: q.word || { en: q.question, ko: q.correct },
+      question: q.word ? q.word.en : q.question,
+      correct: q.word ? (vt.direction === 4 ? `${q.word.en} : ${q.word.ko}` : (vt.direction === 2 ? q.word.ko : q.word.en)) : q.correct,
+      answered: q.answered || '시간 초과',
+      spellingInput: q.spellingInput ?? (vt.direction === 3 ? q.answered : ''),
+      meaningInput: q.meaningInput ?? '',
+      spellingCorrect: q.spellingCorrect ?? (vt.direction === 3 ? q.isCorrect : null),
+      meaningCorrect: q.meaningCorrect ?? (vt.direction === 2 ? q.isCorrect : null),
+      isCorrect: Boolean(q.isCorrect)
     }));
+
+    let score = 0;
+    let correctCount = 0;
+    let passed = false;
+    let waitingGrading = false;
+    let retryAvailableAt = null;
+
+    if (vt.direction === 4) {
+      // ── 모드 4 (스펠링, 뜻): 스펠링으로 먼저 1차 채점 ──
+      const spellingCorrectCount = questionDetails.filter(q => q.spellingCorrect).length;
+      const spellingScore = Math.round((spellingCorrectCount / total) * 100);
+      score = spellingScore;
+      correctCount = spellingCorrectCount;
+
+      if (spellingScore < cutoffScore) {
+        // 스펠링 점수가 커트라인 미달 -> 바로 불합격 & 10분 후 재응시
+        passed = false;
+        waitingGrading = false;
+        retryAvailableAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      } else {
+        // 스펠링 점수가 커트라인 이상 -> 채점 대기중!
+        passed = false;
+        waitingGrading = true;
+        retryAvailableAt = null;
+      }
+    } else {
+      // ── 모드 2 (객관식), 모드 3 (스펠링) ──
+      correctCount = vt.score;
+      score = Math.round((correctCount / total) * 100);
+      passed = score >= cutoffScore;
+      waitingGrading = false;
+      retryAvailableAt = passed ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    }
+
+    const wrongAnswers = vt.direction === 4
+      ? questionDetails.filter(q => !q.spellingCorrect).map(q => ({
+          question: q.word ? `${q.word.en} (${q.word.ko})` : q.question,
+          answer: q.spellingInput || '시간 초과 / 미입력',
+          correct: q.word ? q.word.en : q.correct
+        }))
+      : questionDetails.filter(q => !q.isCorrect).map(q => ({
+          question: q.word ? `${q.word.en} (${q.word.ko})` : q.question,
+          answer: q.answered || '시간 초과',
+          correct: q.word ? (vt.direction === 2 ? q.word.ko : q.word.en) : q.correct
+        }));
+
     const completedAt = new Date().toISOString();
     const startedAt = vt.startedAt || completedAt;
+
     try {
       await AppData.saveVocabTestResult({
         studentId: vt.studentId,
@@ -3867,11 +4630,14 @@ const App = {
         testId: vt.testId,
         direction: vt.direction,
         score,
-        correctCount: vt.score,
+        correctCount,
         total,
         passed,
+        waitingGrading,
+        spellingScore: score,
+        questionDetails,
         wrongAnswers,
-        retryAvailableAt: passed ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        retryAvailableAt,
         startedAt,
         completedAt
       });
@@ -3883,38 +4649,78 @@ const App = {
     document.getElementById('vocabTestTopInfo').innerHTML = `
       <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)} — 테스트 완료</span>`;
 
+    let statusHeaderHtml = '';
+    let statusBannerHtml = '';
+
+    if (waitingGrading) {
+      statusHeaderHtml = `
+        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-amber-100 text-amber-600 animate-pulse">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <div>
+          <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+            ⏳ 채점 대기중
+          </span>
+          <h3 class="text-2xl font-black text-slate-900 mt-2">선생님 채점 대기중</h3>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · 스펠링 1차 정답 ${correctCount} / ${total}개</p>
+          <div class="text-4xl font-black text-indigo-600 mt-3">${score}점 <span class="text-xs font-bold text-slate-400 font-normal">(스펠링 1차 점수)</span></div>
+        </div>`;
+      statusBannerHtml = `
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm font-semibold space-y-1 text-left">
+          <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-amber-600"></i> 스펠링 1차 채점 통과! (기준: ${cutoffScore}점 이상)</p>
+          <p class="text-xs text-amber-700">선생님이 작성하신 한국어 뜻을 검토 및 채점한 후 최종 합격(PASS) 여부가 반영됩니다.</p>
+        </div>`;
+    } else if (passed) {
+      statusHeaderHtml = `
+        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-emerald-700">테스트 통과 (PASS)!</h3>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${correctCount} / ${total} 정답</p>
+          <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
+        </div>`;
+      statusBannerHtml = `
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold">
+          축하합니다! 커트라인(${cutoffScore}점)을 통과하여 테스트가 완료되었습니다.
+        </div>`;
+    } else {
+      statusHeaderHtml = `
+        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-rose-100 text-rose-600">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-rose-700">불합격 (FAIL)</h3>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${vt.direction === 4 ? `스펠링 ${correctCount} / ${total} 정답` : `${correctCount} / ${total} 정답`}</p>
+          <div class="text-4xl font-black text-slate-900 mt-3">${score}점 ${vt.direction === 4 ? '<span class="text-xs font-normal text-slate-400">(스펠링 점수)</span>' : ''}</div>
+        </div>`;
+      statusBannerHtml = `
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-semibold">
+          ${vt.direction === 4 ? `스펠링 1차 채점 점수(${score}점)가 커트라인(${cutoffScore}점)에 미달하였습니다.` : `커트라인(${cutoffScore}점)에 미달하였습니다.`} 10분 후 다시 도전할 수 있습니다.
+        </div>`;
+    }
+
     document.getElementById('vocabTestContent').innerHTML = `
       <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6 text-center max-w-2xl mx-auto">
-        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
-          <i class="fa-solid ${passed ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
-        </div>
-
-        <div>
-          <h3 class="text-2xl font-black ${passed ? 'text-emerald-700' : 'text-rose-700'}">${passed ? '테스트 통과 (PASS)!' : '불합격 (FAIL)'}</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${vt.score} / ${total} 정답</p>
-          <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
-        </div>
-
-        <div class="p-4 rounded-xl ${passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'} text-xs sm:text-sm font-semibold">
-          ${passed ? `축하합니다! 커트라인(${cutoffScore}점)을 통과하여 테스트가 완료되었습니다.` : `커트라인(${cutoffScore}점)에 미달하였습니다. 10분 후 다시 도전할 수 있습니다.`}
-        </div>
+        ${statusHeaderHtml}
+        ${statusBannerHtml}
 
         <!-- 오답 노트 섹션 -->
         ${wrongAnswers.length > 0 ? `
           <div class="text-left space-y-3 pt-2">
             <h4 class="text-xs font-bold text-rose-700 flex items-center gap-1.5 uppercase tracking-wider">
               <i class="fa-solid fa-triangle-exclamation"></i>
-              <span>틀린 단어 오답 노트 (${wrongAnswers.length}개)</span>
+              <span>${vt.direction === 4 ? '틀린 스펠링 단어 목록' : '틀린 단어 오답 노트'} (${wrongAnswers.length}개)</span>
             </h4>
             <div class="max-h-60 overflow-y-auto rounded-xl border border-rose-100 divide-y divide-slate-100 bg-rose-50/30 text-xs">
               ${wrongAnswers.map((item, idx) => `
-                <div class="p-3 grid grid-cols-[auto_1fr_1fr] gap-2 items-center">
+                <div class="p-3 grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
                   <span class="font-bold text-slate-400 w-6">${idx + 1}</span>
                   <div>
                     <span class="font-bold text-slate-800">${this.escapeHtml(item.question)}</span>
-                    <div class="text-[11px] text-rose-600 mt-0.5">내가 고른 답: <strong>${this.escapeHtml(item.answer)}</strong></div>
+                    <div class="text-[11px] text-rose-600 mt-0.5">내가 적은 답: <strong>${this.escapeHtml(item.answer)}</strong></div>
                   </div>
-                  <div class="text-right sm:text-left">
+                  <div class="text-left sm:text-right">
                     <span class="text-[11px] text-slate-500">정답:</span>
                     <span class="font-bold text-emerald-700 ml-1">${this.escapeHtml(item.correct)}</span>
                   </div>
@@ -3924,13 +4730,13 @@ const App = {
           </div>
         ` : `
           <div class="p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">
-            🎉 모든 문제를 맞혔습니다! 완벽합니다.
+            🎉 모든 스펠링 문제를 맞혔습니다!
           </div>
         `}
 
         <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          ${passed ? '' : `<button disabled class="px-6 py-3 rounded-xl bg-slate-200 text-slate-500 font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-clock"></i> 10분 후 재응시 가능</button>`}
-          <button onclick="App.exitVocabTest()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-sm">
+          ${!passed && retryAvailableAt ? `<button disabled class="px-6 py-3 rounded-xl bg-slate-200 text-slate-500 font-bold flex items-center justify-center gap-2 text-xs"><i class="fa-solid fa-clock"></i> 10분 후 재응시 가능</button>` : ''}
+          <button onclick="App.exitVocabTest()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-sm text-xs">
             <i class="fa-solid fa-arrow-left"></i> 학습공간으로 돌아가기
           </button>
         </div>
@@ -3978,9 +4784,9 @@ const App = {
     const startedAt = vt.startedAt || completedAt;
 
     const wrongAnswers = vt.questions.map(q => ({
-      question: q.question,
+      question: q.word ? `${q.word.en} (${q.word.ko})` : q.question,
       answer: q.answered || '중도 이탈',
-      correct: q.correct
+      correct: q.word ? `${q.word.en} : ${q.word.ko}` : q.correct
     }));
 
     try {
@@ -4005,12 +4811,32 @@ const App = {
     }
   },
 
-  getVocabCutoffScore(test) {
+  getVocabCutoffScore(test, direction = null) {
+    if (!test) return 80;
+
+    // 1. 유형별 개별 커트라인 우선 조회
+    if (direction) {
+      if (test.vocabCutoffs && typeof test.vocabCutoffs === 'object') {
+        const dirVal = Number(test.vocabCutoffs[direction] ?? test.vocabCutoffs[String(direction)]);
+        if (Number.isInteger(dirVal) && dirVal >= 1 && dirVal <= 100) {
+          return dirVal;
+        }
+      }
+      if (test[`vocabCutoff_${direction}`] !== undefined) {
+        const dirVal = Number(test[`vocabCutoff_${direction}`]);
+        if (Number.isInteger(dirVal) && dirVal >= 1 && dirVal <= 100) {
+          return dirVal;
+        }
+      }
+    }
+
+    // 2. 단일 vocabCutoff fallback
     const configuredCutoff = Number(test?.vocabCutoff);
     if (Number.isInteger(configuredCutoff) && configuredCutoff >= 1 && configuredCutoff <= 100) {
       return configuredCutoff;
     }
 
+    // 3. 기존 legacy cutoff 문자열 파싱
     const match = String(test?.cutoff || '').match(/(\d+)/);
     const legacyCutoff = match ? Number(match[1]) : null;
     return Number.isInteger(legacyCutoff) && legacyCutoff >= 1 && legacyCutoff <= 100 ? legacyCutoff : 80;
@@ -4020,20 +4846,320 @@ const App = {
     const test = AppData.getTests().find(item => item.id === testId);
     if (!test || test.type !== 'VOCAB') return;
     const results = AppData.getVocabTestResults().filter(result => result.testId === testId);
-    const passedDirections = [1, 2].every(direction => results.some(result => result.direction === direction && result.passed));
-    const hasFailedDirection = results.some(result => !result.passed);
-    test.status = passedDirections ? 'PASS' : (hasFailedDirection ? 'FAIL' : 'SCHEDULED');
+    const requiredDirections = [2, 3, 4];
+    // 3가지 종목(2: 객관식, 3: 스펠링, 4: 스펠링, 뜻)이 모두 응시 완료되고 모두 통과해야만 전체 PASS!
+    const allPassed = requiredDirections.every(dir => results.some(r => r.direction === dir && r.passed));
+    const hasWaitingGrading = results.some(r => r.direction === 4 && r.waitingGrading && !r.gradedByAdmin);
+    const anyFailed = results.some(r => !r.passed && !r.waitingGrading);
+
+    test.status = allPassed ? 'PASS' : (hasWaitingGrading ? 'SCHEDULED' : (results.length > 0 ? (anyFailed ? 'FAIL' : 'SCHEDULED') : 'SCHEDULED'));
     test.score = results
       .sort((a, b) => a.direction - b.direction)
-      .map(result => `${result.direction === 1 ? '한→영' : '영→한'} ${result.score}점`)
+      .map(result => {
+        if (result.direction === 4 && result.waitingGrading && !result.gradedByAdmin) {
+          return `${this.getVocabDirectionShortLabel(result.direction)} ${result.score}점(채점대기)`;
+        }
+        return `${this.getVocabDirectionShortLabel(result.direction)} ${result.score}점`;
+      })
       .join(' · ');
     test.retestStatus = 'NONE';
     await AppData.saveOrUpdateTest(test);
   },
 
 
-};
+  // ── 관리자 단어 채점 모달 ──────────────────────────────────
+  _vocabGradingState: null,
 
+  async openVocabGradingModal(studentIdOrResult, testId, direction, completedAt) {
+    let result = null;
+
+    if (typeof studentIdOrResult === 'object' && studentIdOrResult !== null) {
+      result = studentIdOrResult;
+    } else {
+      const studentId = studentIdOrResult;
+      const allResults = AppData.getVocabTestResults();
+      
+      // 1. 정확한 매칭 시도
+      result = allResults.find(r => 
+        String(r.studentId) === String(studentId) &&
+        String(r.testId || '') === String(testId || '') &&
+        Number(r.direction) === Number(direction) &&
+        (!completedAt || r.completedAt === completedAt)
+      );
+
+      // 2. 시간 제외 매칭
+      if (!result) {
+        result = allResults.find(r => 
+          String(r.studentId) === String(studentId) &&
+          String(r.testId || '') === String(testId || '') &&
+          Number(r.direction) === Number(direction)
+        );
+      }
+
+      // 3. ID 매칭 시도
+      if (!result) {
+        result = allResults.find(r => r.id === studentId);
+      }
+    }
+
+    if (!result) {
+      this.toast('채점 대상을 찾을 수 없습니다.', 'error');
+      return;
+    }
+
+    const student = AppData.getStudents().find(s => String(s.id) === String(result.studentId));
+    const test = AppData.getTests().find(t => String(t.id) === String(result.testId));
+    const set = AppData.getVocabSets().find(s => String(s.id) === String(result.setId));
+
+    // questionDetails가 없는 이전 기록인 경우 세트 단어로부터 기본 구성
+    if (!result.questionDetails || result.questionDetails.length === 0) {
+      const wrongList = result.wrongAnswers || [];
+      if (set && Array.isArray(set.words) && set.words.length > 0) {
+        result.questionDetails = set.words.map((w, idx) => {
+          const wrongItem = wrongList.find(wr => 
+            (wr.question && wr.question.includes(w.en)) || 
+            (wr.correct && wr.correct.includes(w.en))
+          );
+          const isCorrect = !wrongItem;
+          return {
+            index: idx,
+            word: w,
+            question: w.en,
+            correct: `${w.en} : ${w.ko}`,
+            answered: wrongItem ? wrongItem.answer : `${w.en} / ${w.ko}`,
+            spellingInput: wrongItem ? (wrongItem.answer?.split('/')[0]?.trim() || '') : w.en,
+            meaningInput: wrongItem ? (wrongItem.answer?.split('/')[1]?.trim() || '') : w.ko,
+            spellingCorrect: isCorrect,
+            meaningCorrect: isCorrect,
+            isCorrect: isCorrect
+          };
+        });
+      } else {
+        this.toast('이 시험 기록의 단어 정보를 불러올 수 없습니다.', 'warning');
+        return;
+      }
+    }
+
+    // 채점 상태를 클론해서 메모리에서 수정
+    this._vocabGradingState = {
+      result,
+      student,
+      test,
+      set,
+      items: result.questionDetails.map((q, i) => ({ ...q, _gradingCorrect: Boolean(q.isCorrect) }))
+    };
+
+    // 헤더/서브타이틀
+    document.getElementById('vocabGradingTitle').textContent = `${student?.name || '학생'} — 통합 채점`;
+    document.getElementById('vocabGradingSubtitle').textContent =
+      `${test?.title || '단어 테스트'} · ${set?.title || '단어 세트'} · ${this.getVocabResultTimeString(result)}`;
+
+    this._renderVocabGradingSummary();
+    this._renderVocabGradingItems();
+
+    const modal = document.getElementById('vocabGradingModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  },
+
+  closeVocabGradingModal() {
+    const modal = document.getElementById('vocabGradingModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    this._vocabGradingState = null;
+  },
+
+  _renderVocabGradingSummary() {
+    const gs = this._vocabGradingState;
+    if (!gs) return;
+    const items = gs.items;
+    const correctCount = items.filter(q => q._gradingCorrect).length;
+    const total = items.length;
+    const test = gs.test;
+    const cutoffScore = this.getVocabCutoffScore(test, 4);
+    const score = Math.round((correctCount / total) * 100);
+    const passed = score >= cutoffScore;
+    const pendingCount = items.filter(q => q.spellingCorrect && !q.meaningCorrect).length;
+
+    document.getElementById('vocabGradingSummaryBar').innerHTML = `
+      <div class="flex items-center gap-1.5">
+        <span class="font-bold text-indigo-900">정답</span>
+        <span class="font-black text-indigo-700 text-sm">${correctCount} / ${total}</span>
+      </div>
+      <div class="w-px h-4 bg-indigo-200"></div>
+      <div class="flex items-center gap-1.5">
+        <span class="font-bold text-indigo-900">점수</span>
+        <span class="font-black text-sm ${passed ? 'text-emerald-700' : 'text-rose-700'}">${score}점</span>
+        <span class="font-bold text-xs ${passed ? 'text-emerald-600 bg-emerald-100 border-emerald-200' : 'text-rose-600 bg-rose-100 border-rose-200'} px-2 py-0.5 rounded-full border">${passed ? 'PASS' : 'FAIL'}</span>
+      </div>
+      ${pendingCount > 0 ? `
+        <div class="w-px h-4 bg-indigo-200"></div>
+        <div class="flex items-center gap-1 text-amber-700">
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 text-[10px]"></i>
+          <span>뜻 검토 필요 ${pendingCount}개</span>
+        </div>
+      ` : ''}
+      <div class="ml-auto text-[10px] text-indigo-400">합격 기준: ${cutoffScore}점</div>
+    `;
+  },
+
+  _renderVocabGradingItems() {
+    const gs = this._vocabGradingState;
+    if (!gs) return;
+    const items = gs.items;
+
+    const html = items.map((q, i) => {
+      const isSpellingWrong = !q.spellingCorrect;
+      const spellingOk = q.spellingCorrect;
+      const isMeaningPending = spellingOk && !q.isCorrect; // 스펠링은 맞지만 원래 오답(뜻 오류) -> 검토 대상
+      const isMeaningManuallyOverridden = spellingOk && q._gradingCorrect !== q.isCorrect;
+
+      let statusBadge = '';
+      let cardBg = 'bg-white border-slate-200';
+
+      if (isSpellingWrong) {
+        cardBg = 'bg-rose-50/60 border-rose-200';
+        statusBadge = `<span class="text-[10px] font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1"><i class="fa-solid fa-times-circle"></i> 스펠링 오답</span>`;
+      } else if (q._gradingCorrect) {
+        cardBg = 'bg-emerald-50/60 border-emerald-200';
+        statusBadge = `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> 정답</span>`;
+      } else {
+        cardBg = 'bg-amber-50/60 border-amber-200';
+        statusBadge = `<span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1"><i class="fa-solid fa-exclamation-circle"></i> 뜻 오답</span>`;
+      }
+
+      const wordEn = q.word?.en || q.question || '';
+      const wordKo = q.word?.ko || '';
+      const spellingIn = q.spellingInput || '';
+      const meaningIn = q.meaningInput || '';
+
+      const toggleBtn = !isSpellingWrong ? `
+        <button onclick="App._toggleVocabGradingItem(${i})"
+          class="text-[11px] font-bold px-3 py-1.5 rounded-xl border transition flex items-center gap-1 ${q._gradingCorrect
+            ? 'border-rose-200 bg-white text-rose-600 hover:bg-rose-50'
+            : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}">
+          ${q._gradingCorrect
+            ? '<i class="fa-solid fa-xmark"></i> 오답으로 변경'
+            : '<i class="fa-solid fa-check"></i> 정답 인정'}
+        </button>` : '';
+
+      return `
+        <div class="rounded-xl border ${cardBg} p-3.5 space-y-2.5" id="grading-item-${i}">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold text-slate-400 bg-slate-100 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">${i + 1}</span>
+              <div>
+                <span class="font-extrabold text-slate-800 text-sm">${this.escapeHtml(wordEn)}</span>
+                <span class="text-slate-400 text-xs ml-1.5">${this.escapeHtml(wordKo)}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              ${statusBadge}
+              ${toggleBtn}
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="rounded-lg p-2 ${spellingOk ? 'bg-emerald-50 border border-emerald-200' : 'bg-rose-50 border border-rose-200'}">
+              <p class="text-[10px] font-bold ${spellingOk ? 'text-emerald-600' : 'text-rose-500'} mb-0.5">스펠링 입력</p>
+              <p class="font-mono font-bold ${spellingOk ? 'text-emerald-800' : 'text-rose-700'}">${this.escapeHtml(spellingIn) || '(미입력)'}</p>
+              ${!spellingOk ? `<p class="text-[10px] text-slate-500 mt-0.5">정답: <strong>${this.escapeHtml(wordEn)}</strong></p>` : ''}
+            </div>
+            <div class="rounded-lg p-2 ${q._gradingCorrect && spellingOk ? 'bg-emerald-50 border border-emerald-200' : spellingOk ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50 border border-slate-200'}">
+              <p class="text-[10px] font-bold ${q._gradingCorrect && spellingOk ? 'text-emerald-600' : spellingOk ? 'text-amber-600' : 'text-slate-400'} mb-0.5">뜻 입력</p>
+              <p class="font-bold ${q._gradingCorrect && spellingOk ? 'text-emerald-800' : spellingOk ? 'text-amber-800' : 'text-slate-400'}">${this.escapeHtml(meaningIn) || '(미입력)'}</p>
+              ${spellingOk ? `<p class="text-[10px] text-slate-500 mt-0.5">정답 뜻: <strong>${this.escapeHtml(wordKo)}</strong></p>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('vocabGradingQuestionsList').innerHTML = html;
+  },
+
+  _toggleVocabGradingItem(index) {
+    const gs = this._vocabGradingState;
+    if (!gs) return;
+    const item = gs.items[index];
+    if (!item || !item.spellingCorrect) return; // 스펠링 오답은 토글 불가
+    item._gradingCorrect = !item._gradingCorrect;
+    this._renderVocabGradingSummary();
+    this._renderVocabGradingItems();
+  },
+
+  autoGradeWithAI() {
+    const gs = this._vocabGradingState;
+    if (!gs) return;
+    let autoGrantedCount = 0;
+    gs.items.forEach(item => {
+      if (!item.spellingCorrect) return; // 스펠링 오답은 건드리지 않음
+      if (item.isCorrect) return; // 이미 정답인 항목은 그냥 유지
+      // AI 시맨틱 분석
+      const evalResult = this.evaluateKoreanMeaningAI(item.meaningInput || '', item.word?.ko || '');
+      if (evalResult.match) {
+        item._gradingCorrect = true;
+        item._aiGranted = true;
+        item._aiReason = evalResult.reason;
+        autoGrantedCount++;
+      }
+    });
+    this._renderVocabGradingSummary();
+    this._renderVocabGradingItems();
+    if (autoGrantedCount > 0) {
+      this.toast(`AI가 ${autoGrantedCount}개 문항의 뜻을 유의어/동의어로 자동 인정했습니다. 검토 후 저장해주세요.`, 'success');
+    } else {
+      this.toast('AI가 추가로 인정할 수 있는 뜻이 없습니다.', 'info');
+    }
+  },
+
+  async saveVocabGradingChanges() {
+    const gs = this._vocabGradingState;
+    if (!gs) return;
+    const items = gs.items;
+    const total = items.length;
+    const correctCount = items.filter(q => q._gradingCorrect).length;
+    const score = Math.round((correctCount / total) * 100);
+    const test = gs.test;
+    const cutoffScore = this.getVocabCutoffScore(test, 4);
+    const passed = score >= cutoffScore;
+
+    const updatedDetails = items.map(q => ({
+      ...q,
+      isCorrect: q._gradingCorrect
+    }));
+    const updatedWrongAnswers = updatedDetails.filter(q => !q.isCorrect).map(q => ({
+      question: q.word ? `${q.word.en} (${q.word.ko})` : q.question,
+      answer: q.answered || '',
+      correct: q.word ? `${q.word.en} : ${q.word.ko}` : q.correct
+    }));
+
+    const updatedResult = {
+      ...gs.result,
+      score,
+      correctCount,
+      total,
+      passed,
+      waitingGrading: false,
+      questionDetails: updatedDetails,
+      wrongAnswers: updatedWrongAnswers,
+      retryAvailableAt: passed ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      gradedByAdmin: true,
+      gradedAt: new Date().toISOString()
+    };
+
+    try {
+      await AppData.saveVocabTestResult(updatedResult);
+      if (test) await this.updateVocabScheduleStatus(test.id);
+      this.toast(`채점 저장 완료! (${score}점, ${passed ? 'PASS ✅' : 'FAIL ❌'})`, passed ? 'success' : 'error');
+      this.closeVocabGradingModal();
+      // 관리자 탭 새로고침
+      if (this.state.adminTab === 'vocab') this.renderAdminVocabTab?.();
+    } catch (error) {
+      console.error('채점 저장 오류:', error);
+      this.toast('저장 중 오류가 발생했습니다.', 'error');
+    }
+  },
+
+};
 document.addEventListener('DOMContentLoaded', async () => {
 
   console.log('🚀 사이트 초기화 시작');
