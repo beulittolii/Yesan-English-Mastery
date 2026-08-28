@@ -15,29 +15,10 @@ const App = {
     studentViewTab: 'calendar', // 'calendar' | 'list'
     studentListFilter: 'ALL', // 'ALL' | 'SCHEDULED' | 'PASS' | 'RETEST'
     adminTab: 'tests', // 'tests' | 'overview' | 'students' | 'backup' | 'vocab'
-    // 단어 테스트 상태
-    vocabTest: {
-      setId: null,
-      direction: 1,    // 1 = 한글→영어, 2 = 영어→한글
-      questions: [],   // [{word, choices, answered, correct}]
-      currentIndex: 0,
-      score: 0,
-      timerId: null,
-      timeRemaining: 5
-    },
+    vocabTest: null,
     vocabSetReturnToTestForm: false,
     vocabResultSelectedDate: null,
-    // 문제풀이 시험 상태
-    practiceTest: {
-      testId: null,
-      studentId: null,
-      title: '',
-      questions: [],
-      cutoffScore: 80,
-      currentIndex: 0,
-      answers: {}, // { [qIndex]: choiceNumber(1~5) }
-      startedAt: null
-    },
+    practiceTest: null,
     editingPracticeQuestions: []
   },
 
@@ -60,13 +41,19 @@ const App = {
       }
     });
 
-    // 시험 진행 중 페이지 이탈(새로고침, 탭 닫기) 시 경고 및 포기 처리
+    // 시험 진행 중 페이지 이탈(새로고침, 탭 닫기) 시 경고 및 포기 처리 (시험 진행 중일 때만 동작)
     window.addEventListener('beforeunload', (e) => {
       const vt = this.state.vocabTest;
-      if (vt && !vt.isCompleted) {
+      if (this.state.view === 'vocabTest' && vt && vt.setId && !vt.isCompleted) {
         this.forfeitVocabTest();
         e.preventDefault();
         e.returnValue = '시험 진행 중 페이지를 벗어나면 불합격(0점) 처리됩니다.';
+      }
+      const pt = this.state.practiceTest;
+      if (this.state.view === 'practiceTest' && pt && pt.testId) {
+        this.forceFailPracticeTest();
+        e.preventDefault();
+        e.returnValue = '시험 진행 중 페이지를 벗어나면 0점 불합격 처리됩니다.';
       }
     });
 
@@ -87,8 +74,30 @@ const App = {
   // ========================================================
   // 1. 네비게이션 & 뷰 전환 (Navigation & Views)
   // ========================================================
+  handleLogoClick() {
+    if (this.state.isAdminLoggedIn) {
+      this.showAdminDashboard();
+    } else if (this.state.isStudentLoggedIn) {
+      this.selectStudent(this.state.selectedStudentId);
+    } else {
+      this.showLanding();
+    }
+  },
+
   showLanding() {
+    // 실제 단어 테스트 응시 화면에서 나가는 경우에만 경고
+    if (this.state.view === 'vocabTest' && this.state.vocabTest && this.state.vocabTest.setId && !this.state.vocabTest.isCompleted) {
+      const confirmExit = confirm('⚠️ 시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 나가시겠습니까?');
+      if (!confirmExit) return;
+      try {
+        this.forfeitVocabTest();
+      } catch (err) {
+        console.error(err);
+      }
+    }
     this.clearVocabQuestionTimer();
+    this.state.vocabTest = null;
+    this.state.practiceTest = null;
     this.state.isStudentLoggedIn = false;
     this.state.isAdminLoggedIn = false;
     this.state.view = 'landing';
@@ -110,8 +119,8 @@ const App = {
 
   selectStudent(studentId) {
     const normalizedStudentId = Number(studentId);
-    if (!this.state.isAdminLoggedIn && (!this.state.isStudentLoggedIn || this.state.selectedStudentId !== normalizedStudentId)) {
-      this.toast('학생 계정으로 로그인한 후 이용해주세요.', 'info');
+    if (!this.state.isAdminLoggedIn && !this.state.isStudentLoggedIn) {
+      this.toast('로그인한 후 이용해주세요.', 'info');
       this.showLanding();
       return;
     }
@@ -149,6 +158,7 @@ const App = {
   },
 
   showVocabTestView() {
+    this.state.view = 'vocabTest';
     document.getElementById('landingView').classList.add('hidden');
     document.getElementById('studentDashboardView').classList.add('hidden');
     document.getElementById('adminDashboardView').classList.add('hidden');
@@ -174,14 +184,31 @@ const App = {
     const container = document.getElementById('headerNavActions');
     if (!container) return;
 
-    container.innerHTML = this.state.view === 'student' && this.state.isStudentLoggedIn
-      ? `
+    if (this.state.isAdminLoggedIn) {
+      container.innerHTML = `
+        <div class="flex items-center gap-2">
+          ${this.state.view !== 'admin' ? `
+            <button onclick="App.showAdminDashboard()" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-gauge-high"></i>
+              <span>선생님 관리자</span>
+            </button>
+          ` : ''}
+          <button onclick="App.logoutAdmin()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>관리자 로그아웃</span>
+          </button>
+        </div>
+      `;
+    } else if (this.state.isStudentLoggedIn) {
+      container.innerHTML = `
         <button onclick="App.logoutStudent()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
           <i class="fa-solid fa-right-from-bracket"></i>
           <span>로그아웃</span>
         </button>
-      `
-      : '';
+      `;
+    } else {
+      container.innerHTML = '';
+    }
   },
 
   // ========================================================
@@ -209,16 +236,18 @@ const App = {
   },
 
   handleLogin(e) {
-    e.preventDefault();
-    const loginId = document.getElementById('studentLoginId').value.trim();
-    const password = document.getElementById('studentLoginPassword').value;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const loginIdInput = document.getElementById('studentLoginId');
+    const passwordInput = document.getElementById('studentLoginPassword');
+    const loginId = (loginIdInput?.value || '').trim();
+    const password = passwordInput?.value || '';
     const errorEl = document.getElementById('loginError');
     const normalizedLoginId = loginId.toLocaleLowerCase('en-US');
 
     if (!/^\d{4}$/.test(password)) {
       errorEl?.classList.remove('hidden');
       this.toast('비밀번호는 숫자 4자리를 입력해주세요.', 'error');
-      return;
+      return false;
     }
 
     if (
@@ -229,10 +258,11 @@ const App = {
       this.state.isStudentLoggedIn = false;
       this.toast('선생님 관리자 모드로 로그인되었습니다.', 'success');
       this.showAdminDashboard();
-      return;
+      return false;
     }
 
-    const student = AppData.getStudents().find(item =>
+    const students = AppData.getStudents();
+    const student = students.find(item =>
       String(item.loginId || '').toLocaleLowerCase('en-US') === normalizedLoginId &&
       String(item.password || '') === password
     );
@@ -240,14 +270,15 @@ const App = {
     if (!student) {
       errorEl?.classList.remove('hidden');
       this.toast('아이디 또는 비밀번호를 확인해주세요.', 'error');
-      return;
+      return false;
     }
 
     this.state.isStudentLoggedIn = true;
     this.state.isAdminLoggedIn = false;
-    this.state.selectedStudentId = student.id;
+    this.state.selectedStudentId = Number(student.id);
     this.toast(`${student.name} 학생, 환영합니다!`, 'success');
     this.selectStudent(student.id);
+    return false;
   },
 
   // ========================================================
@@ -263,7 +294,7 @@ const App = {
     // 1. 학생 배너 렌더링
     const banner = document.getElementById('studentBanner');
     banner.innerHTML = `
-      <div class="flex items-center gap-4">
+      <div class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center space-x-4">
           <div class="w-16 h-16 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 flex items-center justify-center text-white shadow-md flex-shrink-0 border-2 border-white">
             <i class="fa-solid fa-user text-2xl text-white/90"></i>
@@ -271,6 +302,7 @@ const App = {
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h2 class="text-2xl font-extrabold text-slate-900">${this.escapeHtml(student.name)} 학생의 학습 공간</h2>
+              ${this.state.isAdminLoggedIn ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200"><i class="fa-solid fa-eye mr-1"></i>선생님 미리보기</span>' : ''}
             </div>
             <p class="text-xs sm:text-sm text-slate-600 mt-1 flex items-center gap-1.5 font-medium">
               <i class="fa-solid fa-bullseye text-indigo-500"></i>
@@ -278,6 +310,12 @@ const App = {
             </p>
           </div>
         </div>
+        ${this.state.isAdminLoggedIn ? `
+          <button onclick="App.showAdminDashboard()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-md shadow-indigo-200">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>관리자 대시보드로 돌아가기</span>
+          </button>
+        ` : ''}
       </div>
     `;
 
@@ -736,6 +774,17 @@ const App = {
           ${this.escapeHtml(test.teacherNote || '선생님의 코멘트가 아직 등록되지 않았습니다.')}
         </div>
       </div>
+
+      ${Boolean(this.state.isAdminLoggedIn) ? `
+        <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+          <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-clock-rotate-left"></i> 시험 시간 연장
+          </button>
+          <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-pen-to-square"></i> 일정 & 성적 수정
+          </button>
+        </div>
+      ` : ''}
     `;
 
     this.showModal('testDetailModal');
@@ -828,7 +877,16 @@ const App = {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
         ${this.renderVocabTestButton(set, test.studentId, 1, '한글 → 영어', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
         ${this.renderVocabTestButton(set, test.studentId, 2, '영어 → 한글', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
-      </div>`;
+      </div>
+
+      ${isAdmin ? `
+        <div class="pt-2 border-t border-slate-100">
+          <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-pen-to-square"></i> 시험 일정 & 단어 설정 수정
+          </button>
+        </div>
+      ` : ''}
+    `;
     this.showModal('testDetailModal');
   },
 
@@ -1062,33 +1120,41 @@ const App = {
   // ========================================================
   // 시험 시간 범위 및 응시 가능 여부 판별 헬퍼
   // ========================================================
+  parseDateTime(dateStr, timeStr, isEnd = false) {
+    if (!dateStr) return null;
+    const cleanDate = String(dateStr).trim();
+    let cleanTime = timeStr ? String(timeStr).trim() : (isEnd ? '23:59:59' : '00:00:00');
+    // 콜론 개수 파싱 (HH:MM 또는 HH:MM:SS)
+    const parts = cleanTime.split(':');
+    const hh = parts[0].padStart(2, '0');
+    const mm = (parts[1] || '00').padStart(2, '0');
+    const ss = (parts[2] || (isEnd ? '59' : '00')).padStart(2, '0');
+    const isoString = `${cleanDate}T${hh}:${mm}:${ss}`;
+    const parsed = new Date(isoString);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  },
+
   getTestTimeStatus(test) {
     if (!test || !test.date) {
       return { status: 'IN_PROGRESS', label: '응시 가능', canStart: true, message: '' };
     }
 
     const now = new Date();
-    const testDate = test.date;
+    const testDate = String(test.date).trim();
 
-    // 시작 시간 (원래 시험 날짜 기준)
-    let startDateTime = null;
-    if (test.time) {
-      startDateTime = new Date(`${testDate}T${test.time}:00`);
-    } else {
-      startDateTime = new Date(`${testDate}T00:00:00`);
-    }
+    // 시작 시간
+    const startDateTime = this.parseDateTime(testDate, test.time, false) || new Date(`${testDate}T00:00:00`);
 
     // 종료 시간 (연장일시가 있으면 연장일시 우선, 없으면 기본 마감일시)
-    const effectiveEndDate = test.extendedDate || testDate;
-    const effectiveEndTime = test.extendedEndTime || test.endTime || '23:59';
-    const endDateTime = new Date(`${effectiveEndDate}T${effectiveEndTime}:59`);
+    const effectiveEndDate = (test.extendedDate && String(test.extendedDate).trim()) ? String(test.extendedDate).trim() : testDate;
+    const effectiveEndTime = (test.extendedEndTime && String(test.extendedEndTime).trim()) ? String(test.extendedEndTime).trim() : (test.endTime || '23:59:59');
+    const endDateTime = this.parseDateTime(effectiveEndDate, effectiveEndTime, true) || new Date(`${effectiveEndDate}T23:59:59`);
 
     if (test.allowLate) {
       return { status: 'IN_PROGRESS', label: '응시 가능 (상시 허용)', canStart: true, message: '' };
     }
 
-    // 마감이 지난 경우에는 통과 기록이 있더라도 화면에 마감 상태를 우선 표시한다.
-    // 실제 응시 버튼은 결과 상태에 따라 계속 완료로 유지된다.
+    // 마감이 지난 경우 (어제 시험 등)
     if (now > endDateTime) {
       return {
         status: 'EXPIRED',
@@ -1346,12 +1412,13 @@ const App = {
     }
 
     this.closeTestDetailModal();
+    const cutoffScore = Math.min(100, Math.max(1, Number(test.practiceCutoff || test.cutoffScore || (test.cutoff ? parseInt(test.cutoff, 10) : 80) || 80)));
     this.state.practiceTest = {
       testId: test.id,
       studentId: Number(test.studentId),
       title: test.title,
       questions: questions,
-      cutoffScore: Number(test.cutoffScore || test.practiceCutoff || 80),
+      cutoffScore: cutoffScore,
       currentIndex: 0,
       answers: {},
       startedAt: new Date().toISOString()
@@ -1373,91 +1440,70 @@ const App = {
     const total = pt.questions.length;
     const q = pt.questions[index];
     const choices = q.choices || ['', '', '', '', ''];
-    const currentAnswer = pt.answers[index];
-    const answeredCount = Object.keys(pt.answers).length;
-    const progressPct = ((answeredCount) / total) * 100;
+    const currentAnswer = pt.answers[index] || null;
+    const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
-    // 상단 네비 바 정보
     document.getElementById('practiceTestTopInfo').innerHTML = `
-      <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center justify-between gap-4 flex-wrap w-full">
         <div>
-          <span class="font-bold text-slate-900 text-sm">${this.escapeHtml(pt.title)}</span>
-          <span class="ml-2 text-xs text-slate-500">문제 ${index + 1} / ${total}</span>
+          <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(pt.title)}</span>
+          <span class="text-xs text-slate-500 ml-2">문항 ${index + 1} / ${total}</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">커트라인 ${pt.cutoffScore}점</span>
-          <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">${answeredCount}/${total} 풀이완료</span>
+          <span class="text-xs text-slate-500 font-semibold">커트라인: <strong>${pt.cutoffScore}점 이상</strong></span>
         </div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        ${pt.questions.map((_, i) => {
+          const isCurrent = i === index;
+          const isAnswered = pt.answers[i] != null;
+          const btnClass = isCurrent
+            ? 'bg-slate-900 text-white border-slate-900 font-black ring-2 ring-slate-400'
+            : isAnswered
+              ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+              : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50';
+          return `<button onclick="App.goToPracticeQuestion(${i})" class="w-8 h-8 rounded-lg border text-xs transition ${btnClass}">${i + 1}</button>`;
+        }).join('')}
       </div>
     `;
 
+
     // 문제 뷰 본문
     document.getElementById('practiceTestContent').innerHTML = `
-      <div class="space-y-6">
-        <!-- Progress Bar -->
-        <div class="w-full bg-slate-200 rounded-full h-2">
-          <div class="bg-emerald-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
+      <div class="space-y-6 max-w-3xl mx-auto">
+        <!-- Question Progress Bar -->
+        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+          <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${Math.round(((index + 1) / total) * 100)}%"></div>
         </div>
 
         <!-- Question Card -->
-        <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-5">
-          <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <span class="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-black">문제 ${index + 1}</span>
-            <span class="text-xs text-slate-400 font-semibold">${currentAnswer ? '✅ 답안 선택됨' : '선택지를 골라주세요'}</span>
+        <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">문제 ${index + 1}</span>
+            <span class="text-xs text-slate-400 font-medium">${Object.keys(pt.answers).length} / ${total}문제 작성 완료</span>
           </div>
 
-          <!-- 1. 문제 (Question) -->
-          <h3 class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
-            ${this.renderRichText(q.question)}
-          </h3>
+          <!-- Question Text -->
+          <div class="space-y-2">
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">${this.renderRichText(q.question)}</h3>
+          </div>
 
-          <!-- 2. 제시문 (Passage - 있을 때만 슬림하고 깔끔하게 노출) -->
+          <!-- Passage (제시문) 있을 경우만 노출 -->
           ${q.passage && q.passage.trim() ? `
-            <div class="py-2.5 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-snug font-serif break-words">
-              ${this.renderRichText(q.passage)}
-            </div>
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-relaxed font-serif whitespace-pre-line">${this.renderRichText(q.passage.trim())}</div>
           ` : ''}
 
-          <!-- 3. 선지 (5 Choices) -->
-          <div class="space-y-2.5 pt-1">
+          <!-- 5 Choices -->
+          <div class="space-y-2.5 pt-2">
             ${choices.map((choice, cIdx) => {
               const choiceNum = cIdx + 1;
               const isSelected = currentAnswer === choiceNum;
-              const choiceLabels = ['①', '②', '③', '④', '⑤'];
               return `
-                <button
-                  onclick="App.selectPracticeChoice(${choiceNum})"
-                  class="w-full p-4 rounded-xl border-2 transition text-left flex items-center gap-3.5 ${isSelected ? 'border-emerald-600 bg-emerald-50 shadow-sm text-emerald-950 font-bold' : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50 text-slate-800 font-medium'}"
-                >
-                  <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}">
+                <button type="button" onclick="App.selectPracticeChoice(${choiceNum})" class="w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${isSelected ? 'bg-indigo-50 border-indigo-600 text-indigo-950 font-bold shadow-xs' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
+                  <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
                     ${choiceLabels[cIdx]}
                   </span>
-                  <span class="text-xs sm:text-sm flex-1 break-words">${this.renderRichText(choice)}</span>
-                </button>
-              `;
-            }).join('')}
-          </div>
-        </div>
-
-        <!-- Question Index Bar & Actions -->
-        <div class="glass-card rounded-2xl p-4 space-y-4">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <span class="text-xs font-bold text-slate-700">문제 번호 바로가기</span>
-            <span class="text-[11px] text-slate-400">초록색 = 답안 마킹 완료</span>
-          </div>
-
-          <div class="flex items-center gap-2 overflow-x-auto" style="padding: 6px 6px;">
-            ${pt.questions.map((_, qIdx) => {
-              const isCurr = qIdx === index;
-              const isAnswered = pt.answers[qIdx] !== undefined;
-              const currStyle = isCurr ? 'style="box-shadow: 0 0 0 2px white, 0 0 0 4px #059669;"' : '';
-              return `
-                <button
-                  onclick="App.goToPracticeQuestion(${qIdx})"
-                  ${currStyle}
-                  class="w-9 h-9 rounded-xl text-xs font-black transition flex-shrink-0 flex items-center justify-center ${isAnswered ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
-                >
-                  ${qIdx + 1}
+                  <span class="flex-1">${this.renderRichText(choice)}</span>
                 </button>
               `;
             }).join('')}
@@ -1503,11 +1549,8 @@ const App = {
   goToPracticeQuestion(index) {
     this.renderPracticeQuestion(index);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const viewEl = document.getElementById('practiceTestView');
-    if (viewEl) {
-      viewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   },
+
 
   async submitPracticeTest() {
     const pt = this.state.practiceTest;
@@ -1702,10 +1745,81 @@ const App = {
     this.renderPracticeResult(test.practiceResult, test);
   },
 
-  exitPracticeTest() {
-    const studentId = this.state.practiceTest.studentId || this.state.selectedStudentId;
-    this.selectStudent(studentId);
+  // 시험 도중 나가기/창닫기 시 0점 불합격 강제 처리
+  forceFailPracticeTest() {
+    const pt = this.state.practiceTest;
+    if (!pt || !pt.testId) return;
+
+    const total = pt.questions.length;
+    const completedAt = new Date().toISOString();
+    const practiceResult = {
+      studentId: pt.studentId,
+      testId: pt.testId,
+      score: 0,
+      correctCount: 0,
+      totalCount: total,
+      passed: false,
+      cutoffScore: pt.cutoffScore,
+      answers: pt.answers,
+      reviewItems: pt.questions.map((q, idx) => ({
+        questionNumber: idx + 1,
+        question: q.question,
+        passage: q.passage || '',
+        choices: q.choices || [],
+        studentAnswer: pt.answers[idx] || null,
+        correctAnswer: Number(q.answer),
+        isCorrect: false,
+        explanation: q.explanation || ''
+      })),
+      startedAt: pt.startedAt || completedAt,
+      completedAt,
+      forceFailed: true
+    };
+
+    const allTests = AppData.getTests();
+    const test = allTests.find(t => t.id === pt.testId);
+    if (test) {
+      test.practiceResult = practiceResult;
+      test.status = 'FAIL';
+      test.score = `0점 (0/${total}) — 시험 중 이탈`;
+      test.allowRetest = false;
+      AppData.saveOrUpdateTest(test).catch(e => console.error('강제 불합격 저장 실패:', e));
+    }
   },
+
+  exitPracticeTest() {
+    const pt = this.state.practiceTest;
+    if (pt && pt.testId) {
+      if (!confirm('시험을 종료하면 0점 불합격 처리됩니다.\n정말 나가시겠습니까?')) return;
+      this.forceFailPracticeTest();
+    }
+
+    const studentId = Number(pt?.studentId || this.state.selectedStudentId || this.state.adminSelectedStudentId || 1);
+    this.state.practiceTest = {
+      testId: null,
+      studentId: null,
+      title: '',
+      questions: [],
+      cutoffScore: 80,
+      currentIndex: 0,
+      answers: {},
+      startedAt: null
+    };
+    if (this.state.isStudentLoggedIn) {
+      this.selectStudent(studentId);
+    } else if (this.state.isAdminLoggedIn) {
+      this.selectStudent(studentId);
+    } else {
+      if (studentId && AppData.getStudentById(studentId)) {
+        this.state.isStudentLoggedIn = true;
+        this.selectStudent(studentId);
+      } else {
+        this.showLanding();
+      }
+    }
+  },
+
+
 
   // ========================================================
   // 5. 관리자 대시보드 (Admin Management)
@@ -1750,6 +1864,16 @@ const App = {
   renderAdminTestsTab() {
     const students = AppData.getStudents();
     const pills = document.getElementById('adminStudentPills');
+    if (!students || students.length === 0) {
+      if (pills) pills.innerHTML = '<p class="text-xs text-slate-400">등록된 학생이 없습니다.</p>';
+      return;
+    }
+
+    let currentStudent = AppData.getStudentById(this.state.adminSelectedStudentId);
+    if (!currentStudent) {
+      this.state.adminSelectedStudentId = students[0].id;
+      currentStudent = students[0];
+    }
     
     // 학생 선택 필 렌더링
     pills.innerHTML = students.map(s => {
@@ -1761,9 +1885,6 @@ const App = {
         </button>
       `;
     }).join('');
-
-    const currentStudent = AppData.getStudentById(this.state.adminSelectedStudentId);
-    if (!currentStudent) return;
 
     // 선택된 학생 정보 바
     const infoBar = document.getElementById('adminSelectedStudentInfo');
@@ -2198,12 +2319,28 @@ const App = {
   renderStudentCheckboxes(selectedStudentIds = []) {
     const grid = document.getElementById('formStudentCheckboxGrid');
     if (!grid) return;
+
     const students = AppData.getStudents();
+    const allBtn = document.getElementById('formStudentSelectAllBtn');
+    if (allBtn) {
+      allBtn.innerHTML = `<i class="fa-solid fa-check-double mr-1"></i>전체 선택 (${students.length}명)`;
+    }
+
+    if (!students || students.length === 0) {
+      grid.innerHTML = `<p class="col-span-full text-xs text-slate-400 text-center py-3">등록된 학생이 없습니다.</p>`;
+      this.updateFormStudentSelectCount();
+      return;
+    }
+
+    const normalizedSelectedIds = (Array.isArray(selectedStudentIds) ? selectedStudentIds : [selectedStudentIds])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && id > 0);
+
     grid.innerHTML = students.map(s => {
-      const isChecked = selectedStudentIds.includes(s.id);
+      const isChecked = normalizedSelectedIds.includes(Number(s.id));
       return `
-        <label class="flex items-center space-x-2 p-2.5 rounded-xl border transition cursor-pointer select-none ${isChecked ? 'bg-indigo-50/90 border-indigo-500 text-indigo-950 shadow-xs' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
-          <input type="checkbox" name="formStudentCheckbox" value="${s.id}" ${isChecked ? 'checked' : ''} onchange="App.onFormStudentCheckboxChange()" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300" />
+        <label class="flex items-center space-x-2 p-2.5 rounded-xl border transition cursor-pointer select-none ${isChecked ? 'bg-indigo-50 border-indigo-500 text-indigo-950 font-bold' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
+          <input type="checkbox" name="formStudentCheckbox" value="${s.id}" ${isChecked ? 'checked' : ''} onchange="App.onFormStudentCheckboxChange()" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer" />
           <div class="w-6 h-6 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 text-white flex items-center justify-center text-[10px] flex-shrink-0">
             <i class="fa-solid fa-user"></i>
           </div>
@@ -2219,8 +2356,9 @@ const App = {
     const checkboxes = document.querySelectorAll('input[name="formStudentCheckbox"]');
     checkboxes.forEach(cb => {
       const label = cb.closest('label');
+      if (!label) return;
       if (cb.checked) {
-        label.className = 'flex items-center space-x-2 p-2.5 rounded-xl border transition cursor-pointer select-none bg-indigo-50/90 border-indigo-500 text-indigo-950 shadow-xs';
+        label.className = 'flex items-center space-x-2 p-2.5 rounded-xl border transition cursor-pointer select-none bg-indigo-50 border-indigo-500 text-indigo-950 font-bold';
       } else {
         label.className = 'flex items-center space-x-2 p-2.5 rounded-xl border transition cursor-pointer select-none bg-white border-slate-200 text-slate-700 hover:bg-slate-50';
       }
@@ -2246,13 +2384,14 @@ const App = {
     document.getElementById('adminFormModalTitle').innerText = '새 시험 일정 등록';
     document.getElementById('formTestId').value = '';
     
-    // 다중 선택 모드 활성화 (체크박스 그리드 노출, 단일 셀렉트 숨김)
-    document.getElementById('formStudentSelectAllActions').classList.remove('hidden');
-    document.getElementById('formStudentCheckboxGrid').classList.remove('hidden');
-    document.getElementById('formStudentSingleSelectContainer').classList.add('hidden');
+    // 다중 선택 모드 활성화 (체크박스 그리드 노출)
+    const selectAllActions = document.getElementById('formStudentSelectAllActions');
+    const checkboxGrid = document.getElementById('formStudentCheckboxGrid');
+    if (selectAllActions) selectAllActions.classList.remove('hidden');
+    if (checkboxGrid) checkboxGrid.classList.remove('hidden');
 
-    // 현재 관리자 선택 학생을 기본 체크 (원하는 경우 1클릭으로 전체 선택 가능)
-    this.renderStudentCheckboxes([this.state.adminSelectedStudentId]);
+    // 현재 관리자 선택 학생을 기본 체크
+    this.renderStudentCheckboxes([this.state.adminSelectedStudentId || 1]);
 
     // 기본 폼 값 초기화
     document.getElementById('formTitle').value = '';
@@ -2281,19 +2420,41 @@ const App = {
   openEditTestModal(testId) {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
-    if (!test) return;
+    if (!test) {
+      this.toast('수정할 시험을 찾을 수 없습니다.', 'error');
+      return;
+    }
 
+    // 모달 제목 & hidden 필드
     document.getElementById('adminFormModalTitle').innerText = '시험 일정 및 성적 수정';
     document.getElementById('formTestId').value = test.id;
-    
-    // 수정 모드: 단일 선택 셀렉트 노출, 체크박스 그리드 숨김
-    document.getElementById('formStudentSelectAllActions').classList.add('hidden');
-    document.getElementById('formStudentCheckboxGrid').classList.add('hidden');
-    document.getElementById('formStudentSingleSelectContainer').classList.remove('hidden');
-    document.getElementById('formStudentSelectCount').innerText = '개별 시험 수정';
 
-    this.populateStudentSelect(test.studentId);
+    // 체크박스 섹션 항상 표시
+    const selectAllActions = document.getElementById('formStudentSelectAllActions');
+    const checkboxGrid = document.getElementById('formStudentCheckboxGrid');
+    if (selectAllActions) selectAllActions.classList.remove('hidden');
+    if (checkboxGrid) checkboxGrid.classList.remove('hidden');
 
+    // 이 시험과 같은 제목+날짜+타입(또는 단어세트)을 가진 모든 학생의 시험을 자동 탐색 → 복수 체크
+    const relatedTests = allTests.filter(t => {
+      if (test.type === 'VOCAB' && test.vocabSetId) {
+        return t.type === 'VOCAB' && t.vocabSetId === test.vocabSetId && t.date === test.date;
+      }
+      if (test.type === 'PRACTICE') {
+        return t.type === 'PRACTICE' && t.title === test.title && t.date === test.date;
+      }
+      // REGULAR
+      return (t.type === 'REGULAR' || !t.type) && t.title === test.title && t.date === test.date;
+    });
+
+    const preselectedIds = relatedTests.length > 0
+      ? [...new Set(relatedTests.map(t => Number(t.studentId)))]
+      : [Number(test.studentId)];
+
+    // 체크박스 렌더링 (복수 선택)
+    this.renderStudentCheckboxes(preselectedIds);
+
+    // 폼 필드 채우기
     document.getElementById('formTitle').value = test.title || '';
     document.getElementById('formDate').value = test.date || '';
     document.getElementById('formTime').value = test.time || '';
@@ -2309,25 +2470,19 @@ const App = {
     this.initPracticeQuestionsForm(test.questions || []);
 
     // 라디오 버튼 설정
-    const statusRadio = document.querySelector(`input[name="formStatus"][value="${test.status || 'SCHEDULED'}"]`);
+    const statusVal = test.status || 'SCHEDULED';
+    const retestVal = test.retestStatus || 'NONE';
+    const typeVal = ['VOCAB', 'PRACTICE'].includes(test.type) ? test.type : 'REGULAR';
+
+    const statusRadio = document.querySelector(`input[name="formStatus"][value="${statusVal}"]`);
     if (statusRadio) statusRadio.checked = true;
-
-    const retestRadio = document.querySelector(`input[name="formRetestStatus"][value="${test.retestStatus || 'NONE'}"]`);
+    const retestRadio = document.querySelector(`input[name="formRetestStatus"][value="${retestVal}"]`);
     if (retestRadio) retestRadio.checked = true;
-    const typeValue = ['VOCAB', 'PRACTICE'].includes(test.type) ? test.type : 'REGULAR';
-    const typeRadio = document.querySelector(`input[name="formTestType"][value="${typeValue}"]`);
+    const typeRadio = document.querySelector(`input[name="formTestType"][value="${typeVal}"]`);
     if (typeRadio) typeRadio.checked = true;
+
     this.toggleTestFormType();
-
     this.showModal('adminTestFormModal');
-  },
-
-  populateStudentSelect(selectedStudentId) {
-    const select = document.getElementById('formStudentId');
-    const students = AppData.getStudents();
-    select.innerHTML = students.map(s => {
-      return `<option value="${s.id}" ${s.id === Number(selectedStudentId) ? 'selected' : ''}>${s.name} (학생 #${s.id})</option>`;
-    }).join('');
   },
 
   renderFormVocabSetSelect(selectedSetId = '') {
@@ -2678,54 +2833,133 @@ const App = {
 
     const practiceQuestions = isPracticeTest ? JSON.parse(JSON.stringify(this.state.editingPracticeQuestions)) : null;
 
+    // 대상 학생 체크박스 확인
+    const checkedBoxes = document.querySelectorAll('input[name="formStudentCheckbox"]:checked');
+    const selectedStudentIds = Array.from(checkedBoxes).map(cb => Number(cb.value));
+
+    if (selectedStudentIds.length === 0) {
+      this.toast('시험을 배정할 학생을 최소 1명 이상 선택해주세요.', 'error');
+      return;
+    }
+
+    const allTests = AppData.getTests();
+
     if (id) {
-      // 1. 기존 시험 단일 수정 모드
-      const studentId = Number(document.getElementById('formStudentId').value);
-      const existingTest = AppData.getTests().find(t => t.id === id);
-      const testData = {
-        id,
-        studentId,
-        title,
-        date,
-        time,
-        endTime,
-        scope,
-        cutoff,
-        cutoffScore,
-        score: isPracticeTest ? (existingTest?.score || '') : score,
-        status: isPracticeTest ? (existingTest?.status || 'SCHEDULED') : status,
-        retestStatus,
-        retestDate,
-        teacherNote,
-        vocabSetId,
-        vocabCutoff: isVocabTest ? vocabCutoff : null,
-        practiceCutoff: isPracticeTest ? practiceCutoff : null,
-        questions: isPracticeTest ? practiceQuestions : null,
-        practiceResult: isPracticeTest ? existingTest?.practiceResult : null,
-        extendedDate: existingTest?.extendedDate || null,
-        extendedEndTime: existingTest?.extendedEndTime || null,
-        allowLate: existingTest?.allowLate || false,
-        type: testType
-      };
+      // 1. 기존 시험 수정 및 다중 학생 일괄 수정/추가 모드
+      const existingTest = allTests.find(t => t.id === id);
+      const originalStudentId = existingTest ? existingTest.studentId : null;
+      const primaryStudentId = selectedStudentIds.includes(originalStudentId) ? originalStudentId : selectedStudentIds[0];
+
+      const savePromises = selectedStudentIds.map(async (studentId) => {
+        if (studentId === primaryStudentId) {
+          // 기존 원본 시험 정보 수정
+          const testData = {
+            id,
+            studentId,
+            title,
+            date,
+            time,
+            endTime,
+            scope,
+            cutoff,
+            cutoffScore,
+            score: isPracticeTest ? (existingTest?.score || '') : score,
+            status: isPracticeTest ? (existingTest?.status || 'SCHEDULED') : status,
+            retestStatus,
+            retestDate,
+            teacherNote,
+            vocabSetId,
+            vocabCutoff: isVocabTest ? vocabCutoff : null,
+            practiceCutoff: isPracticeTest ? practiceCutoff : null,
+            questions: isPracticeTest ? practiceQuestions : null,
+            practiceResult: isPracticeTest ? existingTest?.practiceResult : null,
+            extendedDate: existingTest?.extendedDate || null,
+            extendedEndTime: existingTest?.extendedEndTime || null,
+            allowLate: existingTest?.allowLate || false,
+            type: testType
+          };
+          return AppData.saveOrUpdateTest(testData);
+        } else {
+          // 다른 학생: 동일한 시험(단어세트ID 또는 제목, 날짜)이 이미 있는지 탐색
+          const matchingExistingTest = allTests.find(t => {
+            if (t.studentId !== studentId) return false;
+            if (isVocabTest) {
+              return t.type === 'VOCAB' && t.vocabSetId === vocabSetId && (t.date === date || (existingTest && t.date === existingTest.date));
+            }
+            if (isPracticeTest) {
+              return t.type === 'PRACTICE' && t.title === (existingTest?.title || title) && (t.date === date || (existingTest && t.date === existingTest.date));
+            }
+            return (t.type || 'REGULAR') === 'REGULAR' && t.title === (existingTest?.title || title) && (t.date === date || (existingTest && t.date === existingTest.date));
+          });
+
+          if (matchingExistingTest) {
+            // 이미 동일한 시험이 있으면 해당 학생의 시험 정보 업데이트
+            const testData = {
+              ...matchingExistingTest,
+              title,
+              date,
+              time,
+              endTime,
+              scope,
+              cutoff,
+              cutoffScore,
+              vocabSetId,
+              vocabCutoff: isVocabTest ? vocabCutoff : null,
+              practiceCutoff: isPracticeTest ? practiceCutoff : null,
+              questions: isPracticeTest ? practiceQuestions : null,
+              type: testType
+            };
+            if (isRegularTest) {
+              if (score) testData.score = score;
+              if (status !== 'SCHEDULED' || matchingExistingTest.status === 'SCHEDULED') testData.status = status;
+              if (retestStatus !== 'NONE' || matchingExistingTest.retestStatus === 'NONE') testData.retestStatus = retestStatus;
+              if (retestDate) testData.retestDate = retestDate;
+              if (teacherNote) testData.teacherNote = teacherNote;
+            }
+            return AppData.saveOrUpdateTest(testData);
+          } else {
+            // 해당 학생에게 시험이 없으면 새로 추가
+            const newTest = {
+              studentId,
+              title,
+              date,
+              time,
+              endTime,
+              scope,
+              cutoff,
+              cutoffScore,
+              score: isRegularTest ? score : '',
+              status: isRegularTest ? status : 'SCHEDULED',
+              retestStatus: isRegularTest ? retestStatus : 'NONE',
+              retestDate: isRegularTest ? retestDate : '',
+              teacherNote: isRegularTest ? teacherNote : '',
+              vocabSetId,
+              vocabCutoff: isVocabTest ? vocabCutoff : null,
+              practiceCutoff: isPracticeTest ? practiceCutoff : null,
+              questions: isPracticeTest ? practiceQuestions : null,
+              practiceResult: null,
+              type: testType
+            };
+            return AppData.saveOrUpdateTest(newTest);
+          }
+        }
+      });
+
       try {
-        await AppData.saveOrUpdateTest(testData);
+        await Promise.all(savePromises);
       } catch (error) {
         console.error(error);
         return;
       }
       this.closeAdminTestFormModal();
-      this.toast(`'${title}' 일정이 성공적으로 수정되었습니다!`, 'success');
-      this.state.adminSelectedStudentId = studentId;
+      if (selectedStudentIds.length === 1) {
+        this.toast(`'${title}' 일정이 성공적으로 수정되었습니다!`, 'success');
+        this.state.adminSelectedStudentId = selectedStudentIds[0];
+      } else {
+        this.toast(`선택한 ${selectedStudentIds.length}명의 학생에게 '${title}' 일정이 일괄 수정/적용되었습니다! ✨`, 'success');
+      }
     } else {
       // 2. 새 시험 등록 모드 (다중 학생 지원)
-      const checkedBoxes = document.querySelectorAll('input[name="formStudentCheckbox"]:checked');
-      const selectedStudentIds = Array.from(checkedBoxes).map(cb => Number(cb.value));
-
-      if (selectedStudentIds.length === 0) {
-        this.toast('시험을 배정할 학생을 최소 1명 이상 선택해주세요.', 'error');
-        return;
-      }
-
       const newTests = selectedStudentIds.map(sId => {
         const newTest = {
           studentId: sId,
@@ -3234,7 +3468,7 @@ const App = {
 
     // 학생 체크박스
     const preselectedStudents = returnToTestForm && !existingSet
-      ? (document.getElementById('formTestId').value ? [Number(document.getElementById('formStudentId').value)] : Array.from(document.querySelectorAll('input[name="formStudentCheckbox"]:checked')).map(cb => Number(cb.value)))
+      ? Array.from(document.querySelectorAll('input[name="formStudentCheckbox"]:checked')).map(cb => Number(cb.value))
       : [];
     const grid = document.getElementById('vocabStudentCheckboxGrid');
     grid.innerHTML = students.map(s => {
@@ -3461,7 +3695,7 @@ const App = {
       currentIndex: 0,
       score: 0,
       timerId: null,
-      timeRemaining: 5,
+      timeRemaining: 7,
       isCompleted: false
     };
 
@@ -3513,7 +3747,7 @@ const App = {
           ${vt.direction === 1 ? '한글 → 영어' : '영어 → 한글'}
         </span>
         <span class="text-xs text-slate-500">${vt.currentIndex + 1} / ${total} 문제</span>
-        <span id="vocabTestTimer" class="ml-auto px-4 py-2 rounded-full bg-rose-100 text-rose-700 text-base sm:text-lg font-black"><i class="fa-regular fa-clock mr-1"></i>5초</span>
+        <span id="vocabTestTimer" class="ml-auto px-4 py-2 rounded-full bg-rose-100 text-rose-700 text-base sm:text-lg font-black"><i class="fa-regular fa-clock mr-1"></i>7초</span>
       </div>`;
 
     // Content
@@ -3555,9 +3789,9 @@ const App = {
   startVocabQuestionTimer() {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
-    vt.timeRemaining = 5;
+    vt.timeRemaining = 7;
     const timer = document.getElementById('vocabTestTimer');
-    if (timer) timer.innerHTML = '<i class="fa-regular fa-clock mr-1"></i>5초';
+    if (timer) timer.innerHTML = '<i class="fa-regular fa-clock mr-1"></i>7초';
     vt.timerId = setInterval(() => {
       vt.timeRemaining--;
       const timerEl = document.getElementById('vocabTestTimer');
@@ -3567,7 +3801,7 @@ const App = {
   },
 
   clearVocabQuestionTimer() {
-    if (this.state.vocabTest.timerId) {
+    if (this.state.vocabTest && this.state.vocabTest.timerId) {
       clearInterval(this.state.vocabTest.timerId);
       this.state.vocabTest.timerId = null;
     }
@@ -3643,8 +3877,7 @@ const App = {
       });
       if (test) await this.updateVocabScheduleStatus(test.id);
     } catch (error) {
-      console.error(error);
-      return;
+      console.error('단어 테스트 결과 저장 오류:', error);
     }
 
     document.getElementById('vocabTestTopInfo').innerHTML = `
@@ -3698,7 +3931,7 @@ const App = {
         <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
           ${passed ? '' : `<button disabled class="px-6 py-3 rounded-xl bg-slate-200 text-slate-500 font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-clock"></i> 10분 후 재응시 가능</button>`}
           <button onclick="App.exitVocabTest()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-sm">
-            <i class="fa-solid fa-arrow-left"></i> 대시보드로 돌아가기
+            <i class="fa-solid fa-arrow-left"></i> 학습공간으로 돌아가기
           </button>
         </div>
       </div>`;
@@ -3709,12 +3942,28 @@ const App = {
     if (vt && !vt.isCompleted) {
       const confirmExit = confirm('⚠️ 시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 시험을 종료하고 나가시겠습니까?');
       if (!confirmExit) return;
-      await this.forfeitVocabTest();
+      try {
+        await this.forfeitVocabTest();
+      } catch (err) {
+        console.error(err);
+      }
     }
     this.clearVocabQuestionTimer();
-    const studentId = vt?.studentId || this.state.selectedStudentId;
+    const studentId = Number(vt?.studentId || this.state.selectedStudentId || this.state.adminSelectedStudentId || 1);
     this.state.vocabTest = null;
-    this.selectStudent(studentId);
+    
+    if (this.state.isStudentLoggedIn) {
+      this.selectStudent(studentId);
+    } else if (this.state.isAdminLoggedIn) {
+      this.selectStudent(studentId);
+    } else {
+      if (studentId && AppData.getStudentById(studentId)) {
+        this.state.isStudentLoggedIn = true;
+        this.selectStudent(studentId);
+      } else {
+        this.showLanding();
+      }
+    }
   },
 
   async forfeitVocabTest() {
