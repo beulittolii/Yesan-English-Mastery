@@ -25,23 +25,6 @@ const TEACHER_PASSWORD = '1357';
 
 
 // ========================================================
-// Firebase 데이터 캐시
-// ========================================================
-
-const FirebaseStore = {
-  students: [],
-  tests: [],
-  vocabSets: [],
-  vocabTestResults: [],
-  studentsLoaded: false,
-  studentListenerStarted: false,
-  testsListenerStarted: false,
-  vocabSetsListenerStarted: false,
-  vocabTestResultsListenerStarted: false
-};
-
-
-// ========================================================
 // 기본 6명 학생 프로필
 // ========================================================
 
@@ -385,6 +368,23 @@ function generateDefaultTests() {
 
 
 // ========================================================
+// Firebase 데이터 캐시 (기본 데이터로 즉시 초기화하여 오프라인/지연 시에도 100% 동작 보장)
+// ========================================================
+
+const FirebaseStore = {
+  students: [...DEFAULT_STUDENTS],
+  tests: generateDefaultTests(),
+  vocabSets: [],
+  vocabTestResults: [],
+  studentsLoaded: false,
+  studentListenerStarted: false,
+  testsListenerStarted: false,
+  vocabSetsListenerStarted: false,
+  vocabTestResultsListenerStarted: false
+};
+
+
+// ========================================================
 // Data Storage Helper Object
 // ========================================================
 
@@ -408,7 +408,10 @@ const AppData = {
   // ======================================================
 
   getStudents() {
-    return FirebaseStore.students;
+    if (Array.isArray(FirebaseStore.students) && FirebaseStore.students.length > 0) {
+      return FirebaseStore.students;
+    }
+    return DEFAULT_STUDENTS;
   },
 
 
@@ -681,47 +684,27 @@ const AppData = {
   // ======================================================
 
   refreshStudentScreens() {
-
-    if (
-      typeof App === 'undefined'
-    ) {
+    if (typeof App === 'undefined' || !App.state) {
       return;
     }
 
     try {
-
-      // 메인 학생 선택 화면
-      if (
-        typeof App.renderLanding === 'function'
-      ) {
+      // 메인 학생 선택 화면 (랜딩 뷰일 때만)
+      if (App.state.view === 'landing' && typeof App.renderLanding === 'function') {
         App.renderLanding();
       }
 
       // 학생 대시보드
-      if (
-        App.state &&
-        App.state.view === 'student' &&
-        typeof App.renderStudentDashboard === 'function'
-      ) {
+      if (App.state.view === 'student' && typeof App.renderStudentDashboard === 'function') {
         App.renderStudentDashboard();
       }
 
       // 관리자 화면
-      if (
-        App.state &&
-        App.state.view === 'admin' &&
-        typeof App.renderAdminDashboard === 'function'
-      ) {
+      if (App.state.view === 'admin' && typeof App.renderAdminDashboard === 'function') {
         App.renderAdminDashboard();
       }
-
     } catch (error) {
-
-      console.error(
-        '❌ 학생 화면 새로고침 실패:',
-        error
-      );
-
+      console.error('❌ 학생 화면 새로고침 실패:', error);
     }
   },
 
@@ -915,7 +898,10 @@ const AppData = {
   // ======================================================
 
   getTests() {
-    return FirebaseStore.tests;
+    if (Array.isArray(FirebaseStore.tests) && FirebaseStore.tests.length > 0) {
+      return FirebaseStore.tests;
+    }
+    return generateDefaultTests();
   },
 
 
