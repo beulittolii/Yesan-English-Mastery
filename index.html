@@ -75,7 +75,7 @@
         <form onsubmit="App.handleLogin(event); return false;" class="space-y-4 mt-6">
           <div>
             <label for="studentLoginId" class="block text-xs font-bold text-slate-600 mb-1.5">아이디</label>
-            <input type="text" id="studentLoginId" autocomplete="username" autofocus placeholder="아이디를 입력하세요" class="w-full py-3 px-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900" required />
+            <input type="text" id="studentLoginId" autocomplete="username" autofocus placeholder="아이디를 입력하세요" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('studentLoginPassword')?.focus();}" class="w-full py-3 px-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900" required />
           </div>
           <div>
             <label for="studentLoginPassword" class="block text-xs font-bold text-slate-600 mb-1.5">비밀번호</label>
@@ -500,7 +500,7 @@
 
         <div class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-2">
           <label class="block text-xs font-bold text-indigo-900">추가할 일정 유형</label>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <label class="flex items-center justify-center p-2.5 rounded-xl border border-indigo-300 bg-white cursor-pointer text-xs font-bold text-indigo-800">
               <input type="radio" name="formTestType" value="REGULAR" class="mr-1.5" checked onchange="App.toggleTestFormType()" /> 일반 시험
             </label>
@@ -508,7 +508,10 @@
               <input type="radio" name="formTestType" value="VOCAB" class="mr-1.5" onchange="App.toggleTestFormType()" /> 단어 테스트
             </label>
             <label class="flex items-center justify-center p-2.5 rounded-xl border border-emerald-300 bg-emerald-50 cursor-pointer text-xs font-bold text-emerald-800">
-              <input type="radio" name="formTestType" value="PRACTICE" class="mr-1.5" onchange="App.toggleTestFormType()" /> 📝 문제풀이
+              <input type="radio" name="formTestType" value="PRACTICE" class="mr-1.5" onchange="App.toggleTestFormType()" /> 문제풀이
+            </label>
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-indigo-300 bg-indigo-50 cursor-pointer text-xs font-bold text-indigo-800">
+              <input type="radio" name="formTestType" value="TEXT_MEMORIZE" class="mr-1.5" onchange="App.toggleTestFormType()" /> 본문 암기
             </label>
           </div>
         </div>
@@ -541,7 +544,7 @@
         <!-- Title -->
         <div id="formTitleSection">
           <label class="block text-xs font-bold text-slate-700 mb-1">시험 제목 <span class="text-rose-500">*</span></label>
-          <input type="text" id="formTitle" placeholder="예: 천일문 핵심 구문 응용 문제풀이" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" required />
+          <input type="text" id="formTitle" placeholder="예: YBM 공통영어2 Lesson 1 본문 암기" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" required />
         </div>
 
         <div id="formVocabSetSection" class="hidden p-4 rounded-xl bg-violet-50/70 border border-violet-200 space-y-2">
@@ -551,6 +554,33 @@
           </div>
           <select id="formVocabSetId" class="w-full py-2.5 px-3 rounded-xl border border-violet-200 bg-white focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm"></select>
           <p class="text-[11px] text-violet-700">단어 테스트 일정에 사용할 단어장을 선택하세요.</p>
+        </div>
+
+        <!-- ================= Text Memorization Range Builder Section ================= -->
+        <div id="formTextMemorizeSection" class="hidden p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-3.5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h4 class="text-sm font-bold text-indigo-950 flex items-center gap-1.5">
+                <i class="fa-solid fa-book-open text-indigo-600"></i>
+                본문 암기 출제 범위 설정
+              </h4>
+              <p class="text-[11px] text-indigo-700 mt-0.5">교재의 문단을 체크박스로 복수 선택하여 시험 범위를 지정하세요.</p>
+            </div>
+            <span id="formTextMemorizeCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-black">0개 문단 선택됨</span>
+          </div>
+
+          <!-- 교재 선택 -->
+          <div>
+            <label class="block text-xs font-bold text-indigo-900 mb-1">출제 교재</label>
+            <select id="formTextMemorizeBookSelect" onchange="App.onTextMemorizeBookChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-indigo-200 bg-white focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-bold text-slate-800">
+              <option value="YBM(박준언) 공통영어 2">YBM(박준언) 공통영어 2</option>
+            </select>
+          </div>
+
+          <!-- 문단 선택 체크박스 컨테이너 -->
+          <div id="formTextMemorizePassageList" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            <!-- Populated dynamically by JS -->
+          </div>
         </div>
 
         <!-- Date & Time Window -->
@@ -614,8 +644,13 @@
           </div>
           <div id="formPracticeCutoffSection" class="hidden">
             <label class="block text-xs font-bold text-emerald-800 mb-1">문제풀이 통과 커트라인 (점수) <span class="text-rose-500">*</span></label>
-            <input type="number" id="formPracticeCutoff" min="1" max="100" step="1" inputmode="numeric" placeholder="예: 80 (80점 이상 통과)" class="w-full py-2.5 px-3 rounded-xl border border-emerald-300 focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm" />
+            <input type="number" id="formPracticeCutoff" min="1" max="100" step="1" inputmode="numeric" placeholder="예: 80 (80점 이상 통과)" class="w-full py-2.5 px-3 rounded-xl border border-emerald-300 focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm font-bold text-slate-900" />
             <p class="text-[11px] text-emerald-700 mt-1">100점 만점 기준 통과 점수(1~100)를 입력하세요.</p>
+          </div>
+          <div id="formTextMemorizeCutoffSection" class="hidden">
+            <label class="block text-xs font-bold text-blue-900 mb-1">본문암기 통과 커트라인 (점수) <span class="text-rose-500">*</span></label>
+            <input type="number" id="formTextMemorizeCutoff" min="1" max="100" step="1" inputmode="numeric" placeholder="예: 80 (80점 이상 통과)" value="80" class="w-full py-2.5 px-3 rounded-xl border border-blue-300 focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-bold text-slate-900" />
+            <p class="text-[11px] text-blue-700 mt-1">빈칸 정답률 100점 만점 기준 통과 점수(1~100)를 입력하세요.</p>
           </div>
           <div class="form-regular-only">
             <label class="block text-xs font-bold text-slate-700 mb-1">학생 획득 점수</label>
@@ -731,10 +766,20 @@
       <div class="p-6 space-y-5 overflow-y-auto flex-1">
         <input type="hidden" id="vocabSetId" />
 
+        <!-- Book / Folder Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">교재 (폴더 분류) <span class="text-slate-400 font-normal">예: 워드마스터 수능 2000, EBS 수능특강 등</span></label>
+          <input type="text" id="vocabSetBook" list="vocabBookDataList" placeholder="워드마스터 수능 2000" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
+          <datalist id="vocabBookDataList">
+            <option value="워드마스터 수능 2000"></option>
+            <option value="기본 단어장"></option>
+          </datalist>
+        </div>
+
         <!-- Set Title -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">세트 제목 <span class="text-rose-500">*</span></label>
-          <input type="text" id="vocabSetTitle" placeholder="예: 수능특강 Day 1-5 단어" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
+          <input type="text" id="vocabSetTitle" placeholder="예: Day 01 또는 Day 1-5 단어" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
         </div>
 
         <!-- Student Selector -->
@@ -913,8 +958,100 @@
     </div>
   </div>
 
+  <!-- ===== 본문 암기 시험 응시 모달 ===== -->
+  <div id="textMemorizeExamModal" class="fixed inset-0 z-[60] hidden flex items-start justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white my-2 sm:my-4">
+      <!-- Header -->
+      <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex-shrink-0">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-indigo-300 shadow-inner">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-base leading-tight text-white" id="tmExamTitle">본문 암기 테스트</h3>
+              <p class="text-xs text-indigo-200 mt-0.5" id="tmExamSubtitle">빈칸에 들어갈 단어를 입력하세요</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="tmExamProgressBadge" class="px-2.5 py-1 rounded-lg bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-xs font-bold">0 / 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body: passage paragraphs with blanks -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6" id="tmExamBody" style="max-height: 60vh;">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
+        <button onclick="App.submitTextMemorizeExam()" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-200 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> 본문 암기 답안 제출하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 본문 암기 시험 결과 모달 ===== -->
+  <div id="textMemorizeResultModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+    <div class="glass-card w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white max-h-[90vh]">
+      <!-- Header -->
+      <div class="p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex-shrink-0 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mx-auto mb-2 text-indigo-300" id="tmResultIcon">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <h3 class="font-extrabold text-xl text-white" id="tmResultTitle">채점 결과</h3>
+        <p class="text-sm text-indigo-200 mt-1" id="tmResultSubtitle">수고했어요!</p>
+      </div>
+
+      <!-- Score display -->
+      <div class="px-6 pt-5 pb-3 flex-shrink-0">
+        <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-center">
+          <p class="text-[11px] font-bold text-indigo-700 mb-1">점수</p>
+          <p class="text-5xl font-black text-indigo-600" id="tmResultScore">--</p>
+          <p class="text-sm text-slate-500 mt-1" id="tmResultCorrect">-- / -- 정답</p>
+        </div>
+      </div>
+
+      <!-- Wrong answers review -->
+      <div class="px-6 pb-4 flex-1 overflow-y-auto space-y-2.5" id="tmResultWrongList">
+        <!-- wrong answers populated by JS -->
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2 flex-shrink-0" id="tmResultFooter">
+        <button onclick="App.closeTextMemorizeResult()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 캘린더에서 본문 암기 시험 일정 상세 모달 ===== -->
+  <div id="textMemorizeScheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="glass-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white max-h-[90vh]">
+      <div class="p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-indigo-300">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-400/30" id="tmScheduleStudentBadge">학생 · 본문 암기 테스트</span>
+            <h3 class="font-extrabold text-base text-white mt-1" id="tmScheduleTitle">본문 암기 테스트</h3>
+          </div>
+        </div>
+        <button onclick="App.closeTextMemorizeScheduleModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4 overflow-y-auto flex-1" id="tmScheduleBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toastContainer"></div>
+
 
 <!-- Firebase -->
 <script type="module">
@@ -967,6 +1104,8 @@
 
 
 <!-- Scripts -->
+<script src="wordmaster2000_data.js"></script>
+<script src="ybm_english2_data.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>
