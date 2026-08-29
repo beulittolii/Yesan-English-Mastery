@@ -376,11 +376,13 @@ const FirebaseStore = {
   tests: generateDefaultTests(),
   vocabSets: [],
   vocabTestResults: [],
+  textMemorizeResults: [],
   studentsLoaded: false,
   studentListenerStarted: false,
   testsListenerStarted: false,
   vocabSetsListenerStarted: false,
-  vocabTestResultsListenerStarted: false
+  vocabTestResultsListenerStarted: false,
+  textMemorizeResultsListenerStarted: false
 };
 
 
@@ -836,6 +838,7 @@ const AppData = {
       this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })),
       this.loadCollection('vocabSets', set => ({
         ...set,
+        book: set.book || '기본 단어장',
         studentIds: (set.studentIds || []).map(Number)
       })),
       this.loadCollection('vocabTestResults', result => ({
@@ -855,11 +858,25 @@ const AppData = {
       if (legacyTests) localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
     }
 
+    // 워드마스터 수능 2000 기본 세트 자동 연동 (세트가 없거나 워드마스터가 미등록된 경우)
     if (vocabSets.length === 0) {
       const legacySets = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabSets);
-      if (legacySets) {
+      if (legacySets && legacySets.length > 0) {
         await this.saveVocabSets(legacySets);
         localStorage.removeItem(LEGACY_STORAGE_KEYS.vocabSets);
+      } else if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+        console.log('Auto-seeding Wordmaster 2000 vocab sets...');
+        FirebaseStore.vocabSets = WORDMASTER_2000_SETS;
+        // background async sync
+        this.replaceCollection('vocabSets', WORDMASTER_2000_SETS, set => set.id).catch(e => console.warn('Vocab seed sync notice:', e));
+      }
+    } else {
+      // 기존에 다른 세트만 있고 워드마스터 2000이 하나도 없으면 병합 추가
+      const hasWm = vocabSets.some(s => s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')));
+      if (!hasWm && typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+        console.log('Merging Wordmaster 2000 sets into existing vocab sets...');
+        FirebaseStore.vocabSets = [...vocabSets, ...WORDMASTER_2000_SETS];
+        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Vocab merge sync notice:', e));
       }
     }
 
@@ -889,6 +906,10 @@ const AppData = {
     this.startCollectionListener({
       collectionName: 'vocabTestResults', cacheKey: 'vocabTestResults', listenerKey: 'vocabTestResultsListenerStarted',
       normalize: result => ({ ...result, studentId: Number(result.studentId), direction: Number(result.direction) })
+    });
+    this.startCollectionListener({
+      collectionName: 'textMemorizeResults', cacheKey: 'textMemorizeResults', listenerKey: 'textMemorizeResultsListenerStarted',
+      normalize: result => ({ ...result, studentId: Number(result.studentId) })
     });
   },
 
@@ -1228,6 +1249,7 @@ const AppData = {
   async saveVocabSets(sets) {
     FirebaseStore.vocabSets = sets.map(set => ({
       ...set,
+      book: (set.book || '기본 단어장').trim(),
       studentIds: (set.studentIds || []).map(Number)
     }));
     await this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id);
@@ -1544,6 +1566,68 @@ const AppData = {
 
     return resultData;
 
+  },
+
+  // ── 본문 암기 테스트 결과 ───────────────────────────────
+
+  getTextMemorizeResults() {
+    return FirebaseStore.textMemorizeResults || [];
+  },
+
+  getTextMemorizeResult(studentId, testId) {
+    return this.getTextMemorizeResults()
+      .find(r => r.studentId === Number(studentId) && r.testId === testId)
+      || null;
+  },
+
+  getTextMemorizeResultDocId(result) {
+    return `tm_${Number(result.studentId)}_${encodeURIComponent(String(result.testId || 'free'))}`;
+  },
+
+  async saveTextMemorizeResult(studentId, testId, { score, correct, total, passed, completedAt }) {
+    const results = this.getTextMemorizeResults().filter(
+      r => !(r.studentId === Number(studentId) && r.testId === testId)
+    );
+    const newResult = {
+      studentId: Number(studentId),
+      testId,
+      score: Math.round(score),
+      correct,
+      total,
+      passed,
+      completedAt: completedAt || new Date().toISOString()
+    };
+    results.push(newResult);
+    FirebaseStore.textMemorizeResults = results;
+
+    // 연결된 시험 일정이 있으면 status 업데이트
+    if (testId && passed) {
+      const tests = this.getTests();
+      const idx = tests.findIndex(t => t.id === testId && t.studentId === Number(studentId));
+      if (idx >= 0) {
+        tests[idx] = { ...tests[idx], status: 'PASS' };
+        await this.saveTests(tests);
+      }
+    }
+
+    try {
+      await this.writeDocument(
+        'textMemorizeResults',
+        this.getTextMemorizeResultDocId(newResult),
+        newResult
+      );
+    } catch (error) {
+      this.reportCloudWriteError('본문 암기 결과', error);
+      throw error;
+    }
+    return newResult;
+  },
+
+  async deleteTextMemorizeResultsByTestId(testId) {
+    const results = this.getTextMemorizeResults().filter(r => r.testId !== testId);
+    FirebaseStore.textMemorizeResults = results;
+    // Firestore doc deletion handled elsewhere when test is deleted
   }
 
 };
+
