@@ -4412,22 +4412,48 @@ const App = {
     return out.join('');
   },
 
-  // ── 영어 스펠링 입력 필터 (한글 입력 시 영문으로 자동 변환) ──
+  // ── 영어 스펠링 입력 필터 (한글 입력 시 영문으로 자동 변환, 커서 및 이전 입력 완벽 보존) ──
   filterSpellingEnglishOnly(inputEl) {
     if (!inputEl) return;
-    const converted = this.convertKorToEng(inputEl.value);
-    const cleaned = converted.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
-    if (inputEl.value !== cleaned) {
+    const val = inputEl.value;
+    // 한글(자모/음절)이 포함된 경우에만 변환하여 앞 글자 소실 방지
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(val)) {
+      const converted = this.convertKorToEng(val);
+      const cleaned = converted.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
       inputEl.value = cleaned;
+      try {
+        const len = cleaned.length;
+        inputEl.setSelectionRange(len, len);
+      } catch (e) {}
+    } else {
+      // 영문만 있을 때는 비허용 문자만 정리하되 커서 보존
+      const cleaned = val.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
+      if (val !== cleaned) {
+        const pos = Math.min(inputEl.selectionStart || cleaned.length, cleaned.length);
+        inputEl.value = cleaned;
+        try {
+          inputEl.setSelectionRange(pos, pos);
+        } catch (e) {}
+      }
     }
   },
 
-  // ── 한국어 뜻 입력 필터 (영문 입력 시 한글로 실시간 자동 조합 및 변환) ──
+  // ── 한국어 뜻 입력 필터 (영문 키보드로 입력 시 한글로 자동 변환, 한글 입력 시 네이티브 IME 100% 보존) ──
   filterMeaningKoreanOnly(inputEl) {
     if (!inputEl) return;
-    const converted = this.convertEngToKor(inputEl.value);
-    if (inputEl.value !== converted) {
+    const val = inputEl.value;
+    // 사용자가 한글 키보드로 정상 입력 중일 때는 value를 절대 덮어쓰지 않음 (앞 글자 소실/IME 깨짐 완벽 방지)
+    if (!/[a-zA-Z]/.test(val)) {
+      return;
+    }
+    // 영문자가 포함되어 있을 때만 한글로 변환
+    const converted = this.convertEngToKor(val);
+    if (val !== converted) {
       inputEl.value = converted;
+      try {
+        const len = converted.length;
+        inputEl.setSelectionRange(len, len);
+      } catch (e) {}
     }
   },
 
@@ -6111,12 +6137,21 @@ const App = {
   },
 
   onTmBlankInput(inputElem, blankId) {
-    // 한글 입력 시 영문으로 자동 변환 (한영 오타 실시간 교정)
+    // 한글 입력 시 영문으로 자동 변환 (한영 오타 실시간 교정 및 앞 글자 보존)
     const rawVal = inputElem.value;
-    const converted = this.convertKorToEng(rawVal);
-    const sanitized = converted.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
-    if (rawVal !== sanitized) {
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(rawVal)) {
+      const converted = this.convertKorToEng(rawVal);
+      const sanitized = converted.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
       inputElem.value = sanitized;
+      try {
+        const len = sanitized.length;
+        inputElem.setSelectionRange(len, len);
+      } catch (e) {}
+    } else {
+      const sanitized = rawVal.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
+      if (rawVal !== sanitized) {
+        inputElem.value = sanitized;
+      }
     }
 
     if (this.state.textMemorizeExam) {
