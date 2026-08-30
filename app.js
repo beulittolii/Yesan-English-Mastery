@@ -24,8 +24,51 @@ const App = {
 
   // 초기화 (Init)
   init() {
-    this.renderLanding();
     this.bindEvents();
+    if (!this.restoreSession()) {
+      this.renderLanding();
+    }
+  },
+
+  saveSession(sessionData) {
+    try {
+      localStorage.setItem('yem_auth_session', JSON.stringify(sessionData));
+    } catch (e) {
+      console.warn('세션 저장 실패:', e);
+    }
+  },
+
+  clearSession() {
+    try {
+      localStorage.removeItem('yem_auth_session');
+    } catch (e) {
+      console.warn('세션 삭제 실패:', e);
+    }
+  },
+
+  restoreSession() {
+    try {
+      const raw = localStorage.getItem('yem_auth_session');
+      if (!raw) return false;
+      const session = JSON.parse(raw);
+      if (session && session.role === 'admin') {
+        this.state.isAdminLoggedIn = true;
+        this.state.isStudentLoggedIn = false;
+        this.showAdminDashboard();
+        return true;
+      }
+      if (session && session.role === 'student' && session.studentId) {
+        const studentId = Number(session.studentId);
+        this.state.isStudentLoggedIn = true;
+        this.state.isAdminLoggedIn = false;
+        this.state.selectedStudentId = studentId;
+        this.selectStudent(studentId);
+        return true;
+      }
+    } catch (e) {
+      console.warn('세션 복원 실패:', e);
+    }
+    return false;
   },
 
   bindEvents() {
@@ -133,6 +176,7 @@ const App = {
   },
 
   logoutStudent() {
+    this.clearSession();
     this.state.isStudentLoggedIn = false;
     this.toast('로그아웃되었습니다.', 'info');
     this.showLanding();
@@ -288,6 +332,7 @@ const App = {
     if (isTeacherId && password === TEACHER_PASSWORD) {
       this.state.isAdminLoggedIn = true;
       this.state.isStudentLoggedIn = false;
+      this.saveSession({ role: 'admin' });
       if (errorEl) errorEl.classList.add('hidden');
       this.toast('선생님 관리자 모드로 로그인되었습니다.', 'success');
       this.showAdminDashboard();
@@ -315,6 +360,7 @@ const App = {
     this.state.isStudentLoggedIn = true;
     this.state.isAdminLoggedIn = false;
     this.state.selectedStudentId = Number(student.id);
+    this.saveSession({ role: 'student', studentId: Number(student.id), name: student.name });
     this.toast(`${student.name} 학생, 환영합니다! 👋`, 'success');
     this.selectStudent(student.id);
     return false;
@@ -577,10 +623,10 @@ const App = {
             bookIconColor = 'text-rose-600';
           }
           testsHtml += `
-            <div onclick="App.openTextMemorizeScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="본문 암기 시험">
+            <div onclick="App.openTextMemorizeScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="본문암기 시험">
               <div class="truncate flex items-center gap-1">
                 <span><i class="fa-solid fa-book-open ${bookIconColor}"></i></span>
-                <span class="truncate">${this.escapeHtml(test.title || '본문 암기')}</span>
+                <span class="truncate">${this.escapeHtml(test.title || '본문암기')}</span>
               </div>
             </div>`;
         }
@@ -1948,6 +1994,7 @@ const App = {
   // 5. 관리자 대시보드 (Admin Management)
   // ========================================================
   logoutAdmin() {
+    this.clearSession();
     this.state.isAdminLoggedIn = false;
     this.toast('관리자 모드를 종료했습니다.', 'info');
     this.showLanding();
@@ -2597,6 +2644,16 @@ const App = {
     if (document.getElementById('formTextMemorizeCutoff')) {
       document.getElementById('formTextMemorizeCutoff').value = test.textMemorizeCutoff || test.cutoffScore || 80;
     }
+    if (document.getElementById('formTextMemorizeMaxWrong')) {
+      document.getElementById('formTextMemorizeMaxWrong').value = test.textMemorizeMaxWrong ?? 3;
+    }
+    const cutoffType = test.textMemorizeCutoffType || 'SCORE';
+    this.toggleTextMemorizeCutoffType(cutoffType);
+
+    const tmMode = test.textMemorizeMode || 'CLOZE';
+    const tmModeRadio = document.querySelector(`input[name="formTextMemorizeMode"][value="${tmMode}"]`);
+    if (tmModeRadio) tmModeRadio.checked = true;
+
     document.getElementById('formScore').value = test.score || '';
     document.getElementById('formRetestDate').value = test.retestDate || '';
     document.getElementById('formTeacherNote').value = test.teacherNote || '';
@@ -2656,6 +2713,46 @@ const App = {
     this.openVocabSetModal(null, true);
   },
 
+  toggleTextMemorizeCutoffType(type) {
+    const isScore = type === 'SCORE';
+    const btnScore = document.getElementById('btnCutoffTypeScore');
+    const btnWrong = document.getElementById('btnCutoffTypeWrong');
+    const wrapScore = document.getElementById('formTmCutoffScoreWrap');
+    const wrapWrong = document.getElementById('formTmCutoffWrongWrap');
+    const hiddenType = document.getElementById('formTextMemorizeCutoffType');
+
+    if (hiddenType) hiddenType.value = type;
+
+    if (btnScore && btnWrong) {
+      if (isScore) {
+        btnScore.className = 'px-2.5 py-1 rounded-md text-xs font-bold transition bg-indigo-600 text-white shadow-2xs';
+        btnWrong.className = 'px-2.5 py-1 rounded-md text-xs font-bold transition text-slate-600 hover:bg-slate-100';
+      } else {
+        btnWrong.className = 'px-2.5 py-1 rounded-md text-xs font-bold transition bg-indigo-600 text-white shadow-2xs';
+        btnScore.className = 'px-2.5 py-1 rounded-md text-xs font-bold transition text-slate-600 hover:bg-slate-100';
+      }
+    }
+
+    if (wrapScore) wrapScore.classList.toggle('hidden', !isScore);
+    if (wrapWrong) wrapWrong.classList.toggle('hidden', isScore);
+  },
+
+  onTextMemorizeModeChange() {
+    const mode = document.querySelector('input[name="formTextMemorizeMode"]:checked')?.value || 'CLOZE';
+    const labelCloze = document.getElementById('labelTmModeCloze');
+    const labelFull = document.getElementById('labelTmModeFull');
+
+    if (labelCloze && labelFull) {
+      if (mode === 'CLOZE') {
+        labelCloze.className = 'flex items-center justify-center p-2 rounded-lg border border-indigo-300 bg-indigo-50/80 cursor-pointer text-xs font-bold text-indigo-950';
+        labelFull.className = 'flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white cursor-pointer text-xs font-bold text-slate-700 hover:bg-slate-50';
+      } else {
+        labelFull.className = 'flex items-center justify-center p-2 rounded-lg border border-indigo-300 bg-indigo-50/80 cursor-pointer text-xs font-bold text-indigo-950';
+        labelCloze.className = 'flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white cursor-pointer text-xs font-bold text-slate-700 hover:bg-slate-50';
+      }
+    }
+  },
+
   toggleTestFormType() {
     const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'REGULAR';
     const isVocab = testType === 'VOCAB';
@@ -2667,6 +2764,12 @@ const App = {
     document.querySelectorAll('.form-regular-or-practice').forEach(element => element.classList.toggle('hidden', isVocab || isTextMemorize));
     document.querySelectorAll('.form-time-applicable').forEach(element => element.classList.remove('hidden'));
 
+    // 본문 암기 및 단어 테스트는 제목 입력창 숨김 및 자동 고정
+    const formTitleSection = document.getElementById('formTitleSection');
+    if (formTitleSection) {
+      formTitleSection.classList.toggle('hidden', isVocab || isTextMemorize);
+    }
+
     document.getElementById('formVocabSetSection').classList.toggle('hidden', !isVocab);
     document.getElementById('formVocabCutoffSection').classList.toggle('hidden', !isVocab);
     document.getElementById('formPracticeCutoffSection').classList.toggle('hidden', !isPractice);
@@ -2674,20 +2777,33 @@ const App = {
     document.getElementById('formTextMemorizeSection').classList.toggle('hidden', !isTextMemorize);
     document.getElementById('formTextMemorizeCutoffSection').classList.toggle('hidden', !isTextMemorize);
 
+    const title = document.getElementById('formTitle');
+    if (title) {
+      if (isTextMemorize) {
+        title.value = '본문암기 테스트';
+        title.required = false;
+      } else if (isVocab) {
+        title.value = '단어 테스트';
+        title.required = false;
+      } else {
+        title.required = true;
+        if (title.value === '본문암기 테스트' || title.value === '본문 암기 테스트' || title.value === '단어 테스트') {
+          title.value = '';
+        }
+      }
+    }
+
     if (isTextMemorize) {
       const bookVal = document.getElementById('formTextMemorizeBookSelect')?.value || 'YBM(박준언) 공통영어 2';
       this.onTextMemorizeBookChange(bookVal);
+      this.onTextMemorizeModeChange();
     }
 
-    const title = document.getElementById('formTitle');
     const regularCutoff = document.getElementById('formCutoff');
     const practiceCutoff = document.getElementById('formPracticeCutoff');
-    const tmCutoff = document.getElementById('formTextMemorizeCutoff');
 
-    title.required = !isVocab;
     if (regularCutoff) regularCutoff.required = isRegular;
     if (practiceCutoff) practiceCutoff.required = isPractice;
-    if (tmCutoff) tmCutoff.required = isTextMemorize;
   },
 
   initPracticeQuestionsForm(questions = []) {
@@ -2928,13 +3044,19 @@ const App = {
 
     const isTextMemorize = testType === 'TEXT_MEMORIZE';
 
-    const title = (isVocabTest) ? '단어 테스트' : (isTextMemorize ? (document.getElementById('formTitle').value.trim() || '본문 암기 테스트') : document.getElementById('formTitle').value.trim());
+    const title = (isVocabTest) ? '단어 테스트' : (isTextMemorize ? '본문암기 테스트' : document.getElementById('formTitle').value.trim());
     const date = document.getElementById('formDate').value;
     const time = document.getElementById('formTime').value.trim();
     const endTime = document.getElementById('formEndTime').value.trim();
+
+    const textMemorizeMode = isTextMemorize ? (document.querySelector('input[name="formTextMemorizeMode"]:checked')?.value || 'CLOZE') : null;
+    const textMemorizeCutoffType = isTextMemorize ? (document.getElementById('formTextMemorizeCutoffType')?.value || 'SCORE') : null;
+    const textMemorizeCutoff = Number(document.getElementById('formTextMemorizeCutoff')?.value ?? 80);
+    const textMemorizeMaxWrong = Number(document.getElementById('formTextMemorizeMaxWrong')?.value ?? 3);
+
     const scope = isVocabTest
       ? '단어 세트 기반 5지선다 테스트'
-      : (isPracticeTest ? (document.getElementById('formScope').value.trim() || '선생님 출제 5지선다 객관식 문제풀이') : (isTextMemorize ? '본문 암기 빈칸 테스트' : document.getElementById('formScope').value.trim()));
+      : (isPracticeTest ? (document.getElementById('formScope').value.trim() || '선생님 출제 5지선다 객관식 문제풀이') : (isTextMemorize ? (textMemorizeMode === 'FULL_SENTENCE' ? '본문암기 문장 전체 영작(서술형) 테스트' : '본문암기 빈칸 테스트') : document.getElementById('formScope').value.trim()));
 
     const regularCutoff = document.getElementById('formCutoff').value.trim();
     const vocabCutoff2 = Number(document.getElementById('formVocabCutoff_2')?.value ?? 80);
@@ -2942,7 +3064,6 @@ const App = {
     const vocabCutoff4 = Number(document.getElementById('formVocabCutoff_4')?.value ?? 80);
     const vocabCutoffs = { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4 };
     const practiceCutoff = Number(document.getElementById('formPracticeCutoff').value);
-    const textMemorizeCutoff = Number(document.getElementById('formTextMemorizeCutoff')?.value ?? 80);
 
     // TEXT_MEMORIZE: collect selected passage IDs
     const selectedPassageCheckboxes = document.querySelectorAll('input[name="formPassageCheckbox"]:checked');
@@ -2958,8 +3079,13 @@ const App = {
       cutoff = `${practiceCutoff}점 이상`;
       cutoffScore = practiceCutoff;
     } else if (isTextMemorize) {
-      cutoff = `${textMemorizeCutoff}점 이상`;
-      cutoffScore = textMemorizeCutoff;
+      if (textMemorizeCutoffType === 'WRONG_COUNT') {
+        cutoff = `오답 ${textMemorizeMaxWrong}개 이하 허용`;
+        cutoffScore = textMemorizeMaxWrong;
+      } else {
+        cutoff = `${textMemorizeCutoff}점 이상`;
+        cutoffScore = textMemorizeCutoff;
+      }
     }
 
     const score = isRegularTest ? document.getElementById('formScore').value.trim() : '';
@@ -3014,12 +3140,19 @@ const App = {
     }
 
     if (isTextMemorize) {
-      if (!Number.isInteger(textMemorizeCutoff) || textMemorizeCutoff < 1 || textMemorizeCutoff > 100) {
-        this.toast('본문 암기 커트라인은 1~100점 사이의 정수로 입력해주세요.', 'error');
-        return;
+      if (textMemorizeCutoffType === 'SCORE') {
+        if (!Number.isInteger(textMemorizeCutoff) || textMemorizeCutoff < 1 || textMemorizeCutoff > 100) {
+          this.toast('본문암기 커트라인 점수는 1~100점 사이의 정수로 입력해주세요.', 'error');
+          return;
+        }
+      } else {
+        if (!Number.isInteger(textMemorizeMaxWrong) || textMemorizeMaxWrong < 0 || textMemorizeMaxWrong > 100) {
+          this.toast('본문암기 허용 오답 개수는 0 이상의 정수로 입력해주세요.', 'error');
+          return;
+        }
       }
       if (selectedPassageIds.length === 0) {
-        this.toast('본문 암기 출제 범위로 문단을 최소 1개 이상 선택해주세요.', 'error');
+        this.toast('본문암기 출제 범위로 문단을 최소 1개 이상 선택해주세요.', 'error');
         return;
       }
     }
@@ -3070,6 +3203,9 @@ const App = {
             passageIds: isTextMemorize ? selectedPassageIds : (existingTest?.passageIds || null),
             passageBook: isTextMemorize ? passageBook : (existingTest?.passageBook || null),
             textMemorizeCutoff: isTextMemorize ? textMemorizeCutoff : null,
+            textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
+            textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
+            textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
             extendedDate: existingTest?.extendedDate || null,
             extendedEndTime: existingTest?.extendedEndTime || null,
             allowLate: existingTest?.allowLate || false,
@@ -3111,6 +3247,9 @@ const App = {
               passageIds: isTextMemorize ? selectedPassageIds : (matchingExistingTest.passageIds || null),
               passageBook: isTextMemorize ? passageBook : (matchingExistingTest.passageBook || null),
               textMemorizeCutoff: isTextMemorize ? textMemorizeCutoff : null,
+              textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
+              textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
+              textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
               type: testType
             };
             if (isRegularTest) {
@@ -3146,6 +3285,9 @@ const App = {
               passageIds: isTextMemorize ? selectedPassageIds : null,
               passageBook: isTextMemorize ? passageBook : null,
               textMemorizeCutoff: isTextMemorize ? textMemorizeCutoff : null,
+              textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
+              textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
+              textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
               type: testType
             };
             return AppData.saveOrUpdateTest(newTest);
@@ -3192,6 +3334,9 @@ const App = {
           passageIds: isTextMemorize ? selectedPassageIds : null,
           passageBook: isTextMemorize ? passageBook : null,
           textMemorizeCutoff: isTextMemorize ? textMemorizeCutoff : null,
+          textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
+          textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
+          textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
           type: testType
         };
         return AppData.saveOrUpdateTest(newTest);
@@ -3704,36 +3849,31 @@ const App = {
           const isPending = result.direction === 4 && result.waitingGrading && !result.gradedByAdmin;
           const gradedBadge = result.gradedByAdmin ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 ml-1">채점 완료</span>` : '';
 
-          let statusText = 'PASS';
-          let statusColor = 'text-emerald-700';
-          let cardBorder = 'border-emerald-200 bg-emerald-50/70';
+          const statusText = result.passed ? 'PASS' : (isPending ? '채점 대기' : '불합격');
+          const statusColor = result.passed ? 'text-emerald-700' : (isPending ? 'text-amber-700' : 'text-rose-700');
+          const cardBorder = result.passed ? 'border-emerald-200 bg-emerald-50/70' : (isPending ? 'border-amber-300 bg-amber-50/80 shadow-xs' : 'border-slate-200 bg-slate-50/70');
           let retestBadge = '';
 
-          if (result.passed) {
-            statusText = 'PASS';
-            statusColor = 'text-emerald-700';
-            cardBorder = 'border-emerald-200 bg-emerald-50/70';
-          } else if (isPending) {
-            statusText = '채점 대기';
-            statusColor = 'text-amber-700';
-            cardBorder = 'border-amber-300 bg-amber-50/80 shadow-xs';
-          } else {
-            statusText = '불합격';
-            statusColor = 'text-rose-700';
-            cardBorder = 'border-rose-200 bg-rose-50/60';
-
+          if (!result.passed && !isPending) {
             if (result.retryAvailableAt) {
               const diffMs = new Date(result.retryAvailableAt).getTime() - Date.now();
               if (diffMs > 0) {
                 const remainMinutes = Math.ceil(diffMs / 60000);
                 const remainSeconds = Math.ceil(diffMs / 1000);
                 const timeText = remainSeconds < 60 ? `${remainSeconds}초 남음` : `${remainMinutes}분 남음`;
-                retestBadge = `<span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 ml-1 inline-flex items-center gap-1"><i class="fa-solid fa-clock text-[9px]"></i>재시험까지 ${timeText}</span>`;
+                retestBadge = `
+                  <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 ml-1 inline-flex items-center gap-1">
+                    <i class="fa-solid fa-clock text-[9px]"></i>재시험까지 ${timeText}
+                  </span>
+                  <button type="button" onclick="App.resetVocabRetryCooldown('${result.studentId}', '${result.setId}', ${result.direction}, '${result.testId || ''}')" class="text-[10px] font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 px-2 py-0.5 rounded-full border border-amber-300 transition shadow-2xs ml-1 inline-flex items-center gap-1 cursor-pointer" title="10분 대기 시간을 즉시 없애고 바로 응시할 수 있게 합니다">
+                    <i class="fa-solid fa-bolt text-[9px]"></i>재시험 허용
+                  </button>
+                `;
               } else {
-                retestBadge = `<span class="text-[10px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 ml-1 inline-flex items-center gap-1"><i class="fa-solid fa-rotate-right text-[9px]"></i>재시험 응시 가능</span>`;
+                retestBadge = `<span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 ml-1 inline-flex items-center gap-1"><i class="fa-solid fa-rotate-right text-[9px]"></i>재시험 응시 가능</span>`;
               }
             } else {
-              retestBadge = `<span class="text-[10px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 ml-1">재시험 가능</span>`;
+              retestBadge = `<span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 ml-1 inline-flex items-center gap-1"><i class="fa-solid fa-rotate-right text-[9px]"></i>재시험 응시 가능</span>`;
             }
           }
 
@@ -4224,6 +4364,11 @@ const App = {
             <i class="fa-solid fa-clock"></i>
             <span>${minutes}분 후 재응시 가능</span>
           </div>
+          ${this.state.isAdminLoggedIn ? `
+            <button type="button" onclick="App.resetVocabRetryCooldown('${studentId}', '${set.id}', ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition flex items-center justify-center gap-1 shadow-2xs">
+              <i class="fa-solid fa-bolt text-[10px]"></i> 대기시간 즉시 해제 (바로 응시)
+            </button>
+          ` : ''}
         </div>`;
     }
 
@@ -4280,6 +4425,51 @@ const App = {
       return;
     }
     this.toast('이미 완료되어 응시할 수 없습니다.', 'info');
+  },
+
+  // ── 단어 테스트 10분 재응시 대기시간 즉시 해제 (선생님 관리자 권한 일회성 허용) ──
+  async resetVocabRetryCooldown(studentId, setId, direction, testId = null) {
+    if (!this.state.isAdminLoggedIn) {
+      this.toast('관리자 권한이 필요합니다.', 'error');
+      return;
+    }
+
+    const results = AppData.getVocabTestResults();
+    const result = results.find(r => 
+      String(r.studentId) === String(studentId) &&
+      String(r.setId) === String(setId) &&
+      Number(r.direction) === Number(direction) &&
+      (!testId || String(r.testId) === String(testId))
+    );
+
+    if (result) {
+      result.retryAvailableAt = null;
+      await AppData.saveVocabTestResults(results);
+    }
+
+    if (testId) {
+      const tests = AppData.getTests();
+      const test = tests.find(t => String(t.id) === String(testId));
+      if (test) {
+        test.allowLate = true;
+        test.allowRetest = true;
+        await AppData.saveOrUpdateTest(test);
+      }
+    }
+
+    this.toast('단어 테스트 대기시간(10분)이 즉시 해제되었습니다. 학생이 바로 재응시할 수 있습니다.', 'success');
+
+    // 모달이 열려있다면 모달 갱신
+    if (testId) {
+      const currentModal = document.getElementById('testDetailModal');
+      if (currentModal && !currentModal.classList.contains('hidden')) {
+        this.openVocabTestScheduleModal(testId);
+      }
+    }
+
+    this.renderAdminVocabTab();
+    this.renderCalendar();
+    this.renderAdminTestsTab();
   },
 
   // ── 한글 2벌식 -> 영문 알파벳 자동 변환 (한영 오타 실시간 교정) ──
@@ -5802,7 +5992,7 @@ const App = {
     return { tokens: tokenObjects, blanks };
   },
 
-  // ── 캘린더/목록에서 본문 암기 시험 상세 모달 ──────────────────
+  // ── 캘린더/목록에서 본문암기 시험 상세 모달 ──────────────────
   openTextMemorizeScheduleModal(testId) {
     const test = AppData.getTests().find(t => t.id === testId);
     if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
@@ -5818,15 +6008,15 @@ const App = {
     const matchedPassages = allPassages.filter(p => passageIds.includes(p.id));
     const totalSentences = matchedPassages.reduce((acc, p) => acc + p.sentences.length, 0);
 
-    document.getElementById('tmScheduleStudentBadge').innerText = student ? `${student.name} 학생 · 본문 암기` : '본문 암기 테스트';
-    document.getElementById('tmScheduleTitle').innerText = test.title || '본문 암기 테스트';
+    document.getElementById('tmScheduleStudentBadge').innerText = student ? `${student.name} 학생 · 본문암기` : '본문암기 테스트';
+    document.getElementById('tmScheduleTitle').innerText = test.title || '본문암기 테스트';
 
     let statusBadge = { class: 'bg-blue-100 text-blue-800 border border-blue-200', label: '시험 대기' };
     if (isPassed) {
       statusBadge = { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', label: '완료 (PASS)' };
     } else if (existingResult && !existingResult.passed) {
       if (test.allowRetest) {
-        statusBadge = { class: 'bg-amber-100 text-amber-800 border border-amber-300', label: '재시험 허용' };
+        statusBadge = { class: 'bg-amber-100 text-amber-800 border border-amber-300', label: '재시험 응시 가능' };
       } else {
         statusBadge = { class: 'bg-rose-100 text-rose-800 border border-rose-300', label: '불합격 (FAIL)' };
       }
@@ -5896,12 +6086,12 @@ const App = {
 
             ${existingResult.passed ? `
               <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
-                <i class="fa-solid fa-circle-check mr-1"></i>축하합니다! 본문 암기 테스트를 통과했습니다.
+                <i class="fa-solid fa-circle-check mr-1"></i>축하합니다! 본문암기 테스트를 통과했습니다.
               </div>
             ` : (test.allowRetest ? `
-              <!-- 재시험 허용 시 즉시 주황색 재시험 시작 버튼 노출 -->
-              <button onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition shadow-lg shadow-amber-200 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-rotate-right"></i> 본문 암기 재시험 응시하기
+              <!-- 재시험 허용 시 즉시 재시험 응시하기 버튼 노출 -->
+              <button onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm">
+                <i class="fa-solid fa-rotate-right"></i> 본문암기 재시험 응시하기
               </button>
             ` : `
               <div class="p-3.5 rounded-xl border bg-slate-50 border-slate-200 text-slate-600 text-xs text-center font-medium leading-relaxed">
@@ -5910,37 +6100,66 @@ const App = {
             `)}
           </div>
         `;
-      } else {
-        const canStart = test.allowLate || timeStatus.canStart || timeStatus.status === 'IN_PROGRESS' || timeStatus.status === 'AVAILABLE' || timeStatus.status === 'RUNNING';
+      } else if (isPassed) {
         actionButtonHtml = `
           <div class="pt-2">
-            ${canStart ? `
-              <button onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-play"></i> 본문 암기 테스트 시작하기
-              </button>
-            ` : `
-              <button disabled class="w-full py-3 rounded-2xl bg-slate-300 text-slate-500 font-bold text-sm cursor-not-allowed">
-                ${timeStatus.label} (${test.time ? `${test.time} ~ ${test.endTime || ''}` : '응시 불가'})
-              </button>
-            `}
+            <div class="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
+              <i class="fa-solid fa-circle-check"></i> 본문암기 테스트 완료
+            </div>
+          </div>
+        `;
+      } else if (timeStatus.status === 'NOT_STARTED') {
+        actionButtonHtml = `
+          <div class="space-y-2 pt-2">
+            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+              <i class="fa-solid fa-lock"></i> ${timeStatus.label}
+            </button>
+            <p class="text-[11px] text-center text-slate-400">시험 시작 시간 이후에 응시 버튼이 활성화됩니다.</p>
+          </div>
+        `;
+      } else if (timeStatus.status === 'EXPIRED') {
+        actionButtonHtml = `
+          <div class="space-y-2 pt-2">
+            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+              <i class="fa-solid fa-clock"></i> 응시 시간이 종료되었습니다
+            </button>
+            <p class="text-[11px] text-center text-slate-400">지정된 시험 종료 시각(${test.endTime || test.date})이 지났습니다.</p>
+          </div>
+        `;
+      } else {
+        actionButtonHtml = `
+          <div class="pt-2">
+            <button onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> 본문암기 테스트 시작하기 (${totalSentences}문장)
+            </button>
           </div>
         `;
       }
     }
 
+    const isFullSentence = test.textMemorizeMode === 'FULL_SENTENCE';
+    const cutoffText = test.textMemorizeCutoffType === 'WRONG_COUNT'
+      ? `오답 ${test.textMemorizeMaxWrong ?? 3}개 이하 허용`
+      : `${test.textMemorizeCutoff || test.cutoffScore || 80}점 이상`;
+
     const body = document.getElementById('tmScheduleBody');
     body.innerHTML = `
       <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200">
         <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-          <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-600 text-white shadow-2xs inline-flex items-center gap-1">
-            <i class="fa-solid fa-book text-[9px]"></i> ${this.escapeHtml(test.passageBook || 'YBM(박준언) 공통영어 2')}
-          </span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-600 text-white shadow-2xs inline-flex items-center gap-1">
+              <i class="fa-solid fa-book text-[9px]"></i> ${this.escapeHtml(test.passageBook || 'YBM(박준언) 공통영어 2')}
+            </span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${isFullSentence ? 'bg-violet-100 text-violet-800 border border-violet-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'} inline-flex items-center gap-1">
+              <i class="fa-solid ${isFullSentence ? 'fa-pen-clip' : 'fa-align-left'} text-[9px]"></i> ${isFullSentence ? '문장 전체 영작 (서술형)' : '빈칸 채우기'}
+            </span>
+          </div>
           <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">
             ${statusBadge.label}
           </span>
         </div>
         <p class="text-xs text-slate-600 mt-1">
-          시험일: <strong>${test.date}</strong> · 통과 기준: <strong class="text-indigo-900">${test.cutoffScore || test.textMemorizeCutoff || 80}점 이상</strong>
+          시험일: <strong>${test.date}</strong> · 통과 기준: <strong class="text-indigo-900">${cutoffText}</strong>
         </p>
         <p class="text-xs text-slate-600 mt-0.5">
           출제 범위: <strong>총 ${matchedPassages.length}개 문단 · ${totalSentences}개 문장</strong>
@@ -5975,7 +6194,7 @@ const App = {
     this.hideModal('textMemorizeScheduleModal');
   },
 
-  // ── 학생 본문 암기 시험 응시 엔진 ────────────────────────────
+  // ── 학생 본문암기 시험 응시 엔진 ────────────────────────────
   startTextMemorizeExam(testId, studentId) {
     const test = AppData.getTests().find(t => t.id === testId);
     if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
@@ -5983,7 +6202,7 @@ const App = {
     const existingResult = AppData.getTextMemorizeResult(test.studentId, test.id);
     const isPassed = test.status === 'PASS' || existingResult?.passed;
     if (isPassed && !this.state.isAdminLoggedIn) {
-      this.toast('이미 통과(PASS)한 본문 암기 시험입니다.', 'info');
+      this.toast('이미 통과(PASS)한 본문암기 시험입니다.', 'info');
       return;
     }
     if (existingResult && !existingResult.passed && !test.allowRetest && !this.state.isAdminLoggedIn) {
@@ -6016,6 +6235,11 @@ const App = {
       return;
     }
 
+    const isFullSentence = test.textMemorizeMode === 'FULL_SENTENCE';
+    const cutoffType = test.textMemorizeCutoffType || 'SCORE';
+    const maxWrong = test.textMemorizeMaxWrong ?? 3;
+    const cutoffScore = test.textMemorizeCutoff || test.cutoffScore || 80;
+
     // 시험 상태 생성
     const examSentences = [];
     const allBlanks = [];
@@ -6023,18 +6247,29 @@ const App = {
 
     matchedPassages.forEach(passage => {
       passage.sentences.forEach(s => {
-        const cloze = this.generateClozeBlanks(s.en, globalSentIdx);
-        examSentences.push({
-          sentIndex: globalSentIdx,
-          passageId: passage.id,
-          lessonTitle: passage.lessonTitle,
-          partTitle: passage.partTitle,
-          en: s.en,
-          ko: s.ko,
-          tokens: cloze.tokens,
-          blanks: cloze.blanks
-        });
-        cloze.blanks.forEach(b => allBlanks.push(b));
+        if (isFullSentence) {
+          examSentences.push({
+            sentIndex: globalSentIdx,
+            passageId: passage.id,
+            lessonTitle: passage.lessonTitle,
+            partTitle: passage.partTitle,
+            en: s.en,
+            ko: s.ko
+          });
+        } else {
+          const cloze = this.generateClozeBlanks(s.en, globalSentIdx);
+          examSentences.push({
+            sentIndex: globalSentIdx,
+            passageId: passage.id,
+            lessonTitle: passage.lessonTitle,
+            partTitle: passage.partTitle,
+            en: s.en,
+            ko: s.ko,
+            tokens: cloze.tokens,
+            blanks: cloze.blanks
+          });
+          cloze.blanks.forEach(b => allBlanks.push(b));
+        }
         globalSentIdx++;
       });
     });
@@ -6042,28 +6277,38 @@ const App = {
     this.state.textMemorizeExam = {
       testId,
       studentId: Number(studentId),
-      testTitle: test.title || '본문 암기 테스트',
+      testTitle: test.title || '본문암기 테스트',
       bookName: test.passageBook || 'YBM(박준언) 공통영어 2',
-      cutoffScore: test.cutoffScore || test.textMemorizeCutoff || 80,
+      cutoffScore,
+      cutoffType,
+      maxWrong,
+      textMemorizeMode: isFullSentence ? 'FULL_SENTENCE' : 'CLOZE',
       passages: matchedPassages,
       sentences: examSentences,
       allBlanks: allBlanks,
-      hintMode: false,
-      showKorean: true,
       userAnswers: {}
     };
 
-    document.getElementById('tmExamTitle').innerText = this.state.textMemorizeExam.testTitle;
-    document.getElementById('tmExamSubtitle').innerText = `${this.state.textMemorizeExam.bookName} · 총 ${matchedPassages.length}개 문단 · ${allBlanks.length}개 빈칸`;
-    document.getElementById('tmExamProgressBadge').innerText = `0 / ${allBlanks.length}`;
+    document.getElementById('tmExamTitle').innerText = isFullSentence ? '본문암기 테스트 (문장 전체 영작)' : '본문암기 테스트 (빈칸 채우기)';
+    document.getElementById('tmExamSubtitle').innerText = isFullSentence
+      ? `${this.state.textMemorizeExam.bookName} · 총 ${matchedPassages.length}개 문단 · ${examSentences.length}개 문장 영작`
+      : `${this.state.textMemorizeExam.bookName} · 총 ${matchedPassages.length}개 문단 · ${allBlanks.length}개 빈칸`;
+    document.getElementById('tmExamProgressBadge').innerText = isFullSentence
+      ? `0 / ${examSentences.length}`
+      : `0 / ${allBlanks.length}`;
 
     this.renderTextMemorizeExamBody();
     this.showModal('textMemorizeExamModal');
 
-    // 첫 번째 빈칸 인풋에 자동 포커스
+    // 첫 번째 인풋/텍스트에어리어에 자동 포커스
     setTimeout(() => {
-      const firstInput = document.querySelector('#tmExamBody input.tm-blank-input');
-      if (firstInput) firstInput.focus();
+      if (isFullSentence) {
+        const firstTextarea = document.querySelector('#tmExamBody textarea.tm-sentence-input');
+        if (firstTextarea) firstTextarea.focus();
+      } else {
+        const firstInput = document.querySelector('#tmExamBody input.tm-blank-input');
+        if (firstInput) firstInput.focus();
+      }
     }, 200);
   },
 
@@ -6074,11 +6319,13 @@ const App = {
     const container = document.getElementById('tmExamBody');
     if (!container) return;
 
+    const isFullSentence = exam.textMemorizeMode === 'FULL_SENTENCE';
+
     // 문단별 렌더링
     let currentPartTitle = '';
     let html = '';
 
-    exam.sentences.forEach((s) => {
+    exam.sentences.forEach((s, sIdx) => {
       if (s.partTitle !== currentPartTitle) {
         currentPartTitle = s.partTitle;
         html += `
@@ -6090,47 +6337,81 @@ const App = {
         `;
       }
 
-      html += `
-        <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-200 transition space-y-2">
-          <!-- 영어 본문 + 빈칸 인풋들 -->
-          <div class="text-sm sm:text-base leading-relaxed text-slate-900 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-2">
-            ${s.tokens.map(token => {
-              if (!token.isBlank) {
-                return `<span>${this.escapeHtml(token.text)}</span>`;
-              }
-              const b = token.blankObj;
-              const val = exam.userAnswers[b.id] || '';
-              const placeholder = `${'_'.repeat(Math.max(3, b.length))}`;
-              const widthCh = Math.max(5, b.length + 2);
+      if (isFullSentence) {
+        const val = exam.userAnswers['sent_' + s.sentIndex] || '';
+        html += `
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-300 transition space-y-2.5">
+            <!-- 한글 해석 (메인 가이드) -->
+            <div class="flex items-start gap-2">
+              <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
+                ${sIdx + 1}
+              </span>
+              <p class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                ${this.escapeHtml(s.ko)}
+              </p>
+            </div>
 
-              return `
-                ${b.prefix ? `<span>${this.escapeHtml(b.prefix)}</span>` : ''}
-                <input
-                  type="text"
-                  id="${b.id}"
-                  data-blank-id="${b.id}"
-                  value="${this.escapeHtml(val)}"
-                  placeholder="${placeholder}"
-                  style="width: ${widthCh}ch;"
-                  oninput="App.onTmBlankInput(this, '${b.id}')"
-                  onkeydown="App.onTmBlankKeydown(event, this)"
-                  class="tm-blank-input inline-block text-center font-bold px-2 py-1 text-xs sm:text-sm bg-white border-2 border-indigo-300 rounded-lg text-indigo-950 focus:bg-indigo-50 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-hidden transition shadow-2xs"
-                  autocomplete="off"
-                  autocorrect="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                />
-                ${b.suffix ? `<span>${this.escapeHtml(b.suffix)}</span>` : ''}
-              `;
-            }).join(' ')}
+            <!-- 영어 문장 전체 입력 Textarea -->
+            <div class="relative pl-8">
+              <textarea
+                id="tm_sent_${s.sentIndex}"
+                data-sent-index="${s.sentIndex}"
+                rows="2"
+                placeholder="한글 해석을 보고 올바른 영어 문장 전체를 입력하세요 (한영 자동 변환 지원)"
+                oninput="App.onTmSentenceInput(this, ${s.sentIndex})"
+                onkeydown="App.onTmSentenceKeydown(event, this)"
+                class="tm-sentence-input w-full p-3 text-xs sm:text-sm font-semibold rounded-xl border-2 border-indigo-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-hidden bg-white text-slate-900 resize-none transition shadow-2xs leading-relaxed"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+              >${this.escapeHtml(val)}</textarea>
+            </div>
           </div>
+        `;
+      } else {
+        html += `
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-200 transition space-y-2">
+            <!-- 영어 본문 + 빈칸 인풋들 -->
+            <div class="text-sm sm:text-base leading-relaxed text-slate-900 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-2">
+              ${s.tokens.map(token => {
+                if (!token.isBlank) {
+                  return `<span>${this.escapeHtml(token.text)}</span>`;
+                }
+                const b = token.blankObj;
+                const val = exam.userAnswers[b.id] || '';
+                const placeholder = `${'_'.repeat(Math.max(3, b.length))}`;
+                const widthCh = Math.max(5, b.length + 2);
 
-          <!-- 한글 해석 -->
-          <p class="text-xs text-slate-500 font-normal pt-1 border-t border-slate-200/60 leading-normal">
-            ${this.escapeHtml(s.ko)}
-          </p>
-        </div>
-      `;
+                return `
+                  ${b.prefix ? `<span>${this.escapeHtml(b.prefix)}</span>` : ''}
+                  <input
+                    type="text"
+                    id="${b.id}"
+                    data-blank-id="${b.id}"
+                    value="${this.escapeHtml(val)}"
+                    placeholder="${placeholder}"
+                    style="width: ${widthCh}ch;"
+                    oninput="App.onTmBlankInput(this, '${b.id}')"
+                    onkeydown="App.onTmBlankKeydown(event, this)"
+                    class="tm-blank-input inline-block text-center font-bold px-2 py-1 text-xs sm:text-sm bg-white border-2 border-indigo-300 rounded-lg text-indigo-950 focus:bg-indigo-50 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-hidden transition shadow-2xs"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                  />
+                  ${b.suffix ? `<span>${this.escapeHtml(b.suffix)}</span>` : ''}
+                `;
+              }).join(' ')}
+            </div>
+
+            <!-- 한글 해석 -->
+            <p class="text-xs text-slate-500 font-normal pt-1 border-t border-slate-200/60 leading-normal">
+              ${this.escapeHtml(s.ko)}
+            </p>
+          </div>
+        `;
+      }
     });
 
     container.innerHTML = html;
@@ -6172,12 +6453,44 @@ const App = {
     }
   },
 
+  onTmSentenceInput(inputElem, sentIndex) {
+    // 한글 입력 시 영문으로 자동 변환
+    const rawVal = inputElem.value;
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(rawVal)) {
+      const converted = this.convertKorToEng(rawVal);
+      inputElem.value = converted;
+      try {
+        const len = converted.length;
+        inputElem.setSelectionRange(len, len);
+      } catch (e) {}
+    }
+
+    if (this.state.textMemorizeExam) {
+      this.state.textMemorizeExam.userAnswers['sent_' + sentIndex] = inputElem.value;
+      this.updateTmExamProgress();
+    }
+  },
+
+  onTmSentenceKeydown(event, inputElem) {
+    if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Tab') {
+      event.preventDefault();
+      const allInputs = Array.from(document.querySelectorAll('#tmExamBody textarea.tm-sentence-input'));
+      const currentIndex = allInputs.indexOf(inputElem);
+      if (currentIndex >= 0 && currentIndex < allInputs.length - 1) {
+        allInputs[currentIndex + 1].focus();
+        allInputs[currentIndex + 1].select();
+      }
+    }
+  },
+
   updateTmExamProgress() {
     const exam = this.state.textMemorizeExam;
     if (!exam) return;
+    const isFullSentence = exam.textMemorizeMode === 'FULL_SENTENCE';
+    const totalCount = isFullSentence ? exam.sentences.length : exam.allBlanks.length;
     const filledCount = Object.values(exam.userAnswers).filter(v => v && v.trim().length > 0).length;
     const badge = document.getElementById('tmExamProgressBadge');
-    if (badge) badge.innerText = `${filledCount} / ${exam.allBlanks.length}`;
+    if (badge) badge.innerText = `${filledCount} / ${totalCount}`;
   },
 
   closeTextMemorizeExam() {
@@ -6185,43 +6498,83 @@ const App = {
     this.state.textMemorizeExam = null;
   },
 
+  // 문장 비교용 정규화 헬퍼 (구두점/공백/대소문자 정리)
+  normalizeSentence(str) {
+    if (!str) return '';
+    return str
+      .trim()
+      .toLowerCase()
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, '')
+      .replace(/\s+/g, ' ');
+  },
+
   // ── 제출 및 실시간 채점 ──────────────────────────────────────
   async submitTextMemorizeExam() {
     const exam = this.state.textMemorizeExam;
     if (!exam) return;
 
+    const isFullSentence = exam.textMemorizeMode === 'FULL_SENTENCE';
     let correctCount = 0;
     const wrongList = [];
+    const totalCount = isFullSentence ? exam.sentences.length : exam.allBlanks.length;
 
-    exam.allBlanks.forEach(b => {
-      const userAns = (exam.userAnswers[b.id] || '').trim().toLowerCase();
-      const isCorrect = userAns === b.cleanWord;
+    if (isFullSentence) {
+      exam.sentences.forEach(s => {
+        const userAns = (exam.userAnswers['sent_' + s.sentIndex] || '').trim();
+        const normUser = this.normalizeSentence(userAns);
+        const normCorrect = this.normalizeSentence(s.en);
+        const isCorrect = normUser === normCorrect && normUser.length > 0;
 
-      if (isCorrect) {
-        correctCount++;
-      } else {
-        wrongList.push({
-          blank: b,
-          userAns: exam.userAnswers[b.id] || '(미입력)',
-          correctWord: b.word
-        });
-      }
-    });
+        if (isCorrect) {
+          correctCount++;
+        } else {
+          wrongList.push({
+            sentIndex: s.sentIndex,
+            ko: s.ko,
+            correctEn: s.en,
+            userAns: userAns || '(미입력)'
+          });
+        }
+      });
+    } else {
+      exam.allBlanks.forEach(b => {
+        const userAns = (exam.userAnswers[b.id] || '').trim().toLowerCase();
+        const isCorrect = userAns === b.cleanWord;
 
-    const totalCount = exam.allBlanks.length;
+        if (isCorrect) {
+          correctCount++;
+        } else {
+          wrongList.push({
+            blank: b,
+            userAns: exam.userAnswers[b.id] || '(미입력)',
+            correctWord: b.word
+          });
+        }
+      });
+    }
+
+    const wrongCount = totalCount - correctCount;
     const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
-    const passed = score >= exam.cutoffScore;
+    const passed = exam.cutoffType === 'WRONG_COUNT'
+      ? (wrongCount <= exam.maxWrong)
+      : (score >= exam.cutoffScore);
 
-    // 제출 완료 표시 (이후 모달 닫기는 불합격 처리 안함)
+    // 제출 완료 표시
     exam.isCompleted = true;
 
     const resultData = {
       score,
       correct: correctCount,
       total: totalCount,
+      wrongCount,
       passed,
       wrongList,
+      mode: exam.textMemorizeMode,
+      cutoffType: exam.cutoffType,
       cutoffScore: exam.cutoffScore,
+      maxWrong: exam.maxWrong,
       completedAt: new Date().toISOString()
     };
 
@@ -6237,7 +6590,7 @@ const App = {
         await AppData.saveOrUpdateTest(test);
       }
 
-      this.toast(`본문 암기 테스트 제출 완료! ${score}점 (${passed ? 'PASS 통과' : '불합격'})`, passed ? 'success' : 'info');
+      this.toast(`본문암기 테스트 제출 완료! ${score}점 (${passed ? 'PASS 통과' : '불합격'})`, passed ? 'success' : 'info');
     } catch (e) {
       console.error(e);
     }
@@ -6261,25 +6614,49 @@ const App = {
     const subElem = document.getElementById('tmResultSubtitle');
     const scoreElem = document.getElementById('tmResultScore');
     const correctElem = document.getElementById('tmResultCorrect');
+    const cutoffBadgeElem = document.getElementById('tmResultCutoffBadge');
     const wrongContainer = document.getElementById('tmResultWrongList');
     const footerElem = document.getElementById('tmResultFooter');
+
+    const isFullSentence = result.mode === 'FULL_SENTENCE';
+    const isWrongCountType = result.cutoffType === 'WRONG_COUNT';
+    const wrongCount = result.wrongCount ?? (result.total - result.correct);
 
     if (result.passed) {
       iconElem.className = 'w-16 h-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-3xl mx-auto mb-2 shadow-lg';
       iconElem.innerHTML = '<i class="fa-solid fa-crown"></i>';
       titleElem.innerText = '통과 (PASS)';
-      subElem.innerText = `기준 점수(${result.cutoffScore}점)를 넘어 본문을 완벽하게 암기했습니다!`;
+      subElem.innerText = '축하합니다! 본문암기 테스트를 통과했습니다.';
       scoreElem.className = 'text-5xl font-black text-emerald-600';
     } else {
       iconElem.className = 'w-16 h-16 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-3xl mx-auto mb-2 shadow-lg';
       iconElem.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
       titleElem.innerText = '불합격 (FAIL)';
-      subElem.innerText = `통과 기준 점수는 ${result.cutoffScore}점입니다. 불합격 처리되었습니다. 빽빽이 검사 후 다시 시도해주세요.`;
+      subElem.innerText = '빽빽이 검사 후 다시 시도해주세요.';
       scoreElem.className = 'text-5xl font-black text-rose-600';
     }
 
     scoreElem.innerText = `${result.score}점`;
-    correctElem.innerText = `${result.correct} / ${result.total}개 빈칸 정답`;
+    correctElem.innerText = isFullSentence
+      ? `${result.correct} / ${result.total}개 문장 정답 (오답 ${wrongCount}개)`
+      : `${result.correct} / ${result.total}개 빈칸 정답 (오답 ${wrongCount}개)`;
+
+    // 커트라인 따로 밑에 표시
+    if (cutoffBadgeElem) {
+      if (isWrongCountType) {
+        cutoffBadgeElem.innerHTML = `
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-950 font-bold text-xs shadow-2xs">
+            <i class="fa-solid fa-sliders text-indigo-600"></i> 커트라인: 최대 오답 <strong>${result.maxWrong ?? 3}개 이하</strong> 허용
+          </span>
+        `;
+      } else {
+        cutoffBadgeElem.innerHTML = `
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-950 font-bold text-xs shadow-2xs">
+            <i class="fa-solid fa-sliders text-indigo-600"></i> 커트라인: <strong>${result.cutoffScore ?? 80}점 이상</strong>
+          </span>
+        `;
+      }
+    }
 
     // 오답 리스트 렌더링
     if (result.wrongList && result.wrongList.length > 0) {
@@ -6287,20 +6664,37 @@ const App = {
         <h5 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
           <i class="fa-solid fa-circle-exclamation text-rose-500"></i> 오답 복습 (${result.wrongList.length}개)
         </h5>
-        <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-          ${result.wrongList.map(w => `
+        <div class="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+          ${isFullSentence ? result.wrongList.map((w, idx) => `
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-bold text-[10px]">${idx + 1}번 문장</span>
+                <p class="font-bold text-slate-800">${this.escapeHtml(w.ko)}</p>
+              </div>
+              <div class="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[11px] leading-relaxed">
+                <span class="font-bold text-rose-600 mr-1">[내 작성]:</span>${this.escapeHtml(w.userAns)}
+              </div>
+              <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] font-bold leading-relaxed">
+                <span class="font-black text-emerald-700 mr-1">[정답 원문]:</span>${this.escapeHtml(w.correctEn)}
+              </div>
+            </div>
+          `).join('') : result.wrongList.map(w => `
             <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-2">
               <div>
                 <span class="text-rose-600 font-bold line-through mr-2">${this.escapeHtml(w.userAns)}</span>
                 <span class="text-emerald-700 font-black">➜ ${this.escapeHtml(w.correctWord)}</span>
               </div>
-              <span class="text-[10px] text-slate-400">${w.blank.length}글자</span>
+              <span class="text-[10px] text-slate-400">${w.blank ? w.blank.length : ''}글자</span>
             </div>
           `).join('')}
         </div>
       `;
     } else {
-      wrongContainer.innerHTML = '<p class="text-xs text-emerald-600 font-bold py-3 text-center">모든 빈칸을 100% 완벽하게 맞혔습니다!</p>';
+      wrongContainer.innerHTML = `
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
+          <i class="fa-solid fa-circle-check mr-1"></i>모든 문제를 완벽하게 맞혔습니다! (오답 0개)
+        </div>
+      `;
     }
 
     if (footerElem) {
@@ -6318,7 +6712,7 @@ const App = {
     this.hideModal('textMemorizeResultModal');
   },
 
-  // 관리자: 본문 암기 재시험 허용 토글
+  // 관리자: 본문암기 재시험 허용 토글
   async toggleTextMemorizeAllowRetest(testId) {
     const test = AppData.getTests().find(t => t.id === testId);
     if (!test) return;
@@ -6326,7 +6720,7 @@ const App = {
     test.allowRetest = newVal;
     try {
       await AppData.saveOrUpdateTest(test);
-      this.toast(newVal ? '학생의 본문 암기 재시험 응시가 허용되었습니다.' : '본문 암기 재시험 허용이 취소되었습니다.', newVal ? 'success' : 'info');
+      this.toast(newVal ? '학생의 본문암기 재시험 응시가 허용되었습니다.' : '본문암기 재시험 허용이 취소되었습니다.', newVal ? 'success' : 'info');
       
       const scheduleModal = document.getElementById('textMemorizeScheduleModal');
       if (scheduleModal && !scheduleModal.classList.contains('hidden')) {
@@ -6354,7 +6748,7 @@ const App = {
     const resultData = {
       score: 0,
       correct: 0,
-      total: exam.allBlanks.length,
+      total: exam.sentences ? exam.sentences.length : (exam.allBlanks ? exam.allBlanks.length : 0),
       passed: false,
       wrongList: [],
       cutoffScore: exam.cutoffScore,
@@ -6383,43 +6777,41 @@ const App = {
 
     if (this.state.isAdminLoggedIn) {
       this.renderAdminDashboard();
+    } else if (this.state.isStudentLoggedIn) {
+      this.selectStudent(this.state.selectedStudentId);
     } else {
-      this.renderStudentDashboard();
+      this.showLanding();
     }
   }
 
 };
 document.addEventListener('DOMContentLoaded', async () => {
-
   console.log('🚀 사이트 초기화 시작');
 
+  // 1. DOM이 준비되는 즉시 동기적으로 세션 복원 및 UI 렌더링 (새로고침 시 로그인 풀림 방지)
+  App.init();
+
   try {
-
-    // 1. Firestore에서 학생 데이터 불러오기
+    // 2. Firestore에서 학생 데이터 불러오기
     await AppData.initializeStudents();
-
     console.log('👨‍🎓 학생 데이터 준비 완료');
-    console.log('학생 목록:', AppData.getStudents());
 
-    // 2. 시험 / 단어 데이터도 Firestore에서 준비
+    // 3. 시험 / 단어 데이터도 Firestore에서 준비
     await AppData.initializeCloudData();
 
-    // 3. Firestore 실시간 감시 시작
+    // 4. Firestore 실시간 감시 시작
     AppData.startStudentListener();
     AppData.startCloudListeners();
 
-    // 4. 기존 앱 시작
-    App.init();
+    // 5. 클라우드 최신 데이터가 로드된 후 현재 활성 세션 화면 다시 갱신
+    if (App.state.isStudentLoggedIn && App.state.selectedStudentId) {
+      App.renderStudentDashboard();
+    } else if (App.state.isAdminLoggedIn) {
+      App.renderAdminDashboard();
+    }
 
-    console.log('사이트 초기화 완료');
-
+    console.log('사이트 초기화 및 클라우드 동기화 완료');
   } catch (error) {
-
-    console.error('사이트 초기화 실패:', error);
-
-    // Firebase 오류가 발생하더라도
-    // 기존 사이트 화면은 실행
-    App.init();
+    console.error('클라우드 동기화 실패 (오프라인 모드로 동작):', error);
   }
-
 });
