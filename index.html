@@ -560,13 +560,48 @@
           <input type="text" id="formTitle" placeholder="예: YBM 공통영어2 Lesson 1 본문암기" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" required />
         </div>
 
-        <div id="formVocabSetSection" class="hidden p-4 rounded-xl bg-violet-50/70 border border-violet-200 space-y-2">
+        <div id="formVocabSetSection" class="hidden p-4 rounded-2xl bg-violet-50/70 border border-violet-200 space-y-3">
           <div class="flex items-center justify-between gap-2 flex-wrap">
-            <label class="text-xs font-bold text-violet-900"><i class="fa-solid fa-spell-check mr-1"></i>연결할 단어 세트</label>
-            <button type="button" onclick="App.openVocabSetFromTestForm()" class="text-[11px] font-bold text-violet-700 bg-white border border-violet-200 rounded-lg px-2.5 py-1 hover:bg-violet-100 transition"><i class="fa-solid fa-plus mr-1"></i>새 단어 세트 만들기</button>
+            <label class="text-xs font-bold text-violet-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-spell-check text-violet-600"></i>
+              연결할 단어 세트 설정 (단어 세트 2개 동시 지정 가능)
+            </label>
+            <button type="button" onclick="App.openVocabSetFromTestForm()" class="text-[11px] font-bold text-violet-700 bg-white border border-violet-200 rounded-lg px-2.5 py-1 hover:bg-violet-100 transition shadow-2xs">
+              <i class="fa-solid fa-plus mr-1"></i>새 단어 세트 만들기
+            </button>
           </div>
-          <select id="formVocabSetId" class="w-full py-2.5 px-3 rounded-xl border border-violet-200 bg-white focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm"></select>
-          <p class="text-[11px] text-violet-700">단어 테스트 일정에 사용할 단어장을 선택하세요.</p>
+
+          <!-- 1번째 단어 세트 -->
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-700">1번째 단어 세트 <span class="text-rose-500">*</span></label>
+            <select id="formVocabSetId" onchange="App.onVocabSetSelectionChange()" class="w-full py-2.5 px-3 rounded-xl border border-violet-200 bg-white focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-semibold text-slate-800"></select>
+          </div>
+
+          <!-- 2번째 단어 세트 (선택 / 2개 동시 지정) -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <label class="block text-[11px] font-bold text-slate-700">2번째 단어 세트 <span class="text-slate-400 font-normal">(선택사항 - 2개 세트 동시 출제 시)</span></label>
+              <button type="button" onclick="App.autoSelectNextVocabDay()" class="text-[11px] font-bold text-violet-700 hover:text-violet-900 bg-white border border-violet-200 hover:bg-violet-100 px-2 py-0.5 rounded-md transition flex items-center gap-1 shadow-2xs" title="1번째 세트의 다음 Day를 2번째 세트로 자동 지정합니다.">
+                <i class="fa-solid fa-wand-magic-sparkles text-[10px] text-violet-500"></i>
+                + 다음 Day 자동 선택
+              </button>
+            </div>
+            <select id="formVocabSetId2" onchange="App.onVocabSetSelectionChange()" class="w-full py-2.5 px-3 rounded-xl border border-violet-200 bg-white focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-semibold text-slate-800"></select>
+          </div>
+
+          <!-- 선택된 세트 실시간 요약 카드 -->
+          <div id="formVocabSetSummaryCard" class="p-3 rounded-xl bg-white border border-violet-200/90 shadow-2xs space-y-1 text-xs">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="font-bold text-violet-950 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
+                <span id="formVocabSummaryBadge">1개 세트 연결됨</span>
+              </span>
+              <span id="formVocabTotalWordsCount" class="text-[11px] font-black text-violet-700 bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-100">0단어</span>
+            </div>
+            <p id="formVocabSelectedListText" class="text-[11px] text-slate-600 font-medium truncate">선택된 단어 세트가 없습니다.</p>
+          </div>
+
+          <p class="text-[11px] text-violet-700">단어 세트를 2개 지정하면 두 세트의 모든 단어가 랜덤 순서로 통합 출제됩니다.</p>
         </div>
 
         <!-- ================= Text Memorization Range Builder Section ================= -->

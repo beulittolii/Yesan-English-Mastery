@@ -1363,18 +1363,16 @@ const AppData = {
       .getVocabTestResults()
       .find(result =>
 
-        result.studentId ===
+        Number(result.studentId) ===
           Number(studentId) &&
 
-        result.setId ===
-          setId &&
-
-        result.direction ===
-          direction &&
+        Number(result.direction) ===
+          Number(direction) &&
 
         (
-          testId === null ||
-          result.testId === testId
+          testId !== null
+            ? result.testId === testId
+            : result.setId === setId
         )
 
       ) || null;
@@ -1384,7 +1382,7 @@ const AppData = {
   getVocabTestResultDocumentId(result) {
     return [
       Number(result.studentId),
-      encodeURIComponent(String(result.setId)),
+      encodeURIComponent(String(result.setId || 'set')),
       Number(result.direction),
       encodeURIComponent(String(result.testId || 'none'))
     ].join('_');
@@ -1474,17 +1472,17 @@ const AppData = {
     const index =
       results.findIndex(result =>
 
-        result.studentId ===
+        Number(result.studentId) ===
           Number(resultData.studentId) &&
 
-        result.setId ===
-          resultData.setId &&
+        Number(result.direction) ===
+          Number(resultData.direction) &&
 
-        result.direction ===
-          resultData.direction &&
-
-        result.testId ===
+        (
           resultData.testId
+            ? result.testId === resultData.testId
+            : result.setId === resultData.setId
+        )
 
       );
 

@@ -906,8 +906,30 @@ const App = {
 
   openVocabTestScheduleModal(testId) {
     const test = AppData.getTests().find(item => item.id === testId);
-    const set = test && AppData.getVocabSets().find(item => item.id === test.vocabSetId);
-    if (!test || !set) { this.toast('연결된 단어 세트를 찾을 수 없습니다.', 'error'); return; }
+    if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    const setIds = Array.isArray(test.vocabSetIds) && test.vocabSetIds.length > 0
+      ? test.vocabSetIds
+      : (test.vocabSetId ? [test.vocabSetId] : []);
+    const allSets = AppData.getVocabSets();
+    const matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+
+    if (matchingSets.length === 0) { this.toast('연결된 단어 세트를 찾을 수 없습니다.', 'error'); return; }
+
+    // 단어 병합
+    const combinedWords = [];
+    matchingSets.forEach(s => {
+      if (Array.isArray(s.words)) combinedWords.push(...s.words);
+    });
+
+    const primaryBook = matchingSets[0]?.book || '기본 단어장';
+    const setTitles = matchingSets.map(s => s.title).join(' + ');
+    const set = {
+      id: matchingSets.map(s => s.id).join(','),
+      book: primaryBook,
+      title: setTitles,
+      words: combinedWords
+    };
 
     const isAdmin = Boolean(this.state.isAdminLoggedIn);
     const student = AppData.getStudentById(test.studentId);
@@ -925,7 +947,7 @@ const App = {
     const baseTimeStr = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : (test.endTime ? `~ ${test.endTime}까지` : '23:59까지');
     const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
 
-    const bookName = (set.book || '').trim();
+    const bookName = (primaryBook || '').trim();
     const hasSpecialBook = bookName && bookName !== '기본 단어장';
 
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
@@ -950,7 +972,7 @@ const App = {
             test.extendedDate
               ? ` · 마감: <strong>${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장됨)</strong>`
               : (test.endTime ? ` · 마감: <strong>${test.endTime}</strong>` : '')
-          } · <strong>${set.words.length}개 단어</strong>
+          } · <strong>${matchingSets.length > 1 ? `총 ${matchingSets.length}개 세트 · ` : ''}${set.words.length}개 단어</strong>
         </p>
       </div>
 
@@ -2577,7 +2599,7 @@ const App = {
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
     document.getElementById('formTeacherNote').value = '';
-    this.renderFormVocabSetSelect();
+    this.renderFormVocabSetSelect('', '');
     this.initPracticeQuestionsForm([]);
     this.renderTextMemorizePassages('YBM(박준언) 공통영어 2', []);
 
@@ -2609,9 +2631,13 @@ const App = {
     if (checkboxGrid) checkboxGrid.classList.remove('hidden');
 
     // 이 시험과 같은 제목+날짜+타입(또는 단어세트)을 가진 모든 학생의 시험을 자동 탐색 → 복수 체크
+    const testSetIds = Array.isArray(test.vocabSetIds) && test.vocabSetIds.length > 0 ? test.vocabSetIds : (test.vocabSetId ? [test.vocabSetId] : []);
     const relatedTests = allTests.filter(t => {
-      if (test.type === 'VOCAB' && test.vocabSetId) {
-        return t.type === 'VOCAB' && t.vocabSetId === test.vocabSetId && t.date === test.date;
+      if (test.type === 'VOCAB') {
+        const tSetIds = Array.isArray(t.vocabSetIds) && t.vocabSetIds.length > 0 ? t.vocabSetIds : (t.vocabSetId ? [t.vocabSetId] : []);
+        const isSameSet = (testSetIds.length > 0 && tSetIds.length > 0 && testSetIds.slice().sort().join(',') === tSetIds.slice().sort().join(',')) ||
+                          (test.vocabSetId && t.vocabSetId === test.vocabSetId);
+        return t.type === 'VOCAB' && isSameSet && t.date === test.date;
       }
       if (test.type === 'PRACTICE') {
         return t.type === 'PRACTICE' && t.title === test.title && t.date === test.date;
@@ -2657,7 +2683,7 @@ const App = {
     document.getElementById('formScore').value = test.score || '';
     document.getElementById('formRetestDate').value = test.retestDate || '';
     document.getElementById('formTeacherNote').value = test.teacherNote || '';
-    this.renderFormVocabSetSelect(test.vocabSetId || '');
+    this.renderFormVocabSetSelect(testSetIds[0] || '', testSetIds[1] || '');
     this.initPracticeQuestionsForm(test.questions || []);
 
     // 본문 암기 범위 체크박스 복원
@@ -2682,9 +2708,10 @@ const App = {
     this.showModal('adminTestFormModal');
   },
 
-  renderFormVocabSetSelect(selectedSetId = '') {
-    const select = document.getElementById('formVocabSetId');
-    if (!select) return;
+  renderFormVocabSetSelect(selectedSetId = '', selectedSetId2 = '') {
+    const select1 = document.getElementById('formVocabSetId');
+    const select2 = document.getElementById('formVocabSetId2');
+    if (!select1) return;
     const sets = AppData.getVocabSets();
 
     // 교재(폴더)별 그룹화
@@ -2695,17 +2722,114 @@ const App = {
       booksMap[bookName].push(set);
     });
 
-    let optionsHtml = '<option value="">단어 테스트 미연결</option>';
+    let options1Html = '<option value="">단어 테스트 미연결</option>';
+    let options2Html = '<option value="">(선택 안 함 - 1개 세트만 출제)</option>';
+
     Object.keys(booksMap).forEach(bookName => {
       const bookSets = booksMap[bookName];
-      optionsHtml += `<optgroup label="📁 ${this.escapeHtml(bookName)} (${bookSets.length}개 세트)">`;
+      const optgroupLabel = `📁 ${this.escapeHtml(bookName)} (${bookSets.length}개 세트)`;
+
+      options1Html += `<optgroup label="${optgroupLabel}">`;
+      options2Html += `<optgroup label="${optgroupLabel}">`;
+
       bookSets.forEach(set => {
-        optionsHtml += `<option value="${set.id}" ${set.id === selectedSetId ? 'selected' : ''}>${this.escapeHtml(set.title)} (${(set.words || []).length}단어)</option>`;
+        const wordCount = (set.words || []).length;
+        const optText = `${this.escapeHtml(set.title)} (${wordCount}단어)`;
+        options1Html += `<option value="${set.id}" ${set.id === selectedSetId ? 'selected' : ''}>${optText}</option>`;
+        options2Html += `<option value="${set.id}" ${set.id === selectedSetId2 ? 'selected' : ''}>${optText}</option>`;
       });
-      optionsHtml += `</optgroup>`;
+
+      options1Html += `</optgroup>`;
+      options2Html += `</optgroup>`;
     });
 
-    select.innerHTML = optionsHtml;
+    select1.innerHTML = options1Html;
+    if (select2) select2.innerHTML = options2Html;
+
+    this.onVocabSetSelectionChange();
+  },
+
+  onVocabSetSelectionChange() {
+    const select1 = document.getElementById('formVocabSetId');
+    const select2 = document.getElementById('formVocabSetId2');
+    if (!select1) return;
+
+    const id1 = select1.value;
+    const id2 = select2 ? select2.value : '';
+    const allSets = AppData.getVocabSets();
+
+    const selectedIds = [id1, id2].filter(Boolean);
+    const uniqueIds = [...new Set(selectedIds)];
+    const matchingSets = uniqueIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+
+    const badgeEl = document.getElementById('formVocabSummaryBadge');
+    const totalWordsEl = document.getElementById('formVocabTotalWordsCount');
+    const listTextEl = document.getElementById('formVocabSelectedListText');
+
+    if (matchingSets.length === 0) {
+      if (badgeEl) badgeEl.innerText = '단어 세트 미선택';
+      if (totalWordsEl) totalWordsEl.innerText = '0단어';
+      if (listTextEl) listTextEl.innerText = '선택된 단어 세트가 없습니다.';
+    } else {
+      const totalWords = matchingSets.reduce((sum, s) => sum + (s.words?.length || 0), 0);
+      const setTitles = matchingSets.map(s => s.title).join(' + ');
+      const bookName = matchingSets[0]?.book || '기본 단어장';
+
+      if (badgeEl) badgeEl.innerText = `${matchingSets.length}개 세트 연결됨`;
+      if (totalWordsEl) totalWordsEl.innerText = `총 ${totalWords.toLocaleString()}단어`;
+      if (listTextEl) {
+        listTextEl.innerHTML = matchingSets.map(s => 
+          `<span class="inline-flex items-center gap-1 bg-violet-100/80 text-violet-900 px-2 py-0.5 rounded-md font-bold text-[11px] mr-1 mb-0.5 border border-violet-200">
+            <i class="fa-solid fa-file-lines text-[10px] text-violet-600"></i> ${this.escapeHtml(s.title)} (${(s.words || []).length}단어)
+          </span>`
+        ).join('');
+      }
+
+      // 출제 범위 및 시험 제목 자동 안내
+      const testType = document.querySelector('input[name="formTestType"]:checked')?.value;
+      if (testType === 'VOCAB') {
+        const formTitle = document.getElementById('formTitle');
+        const formScope = document.getElementById('formScope');
+        const combinedTitle = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${setTitles} 단어 테스트` : `${setTitles} 단어 테스트`;
+        const combinedScope = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${matchingSets.map(s => s.title).join(', ')} (총 ${totalWords}단어)` : `${matchingSets.map(s => s.title).join(', ')} (총 ${totalWords}단어)`;
+        
+        if (formTitle && (!formTitle.value || formTitle.value === '단어 테스트' || formTitle.value.endsWith('단어 테스트'))) {
+          formTitle.value = combinedTitle;
+        }
+        if (formScope) {
+          formScope.value = combinedScope;
+        }
+      }
+    }
+  },
+
+  autoSelectNextVocabDay() {
+    const select1 = document.getElementById('formVocabSetId');
+    const select2 = document.getElementById('formVocabSetId2');
+    if (!select1 || !select2) return;
+
+    const id1 = select1.value;
+    if (!id1) {
+      this.toast('먼저 1번째 단어 세트를 선택해주세요.', 'info');
+      return;
+    }
+
+    const allSets = AppData.getVocabSets();
+    const currentSet = allSets.find(s => s.id === id1);
+    if (!currentSet) return;
+
+    const book = currentSet.book || '기본 단어장';
+    const bookSets = allSets.filter(s => (s.book || '기본 단어장') === book);
+    const currentIndex = bookSets.findIndex(s => s.id === id1);
+
+    if (currentIndex >= 0 && currentIndex < bookSets.length - 1) {
+      const nextSet = bookSets[currentIndex + 1];
+      select2.value = nextSet.id;
+      this.onVocabSetSelectionChange();
+      this.toast(`2번째 세트로 '${nextSet.title}'이(가) 자동 선택되었습니다!`, 'success');
+    } else {
+      this.toast('해당 교재에서 다음 Day 세트를 찾을 수 없습니다.', 'info');
+    }
   },
 
   openVocabSetFromTestForm() {
@@ -3042,10 +3166,14 @@ const App = {
     const isVocabTest = testType === 'VOCAB';
     const isPracticeTest = testType === 'PRACTICE';
     const isRegularTest = testType === 'REGULAR';
-
     const isTextMemorize = testType === 'TEXT_MEMORIZE';
 
-    const title = (isVocabTest) ? '단어 테스트' : (isTextMemorize ? '본문암기 테스트' : document.getElementById('formTitle').value.trim());
+    const vocabSetId1 = isVocabTest ? document.getElementById('formVocabSetId')?.value : null;
+    const vocabSetId2 = isVocabTest ? document.getElementById('formVocabSetId2')?.value : null;
+    const vocabSetIds = isVocabTest ? [...new Set([vocabSetId1, vocabSetId2].filter(Boolean))] : [];
+    const vocabSetId = vocabSetIds[0] || null;
+
+    let title = (isVocabTest) ? (document.getElementById('formTitle')?.value?.trim() || '단어 테스트') : (isTextMemorize ? '본문암기 테스트' : document.getElementById('formTitle').value.trim());
     const date = document.getElementById('formDate').value;
     const time = document.getElementById('formTime').value.trim();
     const endTime = document.getElementById('formEndTime').value.trim();
@@ -3069,7 +3197,19 @@ const App = {
 
     let scope = document.getElementById('formScope').value.trim();
     if (isVocabTest) {
-      scope = '단어 세트 기반 5지선다 테스트';
+      const allSets = AppData.getVocabSets();
+      const matchingSets = vocabSetIds.map(sId => allSets.find(s => s.id === sId)).filter(Boolean);
+      if (matchingSets.length > 0) {
+        const setTitles = matchingSets.map(s => s.title).join(', ');
+        const totalWords = matchingSets.reduce((sum, s) => sum + (s.words?.length || 0), 0);
+        const bookName = matchingSets[0]?.book || '';
+        scope = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${setTitles} (총 ${totalWords}단어)` : `${setTitles} (총 ${totalWords}단어)`;
+        if (!title || title === '단어 테스트' || title.endsWith('단어 테스트')) {
+          title = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${matchingSets.map(s => s.title).join(' + ')} 단어 테스트` : `${matchingSets.map(s => s.title).join(' + ')} 단어 테스트`;
+        }
+      } else {
+        scope = '단어 세트 기반 5지선다 테스트';
+      }
     } else if (isPracticeTest) {
       scope = scope || '선생님 출제 5지선다 객관식 문제풀이';
     } else if (isTextMemorize) {
@@ -3108,7 +3248,6 @@ const App = {
     const score = isRegularTest ? document.getElementById('formScore').value.trim() : '';
     const retestDate = isRegularTest ? document.getElementById('formRetestDate').value : '';
     const teacherNote = isRegularTest ? document.getElementById('formTeacherNote').value.trim() : '';
-    const vocabSetId = isVocabTest ? document.getElementById('formVocabSetId').value : null;
 
     const status = isRegularTest ? (document.querySelector('input[name="formStatus"]:checked')?.value || 'SCHEDULED') : 'SCHEDULED';
     const retestStatus = isRegularTest ? (document.querySelector('input[name="formRetestStatus"]:checked')?.value || 'NONE') : 'NONE';
@@ -3121,8 +3260,8 @@ const App = {
 
     if (isVocabTest) {
       const allValid = [vocabCutoff2, vocabCutoff3, vocabCutoff4].every(v => Number.isInteger(v) && v >= 1 && v <= 100);
-      if (!vocabSetId || !allValid) {
-        this.toast('단어 세트를 선택하고 각 유형별 커트라인을 1~100점 사이로 입력해주세요.', 'error');
+      if (vocabSetIds.length === 0 || !allValid) {
+        this.toast('단어 세트를 최소 1개 이상 선택하고 각 유형별 커트라인을 1~100점 사이로 입력해주세요.', 'error');
         return;
       }
     }
@@ -3212,6 +3351,7 @@ const App = {
             retestDate,
             teacherNote,
             vocabSetId,
+            vocabSetIds,
             vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
             vocabCutoffs: isVocabTest ? vocabCutoffs : null,
             practiceCutoff: isPracticeTest ? practiceCutoff : null,
@@ -3234,7 +3374,10 @@ const App = {
           const matchingExistingTest = allTests.find(t => {
             if (t.studentId !== studentId) return false;
             if (isVocabTest) {
-              return t.type === 'VOCAB' && t.vocabSetId === vocabSetId && (t.date === date || (existingTest && t.date === existingTest.date));
+              const tSetIds = Array.isArray(t.vocabSetIds) && t.vocabSetIds.length > 0 ? t.vocabSetIds : (t.vocabSetId ? [t.vocabSetId] : []);
+              const isSameSet = (vocabSetIds.length > 0 && tSetIds.length > 0 && vocabSetIds.slice().sort().join(',') === tSetIds.slice().sort().join(',')) ||
+                                (vocabSetId && t.vocabSetId === vocabSetId);
+              return t.type === 'VOCAB' && isSameSet && (t.date === date || (existingTest && t.date === existingTest.date));
             }
             if (isPracticeTest) {
               return t.type === 'PRACTICE' && t.title === (existingTest?.title || title) && (t.date === date || (existingTest && t.date === existingTest.date));
@@ -3257,6 +3400,7 @@ const App = {
               cutoff,
               cutoffScore,
               vocabSetId,
+              vocabSetIds,
               vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
               vocabCutoffs: isVocabTest ? vocabCutoffs : null,
               practiceCutoff: isPracticeTest ? practiceCutoff : null,
@@ -3294,6 +3438,7 @@ const App = {
               retestDate: isRegularTest ? retestDate : '',
               teacherNote: isRegularTest ? teacherNote : '',
               vocabSetId,
+              vocabSetIds,
               vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
               vocabCutoffs: isVocabTest ? vocabCutoffs : null,
               practiceCutoff: isPracticeTest ? practiceCutoff : null,
@@ -3343,6 +3488,7 @@ const App = {
           retestDate: isRegularTest ? retestDate : '',
           teacherNote: isRegularTest ? teacherNote : '',
           vocabSetId,
+          vocabSetIds,
           vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
           vocabCutoffs: isVocabTest ? vocabCutoffs : null,
           practiceCutoff: isPracticeTest ? practiceCutoff : null,
@@ -4232,7 +4378,8 @@ const App = {
     this.closeVocabSetModal();
     this.toast(`'[${book}] ${title}' 세트가 저장되었습니다! (${words.length}개 단어)`, 'success');
     if (this.state.vocabSetReturnToTestForm) {
-      this.renderFormVocabSetSelect(savedSet.id);
+      const currentSet2 = document.getElementById('formVocabSetId2')?.value || '';
+      this.renderFormVocabSetSelect(savedSet.id, currentSet2);
       this.state.vocabSetReturnToTestForm = false;
     } else {
       this.renderAdminVocabTab();
@@ -4758,18 +4905,42 @@ const App = {
 
   // ── 학생: 단어 테스트 시작 ──────────────────────────────
   startVocabTest(setId, studentId, direction, testId = null) {
-    const set = AppData.getVocabSets().find(s => s.id === setId);
+    let set = null;
+    const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
+
+    if (scheduledTest) {
+      const setIds = Array.isArray(scheduledTest.vocabSetIds) && scheduledTest.vocabSetIds.length > 0
+        ? scheduledTest.vocabSetIds
+        : (scheduledTest.vocabSetId ? [scheduledTest.vocabSetId] : []);
+      const allSets = AppData.getVocabSets();
+      const matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+      if (matchingSets.length > 0) {
+        const combinedWords = [];
+        matchingSets.forEach(s => {
+          if (Array.isArray(s.words)) combinedWords.push(...s.words);
+        });
+        set = {
+          id: matchingSets.map(s => s.id).join(','),
+          book: matchingSets[0]?.book || '기본 단어장',
+          title: matchingSets.map(s => s.title).join(' + '),
+          words: combinedWords
+        };
+      }
+    }
+    if (!set) {
+      set = AppData.getVocabSets().find(s => s.id === setId);
+    }
+
     if (!set || set.words.length < 5) { this.toast('단어가 부족합니다. (최소 5개)', 'error'); return; }
     if (![2, 3, 4].includes(direction)) { this.toast('올바른 테스트 모드가 아닙니다.', 'error'); return; }
     
     // 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
-    const unlockCheck = this.isVocabTestUnlocked(studentId, setId, direction, testId);
+    const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, testId);
     if (!unlockCheck.unlocked) {
       this.toast(`이전 단계인 '${unlockCheck.requiredLabel}' 시험을 먼저 통과해야 합니다.`, 'error');
       return;
     }
 
-    const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
     if (scheduledTest) {
       const timeStatus = this.getTestTimeStatus(scheduledTest);
       if (!timeStatus.canStart) {
@@ -4777,7 +4948,7 @@ const App = {
         return;
       }
     }
-    const existingResult = AppData.getVocabTestResult(studentId, setId, direction, testId);
+    const existingResult = AppData.getVocabTestResult(studentId, set.id, direction, testId);
     if (existingResult?.passed) {
       this.toast('완료된 테스트는 다시 볼 수 없습니다.', 'info');
       this.selectStudent(studentId);
@@ -4801,7 +4972,7 @@ const App = {
     const formattedTitle = (bookName && bookName !== '기본 단어장') ? `[${bookName}] ${set.title}` : set.title;
 
     this.state.vocabTest = {
-      setId,
+      setId: set.id,
       studentId: Number(studentId),
       setTitle: formattedTitle,
       bookName: bookName || '기본 단어장',
@@ -4834,7 +5005,7 @@ const App = {
   },
 
   selectVocabTestWords(words) {
-    return this.shuffleItems(words).slice(0, Math.min(words.length, 40));
+    return this.shuffleItems(words);
   },
 
   buildVocabQuestions(words, direction, choicePool = words) {
@@ -5570,13 +5741,28 @@ const App = {
 
     const student = AppData.getStudents().find(s => String(s.id) === String(result.studentId));
     const test = AppData.getTests().find(t => String(t.id) === String(result.testId));
-    const set = AppData.getVocabSets().find(s => String(s.id) === String(result.setId));
+    let matchingSets = [];
+    if (test) {
+      const setIds = Array.isArray(test.vocabSetIds) && test.vocabSetIds.length > 0
+        ? test.vocabSetIds
+        : (test.vocabSetId ? [test.vocabSetId] : []);
+      matchingSets = setIds.map(id => AppData.getVocabSets().find(s => String(s.id) === String(id))).filter(Boolean);
+    }
+    const set = matchingSets[0] || AppData.getVocabSets().find(s => String(s.id) === String(result.setId));
+    if (matchingSets.length === 0 && set) {
+      matchingSets = [set];
+    }
+    const combinedSetWords = [];
+    matchingSets.forEach(s => {
+      if (Array.isArray(s.words)) combinedSetWords.push(...s.words);
+    });
+    const setTitles = matchingSets.map(s => s.title).join(' + ') || set?.title || '단어 세트';
 
     // questionDetails가 없는 이전 기록인 경우 세트 단어로부터 기본 구성
     if (!result.questionDetails || result.questionDetails.length === 0) {
       const wrongList = result.wrongAnswers || [];
-      if (set && Array.isArray(set.words) && set.words.length > 0) {
-        result.questionDetails = set.words.map((w, idx) => {
+      if (combinedSetWords.length > 0) {
+        result.questionDetails = combinedSetWords.map((w, idx) => {
           const wrongItem = wrongList.find(wr => 
             (wr.question && wr.question.includes(w.en)) || 
             (wr.correct && wr.correct.includes(w.en))
@@ -5613,7 +5799,7 @@ const App = {
     // 헤더/서브타이틀
     document.getElementById('vocabGradingTitle').textContent = `${student?.name || '학생'} — 통합 채점`;
     document.getElementById('vocabGradingSubtitle').textContent =
-      `${test?.title || '단어 테스트'} · ${set?.title || '단어 세트'} · ${this.getVocabResultTimeString(result)}`;
+      `${test?.title || '단어 테스트'} · ${setTitles} · ${this.getVocabResultTimeString(result)}`;
 
     this._renderVocabGradingSummary();
     this._renderVocabGradingItems();
