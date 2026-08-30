@@ -4619,49 +4619,13 @@ const App = {
     return out.join('');
   },
 
-  // ── 영어 스펠링 입력 필터 (한글 입력 시 영문으로 자동 변환, 커서 및 이전 입력 완벽 보존) ──
+  // ── 영어 스펠링 / 한글 뜻 입력 필터 (실시간 DOM 치환 제거: 한글 IME 조합 및 받침 유실 완벽 방지) ──
   filterSpellingEnglishOnly(inputEl) {
-    if (!inputEl) return;
-    const val = inputEl.value;
-    // 한글(자모/음절)이 포함된 경우에만 변환하여 앞 글자 소실 방지
-    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(val)) {
-      const converted = this.convertKorToEng(val);
-      const cleaned = converted.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
-      inputEl.value = cleaned;
-      try {
-        const len = cleaned.length;
-        inputEl.setSelectionRange(len, len);
-      } catch (e) {}
-    } else {
-      // 영문만 있을 때는 비허용 문자만 정리하되 커서 보존
-      const cleaned = val.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
-      if (val !== cleaned) {
-        const pos = Math.min(inputEl.selectionStart || cleaned.length, cleaned.length);
-        inputEl.value = cleaned;
-        try {
-          inputEl.setSelectionRange(pos, pos);
-        } catch (e) {}
-      }
-    }
+    // 실시간 DOM 치환을 수행하지 않고 브라우저/OS 네이티브 키보드 입력 완벽 보존
   },
 
-  // ── 한국어 뜻 입력 필터 (영문 키보드로 입력 시 한글로 자동 변환, 한글 입력 시 네이티브 IME 100% 보존) ──
   filterMeaningKoreanOnly(inputEl) {
-    if (!inputEl) return;
-    const val = inputEl.value;
-    // 사용자가 한글 키보드로 정상 입력 중일 때는 value를 절대 덮어쓰지 않음 (앞 글자 소실/IME 깨짐 완벽 방지)
-    if (!/[a-zA-Z]/.test(val)) {
-      return;
-    }
-    // 영문자가 포함되어 있을 때만 한글로 변환
-    const converted = this.convertEngToKor(val);
-    if (val !== converted) {
-      inputEl.value = converted;
-      try {
-        const len = converted.length;
-        inputEl.setSelectionRange(len, len);
-      } catch (e) {}
-    }
+    // 실시간 DOM 치환을 수행하지 않고 한글 받침 및 자모 조합 완벽 보존
   },
 
   // ── 사전식 실제 원어민 녹음 MP3 재생 & 발음기호(IPA) 헬퍼 ──────────────
@@ -4993,9 +4957,10 @@ const App = {
                 autofocus
                 autocomplete="off"
                 autocorrect="off"
-                autocapitalize="off"
+                autocapitalize="none"
                 spellcheck="false"
-                oninput="App.filterSpellingEnglishOnly(this)"
+                lang="en"
+                inputmode="latin"
                 onkeydown="if(event.key==='Enter') App.submitVocabSpellingAnswer(false)"
               />
             </div>
@@ -5038,9 +5003,10 @@ const App = {
                   autofocus
                   autocomplete="off"
                   autocorrect="off"
-                  autocapitalize="off"
+                  autocapitalize="none"
                   spellcheck="false"
-                  oninput="App.filterSpellingEnglishOnly(this)"
+                  lang="en"
+                  inputmode="latin"
                   onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('vocabMeaningInput')?.focus();}"
                 />
                 <input
@@ -5052,7 +5018,7 @@ const App = {
                   autocorrect="off"
                   autocapitalize="off"
                   spellcheck="false"
-                  oninput="App.filterMeaningKoreanOnly(this)"
+                  lang="ko"
                   onkeydown="if(event.key==='Enter'){event.preventDefault();App.submitVocabComprehensiveAnswer(false);}"
                 />
               </div>
@@ -5164,8 +5130,15 @@ const App = {
     if (q.answered !== null) return;
     this.clearVocabQuestionTimer();
 
-    const inputVal = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
-    const isCorrect = !timedOut && inputVal.toLowerCase() === q.word.en.trim().toLowerCase();
+    let inputVal = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
+    // 한글 자모로 영단어를 친 경우 (제출 시점에만 안전 변환 체크)
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(inputVal)) {
+      const converted = this.convertKorToEng(inputVal);
+      if (converted.toLowerCase() === q.word.en.trim().toLowerCase()) {
+        inputVal = converted;
+      }
+    }
+    const isCorrect = !timedOut && Boolean(inputVal) && inputVal.toLowerCase() === q.word.en.trim().toLowerCase();
     q.answered = timedOut ? '시간 초과' : (inputVal || '(미입력)');
     q.isCorrect = isCorrect;
     if (isCorrect) vt.score++;
@@ -5192,8 +5165,23 @@ const App = {
     if (q.answered !== null) return;
     this.clearVocabQuestionTimer();
 
-    const spelling = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
-    const meaning = timedOut ? '' : (document.getElementById('vocabMeaningInput')?.value || '').trim();
+    let spelling = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
+    // 한글 자모로 영단어 스펠링을 친 경우 (제출 시점에만 안전 변환 체크)
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(spelling)) {
+      const converted = this.convertKorToEng(spelling);
+      if (converted.toLowerCase() === q.word.en.trim().toLowerCase()) {
+        spelling = converted;
+      }
+    }
+
+    let meaning = timedOut ? '' : (document.getElementById('vocabMeaningInput')?.value || '').trim();
+    // 영문 키보드로 한글 뜻을 친 경우 (제출 시점에만 안전 변환 체크)
+    if (/[a-zA-Z]/.test(meaning)) {
+      const convertedMeaning = this.convertEngToKor(meaning);
+      if (this.checkKoreanMeaningMatch(convertedMeaning, q.word.ko)) {
+        meaning = convertedMeaning;
+      }
+    }
 
     // 1단계: 스펠링 우선 검증 (틀리면 즉시 오답)
     const spellingCorrect = !timedOut && Boolean(spelling) && spelling.toLowerCase() === q.word.en.trim().toLowerCase();
@@ -6439,22 +6427,6 @@ const App = {
 
   onTmBlankInput(inputElem, blankId) {
     // 한글 입력 시 영문으로 자동 변환 (한영 오타 실시간 교정 및 앞 글자 보존)
-    const rawVal = inputElem.value;
-    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(rawVal)) {
-      const converted = this.convertKorToEng(rawVal);
-      const sanitized = converted.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
-      inputElem.value = sanitized;
-      try {
-        const len = sanitized.length;
-        inputElem.setSelectionRange(len, len);
-      } catch (e) {}
-    } else {
-      const sanitized = rawVal.replace(/[^a-zA-Z0-9\s\-',.~?!]/g, '');
-      if (rawVal !== sanitized) {
-        inputElem.value = sanitized;
-      }
-    }
-
     if (this.state.textMemorizeExam) {
       this.state.textMemorizeExam.userAnswers[blankId] = inputElem.value;
       this.updateTmExamProgress();
@@ -6474,17 +6446,6 @@ const App = {
   },
 
   onTmSentenceInput(inputElem, sentIndex) {
-    // 한글 입력 시 영문으로 자동 변환
-    const rawVal = inputElem.value;
-    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(rawVal)) {
-      const converted = this.convertKorToEng(rawVal);
-      inputElem.value = converted;
-      try {
-        const len = converted.length;
-        inputElem.setSelectionRange(len, len);
-      } catch (e) {}
-    }
-
     if (this.state.textMemorizeExam) {
       this.state.textMemorizeExam.userAnswers['sent_' + sentIndex] = inputElem.value;
       this.updateTmExamProgress();
@@ -6542,7 +6503,13 @@ const App = {
 
     if (isFullSentence) {
       exam.sentences.forEach(s => {
-        const userAns = (exam.userAnswers['sent_' + s.sentIndex] || '').trim();
+        let userAns = (exam.userAnswers['sent_' + s.sentIndex] || '').trim();
+        if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(userAns)) {
+          const converted = this.convertKorToEng(userAns);
+          if (this.normalizeSentence(converted) === this.normalizeSentence(s.en)) {
+            userAns = converted;
+          }
+        }
         const normUser = this.normalizeSentence(userAns);
         const normCorrect = this.normalizeSentence(s.en);
         const isCorrect = normUser === normCorrect && normUser.length > 0;
@@ -6560,7 +6527,13 @@ const App = {
       });
     } else {
       exam.allBlanks.forEach(b => {
-        const userAns = (exam.userAnswers[b.id] || '').trim().toLowerCase();
+        let userAns = (exam.userAnswers[b.id] || '').trim().toLowerCase();
+        if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(userAns)) {
+          const converted = this.convertKorToEng(userAns).toLowerCase();
+          if (converted === b.cleanWord) {
+            userAns = converted;
+          }
+        }
         const isCorrect = userAns === b.cleanWord;
 
         if (isCorrect) {
