@@ -20,6 +20,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* IPA Phonetics Elegant Serif Font */
+.font-ipa {
+  font-family: 'Gentium Plus', 'Charis SIL', 'Doulos SIL', 'Lucida Sans Unicode', 'Times New Roman', serif;
+  font-variant-numeric: normal;
+  letter-spacing: 0.04em;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
