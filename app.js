@@ -2795,7 +2795,8 @@ const App = {
 
     if (isTextMemorize) {
       const bookVal = document.getElementById('formTextMemorizeBookSelect')?.value || 'YBM(박준언) 공통영어 2';
-      this.onTextMemorizeBookChange(bookVal);
+      const currentSelected = Array.from(document.querySelectorAll('input[name="formPassageCheckbox"]:checked')).map(cb => cb.value);
+      this.renderTextMemorizePassages(bookVal, currentSelected);
       this.onTextMemorizeModeChange();
     }
 
@@ -3054,21 +3055,27 @@ const App = {
     const textMemorizeCutoff = Number(document.getElementById('formTextMemorizeCutoff')?.value ?? 80);
     const textMemorizeMaxWrong = Number(document.getElementById('formTextMemorizeMaxWrong')?.value ?? 3);
 
-    const scope = isVocabTest
-      ? '단어 세트 기반 5지선다 테스트'
-      : (isPracticeTest ? (document.getElementById('formScope').value.trim() || '선생님 출제 5지선다 객관식 문제풀이') : (isTextMemorize ? (textMemorizeMode === 'FULL_SENTENCE' ? '본문암기 문장 전체 영작(서술형) 테스트' : '본문암기 빈칸 테스트') : document.getElementById('formScope').value.trim()));
-
-    const regularCutoff = document.getElementById('formCutoff').value.trim();
-    const vocabCutoff2 = Number(document.getElementById('formVocabCutoff_2')?.value ?? 80);
-    const vocabCutoff3 = Number(document.getElementById('formVocabCutoff_3')?.value ?? 80);
-    const vocabCutoff4 = Number(document.getElementById('formVocabCutoff_4')?.value ?? 80);
-    const vocabCutoffs = { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4 };
-    const practiceCutoff = Number(document.getElementById('formPracticeCutoff').value);
-
     // TEXT_MEMORIZE: collect selected passage IDs
     const selectedPassageCheckboxes = document.querySelectorAll('input[name="formPassageCheckbox"]:checked');
     const selectedPassageIds = Array.from(selectedPassageCheckboxes).map(cb => cb.value);
     const passageBook = document.getElementById('formTextMemorizeBookSelect')?.value || '';
+
+    let scope = document.getElementById('formScope').value.trim();
+    if (isVocabTest) {
+      scope = '단어 세트 기반 5지선다 테스트';
+    } else if (isPracticeTest) {
+      scope = scope || '선생님 출제 5지선다 객관식 문제풀이';
+    } else if (isTextMemorize) {
+      const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+      const matched = allPassages.filter(p => selectedPassageIds.includes(p.id));
+      if (matched.length > 0) {
+        const parts = matched.map(p => p.partTitle.replace(/\s*\(\d+문장\)/, '')).join(', ');
+        const totalSentences = matched.reduce((sum, p) => sum + (p.sentences?.length || 0), 0);
+        scope = `${parts} (총 ${matched.length}개 문단 / ${totalSentences}문장)`;
+      } else {
+        scope = textMemorizeMode === 'FULL_SENTENCE' ? '본문암기 문장 전체 영작(서술형) 테스트' : '본문암기 빈칸 채우기 테스트';
+      }
+    }
 
     let cutoff = regularCutoff;
     let cutoffScore = null;
@@ -6004,9 +6011,12 @@ const App = {
     const isAdmin = this.state.isAdminLoggedIn;
 
     const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
-    const passageIds = test.passageIds || [];
+    let passageIds = test.passageIds || [];
+    if ((!Array.isArray(passageIds) || passageIds.length === 0) && allPassages.length > 0) {
+      passageIds = [allPassages[0].id];
+    }
     const matchedPassages = allPassages.filter(p => passageIds.includes(p.id));
-    const totalSentences = matchedPassages.reduce((acc, p) => acc + p.sentences.length, 0);
+    const totalSentences = matchedPassages.reduce((acc, p) => acc + (p.sentences?.length || 0), 0);
 
     document.getElementById('tmScheduleStudentBadge').innerText = student ? `${student.name} 학생 · 본문암기` : '본문암기 테스트';
     document.getElementById('tmScheduleTitle').innerText = test.title || '본문암기 테스트';
