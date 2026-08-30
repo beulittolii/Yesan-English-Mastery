@@ -872,20 +872,6 @@
           <input type="text" id="vocabSetTitle" placeholder="예: Day 01 또는 Day 1-5 단어" class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm" />
         </div>
 
-        <!-- Student Selector -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <label class="block text-xs font-bold text-slate-800">대상 학생 선택 <span class="text-rose-500">*</span></label>
-            <div class="flex gap-1.5">
-              <button type="button" onclick="App.toggleAllVocabStudents(true)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition">전체 선택</button>
-              <button type="button" onclick="App.toggleAllVocabStudents(false)" class="text-[11px] font-medium text-slate-500 hover:text-slate-700 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition">선택 해제</button>
-            </div>
-          </div>
-          <div id="vocabStudentCheckboxGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
         <!-- Word List -->
         <div>
           <div class="flex items-center justify-between mb-2">
