@@ -3050,6 +3050,13 @@ const App = {
     const time = document.getElementById('formTime').value.trim();
     const endTime = document.getElementById('formEndTime').value.trim();
 
+    const regularCutoff = document.getElementById('formCutoff')?.value.trim() || '80점 이상';
+    const vocabCutoff2 = Number(document.getElementById('formVocabCutoff_2')?.value ?? 80);
+    const vocabCutoff3 = Number(document.getElementById('formVocabCutoff_3')?.value ?? 80);
+    const vocabCutoff4 = Number(document.getElementById('formVocabCutoff_4')?.value ?? 80);
+    const vocabCutoffs = isVocabTest ? { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4 } : null;
+    const practiceCutoff = Number(document.getElementById('formPracticeCutoff')?.value ?? 80);
+
     const textMemorizeMode = isTextMemorize ? (document.querySelector('input[name="formTextMemorizeMode"]:checked')?.value || 'CLOZE') : null;
     const textMemorizeCutoffType = isTextMemorize ? (document.getElementById('formTextMemorizeCutoffType')?.value || 'SCORE') : null;
     const textMemorizeCutoff = Number(document.getElementById('formTextMemorizeCutoff')?.value ?? 80);
@@ -3093,6 +3100,9 @@ const App = {
         cutoff = `${textMemorizeCutoff}점 이상`;
         cutoffScore = textMemorizeCutoff;
       }
+    } else {
+      const match = String(regularCutoff).match(/(\d+)/);
+      cutoffScore = match ? Number(match[1]) : null;
     }
 
     const score = isRegularTest ? document.getElementById('formScore').value.trim() : '';
@@ -3327,11 +3337,11 @@ const App = {
           scope,
           cutoff,
           cutoffScore,
-          score,
-          status,
-          retestStatus,
-          retestDate,
-          teacherNote,
+          score: isRegularTest ? score : '',
+          status: isRegularTest ? status : 'SCHEDULED',
+          retestStatus: isRegularTest ? retestStatus : 'NONE',
+          retestDate: isRegularTest ? retestDate : '',
+          teacherNote: isRegularTest ? teacherNote : '',
           vocabSetId,
           vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
           vocabCutoffs: isVocabTest ? vocabCutoffs : null,
