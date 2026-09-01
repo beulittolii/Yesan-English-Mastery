@@ -880,6 +880,31 @@ const AppData = {
       }
     }
 
+    // 기존에 로드된 모든 단어 세트에 대해 워드마스터 교재 발음기호(ipa)가 누락되어 있다면 자동 보강
+    if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+      const wmIpaLookup = new Map();
+      WORDMASTER_2000_SETS.forEach(s => {
+        (s.words || []).forEach(w => {
+          if (w.en && w.ipa) wmIpaLookup.set(w.en.trim().toLowerCase(), w.ipa);
+        });
+      });
+      let enriched = false;
+      (FirebaseStore.vocabSets || []).forEach(s => {
+        (s.words || []).forEach(w => {
+          if (w.en && !w.ipa) {
+            const foundIpa = wmIpaLookup.get(w.en.trim().toLowerCase());
+            if (foundIpa) {
+              w.ipa = foundIpa;
+              enriched = true;
+            }
+          }
+        });
+      });
+      if (enriched) {
+        console.log('기존 단어장에 워드마스터 교재 발음기호(IPA)가 성공적으로 자동 보강되었습니다.');
+      }
+    }
+
     if (vocabTestResults.length === 0) {
       const legacyResults = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabTestResults);
       if (legacyResults) {

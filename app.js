@@ -80,6 +80,21 @@ const App = {
         if (testFormModal && !testFormModal.classList.contains('hidden')) {
           return;
         }
+        // 단어 시험 진행 중 ESC로 나갈 때 경고 및 0점 불합격 포기 처리
+        const vt = this.state.vocabTest;
+        if (this.state.view === 'vocabTest' && vt && !vt.isCompleted) {
+          if (confirm('시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 시험을 종료하고 나가시겠습니까?')) {
+            this.forfeitVocabTest().then(() => {
+              this.state.vocabTest = null;
+              if (this.state.isStudentLoggedIn) {
+                this.selectStudent(this.state.selectedStudentId);
+              } else {
+                this.showLanding();
+              }
+            });
+          }
+          return;
+        }
         // 본문 암기 시험 진행 중에는 ESC로 닫히지 않고 경고
         const tmModal = document.getElementById('textMemorizeExamModal');
         if (tmModal && !tmModal.classList.contains('hidden') && this.state.textMemorizeExam && !this.state.textMemorizeExam.isCompleted) {
@@ -91,6 +106,43 @@ const App = {
         this.closeAllModals();
       }
     });
+
+    // 브라우저 뒤로가기(popstate) 감지: 단어시험 진행 중 뒤로가기 시 포기 confirm 처리
+    window.addEventListener('popstate', async (e) => {
+      const vt = this.state.vocabTest;
+      if (this.state.view === 'vocabTest' && vt && !vt.isCompleted) {
+        const confirmExit = confirm('시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 시험을 종료하고 나가시겠습니까?');
+        if (confirmExit) {
+          await this.forfeitVocabTest();
+          this.state.vocabTest = null;
+          if (this.state.isStudentLoggedIn) {
+            this.selectStudent(this.state.selectedStudentId);
+          } else {
+            await this.showLanding();
+          }
+        } else {
+          // 뒤로가기 취소 -> 시험 상태 유지
+          history.pushState({ inVocabTest: true }, '');
+        }
+      }
+    });
+
+    // 본문암기 모달 배경 스크롤 차단 (휠/터치 이벤트 체이닝 방지)
+    const tmModalEl = document.getElementById('textMemorizeExamModal');
+    if (tmModalEl) {
+      tmModalEl.addEventListener('wheel', (e) => {
+        const bodyEl = document.getElementById('tmExamBody');
+        if (!bodyEl || !bodyEl.contains(e.target)) {
+          e.preventDefault();
+          return;
+        }
+        const isAtTop = bodyEl.scrollTop <= 0;
+        const isAtBottom = bodyEl.scrollTop + bodyEl.clientHeight >= bodyEl.scrollHeight - 1;
+        if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    }
 
     // 시험 진행 중 페이지 이탈(새로고침, 탭 닫기) 시 경고 및 포기 처리 (시험 진행 중일 때만 동작)
     window.addEventListener('beforeunload', (e) => {
@@ -138,27 +190,34 @@ const App = {
   // ========================================================
   // 1. 네비게이션 & 뷰 전환 (Navigation & Views)
   // ========================================================
-  handleLogoClick() {
+  async checkAndConfirmVocabTestExit() {
+    const vt = this.state.vocabTest;
+    if (this.state.view === 'vocabTest' && vt && !vt.isCompleted) {
+      const confirmExit = confirm('시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 시험을 종료하고 나가시겠습니까?');
+      if (!confirmExit) return false;
+      try {
+        await this.forfeitVocabTest();
+      } catch (err) {
+        console.error(err);
+      }
+      this.state.vocabTest = null;
+    }
+    return true;
+  },
+
+  async handleLogoClick() {
+    if (!(await this.checkAndConfirmVocabTestExit())) return;
     if (this.state.isAdminLoggedIn) {
       this.showAdminDashboard();
     } else if (this.state.isStudentLoggedIn) {
       this.selectStudent(this.state.selectedStudentId);
     } else {
-      this.showLanding();
+      await this.showLanding();
     }
   },
 
-  showLanding() {
-    // 실제 단어 테스트 응시 화면에서 나가는 경우에만 경고
-    if (this.state.view === 'vocabTest' && this.state.vocabTest && this.state.vocabTest.setId && !this.state.vocabTest.isCompleted) {
-      const confirmExit = confirm('시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 나가시겠습니까?');
-      if (!confirmExit) return;
-      try {
-        this.forfeitVocabTest();
-      } catch (err) {
-        console.error(err);
-      }
-    }
+  async showLanding() {
+    if (!(await this.checkAndConfirmVocabTestExit())) return;
     this.clearVocabQuestionTimer();
     this.state.vocabTest = null;
     this.state.practiceTest = null;
@@ -175,19 +234,24 @@ const App = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
-  logoutStudent() {
+  async logoutStudent() {
+    if (!(await this.checkAndConfirmVocabTestExit())) return;
     this.clearSession();
     this.state.isStudentLoggedIn = false;
     this.toast('로그아웃되었습니다.', 'info');
-    this.showLanding();
+    await this.showLanding();
   },
 
-  selectStudent(studentId) {
+  async selectStudent(studentId) {
     const normalizedStudentId = Number(studentId);
     if (!this.state.isAdminLoggedIn && !this.state.isStudentLoggedIn) {
       this.toast('로그인한 후 이용해주세요.', 'info');
-      this.showLanding();
+      await this.showLanding();
       return;
+    }
+
+    if (this.state.view === 'vocabTest' && this.state.vocabTest && !this.state.vocabTest.isCompleted) {
+      if (!(await this.checkAndConfirmVocabTestExit())) return;
     }
 
     this.clearVocabQuestionTimer();
@@ -208,7 +272,8 @@ const App = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
-  showAdminDashboard() {
+  async showAdminDashboard() {
+    if (!(await this.checkAndConfirmVocabTestExit())) return;
     this.clearVocabQuestionTimer();
     this.state.view = 'admin';
     document.getElementById('landingView').classList.add('hidden');
@@ -935,15 +1000,18 @@ const App = {
     const student = AppData.getStudentById(test.studentId);
     const timeStatus = this.getTestTimeStatus(test);
     const isPassed = test.status === 'PASS';
+    const isFailed = test.status === 'FAIL';
     const statusBadge = isPassed
-      ? { class: 'bg-emerald-100 text-emerald-800', label: '완료' }
-      : (test.allowLate
-          ? { class: 'bg-emerald-100 text-emerald-800', label: '상시 응시 허용됨' }
-          : (timeStatus.status === 'EXPIRED'
-              ? { class: 'bg-rose-100 text-rose-800', label: '마감' }
-              : (timeStatus.status === 'NOT_STARTED'
-                  ? { class: 'bg-blue-100 text-blue-800', label: '시작 전' }
-                  : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' })));
+      ? { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', label: '완료' }
+      : (isFailed
+          ? { class: 'bg-rose-100 text-rose-800 border border-rose-300', label: '불합격 (FAIL)' }
+          : (test.allowLate
+              ? { class: 'bg-emerald-100 text-emerald-800', label: '상시 응시 허용됨' }
+              : (timeStatus.status === 'EXPIRED'
+                  ? { class: 'bg-rose-100 text-rose-800', label: '마감' }
+                  : (timeStatus.status === 'NOT_STARTED'
+                      ? { class: 'bg-blue-100 text-blue-800', label: '시작 전' }
+                      : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' }))));
     const baseTimeStr = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : (test.endTime ? `~ ${test.endTime}까지` : '23:59까지');
     const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
 
@@ -953,6 +1021,16 @@ const App = {
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
     document.getElementById('detailModalTitle').innerText = test.title || (hasSpecialBook ? `[${bookName}] ${set.title}` : set.title);
     document.getElementById('detailModalBody').innerHTML = `
+      ${isFailed ? `
+        <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs flex items-center justify-between gap-2 flex-wrap mb-1">
+          <div class="flex items-center gap-2 text-rose-900 font-bold">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 text-sm"></i>
+            <span>이 시험은 불합격 (FAIL) 처리되었습니다. 아래에서 재시험에 도전하세요.</span>
+          </div>
+          ${test.score ? `<span class="px-2 py-0.5 rounded-md bg-white text-rose-700 font-bold border border-rose-200 text-[11px]">${this.escapeHtml(test.score)}</span>` : ''}
+        </div>
+      ` : ''}
+
       <div class="p-4 rounded-2xl bg-violet-50 border border-violet-200">
         <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5">
           <div class="flex items-center gap-1.5 flex-wrap">
@@ -3621,10 +3699,33 @@ const App = {
   // ========================================================
   // 8. 모달 & 유틸리티 (Modals & Utilities)
   // ========================================================
+  _activeModals: new Set(),
+
+  updateBodyScrollLock() {
+    const modalIds = [
+      'textMemorizeExamModal', 'textMemorizeResultModal', 'testDetailModal',
+      'adminTestFormModal', 'vocabSetModal', 'extendTestModal', 'textMemorizeScheduleModal'
+    ];
+    const anyModalVisible = modalIds.some(id => {
+      const el = document.getElementById(id);
+      return el && !el.classList.contains('hidden') && el.style.display !== 'none';
+    }) || this._activeModals.size > 0;
+
+    if (anyModalVisible) {
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.style.overflow = '';
+      document.body.classList.remove('overflow-hidden');
+    }
+  },
+
   showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
+    this._activeModals.add(modalId);
     modal.classList.remove('hidden');
+    this.updateBodyScrollLock();
     // 부드러운 애니메이션
     setTimeout(() => {
       modal.querySelector('.modal-content')?.classList.remove('scale-95', 'opacity-0');
@@ -3635,6 +3736,7 @@ const App = {
   hideModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
+    this._activeModals.delete(modalId);
     const content = modal.querySelector('.modal-content');
     if (content) {
       content.classList.remove('scale-100', 'opacity-100');
@@ -3642,13 +3744,17 @@ const App = {
     }
     setTimeout(() => {
       modal.classList.add('hidden');
+      this.updateBodyScrollLock();
     }, 200);
   },
 
   closeAllModals() {
-    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal'].forEach(id => {
-      this.hideModal(id);
+    this._activeModals.clear();
+    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal', 'textMemorizeExamModal', 'textMemorizeResultModal', 'textMemorizeScheduleModal', 'extendTestModal'].forEach(id => {
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.add('hidden');
     });
+    this.updateBodyScrollLock();
   },
 
   toast(message, type = 'info') {
@@ -4253,6 +4359,21 @@ const App = {
       return this.vocabIpaCache[clean];
     }
 
+    // 0순위: 등록된 단어 세트(워드마스터 2000 등) 내 내장된 교재 발음기호(ipa) 직접 조회
+    try {
+      const allSets = AppData.getVocabSets();
+      for (const set of allSets) {
+        if (Array.isArray(set.words)) {
+          const found = set.words.find(w => (w.en || '').trim().toLowerCase() === clean);
+          if (found && (found.ipa || found.phonetic)) {
+            const direct = (found.ipa || found.phonetic).trim();
+            this.vocabIpaCache[clean] = direct;
+            return direct;
+          }
+        }
+      }
+    } catch (e) {}
+
     // 1차: Free Dictionary API
     try {
       const controller = new AbortController();
@@ -4271,7 +4392,7 @@ const App = {
           }
         }
         if (ipa) {
-          const formatted = ipa.startsWith('/') ? ipa : `/${ipa.replace(/[\[\]]/g, '')}/`;
+          const formatted = ipa.startsWith('[') || ipa.startsWith('/') ? ipa : `[${ipa}]`;
           this.vocabIpaCache[clean] = formatted;
           return formatted;
         }
@@ -4293,7 +4414,7 @@ const App = {
           if (ipaTag) {
             const rawIpa = ipaTag.replace('ipa_pron:', '').trim();
             if (rawIpa) {
-              const formatted = `/${rawIpa}/`;
+              const formatted = `[${rawIpa}]`;
               this.vocabIpaCache[clean] = formatted;
               return formatted;
             }
@@ -4304,8 +4425,8 @@ const App = {
       // 2차 실패
     }
 
-    // Fallback: 깔끔한 대괄호 단어 포맷
-    const fallback = `/${clean}/`;
+    // Fallback: 단어 정답 유출 방지 (발음 듣기 유도)
+    const fallback = `[발음 듣기]`;
     this.vocabIpaCache[clean] = fallback;
     return fallback;
   },
@@ -4442,7 +4563,9 @@ const App = {
 
   renderVocabTestButton(set, studentId, direction, label, colorClass, testId = null) {
     const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
-    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction);
+    const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
+    const nextRound = attemptCount + 1;
+    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction, nextRound);
     const result = AppData.getVocabTestResult(studentId, set.id, direction, testId);
 
     // 1. 통과 완료 상태
@@ -4497,20 +4620,25 @@ const App = {
         </div>`;
     }
 
-    // 4. 10분 재응시 대기 중
+    // 4. 10분 재응시 대기 중 (불합격 명확히 표출)
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
       const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
       return `
-        <div class="rounded-2xl border border-rose-200 bg-rose-50/60 p-3 flex flex-col justify-between gap-2 shadow-2xs">
+        <div class="rounded-2xl border border-rose-200 bg-rose-50/70 p-3 flex flex-col justify-between gap-2 shadow-2xs">
           <div class="flex items-center justify-between gap-1">
-            <span class="text-xs font-black text-slate-800">${label}</span>
-            <span class="text-[10px] font-bold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-200">
-              커트라인 <strong>${cutoffScore}점</strong>
+            <span class="text-xs font-black text-rose-950">${label}</span>
+            <span class="text-[10px] font-extrabold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-200 shadow-2xs">
+              불합격 (${result.score ?? 0}점)
             </span>
           </div>
-          <div class="w-full py-2 rounded-xl bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-clock"></i>
-            <span>${minutes}분 후 재응시 가능</span>
+          <div class="space-y-1">
+            <div class="text-[11px] text-rose-800 font-semibold flex items-center justify-between">
+              <span>다음: ${nextRound}회차 (커트라인 ${cutoffScore}점)</span>
+              <span class="text-rose-600 font-bold"><i class="fa-solid fa-clock mr-1"></i>${minutes}분 후 재응시</span>
+            </div>
+            <div class="w-full py-1.5 rounded-xl bg-rose-100/90 text-rose-700 text-[11px] font-bold flex items-center justify-center gap-1.5">
+              <span>재시험 대기 중</span>
+            </div>
           </div>
           ${this.state.isAdminLoggedIn ? `
             <button type="button" onclick="App.resetVocabRetryCooldown('${studentId}', '${set.id}', ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition flex items-center justify-center gap-1 shadow-2xs">
@@ -4541,15 +4669,24 @@ const App = {
         </div>`;
     }
 
-    // 6. 응시 가능 상태 (시작 / 재응시)
-    const buttonText = result ? '다시 도전하기' : '테스트 시작';
-    const buttonIcon = result ? 'fa-rotate-right' : 'fa-play';
+    // 6. 응시 가능 상태 (시작 / 재응시 명확 분기)
+    const isRetest = Boolean(result && !result.passed);
+    const roundBadge = nextRound > 1 ? `${nextRound}회차 ` : '';
+    const buttonText = isRetest ? `${nextRound}회차 재시험 응시` : '테스트 시작';
+    const buttonIcon = isRetest ? 'fa-rotate-right' : 'fa-play';
     return `
-      <div class="rounded-2xl border border-slate-200/90 bg-white p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
+      <div class="rounded-2xl border ${isRetest ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/90 bg-white'} p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
         <div class="flex items-center justify-between gap-1">
-          <span class="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition">${label}</span>
-          <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-            커트라인 <strong>${cutoffScore}점</strong>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition">${label}</span>
+            ${isRetest ? `
+              <span class="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                불합격 (${result.score ?? 0}점)
+              </span>
+            ` : ''}
+          </div>
+          <span class="text-[10px] font-bold ${isRetest ? 'text-rose-700 bg-rose-50 border border-rose-200' : 'text-indigo-700 bg-indigo-50 border border-indigo-100'} px-2 py-0.5 rounded-full">
+            ${roundBadge}커트라인 <strong>${cutoffScore}점</strong>
           </span>
         </div>
         <button onclick="App.startVocabTest('${set.id}', ${studentId}, ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-2.5 rounded-xl ${colorClass} text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
@@ -4947,6 +5084,11 @@ const App = {
     const testWords = this.selectVocabTestWords(set.words);
     const initialTime = direction === 2 ? 7 : (direction === 3 ? 15 : 20);
 
+    const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
+    const currentRound = attemptCount + 1;
+    const baseCutoff = this.getBaseVocabCutoffScore(scheduledTest, direction);
+    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction, currentRound);
+
     // 모드 3, 4인 경우 사전에 모든 단어의 발음기호를 즉시 백그라운드 프리페치하여 렉 완전 제거
     if (direction === 3 || direction === 4) {
       this.prefetchVocabPhonetics(testWords);
@@ -4968,11 +5110,18 @@ const App = {
       questions: this.buildVocabQuestions(testWords, direction, set.words),
       currentIndex: 0,
       score: 0,
+      currentRound,
+      baseCutoff,
+      cutoffScore,
       timerId: null,
       timeRemaining: initialTime,
       initialTimeLimit: initialTime,
       isCompleted: false
     };
+
+    try {
+      history.pushState({ inVocabTest: true }, '');
+    } catch (e) {}
 
     this.closeTestDetailModal();
     this.showVocabTestView();
@@ -5036,13 +5185,16 @@ const App = {
 
     // Top info bar
     document.getElementById('vocabTestTopInfo').innerHTML = `
-      <div class="flex items-center gap-3 flex-wrap w-full">
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap w-full">
         <div>
           <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)}</span>
           <span class="text-xs text-slate-500 ml-2">문항 ${vt.currentIndex + 1} / ${total}</span>
         </div>
         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${dir === 2 ? 'bg-violet-100 text-violet-700' : (dir === 3 ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700')}">
           ${this.getVocabDirectionLabel(dir)}
+        </span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-black ${vt.currentRound > 1 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'}">
+          ${vt.currentRound ? `${vt.currentRound}회차 · ` : ''}커트라인 ${vt.cutoffScore || 80}점
         </span>
         <span id="vocabTestTimer" class="ml-auto px-4 py-1.5 rounded-full bg-rose-100 text-rose-700 text-sm sm:text-base font-black flex items-center gap-1.5">
           <i class="fa-regular fa-clock"></i>${vt.timeRemaining}초
@@ -5087,7 +5239,8 @@ const App = {
         </div>`;
     } else if (dir === 3) {
       // ── 모드 3: 발음/발음기호 → 영어 스펠링 쓰기 ────────────
-      const cachedIpa = this.vocabIpaCache[q.word.en.trim().toLowerCase()] || '';
+      const directIpa = q.word.ipa || q.word.phonetic;
+      const cachedIpa = directIpa || this.vocabIpaCache[q.word.en.trim().toLowerCase()] || '';
       contentEl.innerHTML = `
         <div class="space-y-6 max-w-2xl mx-auto">
           <div class="w-full bg-slate-200 rounded-full h-2">
@@ -5132,7 +5285,8 @@ const App = {
         </div>`;
     } else if (dir === 4) {
       // ── 모드 4: 발음/발음기호 → 스펠링 + 한글 뜻 쓰기 (일체형 가운데 정렬) ──────────
-      const cachedIpa = this.vocabIpaCache[q.word.en.trim().toLowerCase()] || '';
+      const directIpa = q.word.ipa || q.word.phonetic;
+      const cachedIpa = directIpa || this.vocabIpaCache[q.word.en.trim().toLowerCase()] || '';
       contentEl.innerHTML = `
         <div class="space-y-6 max-w-2xl mx-auto">
           <div class="w-full bg-slate-200 rounded-full h-2">
@@ -5198,16 +5352,24 @@ const App = {
       if (inputEl) inputEl.focus();
     }, 50);
 
-    // 스펠링/통합 시험인 경우: 대형 발음기호 비동기 주입
+    // 스펠링/통합 시험인 경우: 대형 발음기호 비동기 주입 (직접 발음기호 우선)
     if (dir === 3 || dir === 4) {
-      this.fetchWordPhonetic(q.word.en).then(ipa => {
+      const directIpa = q.word.ipa || q.word.phonetic;
+      if (directIpa) {
         const badgeEl = document.getElementById('vocabPhoneticBadge');
         if (badgeEl) {
-          badgeEl.innerHTML = ipa
-            ? `<span class="tracking-wider">${this.escapeHtml(ipa)}</span>`
-            : `<span class="text-xl font-mono text-slate-500 font-bold">[${this.escapeHtml(q.word.en)}]</span>`;
+          badgeEl.innerHTML = `<span class="tracking-wider">${this.escapeHtml(directIpa)}</span>`;
         }
-      });
+      } else {
+        this.fetchWordPhonetic(q.word.en).then(ipa => {
+          const badgeEl = document.getElementById('vocabPhoneticBadge');
+          if (badgeEl) {
+            badgeEl.innerHTML = ipa
+              ? `<span class="tracking-wider">${this.escapeHtml(ipa)}</span>`
+              : `<span class="text-xl font-mono text-slate-500 font-bold">[${this.escapeHtml(q.word.en)}]</span>`;
+          }
+        });
+      }
     }
 
     this.startVocabQuestionTimer();
@@ -5376,7 +5538,8 @@ const App = {
     const total = vt.allWords.length;
     const directionLabel = this.getVocabDirectionLabel(vt.direction);
     const test = vt.testId && AppData.getTests().find(item => item.id === vt.testId);
-    const cutoffScore = this.getVocabCutoffScore(test, vt.direction);
+    const currentRound = vt.currentRound || 1;
+    const cutoffScore = vt.cutoffScore || this.getVocabCutoffScore(test, vt.direction, currentRound);
 
     const questionDetails = vt.questions.map((q, idx) => ({
       index: idx,
@@ -5451,6 +5614,8 @@ const App = {
         passed,
         waitingGrading,
         spellingScore: score,
+        round: currentRound,
+        cutoffScore,
         questionDetails,
         wrongAnswers,
         retryAvailableAt,
@@ -5463,10 +5628,11 @@ const App = {
     }
 
     document.getElementById('vocabTestTopInfo').innerHTML = `
-      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)} — 테스트 완료</span>`;
+      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)} — ${currentRound}회차 결과</span>`;
 
     let statusHeaderHtml = '';
     let statusBannerHtml = '';
+    const nextCutoff = this.getVocabCutoffScore(test, vt.direction, currentRound + 1);
 
     if (waitingGrading) {
       statusHeaderHtml = `
@@ -5475,10 +5641,10 @@ const App = {
         </div>
         <div>
           <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-            채점 대기중
+            채점 대기중 (${currentRound}회차)
           </span>
           <h3 class="text-2xl font-black text-slate-900 mt-2">선생님 채점 대기중</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · 스펠링 1차 정답 ${correctCount} / ${total}개</p>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · 스펠링 1차 정답 ${correctCount} / ${total}개 (커트라인 ${cutoffScore}점)</p>
           <div class="text-4xl font-black text-indigo-600 mt-3">${score}점 <span class="text-xs font-bold text-slate-400 font-normal">(스펠링 1차 점수)</span></div>
         </div>`;
       statusBannerHtml = `
@@ -5492,13 +5658,16 @@ const App = {
           <i class="fa-solid fa-circle-check"></i>
         </div>
         <div>
-          <h3 class="text-2xl font-black text-emerald-700">테스트 통과 (PASS)</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${correctCount} / ${total} 정답</p>
+          <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            ${currentRound}회차 합격
+          </span>
+          <h3 class="text-2xl font-black text-emerald-700 mt-2">테스트 통과 (PASS)</h3>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${correctCount} / ${total} 정답 (커트라인 ${cutoffScore}점)</p>
           <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
         </div>`;
       statusBannerHtml = `
         <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold">
-          축하합니다! 커트라인(${cutoffScore}점)을 통과하여 ${directionLabel} 테스트가 완료되었습니다.
+          축하합니다! ${currentRound}회차 커트라인(${cutoffScore}점)을 통과하여 ${directionLabel} 테스트가 완료되었습니다.
         </div>`;
     } else {
       statusHeaderHtml = `
@@ -5506,13 +5675,17 @@ const App = {
           <i class="fa-solid fa-circle-xmark"></i>
         </div>
         <div>
-          <h3 class="text-2xl font-black text-rose-700">불합격 (FAIL)</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${vt.direction === 4 ? `스펠링 ${correctCount} / ${total} 정답` : `${correctCount} / ${total} 정답`}</p>
+          <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
+            ${currentRound}회차 불합격
+          </span>
+          <h3 class="text-2xl font-black text-rose-700 mt-2">불합격 (FAIL)</h3>
+          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${vt.direction === 4 ? `스펠링 ${correctCount} / ${total} 정답` : `${correctCount} / ${total} 정답`} (커트라인 ${cutoffScore}점)</p>
           <div class="text-4xl font-black text-slate-900 mt-3">${score}점 ${vt.direction === 4 ? '<span class="text-xs font-normal text-slate-400">(스펠링 점수)</span>' : ''}</div>
         </div>`;
       statusBannerHtml = `
-        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-semibold">
-          ${vt.direction === 4 ? `스펠링 1차 채점 점수(${score}점)가 커트라인(${cutoffScore}점)에 미달하였습니다.` : `커트라인(${cutoffScore}점)에 미달하였습니다.`} 10분 후 다시 도전할 수 있습니다.
+        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm font-semibold text-left space-y-1">
+          <p class="font-bold text-rose-800 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> ${currentRound}회차 커트라인(${cutoffScore}점)에 미달하였습니다.</p>
+          <p class="text-xs text-rose-700">다음 <strong>${currentRound + 1}회차 재시험 커트라인은 ${nextCutoff}점</strong>으로 올라갑니다. 10분 후 다시 도전할 수 있습니다.</p>
         </div>`;
     }
 
@@ -5583,7 +5756,7 @@ const App = {
         this.state.isStudentLoggedIn = true;
         this.selectStudent(studentId);
       } else {
-        this.showLanding();
+        await this.showLanding();
       }
     }
   },
@@ -5615,19 +5788,24 @@ const App = {
         correctCount: 0,
         total,
         passed: false,
+        round: vt.currentRound || 1,
+        cutoffScore: vt.cutoffScore || 80,
         wrongAnswers,
         retryAvailableAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
         startedAt,
         completedAt
       });
-      if (test) await this.updateVocabScheduleStatus(test.id);
+      if (test) {
+        test.status = 'FAIL';
+        await this.updateVocabScheduleStatus(test.id);
+      }
       this.toast('시험 중도 이탈로 0점(불합격) 처리되었습니다. (10분 후 재응시 가능)', 'error');
     } catch (error) {
       console.error(error);
     }
   },
 
-  getVocabCutoffScore(test, direction = null) {
+  getBaseVocabCutoffScore(test, direction = null) {
     if (!test) return 80;
 
     // 1. 유형별 개별 커트라인 우선 조회
@@ -5656,6 +5834,27 @@ const App = {
     const match = String(test?.cutoff || '').match(/(\d+)/);
     const legacyCutoff = match ? Number(match[1]) : null;
     return Number.isInteger(legacyCutoff) && legacyCutoff >= 1 && legacyCutoff <= 100 ? legacyCutoff : 80;
+  },
+
+  getVocabCutoffScore(test, direction = null, round = 1) {
+    const baseCutoff = this.getBaseVocabCutoffScore(test, direction);
+    const r = Math.max(1, Number(round) || 1);
+    let extra = 0;
+    if (r === 2) {
+      extra = 2; // 2회차: +2점
+    } else if (r >= 3) {
+      extra = 4; // 3회차: +4점, 4회차부터 +4점 고정
+    }
+    return Math.min(100, baseCutoff + extra);
+  },
+
+  getVocabAttemptCount(studentId, setId, direction, testId = null) {
+    const result = AppData.getVocabTestResult(studentId, setId, direction, testId);
+    if (!result) return 0;
+    if (Array.isArray(result.attempts) && result.attempts.length > 0) {
+      return result.attempts.length;
+    }
+    return (result.score !== undefined || result.completedAt) ? 1 : 0;
   },
 
   async updateVocabScheduleStatus(testId) {

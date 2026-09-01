@@ -1035,8 +1035,8 @@
   </div>
 
   <!-- ===== 본문 암기 시험 응시 모달 ===== -->
-  <div id="textMemorizeExamModal" class="fixed inset-0 z-[60] hidden flex items-start justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
-    <div class="glass-card w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white my-2 sm:my-4">
+  <div id="textMemorizeExamModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm overscroll-contain">
+    <div class="glass-card w-full max-w-3xl max-h-[92vh] rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white my-auto">
       <!-- Header -->
       <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex-shrink-0">
         <div class="flex items-center justify-between gap-3">
@@ -1056,7 +1056,7 @@
       </div>
 
       <!-- Body: passage paragraphs with blanks -->
-      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6" id="tmExamBody" style="max-height: 60vh;">
+      <div class="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-6" id="tmExamBody">
         <!-- Populated by JS -->
       </div>
 
