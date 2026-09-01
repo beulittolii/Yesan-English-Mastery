@@ -264,21 +264,6 @@ function generateDefaultTests() {
       teacherNote: '글의 흐름과 논리적 단서(지시사, 대명사)를 잘 파악하고 있음.'
     },
 
-    {
-      id: 'test_4_2',
-      studentId: 4,
-      title: '고급 수능 VOCA Day 30-33',
-      date: getDateStr(1),
-      time: '19:30',
-      scope: '추상적 학술 어휘 100개 + 유의어 묶음 테스트',
-      cutoff: '88점 이상',
-      score: '',
-      status: 'SCHEDULED',
-      retestStatus: 'NONE',
-      retestDate: '',
-      teacherNote: '철학/인문 계열 지문에 자주 출제되는 핵심 추상어휘 집중 암기 요망.'
-    },
-
 
     // ======================================================
     // 학생 5: 정현우
@@ -924,6 +909,64 @@ const AppData = {
         console.log('2026 고1 6모/9모 대비 특별 단어 세트가 성공적으로 동기화되었습니다.');
         this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Mock vocab sync notice:', e));
       }
+    }
+
+    // 9/2 모의고사 D-Day: 기존 9/2 단어 시험 일정을 삭제하고, 모든 학생에게 [6모/9모 파이널 통합 풀세트] 시험 일괄 등록
+    try {
+      const targetExamDate = '2026-09-02';
+      const students = this.getStudents();
+      let currentTests = this.getTests();
+      let testsModified = false;
+
+      // 1. 9/2 날짜에 있던 기존 단어 시험(VOCAB) 또는 'VOCA' 관련 구형 시험 삭제
+      const filteredTests = currentTests.filter(t => {
+        const isTargetDate = t.date === targetExamDate;
+        const isOldVocab = isTargetDate && (t.type === 'VOCAB' || (t.title && t.title.includes('VOCA'))) && !t.id.startsWith('mock2026_final_student_');
+        if (isOldVocab) {
+          testsModified = true;
+          return false;
+        }
+        return true;
+      });
+
+      // 2. 모든 학생(1번~6번 및 추가 등록된 전체 학생)에게 9/2 파이널 단어 시험 일괄 등록
+      students.forEach(student => {
+        const existingFinal = filteredTests.find(t => t.studentId === student.id && t.date === targetExamDate && t.id.startsWith('mock2026_final_student_'));
+        if (!existingFinal) {
+          filteredTests.push({
+            id: `mock2026_final_student_${student.id}`,
+            studentId: student.id,
+            title: '[6모/9모 킬러] 반전 다의어 60선 파이널',
+            date: targetExamDate,
+            time: '08:00',
+            endTime: '23:59',
+            scope: '2026 고1 6모/9모 대비 필수 반전 다의어 60단어 (40문항 랜덤 출제)',
+            cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+            cutoffScore: 80,
+            vocabCutoff: 80,
+            vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+            vocabSetId: 'mock2026_g1_sep_all',
+            vocabSetIds: ['mock2026_g1_sep_all'],
+            score: '',
+            status: 'SCHEDULED',
+            retestStatus: 'NONE',
+            retestDate: '',
+            teacherNote: '🔥 모의고사 직전 필출 다의어 60선! 1차 뜻이 아닌 2차 반전 의미(desc 해설) 중심으로 집중 점검하세요.',
+            isMockSpecial: true,
+            type: 'VOCAB',
+            allowLate: true
+          });
+          testsModified = true;
+        }
+      });
+
+      if (testsModified) {
+        FirebaseStore.tests = filteredTests;
+        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Tests sync notice:', e));
+        console.log('9/2 기존 단어세트 정리 완료 및 전체 학생 대상 [6모/9모 파이널] 시험 일정이 성공적으로 일괄 등록되었습니다.');
+      }
+    } catch (err) {
+      console.warn('9/2 파이널 시험 일괄 등록 동기화 안내:', err);
     }
 
     if (vocabTestResults.length === 0) {
