@@ -1036,6 +1036,7 @@ const App = {
 
     const bookName = (primaryBook || '').trim();
     const hasSpecialBook = bookName && bookName !== '기본 단어장';
+    const isMockExamTest = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
 
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
     document.getElementById('detailModalTitle').innerText = test.title || (hasSpecialBook ? `[${bookName}] ${set.title}` : set.title);
@@ -1305,8 +1306,8 @@ const App = {
     const allWords = set.words;
     const questions = targetWords.map(word => {
       const otherWords = allWords.filter(w => w.en !== word.en);
-      const wrongChoices = this.shuffleArray(otherWords).slice(0, 4).map(w => w.ko);
-      const choices = this.shuffleArray([word.ko, ...wrongChoices]);
+      const wrongChoices = this.shuffleItems(otherWords).slice(0, 4).map(w => w.ko);
+      const choices = this.shuffleItems([word.ko, ...wrongChoices]);
       return {
         word,
         question: word.en,
@@ -1316,24 +1317,39 @@ const App = {
       };
     });
 
+    const initialTime = targetWords.length * 15; // 30단어 * 15초 = 450초
+
     this.state.vocabTest = {
       testId: scheduledTest.id,
       setId: set.id,
-      setTitle: `${scheduledTest.title || '[9모 대비]'} - Part ${part}`,
-      studentId: scheduledTest.studentId,
+      setTitle: `[9모 대비] 킬러 반전 다의어 - Part ${part}`,
+      bookName: '2026 고1 9모 대비',
+      studentId: Number(scheduledTest.studentId),
       direction: 2, // 객관식
       isMockPart: true,
       mockPartNumber: part,
       words: targetWords,
-      questions: this.shuffleArray(questions),
+      allWords: targetWords,
+      sourceWordCount: targetWords.length,
+      questions: this.shuffleItems(questions),
       currentIndex: 0,
-      userAnswers: [],
       score: 0,
+      currentRound: 1,
       cutoffScore: 80,
+      baseCutoff: 80,
+      timerId: null,
+      timeRemaining: initialTime,
+      initialTimeLimit: initialTime,
+      isCompleted: false,
       startedAt: new Date().toISOString()
     };
 
-    this.closeModal('testDetailModal');
+    try {
+      history.pushState({ inVocabTest: true }, '');
+    } catch (e) {}
+
+    this.closeTestDetailModal();
+    this.showVocabTestView();
     this.renderVocabQuestion();
   },
 
