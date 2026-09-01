@@ -905,6 +905,27 @@ const AppData = {
       }
     }
 
+    // 2026 고1 9모 대비 특별 단어 세트 자동 연동 (최우선 상단 배치)
+    if (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' && Array.isArray(MOCK_EXAM_VOCAB_SETS)) {
+      let updatedMock = false;
+      const currentVocabSets = FirebaseStore.vocabSets || [];
+      MOCK_EXAM_VOCAB_SETS.forEach(mockSet => {
+        const existingIdx = currentVocabSets.findIndex(s => s.id === mockSet.id);
+        if (existingIdx === -1) {
+          currentVocabSets.unshift(mockSet);
+          updatedMock = true;
+        } else {
+          currentVocabSets[existingIdx] = { ...currentVocabSets[existingIdx], ...mockSet };
+          updatedMock = true;
+        }
+      });
+      if (updatedMock) {
+        FirebaseStore.vocabSets = currentVocabSets;
+        console.log('2026 고1 9모 대비 특별 단어 세트가 성공적으로 등록되었습니다.');
+        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Mock vocab sync notice:', e));
+      }
+    }
+
     if (vocabTestResults.length === 0) {
       const legacyResults = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabTestResults);
       if (legacyResults) {

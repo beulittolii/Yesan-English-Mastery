@@ -657,12 +657,27 @@ const App = {
     dayTests.forEach(test => {
       if (test.type === 'VOCAB') {
         if (test.date === dateStr) {
+          const isMockSpecial = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
           const badgeStyle = this.getTestBadgeStyle(test, false);
-          const vocabCalendarLabel = '단어 테스트';
-          testsHtml += `
-            <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="단어 테스트">
-              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
-            </div>`;
+          const isCompleted = badgeStyle.tag === '완료';
+
+          if (isMockSpecial) {
+            // 🔥 2026 9모 대비 특별 단어 시험: 눈에 확 띄는 화려한 불꽃 그라데이션 뱃지
+            testsHtml += `
+              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-black flex items-center justify-between gap-1 shadow-sm ${isCompleted ? 'bg-emerald-600 text-white border border-emerald-400' : 'bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 text-white border border-amber-300 ring-1 ring-amber-300/80 animate-pulse'}" title="2026 고1 9모 대비 특별 단어 테스트">
+                <div class="truncate flex items-center gap-1">
+                  <span><i class="fa-solid fa-fire-flame-curved text-amber-200"></i></span>
+                  <span class="truncate font-black">[9모대비] ${this.escapeHtml(test.title || '단어 테스트')}</span>
+                </div>
+                <span class="text-[9px] bg-white/30 px-1 rounded font-black flex-shrink-0">${isCompleted ? '완료' : '필출'}</span>
+              </div>`;
+          } else {
+            const vocabCalendarLabel = '단어 테스트';
+            testsHtml += `
+              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="단어 테스트">
+                <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
+              </div>`;
+          }
         }
         return;
       }
@@ -952,11 +967,14 @@ const App = {
 
       ${Boolean(this.state.isAdminLoggedIn) ? `
         <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+          <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-calendar-days"></i> 일정 이동
+          </button>
           <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
-            <i class="fa-solid fa-clock-rotate-left"></i> 시험 시간 연장
+            <i class="fa-solid fa-clock-rotate-left"></i> 시간 연장
           </button>
           <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-pen-to-square"></i> 일정 & 성적 수정
+            <i class="fa-solid fa-pen-to-square"></i> 전체 수정
           </button>
         </div>
       ` : ''}
@@ -1110,9 +1128,12 @@ const App = {
       </div>
 
       ${isAdmin ? `
-        <div class="pt-2 border-t border-slate-100">
-          <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
-            <i class="fa-solid fa-pen-to-square"></i> 시험 일정 & 단어 설정 수정
+        <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
+          <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-calendar-days"></i> 일정 이동
+          </button>
+          <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <i class="fa-solid fa-pen-to-square"></i> 전체 수정
           </button>
         </div>
       ` : ''}
@@ -1350,6 +1371,102 @@ const App = {
     }
   },
 
+  // ── 시험 일정 이동 모달 컨트롤러 (관리자용) ───────────────
+  openRescheduleModal(testId) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) {
+      this.toast('시험을 찾을 수 없습니다.', 'error');
+      return;
+    }
+
+    const student = AppData.getStudentById(test.studentId);
+    document.getElementById('rescheduleTestId').value = test.id;
+    document.getElementById('rescheduleStudentName').innerText = student ? `${student.name} 학생` : '학생 시험';
+    document.getElementById('rescheduleTestTitle').innerText = test.title || (test.type === 'VOCAB' ? '단어 테스트' : '시험');
+    document.getElementById('rescheduleModalSubtitle').innerText = `${student ? student.name : '학생'}의 시험 일정을 원하는 날짜로 이동합니다.`;
+
+    const badgeEl = document.getElementById('rescheduleTestTypeBadge');
+    if (badgeEl) {
+      const typeLabel = test.type === 'VOCAB' ? '단어 테스트' : (test.type === 'TEXT_MEMORIZE' ? '본문 암기' : (test.type === 'PRACTICE' ? '문제 풀이' : '일반 시험'));
+      badgeEl.innerText = typeLabel;
+    }
+
+    const currentScheduleText = `${test.date}${test.time ? ` (${test.time} ~ ${test.endTime || '23:59'})` : (test.endTime ? ` (~ ${test.endTime})` : '')}`;
+    document.getElementById('rescheduleCurrentSchedule').innerText = currentScheduleText;
+
+    // 인풋 기본값 세팅
+    document.getElementById('rescheduleTargetDate').value = test.date || this.formatDate(new Date());
+    document.getElementById('rescheduleTargetTime').value = test.time || '';
+    document.getElementById('rescheduleTargetEndTime').value = test.endTime || '';
+
+    this.showModal('rescheduleTestModal');
+  },
+
+  closeRescheduleModal() {
+    this.hideModal('rescheduleTestModal');
+  },
+
+  setQuickRescheduleDate(daysFromNow) {
+    const target = new Date();
+    target.setDate(target.getDate() + Number(daysFromNow));
+    const y = target.getFullYear();
+    const m = String(target.getMonth() + 1).padStart(2, '0');
+    const d = String(target.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+    const dateInput = document.getElementById('rescheduleTargetDate');
+    if (dateInput) dateInput.value = dateStr;
+  },
+
+  async confirmRescheduleTest() {
+    const testId = document.getElementById('rescheduleTestId')?.value;
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) {
+      this.toast('시험 정보를 찾을 수 없습니다.', 'error');
+      return;
+    }
+
+    const newDate = document.getElementById('rescheduleTargetDate')?.value;
+    if (!newDate) {
+      this.toast('이동할 새 시험 날짜를 선택해주세요.', 'warning');
+      return;
+    }
+
+    const newTime = document.getElementById('rescheduleTargetTime')?.value || '';
+    const newEndTime = document.getElementById('rescheduleTargetEndTime')?.value || '';
+
+    const oldDate = test.date;
+    test.date = newDate;
+    if (newTime) test.time = newTime;
+    if (newEndTime) test.endTime = newEndTime;
+
+    // 만약 연장 날짜가 원래 날짜보다 이전이 되면 연장 정보 초기화
+    if (test.extendedDate && test.extendedDate < newDate) {
+      test.extendedDate = null;
+      test.extendedEndTime = null;
+    }
+
+    try {
+      await AppData.saveOrUpdateTest(test);
+      this.toast(`'${test.title || '시험'}' 일정이 ${oldDate}에서 ${newDate}(으)로 이동되었습니다!`, 'success');
+      this.closeRescheduleModal();
+
+      // 열려있는 시험 상세 모달 닫기
+      this.closeTestDetailModal();
+      this.hideModal('textMemorizeExamModal');
+
+      // 화면 갱신
+      if (this.state.isAdminLoggedIn) {
+        this.renderAdminTestsTab();
+      }
+      if (this.state.selectedStudentId) {
+        this.renderStudentDashboard(this.state.selectedStudentId);
+      }
+    } catch (err) {
+      console.error(err);
+      this.toast('일정 이동 저장 중 오류가 발생했습니다.', 'error');
+    }
+  },
+
   // ========================================================
   // 시험 시간 범위 및 응시 가능 여부 판별 헬퍼
   // ========================================================
@@ -1490,11 +1607,14 @@ const App = {
             </div>
           `)}
           <div class="flex items-center gap-2">
+            <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+              <i class="fa-solid fa-calendar-days"></i> 일정 이동
+            </button>
             <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
-              <i class="fa-solid fa-clock-rotate-left"></i> 시험 시간 연장
+              <i class="fa-solid fa-clock-rotate-left"></i> 시간 연장
             </button>
             <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-pen-to-square"></i> 문제/설정 수정
+              <i class="fa-solid fa-pen-to-square"></i> 전체 수정
             </button>
           </div>
         </div>
@@ -2207,7 +2327,10 @@ const App = {
             </div>
             <div class="text-[11px] font-normal text-slate-400 flex items-center gap-1">
               <span>${test.extendedDate ? `<span class="text-amber-700 font-bold">~${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장)</span>` : (timeStr || '23:59까지')}</span>
-              <button onclick="App.openExtendTestModal('${test.id}')" class="text-amber-600 hover:text-amber-800 font-bold hover:underline ml-1" title="마감 시간 연장">
+              <button onclick="App.openRescheduleModal('${test.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline ml-1" title="시험 일정 이동">
+                [이동]
+              </button>
+              <button onclick="App.openExtendTestModal('${test.id}')" class="text-amber-600 hover:text-amber-800 font-bold hover:underline ml-0.5" title="마감 시간 연장">
                 [연장]
               </button>
             </div>
@@ -2216,7 +2339,7 @@ const App = {
           <!-- 시험명 & 범위 -->
           <td class="py-3.5 px-4 max-w-xs">
             <div class="font-bold text-slate-900 text-sm hover:text-indigo-600 cursor-pointer flex items-center gap-1.5" onclick="App.openTestDetailModal('${test.id}')">
-              ${test.type === 'VOCAB' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">단어</span>' : (test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : (test.type === 'TEXT_MEMORIZE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">본문암기</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">일반</span>'))}
+              ${test.type === 'VOCAB' ? (test.isMockSpecial ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white">🔥 9모단어</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">단어</span>') : (test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : (test.type === 'TEXT_MEMORIZE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">본문암기</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">일반</span>'))}
               <span>${this.escapeHtml(test.title)}</span>
             </div>
             <div class="text-xs text-slate-500 truncate mt-0.5">${this.escapeHtml(test.scope || '-')}</div>
@@ -2259,6 +2382,9 @@ const App = {
           <!-- 관리 버튼 -->
           <td class="py-3.5 px-4 text-center whitespace-nowrap">
             <div class="flex items-center justify-center space-x-1.5">
+              <button onclick="App.openRescheduleModal('${test.id}')" class="p-1.5 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition" title="시험 일정 이동">
+                <i class="fa-solid fa-calendar-days"></i>
+              </button>
               <button onclick="App.openExtendTestModal('${test.id}')" class="p-1.5 rounded-lg text-amber-600 hover:text-amber-800 hover:bg-amber-50 transition" title="마감 시간 연장">
                 <i class="fa-solid fa-clock-rotate-left"></i>
               </button>
@@ -2673,6 +2799,7 @@ const App = {
     if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = '80';
     if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = '80';
     if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = '80';
+    if (document.getElementById('formIsMockSpecial')) document.getElementById('formIsMockSpecial').checked = false;
     document.getElementById('formPracticeCutoff').value = '80';
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
@@ -2741,9 +2868,12 @@ const App = {
     document.getElementById('formEndTime').value = test.endTime || '';
     document.getElementById('formScope').value = test.scope || '';
     document.getElementById('formCutoff').value = test.cutoff || '';
-    if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = this.getVocabCutoffScore(test, 2);
-    if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = this.getVocabCutoffScore(test, 3);
-    if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = this.getVocabCutoffScore(test, 4);
+    if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = this.getBaseVocabCutoffScore(test, 2);
+    if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = this.getBaseVocabCutoffScore(test, 3);
+    if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = this.getBaseVocabCutoffScore(test, 4);
+    if (document.getElementById('formIsMockSpecial')) {
+      document.getElementById('formIsMockSpecial').checked = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
+    }
     document.getElementById('formPracticeCutoff').value = test.cutoffScore || test.practiceCutoff || 80;
     if (document.getElementById('formTextMemorizeCutoff')) {
       document.getElementById('formTextMemorizeCutoff').value = test.textMemorizeCutoff || test.cutoffScore || 80;
@@ -2998,6 +3128,8 @@ const App = {
 
     document.getElementById('formVocabSetSection').classList.toggle('hidden', !isVocab);
     document.getElementById('formVocabCutoffSection').classList.toggle('hidden', !isVocab);
+    const mockSpecialSection = document.getElementById('formMockSpecialSection');
+    if (mockSpecialSection) mockSpecialSection.classList.toggle('hidden', !isVocab);
     document.getElementById('formPracticeCutoffSection').classList.toggle('hidden', !isPractice);
     document.getElementById('formPracticeSection').classList.toggle('hidden', !isPractice);
     document.getElementById('formTextMemorizeSection').classList.toggle('hidden', !isTextMemorize);
@@ -3353,6 +3485,7 @@ const App = {
 
     const status = isRegularTest ? (document.querySelector('input[name="formStatus"]:checked')?.value || 'SCHEDULED') : 'SCHEDULED';
     const retestStatus = isRegularTest ? (document.querySelector('input[name="formRetestStatus"]:checked')?.value || 'NONE') : 'NONE';
+    const isMockSpecial = isVocabTest ? Boolean(document.getElementById('formIsMockSpecial')?.checked) : false;
 
     // 공통 검사
     if (!title || !date) {
@@ -3468,7 +3601,8 @@ const App = {
             extendedDate: existingTest?.extendedDate || null,
             extendedEndTime: existingTest?.extendedEndTime || null,
             allowLate: existingTest?.allowLate || false,
-            type: testType
+            type: testType,
+            isMockSpecial
           };
           return AppData.saveOrUpdateTest(testData);
         } else {
@@ -3513,7 +3647,8 @@ const App = {
               textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
               textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
               textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
-              type: testType
+              type: testType,
+              isMockSpecial
             };
             if (isRegularTest) {
               if (score) testData.score = score;
@@ -3552,7 +3687,8 @@ const App = {
               textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
               textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
               textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
-              type: testType
+              type: testType,
+              isMockSpecial
             };
             return AppData.saveOrUpdateTest(newTest);
           }
@@ -3602,7 +3738,8 @@ const App = {
           textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
           textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
           textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
-          type: testType
+          type: testType,
+          isMockSpecial
         };
         return AppData.saveOrUpdateTest(newTest);
       });
@@ -4518,17 +4655,25 @@ const App = {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${sets.map(set => {
             const bookName = (set.book || '기본 단어장').trim();
+            const isMockSpecial = Boolean(set.isMockSpecial || bookName.includes('9모') || bookName.includes('모의고사') || set.title.includes('9모'));
             return `
-            <div class="p-4 rounded-2xl border border-indigo-100 bg-white/90 shadow-2xs flex flex-col gap-3">
+            <div class="p-4 rounded-2xl ${isMockSpecial ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50/50 via-white to-rose-50/30 shadow-md ring-1 ring-amber-300/60' : 'border border-indigo-100 bg-white/90 shadow-2xs'} flex flex-col gap-3">
               <div>
-                <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mb-1">
-                  <i class="fa-solid fa-folder text-[9px] text-amber-500"></i> ${this.escapeHtml(bookName)}
-                </span>
+                <div class="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span class="text-[10px] font-bold ${isMockSpecial ? 'text-amber-900 bg-amber-100 border border-amber-300' : 'text-indigo-700 bg-indigo-50 border border-indigo-200/80'} px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                    <i class="fa-solid fa-folder text-[9px] ${isMockSpecial ? 'text-amber-600' : 'text-amber-500'}"></i> ${this.escapeHtml(bookName)}
+                  </span>
+                  ${isMockSpecial ? `
+                    <span class="text-[10px] font-black text-white bg-gradient-to-r from-amber-500 to-rose-500 px-2 py-0.5 rounded-full shadow-2xs inline-flex items-center gap-1">
+                      <i class="fa-solid fa-fire-flame-curved text-[9px]"></i> 9모대비 특별단어
+                    </span>
+                  ` : ''}
+                </div>
                 <p class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                  <i class="fa-solid fa-file-lines text-indigo-500 text-xs"></i>
-                  <span>${this.escapeHtml(set.title)}</span>
+                  <i class="fa-solid ${isMockSpecial ? 'fa-star text-amber-500' : 'fa-file-lines text-indigo-500'} text-xs"></i>
+                  <span class="${isMockSpecial ? 'text-amber-950 font-black' : ''}">${this.escapeHtml(set.title)}</span>
                 </p>
-                <p class="text-xs text-slate-500 mt-0.5">${set.words.length}개 단어 · 객관식, 스펠링, 통합</p>
+                <p class="text-xs ${isMockSpecial ? 'text-amber-800 font-semibold' : 'text-slate-500'} mt-0.5">${set.words.length}개 단어 · 객관식, 스펠링, 통합</p>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 ${this.renderVocabTestButton(set, studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200')}
@@ -4563,19 +4708,17 @@ const App = {
 
   renderVocabTestButton(set, studentId, direction, label, colorClass, testId = null) {
     const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
-    const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
-    const nextRound = attemptCount + 1;
-    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction, nextRound);
     const result = AppData.getVocabTestResult(studentId, set.id, direction, testId);
 
-    // 1. 통과 완료 상태
+    // 1. 통과 완료 상태: 통과 당시의 커트라인(기본 커트라인)을 고정 노출 (다음 회차 +2점 가산점 노출 버그 완벽 방지)
     if (result?.passed) {
+      const passedCutoff = result.cutoffScore || this.getBaseVocabCutoffScore(scheduledTest, direction);
       return `
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2 shadow-2xs">
           <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-emerald-950">${label}</span>
             <span class="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
-              ${cutoffScore}점 이상 통과
+              ${passedCutoff}점 이상 통과
             </span>
           </div>
           <div class="w-full py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
@@ -4585,7 +4728,12 @@ const App = {
         </div>`;
     }
 
-    // 2. 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
+    // 2. 미통과/재시험 상태일 때만 다음 회차 커트라인 계산
+    const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
+    const nextRound = attemptCount + 1;
+    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction, nextRound);
+
+    // 3. 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
     const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, testId);
     if (!unlockCheck.unlocked) {
       return `
@@ -6443,11 +6591,14 @@ const App = {
             </div>
           `)}
           <div class="flex items-center gap-2">
+            <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+              <i class="fa-solid fa-calendar-days"></i> 일정 이동
+            </button>
             <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
               <i class="fa-solid fa-clock-rotate-left"></i> 시험 시간 연장
             </button>
             <button onclick="App.closeTextMemorizeScheduleModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-pen-to-square"></i> 범위/설정 수정
+              <i class="fa-solid fa-pen-to-square"></i> 전체 수정
             </button>
           </div>
         </div>
