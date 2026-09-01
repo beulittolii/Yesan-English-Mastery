@@ -905,7 +905,7 @@ const AppData = {
       }
     }
 
-    // 2026 고1 9모 대비 특별 단어 세트 자동 연동 (최우선 상단 배치)
+    // 2026 고1 6모/9모 대비 특별 단어 세트 자동 연동 (최우선 상단 배치)
     if (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' && Array.isArray(MOCK_EXAM_VOCAB_SETS)) {
       let updatedMock = false;
       const currentVocabSets = FirebaseStore.vocabSets || [];
@@ -921,7 +921,7 @@ const AppData = {
       });
       if (updatedMock) {
         FirebaseStore.vocabSets = currentVocabSets;
-        console.log('2026 고1 9모 대비 특별 단어 세트가 성공적으로 등록되었습니다.');
+        console.log('2026 고1 6모/9모 대비 특별 단어 세트가 성공적으로 동기화되었습니다.');
         this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Mock vocab sync notice:', e));
       }
     }

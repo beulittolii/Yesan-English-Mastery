@@ -657,19 +657,20 @@ const App = {
     dayTests.forEach(test => {
       if (test.type === 'VOCAB') {
         if (test.date === dateStr) {
-          const isMockSpecial = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
+          const isMockSpecial = Boolean(test.isMockSpecial || (test.title && (test.title.includes('6모') || test.title.includes('9모') || test.title.includes('모의고사'))));
           const badgeStyle = this.getTestBadgeStyle(test, false);
           const isCompleted = badgeStyle.tag === '완료';
 
           if (isMockSpecial) {
-            // 🔥 2026 9모 대비 특별 단어 시험: 눈에 확 띄는 화려한 불꽃 그라데이션 뱃지
+            // 🔥 6모/9모 대비 특별 단어 시험: 흐림 효과 없는 선명하고 강렬한 볼드 파이어 뱃지
+            const labelText = (test.title && test.title.includes('9모') && !test.title.includes('6모')) ? '9모 대비' : '6모 대비';
             testsHtml += `
-              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-black flex items-center justify-between gap-1 shadow-sm ${isCompleted ? 'bg-emerald-600 text-white border border-emerald-400' : 'bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 text-white border border-amber-300 ring-1 ring-amber-300/80 animate-pulse'}" title="2026 고1 9모 대비 특별 단어 테스트">
-                <div class="truncate flex items-center gap-1">
-                  <span><i class="fa-solid fa-fire-flame-curved text-amber-200"></i></span>
-                  <span class="truncate font-black">[9모대비] ${this.escapeHtml(test.title || '단어 테스트')}</span>
+              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-2 py-1 rounded-md mb-1 font-black flex items-center justify-between gap-1 shadow-md ${isCompleted ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-2 border-emerald-300' : 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white border-2 border-amber-300 shadow-red-500/25'}" title="2026 고1 모의고사 대비 필수 단어 테스트">
+                <div class="truncate flex items-center gap-1.5 min-w-0">
+                  <span><i class="fa-solid fa-fire text-amber-300 text-xs"></i></span>
+                  <span class="truncate font-black tracking-tight text-xs">${labelText}</span>
                 </div>
-                <span class="text-[9px] bg-white/30 px-1 rounded font-black flex-shrink-0">${isCompleted ? '완료' : '필출'}</span>
+                <span class="text-[10px] font-black ${isCompleted ? 'bg-white/25 text-white' : 'bg-black/40 text-amber-300 border border-amber-300/60'} px-1.5 py-0.2 rounded-full flex-shrink-0 shadow-2xs">${isCompleted ? '완료' : '필출'}</span>
               </div>`;
           } else {
             const vocabCalendarLabel = '단어 테스트';
@@ -1107,16 +1108,33 @@ const App = {
       </div>` : ''}
 
       <div class="space-y-2">
-        <h4 class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-book-open text-violet-600"></i> 단어장</h4>
-        <div class="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-book-open text-violet-600"></i> 단어 목록 (${set.words.length}개)
+          </h4>
+          <span class="text-[11px] text-slate-400">발음기호 및 실전 쓰임새 해설</span>
+        </div>
+        <div class="max-h-80 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white shadow-2xs">
           ${set.words.map((word, index) => `
-            <div class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 p-2.5 sm:p-3 text-xs hover:bg-slate-50 transition">
-              <span class="font-bold text-slate-400">${index + 1}</span>
-              <strong class="text-slate-800 break-words">${this.escapeHtml(word.en)}</strong>
-              <span class="text-slate-600 break-words">${this.escapeHtml(word.ko)}</span>
-              <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
-                <i class="fa-solid fa-volume-high text-[11px]"></i>
-              </button>
+            <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-baseline gap-2 min-w-0 flex-wrap">
+                  <span class="font-black text-indigo-500 w-5 flex-shrink-0">${index + 1}.</span>
+                  <strong class="text-slate-900 font-black text-sm tracking-tight">${this.escapeHtml(word.en)}</strong>
+                  ${word.ipa ? `<span class="text-[11px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-normal">${this.escapeHtml(word.ipa)}</span>` : ''}
+                </div>
+                <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
+                  <i class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+              </div>
+              <div class="text-slate-800 font-bold pl-7">
+                ${this.escapeHtml(word.ko)}
+              </div>
+              ${word.desc ? `
+                <div class="ml-7 p-2.5 rounded-lg bg-amber-50/90 border border-amber-200 text-[11px] text-amber-950 leading-relaxed font-medium">
+                  ${this.escapeHtml(word.desc)}
+                </div>
+              ` : ''}
             </div>`).join('')}
         </div>
       </div>
@@ -4149,12 +4167,12 @@ const App = {
                                   </summary>
                                   <div class="mt-2 max-h-36 overflow-y-auto space-y-1 pr-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
                                     ${set.words.map((w, idx) => `
-                                      <div class="flex items-center justify-between text-[11px] py-0.5 px-1 rounded hover:bg-white transition gap-2">
+                                      <div class="flex items-center justify-between text-[11px] py-0.5 px-1 rounded hover:bg-white transition gap-2" ${w.desc ? `title="${this.escapeHtml(w.desc)}"` : ''}>
                                         <div class="flex items-center gap-1.5 min-w-0">
                                           <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(w.en)}'); event.stopPropagation();" class="text-indigo-600 hover:text-indigo-800 flex-shrink-0" title="발음 듣기">
                                             <i class="fa-solid fa-volume-high text-[10px]"></i>
                                           </button>
-                                          <span class="font-bold text-slate-800 truncate">${idx + 1}. ${this.escapeHtml(w.en)}</span>
+                                          <span class="font-bold text-slate-800 truncate">${idx + 1}. ${this.escapeHtml(w.en)} ${w.ipa ? `<span class="text-[10px] text-slate-400 font-normal font-mono">${this.escapeHtml(w.ipa)}</span>` : ''}</span>
                                         </div>
                                         <span class="text-slate-500 font-medium text-right flex-shrink-0">${this.escapeHtml(w.ko)}</span>
                                       </div>
@@ -4655,7 +4673,9 @@ const App = {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${sets.map(set => {
             const bookName = (set.book || '기본 단어장').trim();
-            const isMockSpecial = Boolean(set.isMockSpecial || bookName.includes('9모') || bookName.includes('모의고사') || set.title.includes('9모'));
+            const isMockSpecial = Boolean(set.isMockSpecial || bookName.includes('6모') || bookName.includes('9모') || bookName.includes('모의고사') || set.title.includes('6모') || set.title.includes('9모'));
+            const is6Mo = (bookName.includes('6모') || set.title.includes('6모')) && !(bookName.includes('9모') || set.title.includes('9모'));
+            const mockBadgeText = is6Mo ? '6모대비 특별단어' : '6모·9모 특별단어';
             return `
             <div class="p-4 rounded-2xl ${isMockSpecial ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50/50 via-white to-rose-50/30 shadow-md ring-1 ring-amber-300/60' : 'border border-indigo-100 bg-white/90 shadow-2xs'} flex flex-col gap-3">
               <div>
@@ -4665,7 +4685,7 @@ const App = {
                   </span>
                   ${isMockSpecial ? `
                     <span class="text-[10px] font-black text-white bg-gradient-to-r from-amber-500 to-rose-500 px-2 py-0.5 rounded-full shadow-2xs inline-flex items-center gap-1">
-                      <i class="fa-solid fa-fire-flame-curved text-[9px]"></i> 9모대비 특별단어
+                      <i class="fa-solid fa-fire-flame-curved text-[9px]"></i> ${mockBadgeText}
                     </span>
                   ` : ''}
                 </div>
@@ -5850,19 +5870,29 @@ const App = {
               <span>${vt.direction === 4 ? '틀린 단어 목록' : '틀린 단어 오답 노트'} (${wrongAnswers.length}개)</span>
             </h4>
             <div class="max-h-60 overflow-y-auto rounded-xl border border-rose-100 divide-y divide-slate-100 bg-rose-50/30 text-xs">
-              ${wrongAnswers.map((item, idx) => `
-                <div class="p-3 grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
-                  <span class="font-bold text-slate-400 w-6">${idx + 1}</span>
-                  <div>
-                    <span class="font-bold text-slate-800">${this.escapeHtml(item.question)}</span>
-                    <div class="text-[11px] text-rose-600 mt-0.5">내가 적은 답: <strong>${this.escapeHtml(item.answer)}</strong></div>
+              ${wrongAnswers.map((item, idx) => {
+                const matchedWord = vt.questions.find(q => q.word?.en === item.question || q.word?.ko === item.question || q.word?.en === item.correct || q.word?.ko === item.correct)?.word;
+                const desc = item.desc || matchedWord?.desc;
+                return `
+                <div class="p-3 space-y-1.5">
+                  <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
+                    <span class="font-bold text-slate-400 w-6">${idx + 1}</span>
+                    <div>
+                      <span class="font-bold text-slate-800">${this.escapeHtml(item.question)}</span>
+                      <div class="text-[11px] text-rose-600 mt-0.5">내가 적은 답: <strong>${this.escapeHtml(item.answer)}</strong></div>
+                    </div>
+                    <div class="text-left sm:text-right">
+                      <span class="text-[11px] text-slate-500">정답:</span>
+                      <span class="font-bold text-emerald-700 ml-1">${this.escapeHtml(item.correct)}</span>
+                    </div>
                   </div>
-                  <div class="text-left sm:text-right">
-                    <span class="text-[11px] text-slate-500">정답:</span>
-                    <span class="font-bold text-emerald-700 ml-1">${this.escapeHtml(item.correct)}</span>
-                  </div>
-                </div>
-              `).join('')}
+                  ${desc ? `
+                    <div class="ml-8 p-2 rounded-lg bg-amber-50/90 border border-amber-200 text-[11px] text-amber-950 leading-relaxed font-medium text-left">
+                      ${this.escapeHtml(desc)}
+                    </div>
+                  ` : ''}
+                </div>`;
+              }).join('')}
             </div>
           </div>
         ` : `
