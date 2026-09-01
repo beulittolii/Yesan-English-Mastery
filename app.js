@@ -1237,17 +1237,20 @@ const App = {
     const isPassed = isPart1 ? Boolean(test.mockPart1Passed) : Boolean(test.mockPart2Passed);
     const score = isPart1 ? test.mockPart1Score : test.mockPart2Score;
     const isLocked = !isPart1 && !test.mockPart1Passed;
+    const retryAvailableAt = isPart1 ? test.mockPart1RetryAvailableAt : test.mockPart2RetryAvailableAt;
+    const isCoolingDown = Boolean(retryAvailableAt && new Date(retryAvailableAt) > new Date());
+    const isRetest = Boolean(!isPassed && score !== null && score !== undefined);
 
     if (isPassed) {
       return `
-        <div class="p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex flex-col justify-between gap-2 shadow-2xs">
-          <div class="flex items-center justify-between">
+        <div class="h-full p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex flex-col justify-between gap-2.5 shadow-2xs">
+          <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-emerald-950">Part ${part} 객관식 (30문항)</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200 text-emerald-900"><i class="fa-solid fa-check"></i> 합격 (PASS)</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200 text-emerald-900 whitespace-nowrap"><i class="fa-solid fa-check"></i> 합격 (PASS)</span>
           </div>
           <div class="text-xs font-bold text-emerald-800 flex items-center justify-between pt-1 border-t border-emerald-200/60">
             <span>내 점수: <strong class="text-emerald-900">${score || 100}점</strong></span>
-            <button onclick="App.startMockPartTest('${test.id}', ${part})" class="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900">다시 풀기</button>
+            <button onclick="App.startMockPartTest('${test.id}', ${part})" class="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900 whitespace-nowrap">다시 풀기</button>
           </div>
         </div>
       `;
@@ -1255,28 +1258,90 @@ const App = {
 
     if (isLocked) {
       return `
-        <div class="p-3.5 rounded-2xl bg-slate-100 border-2 border-slate-200 flex flex-col justify-between gap-2 opacity-75 cursor-not-allowed">
-          <div class="flex items-center justify-between">
+        <div class="h-full p-3.5 rounded-2xl bg-slate-100 border-2 border-slate-200 flex flex-col justify-between gap-2.5 opacity-75 cursor-not-allowed">
+          <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-slate-500">Part ${part} 객관식 (30문항)</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-600"><i class="fa-solid fa-lock"></i> 잠김</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-600 whitespace-nowrap"><i class="fa-solid fa-lock"></i> 잠김</span>
           </div>
           <p class="text-[11px] text-slate-500 font-medium leading-snug">Part 1 시험을 먼저 합격해야 잠금이 해제됩니다.</p>
         </div>
       `;
     }
 
-    // 응시 가능 상태
-    return `
-      <div class="p-3.5 rounded-2xl ${isPart1 ? 'bg-indigo-50/80 border-2 border-indigo-200' : 'bg-rose-50/80 border-2 border-rose-200'} flex flex-col justify-between gap-2.5 shadow-2xs">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-black text-slate-900">Part ${part} 객관식 (${isPart1 ? '1~30번' : '31~60번'})</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-slate-200">90점 이상 컷</span>
+    // 10분 재응시 대기 중 (쿨다운 진행 중)
+    if (isCoolingDown) {
+      const minutes = Math.ceil((new Date(retryAvailableAt) - new Date()) / 60000);
+      return `
+        <div class="h-full p-3.5 rounded-2xl bg-rose-50/80 border-2 border-rose-300 flex flex-col justify-between gap-2.5 shadow-2xs">
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-black text-rose-950">Part ${part} 객관식 (${isPart1 ? '1~30번' : '31~60번'})</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-white text-rose-700 border border-rose-200 shadow-2xs whitespace-nowrap">
+                불합격 (${score ?? 0}점)
+              </span>
+            </div>
+            <div class="text-[11px] text-rose-800 font-semibold flex items-center justify-between gap-1">
+              <span>재시험 커트라인: 90점</span>
+              <span class="text-rose-600 font-bold whitespace-nowrap"><i class="fa-solid fa-clock mr-1"></i>${minutes}분 후 가능</span>
+            </div>
+          </div>
+          <div class="space-y-1.5 pt-0.5">
+            <button disabled class="w-full py-2.5 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed shadow-inner whitespace-nowrap">
+              <i class="fa-solid fa-clock text-[11px]"></i> 10분 후 재응시 가능 (${minutes}분 남음)
+            </button>
+            ${this.state.isAdminLoggedIn ? `
+              <button type="button" onclick="App.resetMockPartRetryCooldown('${test.id}', ${part})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition flex items-center justify-center gap-1 shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-bolt text-[10px]"></i> 대기시간 즉시 해제 (선생님 전용)
+              </button>
+            ` : ''}
+          </div>
         </div>
-        <button onclick="App.startMockPartTest('${test.id}', ${part})" class="w-full py-2.5 rounded-xl ${isPart1 ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 shadow-rose-200'} text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md">
+      `;
+    }
+
+    // 재시험 가능 상태 (쿨다운 경과 후)
+    if (isRetest) {
+      return `
+        <div class="h-full p-3.5 rounded-2xl bg-rose-50/70 border-2 border-rose-200 flex flex-col justify-between gap-2.5 shadow-2xs">
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-slate-900">Part ${part} 객관식 (${isPart1 ? '1~30번' : '31~60번'})</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-rose-700 border border-rose-200 shadow-2xs whitespace-nowrap">
+              재응시 대상 (${score}점)
+            </span>
+          </div>
+          <button onclick="App.startMockPartTest('${test.id}', ${part})" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md shadow-rose-200 whitespace-nowrap">
+            <i class="fa-solid fa-rotate-right text-[11px]"></i> Part ${part} 재시험 응시하기 (90점 컷)
+          </button>
+        </div>
+      `;
+    }
+
+    // 최초 응시 가능 상태
+    return `
+      <div class="h-full p-3.5 rounded-2xl ${isPart1 ? 'bg-indigo-50/80 border-2 border-indigo-200' : 'bg-rose-50/80 border-2 border-rose-200'} flex flex-col justify-between gap-2.5 shadow-2xs">
+        <div class="flex items-center justify-between gap-1">
+          <span class="text-xs font-black text-slate-900">Part ${part} 객관식 (${isPart1 ? '1~30번' : '31~60번'})</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-slate-200 whitespace-nowrap">90점 이상 컷</span>
+        </div>
+        <button onclick="App.startMockPartTest('${test.id}', ${part})" class="w-full py-2.5 rounded-xl ${isPart1 ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 shadow-rose-200'} text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md whitespace-nowrap">
           <i class="fa-solid fa-play"></i> Part ${part} 객관식 시험 응시하기
         </button>
       </div>
     `;
+  },
+
+  // ── 9모 대비 특별 단어 시험: 쿨다운 즉시 해제 (선생님 전용) ─────────
+  async resetMockPartRetryCooldown(testId, part) {
+    const test = AppData.getTests().find(t => t.id === testId);
+    if (!test) return;
+    if (part === 1) {
+      test.mockPart1RetryAvailableAt = null;
+    } else {
+      test.mockPart2RetryAvailableAt = null;
+    }
+    await AppData.saveOrUpdateTest(test);
+    this.toast(`Part ${part} 재응시 대기시간이 즉시 해제되었습니다.`, 'success');
+    this.openVocabTestScheduleModal(testId);
   },
 
   // ── 9모 대비 특별 단어 시험: Part 1, 2 응시 핸들러 ─────────
@@ -1286,6 +1351,14 @@ const App = {
 
     if (part === 2 && !scheduledTest.mockPart1Passed) {
       this.toast('Part 1 시험을 먼저 합격해야 Part 2에 응시할 수 있습니다.', 'warning');
+      return;
+    }
+
+    // 10분 재응시 대기시간(쿨다운) 검사
+    const retryAvailableAt = part === 1 ? scheduledTest.mockPart1RetryAvailableAt : scheduledTest.mockPart2RetryAvailableAt;
+    if (retryAvailableAt && new Date(retryAvailableAt) > new Date()) {
+      const minutes = Math.ceil((new Date(retryAvailableAt) - new Date()) / 60000);
+      this.toast(`불합격 후 10분이 지나면 다시 응시할 수 있습니다. (${minutes}분 남음)`, 'info');
       return;
     }
 
@@ -4931,14 +5004,14 @@ const App = {
     if (result?.passed) {
       const passedCutoff = result.cutoffScore || this.getBaseVocabCutoffScore(testOrSet, direction);
       return `
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2 shadow-2xs">
+        <div class="h-full rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-emerald-950">${label}</span>
-            <span class="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+            <span class="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs whitespace-nowrap">
               ${passedCutoff}점 이상 통과
             </span>
           </div>
-          <div class="w-full py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
+          <div class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap">
             <i class="fa-solid fa-circle-check"></i>
             <span>${result.score}점 · 통과 완료</span>
           </div>
@@ -4954,107 +5027,116 @@ const App = {
     const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, testId);
     if (!unlockCheck.unlocked) {
       return `
-        <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs opacity-85">
+        <div class="h-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs opacity-85">
           <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-slate-500">${label}</span>
-            <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200 whitespace-nowrap">
               커트라인 ${cutoffScore}점
             </span>
           </div>
-          <button type="button" onclick="App.toast('이전 단계인 \\'${unlockCheck.requiredLabel}\\' 시험을 먼저 통과해야 합니다.', 'info')" class="w-full py-2.5 rounded-xl bg-slate-200/90 hover:bg-slate-300/80 text-slate-600 text-xs font-bold transition flex items-center justify-center gap-1.5">
+          <button type="button" onclick="App.toast('이전 단계인 \\'${unlockCheck.requiredLabel}\\' 시험을 먼저 통과해야 합니다.', 'info')" class="w-full py-2.5 rounded-xl bg-slate-200/90 hover:bg-slate-300/80 text-slate-600 text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap">
             <i class="fa-solid fa-lock text-[11px] text-slate-400"></i>
             <span>${unlockCheck.requiredLabel} 통과 후 가능</span>
           </button>
         </div>`;
     }
 
-    // 3. 주관식 채점 대기중 상태
+    // 4. 주관식 채점 대기중 상태
     if (result?.direction === 4 && result?.waitingGrading && !result?.gradedByAdmin) {
       return `
-        <div class="rounded-2xl border border-amber-300 bg-amber-50/80 p-3 flex flex-col justify-between gap-2 shadow-2xs">
+        <div class="h-full rounded-2xl border border-amber-300 bg-amber-50/80 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-amber-950">${label}</span>
-            <span class="text-[10px] font-bold text-amber-800 bg-white/90 px-2 py-0.5 rounded-full border border-amber-200">
+            <span class="text-[10px] font-bold text-amber-800 bg-white/90 px-2 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">
               커트라인 <strong>${cutoffScore}점</strong>
             </span>
           </div>
-          <div class="w-full py-2 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
+          <div class="w-full py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap">
             <i class="fa-solid fa-hourglass-half text-amber-100 animate-pulse"></i>
             <span>채점 대기중 (${result.spellingScore ?? result.score}점)</span>
           </div>
         </div>`;
     }
 
-    // 4. 10분 재응시 대기 중 (불합격 명확히 표출)
+    // 5. 10분 재응시 대기 중 (불합격 - 쿨다운 진행 중)
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
       const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
       return `
-        <div class="rounded-2xl border border-rose-200 bg-rose-50/70 p-3 flex flex-col justify-between gap-2 shadow-2xs">
-          <div class="flex items-center justify-between gap-1">
-            <span class="text-xs font-black text-rose-950">${label}</span>
-            <span class="text-[10px] font-extrabold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-200 shadow-2xs">
-              불합격 (${result.score ?? 0}점)
-            </span>
-          </div>
+        <div class="h-full rounded-2xl border border-rose-200 bg-rose-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="space-y-1">
-            <div class="text-[11px] text-rose-800 font-semibold flex items-center justify-between">
-              <span>다음: ${nextRound}회차 (커트라인 ${cutoffScore}점)</span>
-              <span class="text-rose-600 font-bold"><i class="fa-solid fa-clock mr-1"></i>${minutes}분 후 재응시</span>
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-black text-rose-950">${label}</span>
+              <span class="text-[10px] font-extrabold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-200 shadow-2xs whitespace-nowrap">
+                불합격 (${result.score ?? 0}점)
+              </span>
             </div>
-            <div class="w-full py-1.5 rounded-xl bg-rose-100/90 text-rose-700 text-[11px] font-bold flex items-center justify-center gap-1.5">
-              <span>재시험 대기 중</span>
+            <div class="text-[11px] text-rose-800 font-semibold flex items-center justify-between gap-1">
+              <span>다음: ${nextRound}회차 (컷 ${cutoffScore}점)</span>
+              <span class="text-rose-600 font-bold whitespace-nowrap"><i class="fa-solid fa-clock mr-1"></i>${minutes}분 후 가능</span>
             </div>
           </div>
-          ${this.state.isAdminLoggedIn ? `
-            <button type="button" onclick="App.resetVocabRetryCooldown('${studentId}', '${set.id}', ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition flex items-center justify-center gap-1 shadow-2xs">
-              <i class="fa-solid fa-bolt text-[10px]"></i> 대기시간 즉시 해제 (바로 응시)
+          <div class="space-y-1.5 pt-0.5">
+            <button disabled class="w-full py-2.5 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed shadow-inner whitespace-nowrap">
+              <i class="fa-solid fa-clock text-[11px]"></i>
+              <span>재시험 대기 (${minutes}분 남음)</span>
             </button>
-          ` : ''}
+            ${this.state.isAdminLoggedIn ? `
+              <button type="button" onclick="App.resetVocabRetryCooldown('${studentId}', '${set.id}', ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition flex items-center justify-center gap-1 shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-bolt text-[10px]"></i> 대기시간 즉시 해제
+              </button>
+            ` : ''}
+          </div>
         </div>`;
     }
 
-    // 5. 시험 시간 불가 (종료 / 시작 전)
+    // 6. 시험 시간 불가 (종료 / 시작 전)
     const timeStatus = scheduledTest && this.getTestTimeStatus(scheduledTest);
     if (scheduledTest && !timeStatus.canStart) {
       const unavailableLabel = timeStatus.status === 'EXPIRED'
         ? '응시 시간 종료'
         : (timeStatus.status === 'NOT_STARTED' ? '응시 시작 전' : '응시 불가');
       return `
-        <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 flex flex-col justify-between gap-2">
+        <div class="h-full rounded-2xl border border-slate-200 bg-slate-50/80 p-3 flex flex-col justify-between gap-2.5">
           <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-slate-600">${label}</span>
-            <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200 whitespace-nowrap">
               커트라인 ${cutoffScore}점
             </span>
           </div>
-          <button onclick="App.notifyUnavailableVocabTest('${timeStatus.status}')" class="w-full py-2 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-1.5">
+          <button onclick="App.notifyUnavailableVocabTest('${timeStatus.status}')" class="w-full py-2.5 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap">
             <i class="fa-solid fa-lock text-[11px]"></i>
             <span>${unavailableLabel}</span>
           </button>
         </div>`;
     }
 
-    // 6. 응시 가능 상태 (시작 / 재응시 명확 분기)
+    // 7. 응시 가능 상태 (최초 응시 또는 쿨다운 종료 후 재시험 응시)
     const isRetest = Boolean(result && !result.passed);
-    const roundBadge = nextRound > 1 ? `${nextRound}회차 ` : '';
     const buttonText = isRetest ? `${nextRound}회차 재시험 응시` : '테스트 시작';
     const buttonIcon = isRetest ? 'fa-rotate-right' : 'fa-play';
     return `
-      <div class="rounded-2xl border ${isRetest ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200/90 bg-white'} p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
-        <div class="flex items-center justify-between gap-1">
-          <div class="flex items-center gap-1.5">
+      <div class="h-full rounded-2xl border ${isRetest ? 'border-rose-200 bg-rose-50/25' : 'border-slate-200/90 bg-white'} p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
+        <div class="space-y-1">
+          <div class="flex items-center justify-between gap-1">
             <span class="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition">${label}</span>
             ${isRetest ? `
-              <span class="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+              <span class="text-[10px] font-extrabold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-200 shadow-2xs whitespace-nowrap">
                 불합격 (${result.score ?? 0}점)
               </span>
-            ` : ''}
+            ` : `
+              <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                커트라인 <strong>${cutoffScore}점</strong>
+              </span>
+            `}
           </div>
-          <span class="text-[10px] font-bold ${isRetest ? 'text-rose-700 bg-rose-50 border border-rose-200' : 'text-indigo-700 bg-indigo-50 border border-indigo-100'} px-2 py-0.5 rounded-full">
-            ${roundBadge}커트라인 <strong>${cutoffScore}점</strong>
-          </span>
+          ${isRetest ? `
+            <div class="text-[11px] text-slate-600 font-semibold flex items-center justify-between gap-1">
+              <span class="text-slate-700 font-bold">${nextRound}회차 재시험</span>
+              <span class="text-rose-600 font-bold whitespace-nowrap">커트라인 ${cutoffScore}점</span>
+            </div>
+          ` : ''}
         </div>
-        <button onclick="App.startVocabTest('${set.id}', ${studentId}, ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-2.5 rounded-xl ${colorClass} text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+        <button onclick="App.startVocabTest('${set.id}', ${studentId}, ${direction}, ${testId ? `'${testId}'` : 'null'})" class="w-full py-2.5 rounded-xl ${isRetest ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 shadow-rose-200' : colorClass} text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap">
           <i class="fa-solid ${buttonIcon} text-[11px]"></i>
           <span>${buttonText}</span>
         </button>
@@ -6001,9 +6083,11 @@ const App = {
           if (vt.mockPartNumber === 1) {
             test.mockPart1Passed = passed;
             test.mockPart1Score = score;
+            test.mockPart1RetryAvailableAt = passed ? null : retryAvailableAt;
           } else if (vt.mockPartNumber === 2) {
             test.mockPart2Passed = passed;
             test.mockPart2Score = score;
+            test.mockPart2RetryAvailableAt = passed ? null : retryAvailableAt;
             if (passed) {
               test.status = 'PASS';
               test.score = `${score}점 (통과)`;
@@ -6117,8 +6201,8 @@ const App = {
         </div>`;
       statusBannerHtml = `
         <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm font-semibold text-left space-y-1">
-          <p class="font-bold text-rose-800 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> ${currentRound}회차 커트라인(${cutoffScore}점)에 미달하였습니다.</p>
-          <p class="text-xs text-rose-700">다음 <strong>${currentRound + 1}회차 재시험 커트라인은 ${nextCutoff}점</strong>으로 올라갑니다. 10분 후 다시 도전할 수 있습니다.</p>
+          <p class="font-bold text-rose-800 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> ${vt.isMockPart ? `Part ${vt.mockPartNumber}` : `${currentRound}회차`} 커트라인(${cutoffScore}점)에 미달하였습니다.</p>
+          <p class="text-xs text-rose-700">${vt.isMockPart ? '90점 이상(30문제 중 27개 이상) 득점해야 합격할 수 있습니다. 10분 후 다시 도전할 수 있습니다.' : `다음 <strong>${currentRound + 1}회차 재시험 커트라인은 ${nextCutoff}점</strong>으로 올라갑니다. 10분 후 다시 도전할 수 있습니다.`}</p>
         </div>`;
     }
 
@@ -6239,6 +6323,19 @@ const App = {
         completedAt
       });
       if (test) {
+        if (vt.isMockPart) {
+          const forfeitRetryTime = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          if (vt.mockPartNumber === 1) {
+            test.mockPart1Passed = false;
+            test.mockPart1Score = 0;
+            test.mockPart1RetryAvailableAt = forfeitRetryTime;
+          } else if (vt.mockPartNumber === 2) {
+            test.mockPart2Passed = false;
+            test.mockPart2Score = 0;
+            test.mockPart2RetryAvailableAt = forfeitRetryTime;
+          }
+          await AppData.saveOrUpdateTest(test);
+        }
         test.status = 'FAIL';
         await this.updateVocabScheduleStatus(test.id);
       }
