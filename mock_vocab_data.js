@@ -1,189 +1,309 @@
 /**
- * 2026학년도 고1 6모 / 9모 대비 특별 단어 세트
- * "아는 단어인데 전혀 몰랐던 뜻" — 수능·모평 1등급 빈출 반전 다의어 & 킬러 어휘 60선
- * 모든 단어에 100% 교재 표준 인쇄본 발음기호(ipa) 및 실전 독해 쓰임새·해설(desc) 탑재
+ * 2026학년도 고1 9월 모의고사 대비 특별 단어 세트
+ * "아는 단어인데 전혀 몰랐던 뜻" — 1등급 빈출 반전 다의어 60선
+ * 직관적인 2줄 초고가독성 해설 (기존뜻 ➔ 9모 출제뜻 + 기출 예문)
  */
 
 const MOCK_PART1_WORDS = [
   {
     en: "count",
     ipa: "[káunt]",
-    ko: "(동) 중요하다, 가치가 있다 (≠ 세다)",
-    desc: "💡 [실전 쓰임새] 'Every second counts.(매 1초가 중요하다)', 'count for much/nothing(매우 중요하다/무가치하다)'. 수능 대의파악 지문에서 동사로 쓰이면 '세다'가 아니라 십중팔구 '중요하다(=matter)'!"
+    ko: "중요하다, 가치가 있다",
+    baseKo: "세다",
+    mockKo: "중요하다 (=matter)",
+    exampleEn: "Every second counts.",
+    exampleKo: "매 1초가 중요하다.",
+    desc: "기존뜻: 세다 ➔ 9모뜻: 중요하다 (=matter) | Every second counts.(매 1초가 중요하다.)"
   },
   {
     en: "matter",
     ipa: "[mǽtər]",
-    ko: "(동) 중요하다, 문제가 되다 (≠ 물질)",
-    desc: "💡 [실전 쓰임새] 'It matters little what he says.(그가 뭐라 하든 중요치 않다)', 'What really matters is...(진짜 중요한 것은~)'. 명사 '물질'이 아닌 자동사 '중요하다(=be significant)'."
+    ko: "중요하다, 문제가 되다",
+    baseKo: "물질, 문제",
+    mockKo: "중요하다 (=be important)",
+    exampleEn: "It matters little what they think.",
+    exampleKo: "그들이 뭘 생각하든 중요치 않다.",
+    desc: "기존뜻: 물질 ➔ 9모뜻: 중요하다 (=be important) | It matters little.(별로 중요하지 않다.)"
   },
   {
     en: "appreciate",
     ipa: "[əpríːʃièit]",
-    ko: "(동) 진가를 인정하다, 제대로 이해하다, (가치가) 오르다 (≠ 감사하다)",
-    desc: "💡 [실전 쓰임새] 예술 지문에서 '진가를 인정하다/감상하다', 경제 지문에서 '가치가 오르다(반의어: depreciate)', 철학·심리 지문에서 '상황의 본질을 제대로 이해하다/인식하다'."
+    ko: "진가를 인정하다, (가치가) 오르다",
+    baseKo: "감사하다",
+    mockKo: "진가를 인정하다 / 가치가 오르다",
+    exampleEn: "His talents were not fully appreciated.",
+    exampleKo: "그의 재능은 온전히 진가를 인정받지 못했다.",
+    desc: "기존뜻: 감사하다 ➔ 9모뜻: 진가를 인정하다 / (가치가) 오르다"
   },
   {
     en: "observe",
     ipa: "[əbzə́ːrv]",
-    ko: "(동) (법·규칙을) 준수하다, (의견을) 말하다 (≠ 관찰하다)",
-    desc: "💡 [실전 쓰임새] 법·사회 지문에서 'observe the law/rules(법이나 규범을 준수하다)'. '관찰하다'로만 외우면 빈칸 추론이나 문맥 파악에서 정반대로 오독하기 쉬움!"
+    ko: "(법·규칙을) 준수하다, 지키다",
+    baseKo: "관찰하다",
+    mockKo: "준수하다, 지키다",
+    exampleEn: "Drivers must observe the traffic rules.",
+    exampleKo: "운전자는 교통 법규를 반드시 준수해야 한다.",
+    desc: "기존뜻: 관찰하다 ➔ 9모뜻: (법·규칙을) 준수하다"
   },
   {
     en: "address",
     ipa: "[ədrés]",
-    ko: "(동) (문제·상황을) 다루다, 해결하다; 연설하다 (≠ 주소)",
-    desc: "💡 [실전 쓰임새] 모의고사 빈출 1순위! 'address the problem/issue(문제를 다루다, 해결책을 모색하다)'. 집 주소가 아니라 수능 1등급 필수어 '다루다/해결하다(=tackle, handle)'."
+    ko: "(문제를) 다루다, 해결하다",
+    baseKo: "주소",
+    mockKo: "다루다, 해결하다 (=tackle)",
+    exampleEn: "We must address the climate problem.",
+    exampleKo: "우리는 기후 문제를 다루고 해결해야 한다.",
+    desc: "기존뜻: 주소 ➔ 9모뜻: (문제를) 다루다, 해결하다 (=tackle)"
   },
   {
     en: "compromise",
     ipa: "[kámprəmàiz]",
-    ko: "(동) (원칙·평판·안전을) 훼손하다, 위태롭게 하다 (≠ 타협하다)",
-    desc: "💡 [실전 쓰임새] 과학·안전 지문에서 'compromise safety/immune system(안전이나 면역체계를 훼손하다/약화시키다)'. '타협하다'로만 알면 문맥이 완전히 망가짐!"
+    ko: "(원칙·안전을) 훼손하다, 위태롭게 하다",
+    baseKo: "타협하다",
+    mockKo: "훼손하다, 위태롭게 하다",
+    exampleEn: "Stress compromises the immune system.",
+    exampleKo: "스트레스는 면역 체계를 훼손한다.",
+    desc: "기존뜻: 타협하다 ➔ 9모뜻: (안전·건강을) 훼손하다, 위태롭게 하다"
   },
   {
     en: "spell",
     ipa: "[spél]",
-    ko: "(동) (나쁜 결과를) 초래하다, 가져오다; (명) 한동안의 기간 (≠ 철자를 쓰다)",
-    desc: "💡 [실전 쓰임새] 환경·경제 지문에서 'spell disaster/trouble(재앙/골칫거리를 초래하다)'. 철자를 쓰다 외에 부정적인 결과를 '불러오다(=bring about, lead to)'."
+    ko: "(나쁜 결과를) 초래하다, 가져오다",
+    baseKo: "철자를 쓰다",
+    mockKo: "초래하다, 가져오다 (=cause)",
+    exampleEn: "The drought spells disaster for crops.",
+    exampleKo: "가뭄은 농작물에 재앙을 초래한다.",
+    desc: "기존뜻: 철자를 쓰다 ➔ 9모뜻: (나쁜 결과를) 초래하다 (=cause)"
   },
   {
     en: "accommodate",
     ipa: "[əkámədèit]",
-    ko: "(동) (요구·조건을) 수용하다, 맞추다, 부응하다 (≠ 숙박시키다)",
-    desc: "💡 [실전 쓰임새] 사회·심리 지문에서 'accommodate different needs/changes(다양한 요구를 수용하다/변화에 맞추다)'. 호텔 숙박이 아니라 '요구에 맞춰주다'."
+    ko: "(요구·조건을) 수용하다, 맞추다",
+    baseKo: "숙박시키다",
+    mockKo: "수용하다, 맞추다",
+    exampleEn: "Schools must accommodate students' needs.",
+    exampleKo: "학교는 학생들의 요구를 수용하고 맞춰야 한다.",
+    desc: "기존뜻: 숙박시키다 ➔ 9모뜻: (요구·변화를) 수용하다, 맞추다"
   },
   {
     en: "tell",
     ipa: "[tél]",
-    ko: "(동) 구별하다, 분간하다, 알아채다 (≠ 말하다)",
-    desc: "💡 [실전 쓰임새] 'tell A from B (A와 B를 구별하다)', 'It is hard to tell the difference.(차이를 분간하기 어렵다)'. can/could와 함께 쓰여 '식별하다/구별하다(=distinguish)'."
+    ko: "구별하다, 분간하다",
+    baseKo: "말하다",
+    mockKo: "구별하다, 분간하다 (=distinguish)",
+    exampleEn: "It is hard to tell the twins apart.",
+    exampleKo: "그 쌍둥이를 서로 구별하기란 어렵다.",
+    desc: "기존뜻: 말하다 ➔ 9모뜻: 구별하다, 분간하다 (=distinguish)"
   },
   {
     en: "check",
     ipa: "[tʃék]",
-    ko: "(동) 억제하다, 저지하다, 방지하다 (≠ 확인하다)",
-    desc: "💡 [실전 쓰임새] 정치 지문에서 'checks and balances(견제와 균형)', 의학 지문에서 'check the growth of tumor(종양의 성장을 억제하다)'. '확인'이 아닌 '저지/억제'."
+    ko: "억제하다, 저지하다",
+    baseKo: "확인하다",
+    mockKo: "억제하다, 저지하다",
+    exampleEn: "Government must check rising prices.",
+    exampleKo: "정부는 치솟는 물가를 억제해야 한다.",
+    desc: "기존뜻: 확인하다 ➔ 9모뜻: 억제하다, 저지하다 (checks and balances: 견제와 균형)"
   },
   {
     en: "entertain",
     ipa: "[èntərtéin]",
-    ko: "(동) (생각·아이디어를) 품다, 고려하다 (≠ 즐겁게 하다)",
-    desc: "💡 [실전 쓰임새] 인문·철학 지문에서 'entertain a thought/doubt/idea(생각/의심을 마음속에 품다, 진지하게 검토하다)'. 남을 웃겨주는 것이 아니라 '생각을 품다'."
+    ko: "(생각·의심을) 품다, 고려하다",
+    baseKo: "즐겁게 하다",
+    mockKo: "품다, 진지하게 고려하다",
+    exampleEn: "He refused to entertain the doubt.",
+    exampleKo: "그는 의심을 마음에 품는 것을 거부했다.",
+    desc: "기존뜻: 즐겁게 하다 ➔ 9모뜻: (생각·아이디어를) 마음에 품다"
   },
   {
     en: "sound",
     ipa: "[sáund]",
-    ko: "(형) 건전한, 타당한, 믿을 만한; 깊은 (≠ 소리)",
-    desc: "💡 [실전 쓰임새] 논리 지문에서 'sound argument/reasoning(타당하고 반박할 수 없는 논증)', 'sound sleep(깊고 평온한 잠)'. 소리가 아닌 형용사 '타당한/건전한(=valid, robust)'."
+    ko: "건전한, 타당한, 믿을 만한",
+    baseKo: "소리",
+    mockKo: "건전한, 타당한 (=valid)",
+    exampleEn: "The doctor gave me sound advice.",
+    exampleKo: "의사는 내게 매우 타당하고 건전한 조언을 해주었다.",
+    desc: "기존뜻: 소리 ➔ 9모뜻: 건전한, 타당한 (=valid) | sound sleep(깊은 잠)"
   },
   {
     en: "fast",
     ipa: "[fǽst]",
-    ko: "(부/형) 단단히, 굳게, 고정된 (≠ 빠른)",
-    desc: "💡 [실전 쓰임새] 'hold fast to one\'s principles(원칙을 굳게 고수하다)', 'fast asleep(깊이 잠든)', 'stand fast(물러서지 않고 버티다)'. 속도가 아니라 '단단히/고정된'."
+    ko: "단단히, 굳게, 고정된",
+    baseKo: "빠른",
+    mockKo: "단단히, 굳게",
+    exampleEn: "Hold fast to your dreams.",
+    exampleKo: "당신의 꿈을 단단히 붙들어라.",
+    desc: "기존뜻: 빠른 ➔ 9모뜻: 단단히, 굳게 | fast asleep(깊이 잠든)"
   },
   {
     en: "bear",
     ipa: "[bɛ́ər]",
-    ko: "(동) (고통·무게를) 견디다, (마음에) 품다, (결실을) 맺다 (≠ 곰)",
-    desc: "💡 [실전 쓰임새] 'bear the burden/pain(짐이나 고통을 짊어지다/견디다)', 'bear in mind(마음에 새기다/명심하다)', 'bear fruit(결실을 맺다)'. 동사로 '견디다/품다'."
+    ko: "견디다, (마음에) 품다, 결실을 맺다",
+    baseKo: "곰",
+    mockKo: "견디다, 품다",
+    exampleEn: "I cannot bear this pain any longer.",
+    exampleKo: "나는 이 고통을 더 이상 견딜 수 없다.",
+    desc: "기존뜻: 곰 ➔ 9모뜻: 견디다, 품다 | bear in mind(명심하다)"
   },
   {
     en: "grave",
     ipa: "[gréiv]",
-    ko: "(형) 심각한, 중대한, 근엄한 (≠ 무덤)",
-    desc: "💡 [실전 쓰임새] 'grave consequence/concern(심각한 파장/중대한 우려)', 'a grave expression(심각한 표정)'. 명사 '무덤'이 아닌 형용사로 '심각한/중대한(=serious, critical)'."
+    ko: "심각한, 중대한, 근엄한",
+    baseKo: "무덤",
+    mockKo: "심각한, 중대한 (=serious)",
+    exampleEn: "The war poses a grave threat to peace.",
+    exampleKo: "전쟁은 평화에 중대한 위협이 된다.",
+    desc: "기존뜻: 무덤 ➔ 9모뜻: 심각한, 중대한 (=serious)"
   },
   {
     en: "yield",
     ipa: "[jíːld]",
-    ko: "(동) (결과·수익을) 산출하다, 생산하다; 굴복하다 (≠ 양보하다)",
-    desc: "💡 [실전 쓰임새] 경제·과학에서 'yield high profits/results(높은 수익/결과를 산출하다)', 심리에서 'yield to temptation/pressure(유혹/압박에 굴복하다)'. 빈출 1순위!"
+    ko: "산출하다, 생산하다; 굴복하다",
+    baseKo: "양보하다",
+    mockKo: "산출하다 / 굴복하다",
+    exampleEn: "The research yielded positive results.",
+    exampleKo: "그 연구는 긍정적인 결과를 산출했다.",
+    desc: "기존뜻: 양보하다 ➔ 9모뜻: 산출하다 / 굴복하다(yield to)"
   },
   {
     en: "plant",
     ipa: "[plǽnt]",
-    ko: "(동) (의심·생각을) 심다, (첩자를) 위장 잠입시키다; (명) 공장 (≠ 식물)",
-    desc: "💡 [실전 쓰임새] 'plant suspicion in the jury\'s mind(배심원의 마음에 의심을 심다)', 'manufacturing plant(제조 공장)'. 식물이 아닌 '생각을 심다' 또는 '공장'."
+    ko: "(생각을) 심다; 공장 설비",
+    baseKo: "식물",
+    mockKo: "(의심 등을) 심다 / 공장",
+    exampleEn: "He planted suspicion in her mind.",
+    exampleKo: "그는 그녀의 마음에 의심을 심어놓았다.",
+    desc: "기존뜻: 식물 ➔ 9모뜻: (의심 등을) 심다 / 공장(power plant)"
   },
   {
     en: "novel",
     ipa: "[nɑ́vəl]",
-    ko: "(형) 새로운, 참신한, 기발한 (≠ 소설)",
-    desc: "💡 [실전 쓰임새] 'a novel solution/approach(참신하고 혁신적인 해결책/접근법)'. 독해 지문에서 명사 앞 수식어로 쓰이면 100% '새로운/기발한(=innovative, original)'!"
+    ko: "새로운, 참신한, 기발한",
+    baseKo: "소설",
+    mockKo: "새로운, 참신한 (=innovative)",
+    exampleEn: "Scientists proposed a novel method.",
+    exampleKo: "과학자들은 참신하고 새로운 방식을 제안했다.",
+    desc: "기존뜻: 소설 ➔ 9모뜻: 새로운, 참신한 (=innovative)"
   },
   {
     en: "draw",
     ipa: "[drɔ́ː]",
-    ko: "(동) (결론·교훈을) 도출하다, 이끌어내다, 매혹하다 (≠ 그리다)",
-    desc: "💡 [실전 쓰임새] 'draw a conclusion(결론을 도출하다)', 'draw lessons from failure(실패에서 교훈을 이끌어내다)', 'draw criticism(비판을 끌어모으다)'."
+    ko: "(결론을) 도출하다, 이끌어내다",
+    baseKo: "그리다",
+    mockKo: "도출하다, 이끌어내다",
+    exampleEn: "We can draw a conclusion from the data.",
+    exampleKo: "우리는 그 자료에서 결론을 도출할 수 있다.",
+    desc: "기존뜻: 그리다 ➔ 9모뜻: (결론 등을) 도출하다, 이끌어내다"
   },
   {
     en: "charge",
     ipa: "[tʃɑ́ːrdʒ]",
-    ko: "(동) 책임을 맡기다, 기소하다, 고발하다; 돌진하다 (≠ 요금)",
-    desc: "💡 [실전 쓰임새] 'in charge of(~를 책임지는)', 'be charged with a crime(범죄로 기소되다)'. 돈(요금)이 아니라 조직에서의 '책임'이나 법적 '기소'."
+    ko: "책임을 맡기다; 기소하다, 고발하다",
+    baseKo: "요금",
+    mockKo: "책임 / 기소하다",
+    exampleEn: "She is in charge of the project.",
+    exampleKo: "그녀가 그 프로젝트를 전적으로 책임지고 있다.",
+    desc: "기존뜻: 요금 ➔ 9모뜻: 책임(in charge of) / 기소하다"
   },
   {
     en: "credit",
     ipa: "[krédit]",
-    ko: "(동) (공로·성과를) ~의 탓으로 돌리다, 인정하다 (≠ 신용)",
-    desc: "💡 [실전 쓰임새] 'credit A with B / credit B to A (B라는 업적을 A의 공로로 돌리다/인정하다)'. 카드 신용이 아니라 '공로를 인정하다/돌리다(=attribute to)'."
+    ko: "(공로·성과를) ~의 탓으로 돌리다",
+    baseKo: "신용",
+    mockKo: "~의 공로로 돌리다 (=attribute to)",
+    exampleEn: "Credit the success to teamwork.",
+    exampleKo: "그 성공을 팀워크의 공로로 돌리다.",
+    desc: "기존뜻: 신용 ➔ 9모뜻: (성과를) ~의 덕분/공로로 돌리다"
   },
   {
     en: "fine",
     ipa: "[fáin]",
-    ko: "(형) 미세한, 정밀한, 촘촘한; (명) 벌금 (≠ 좋은)",
-    desc: "💡 [실전 쓰임새] 환경 지문에서 'fine dust/particles(미세먼지/미세입자)', 기술 지문에서 'fine adjustments(정밀한 미세 조정)', 법률에서 'pay a fine(벌금을 물다)'."
+    ko: "미세한, 촘촘한; 벌금",
+    baseKo: "좋은",
+    mockKo: "미세한 / 벌금",
+    exampleEn: "Fine dust enters our lungs easily.",
+    exampleKo: "미세먼지는 우리 폐 속으로 쉽게 들어간다.",
+    desc: "기존뜻: 좋은 ➔ 9모뜻: 미세한(fine dust) / 벌금(pay a fine)"
   },
   {
     en: "subject",
     ipa: "[sʌ́bdʒikt]",
-    ko: "(명) 피실험자; (형) ~의 영향을 받기 쉬운, 종속된 (≠ 과목)",
-    desc: "💡 [실전 쓰임새] 실험 지문 1순위! 'the subjects in the study(연구의 실험 대상자/피실험자)', 'be subject to change(변화의 영향을 받기 쉽다/변하기 마련이다)'."
+    ko: "피실험자; ~의 영향을 받기 쉬운",
+    baseKo: "과목, 주제",
+    mockKo: "피실험자 / 종속된",
+    exampleEn: "Subjects were tested in a quiet room.",
+    exampleKo: "피실험자들은 조용한 방에서 테스트를 받았다.",
+    desc: "기존뜻: 과목 ➔ 9모뜻: 피실험자 / ~의 영향을 받기 쉬운(be subject to)"
   },
   {
     en: "object",
     ipa: "[ɑ́bdʒikt]",
-    ko: "(동) 반대하다, 이의를 제기하다 (≠ 물건, 대상)",
-    desc: "💡 [실전 쓰임새] 'object to the new proposal(새로운 제안에 강력히 반대하다)'. 물건/대상이 아니라 전치사 to와 함께 쓰여 '반대하다(=oppose, disagree)'."
+    ko: "반대하다, 이의를 제기하다",
+    baseKo: "물건, 대상",
+    mockKo: "반대하다 (to)",
+    exampleEn: "Many people objected to the new law.",
+    exampleKo: "많은 사람들이 그 새로운 법에 반대했다.",
+    desc: "기존뜻: 물건, 대상 ➔ 9모뜻: 반대하다(object to = oppose)"
   },
   {
     en: "firm",
     ipa: "[fə́ːrm]",
-    ko: "(형) 확고한, 단호한; (명) 회사 (≠ 회사만 있는 것이 아님)",
-    desc: "💡 [실전 쓰임새] 'firm belief/determination(흔들림 없는 확고한 신념/결의)', 'firm ground(단단한 땅)'. 법률 회사(law firm)뿐 아니라 '확고한(=resolute)'."
+    ko: "확고한, 단호한, 단단한",
+    baseKo: "회사",
+    mockKo: "확고한, 단단한",
+    exampleEn: "She has a firm belief in justice.",
+    exampleKo: "그녀는 정의에 대한 확고한 신념을 가지고 있다.",
+    desc: "기존뜻: 회사 ➔ 9모뜻: 확고한, 단호한 (=resolute)"
   },
   {
     en: "scale",
     ipa: "[skéil]",
-    ko: "(동) (가파른 산·벽을) 기어오르다; (명) 규모, 비늘 (≠ 저울)",
-    desc: "💡 [실전 쓰임새] 'scale the steep cliff(가파른 절벽을 기어오르다)', 'on a global scale(지구적 규모로)'. 체중계 저울이 아닌 동사 '정복하다/오르다(=climb up)'."
+    ko: "(가파른 곳을) 기어오르다; 규모",
+    baseKo: "저울, 비늘",
+    mockKo: "기어오르다 / 규모",
+    exampleEn: "They scaled the steep mountain cliff.",
+    exampleKo: "그들은 가파른 절벽을 기어올랐다.",
+    desc: "기존뜻: 저울 ➔ 9모뜻: 기어오르다(=climb) / 규모"
   },
   {
     en: "current",
     ipa: "[kə́ːrənt]",
-    ko: "(명) 흐름, 해류, 기류, 전류, 경향 (≠ 현재의)",
-    desc: "💡 [실전 쓰임새] 'ocean current(해류)', 'cultural/political current(문화적/정치적 조류와 흐름)'. '현재의'라는 형용사 외에 명사로 도도한 '흐름/조류'."
+    ko: "흐름, 해류, 기류, 경향",
+    baseKo: "현재의",
+    mockKo: "흐름, 해류, 경향",
+    exampleEn: "The boat was carried by a strong current.",
+    exampleKo: "배가 강한 해류에 휩쓸려 떠내려갔다.",
+    desc: "기존뜻: 현재의 ➔ 9모뜻: (물·공기·생각의) 도도한 흐름, 해류"
   },
   {
     en: "figure",
     ipa: "[fígjər]",
-    ko: "(동) 생각하다, 판단하다; (명) 중요 인물, 모습 (≠ 숫자)",
-    desc: "💡 [실전 쓰임새] 'figure that S+V(판단하다/생각하다)', 'prominent figure in history(역사 속의 저명한 인물)'. 단순 숫자가 아닌 '인물' 또는 '판단하다'."
+    ko: "생각하다, 판단하다; 중요 인물",
+    baseKo: "숫자",
+    mockKo: "생각하다 / 중요 인물",
+    exampleEn: "He is an important figure in history.",
+    exampleKo: "그는 역사에서 대단히 중요한 인물이다.",
+    desc: "기존뜻: 숫자 ➔ 9모뜻: 중요 인물 / 생각하다(figure out)"
   },
   {
     en: "court",
     ipa: "[kɔ́ːrt]",
-    ko: "(동) (재난·위험을) 자초하다; 환심을 사려고 하다 (≠ 법원, 경기장)",
-    desc: "💡 [실전 쓰임새] 'court disaster/danger(재앙이나 위험을 스스로 자초하다)'. 법원이나 농구 코트가 아닌 동사로 위험을 '자초하다' 또는 대중의 환심을 사다."
+    ko: "(재난·위험을) 자초하다; 환심을 사다",
+    baseKo: "법원, 코트",
+    mockKo: "자초하다, 환심을 사다",
+    exampleEn: "Speeding will court disaster.",
+    exampleKo: "과속 운전은 재앙을 자초할 것이다.",
+    desc: "기존뜻: 법원 ➔ 9모뜻: (위험을) 자초하다, 환심을 사려 하다"
   },
   {
     en: "game",
     ipa: "[géim]",
-    ko: "(명) 사냥감; (형) 기꺼이 ~할 용기가 있는 (≠ 놀이, 게임)",
-    desc: "💡 [실전 쓰임새] 'big game hunter(대형 야생 사냥감 사냥꾼)', 'Are you game for the challenge?(그 도전에 기꺼이 용기 내어 뛰어들래?)'. 사냥감 또는 기꺼이 응하는!"
+    ko: "사냥감; 기꺼이 응하는, 용기 있는",
+    baseKo: "놀이, 게임",
+    mockKo: "사냥감 / 기꺼이 응하는",
+    exampleEn: "Big game like lions and tigers.",
+    exampleKo: "사자와 호랑이 같은 대형 야생 사냥감.",
+    desc: "기존뜻: 놀이 ➔ 9모뜻: 사냥감(big game) / 기꺼이 응하는"
   }
 ];
 
@@ -191,206 +311,310 @@ const MOCK_PART2_WORDS = [
   {
     en: "even",
     ipa: "[íːvən]",
-    ko: "(형) 평평한, 균등한, 대등한, 침착한 (≠ 심지어)",
-    desc: "💡 [실전 쓰임새] 'an even contest(승부를 가리기 힘든 대등한 시합)', 'even surface(평평한 지면)', 'an even temper(차분하고 흔들림 없는 성품)'. '심지어'가 아닌 형용사."
+    ko: "평평한, 대등한, 침착한",
+    baseKo: "심지어",
+    mockKo: "평평한 / 대등한",
+    exampleEn: "The two teams fought an even match.",
+    exampleKo: "두 팀은 막상막하의 대등한 경기를 펼쳤다.",
+    desc: "기존뜻: 심지어 ➔ 9모뜻: 대등한, 평평한, 침착한"
   },
   {
     en: "meet",
     ipa: "[míːt]",
-    ko: "(동) (요구·조건·마감·필요를) 충족시키다, 부응하다 (≠ 만나다)",
-    desc: "💡 [실전 쓰임새] 수능·모평 최다 빈출! 'meet the deadline(마감을 맞추다)', 'meet the requirements/criteria(요건/기준을 충족시키다)'. 사람이 만나는 게 아님!"
+    ko: "(요구·조건·마감을) 충족시키다",
+    baseKo: "만나다",
+    mockKo: "충족시키다 (=satisfy)",
+    exampleEn: "The plan failed to meet our expectations.",
+    exampleKo: "그 계획은 우리의 기대치를 충족시키지 못했다.",
+    desc: "기존뜻: 만나다 ➔ 9모뜻: (요구·조건을) 충족시키다 (=satisfy)"
   },
   {
     en: "last",
     ipa: "[lǽst]",
-    ko: "(동) 지속되다, 견디다, 효력을 유지하다 (≠ 마지막의)",
-    desc: "💡 [실전 쓰임새] 'The effect lasts for hours.(그 효과는 수 시간 동안 지속된다)', 'shoes built to last(오래 견디도록 튼튼하게 만들어진 신발)'."
+    ko: "지속되다, 견디다",
+    baseKo: "마지막의",
+    mockKo: "지속되다, 견디다",
+    exampleEn: "The battery lasts for ten hours.",
+    exampleKo: "그 배터리는 10시간 동안 지속된다.",
+    desc: "기존뜻: 마지막 ➔ 9모뜻: 지속되다, 견디다"
   },
   {
     en: "spring",
     ipa: "[spríŋ]",
-    ko: "(동) (갑자기) 튀어 오르다, 샘솟다, 싹트다; (명) 샘 (≠ 봄)",
-    desc: "💡 [실전 쓰임새] 'spring from curiosity(호기심에서 싹트다/비롯되다)', 'Tears sprang to her eyes.(눈물이 왈칵 솟구쳤다)'. 계절 봄이 아닌 동사 '솟구치다/생겨나다'."
+    ko: "튀어오르다, 샘솟다, 싹트다",
+    baseKo: "봄",
+    mockKo: "튀어오르다, 샘솟다",
+    exampleEn: "Tears sprang from her eyes.",
+    exampleKo: "그녀의 두 눈에서 눈물이 왈칵 솟구쳤다.",
+    desc: "기존뜻: 봄 ➔ 9모뜻: 튀어오르다, 샘솟다(spring from)"
   },
   {
     en: "custom",
     ipa: "[kʌ́stəm]",
-    ko: "(명) 관세, 세관(customs); (형) 주문 제작한 (≠ 관습)",
-    desc: "💡 [실전 쓰임새] 'clear customs(세관 검사를 통과하다)', 'custom-made furniture(맞춤 주문 제작된 가구)'. 전통 관습 외에 무역 '관세/세관' 및 '맞춤형의'."
+    ko: "관세, 세관(customs); 맞춤형의",
+    baseKo: "관습",
+    mockKo: "세관, 관세 / 맞춤 제작한",
+    exampleEn: "We had to go through airport customs.",
+    exampleKo: "우리는 공항 세관 검사대를 통과해야 했다.",
+    desc: "기존뜻: 관습 ➔ 9모뜻: 세관, 관세(customs) / 맞춤형의"
   },
   {
     en: "second",
     ipa: "[sékənd]",
-    ko: "(동) (제안·의견을) 지지하다, 재청하다 (≠ 두 번째)",
-    desc: "💡 [실전 쓰임새] 회의·토론 지문에서 'I second that motion.(그 제안/동의안을 전적으로 지지하고 재청합니다)'. 두 번째 순서가 아닌 동사 '지지하다(=support)'."
+    ko: "(제안·의견을) 지지하다, 재청하다",
+    baseKo: "두 번째",
+    mockKo: "지지하다, 재청하다 (=support)",
+    exampleEn: "I second your proposal.",
+    exampleKo: "나는 당신의 제안을 전적으로 지지합니다.",
+    desc: "기존뜻: 두 번째 ➔ 9모뜻: 지지하다, 재청하다 (=support)"
   },
   {
     en: "minute",
     ipa: "[mainjúːt]",
-    ko: "(형) 극미한, 대단히 상세한, 정밀한 (≠ 분)",
-    desc: "💡 [실전 쓰임새] 발음 주의 [mainjúːt]! 'minute differences(눈에 띄지 않는 극미한 차이)', 'minute examination(대단히 꼼꼼하고 정밀한 조사)'. 시간 1분이 아님!"
+    ko: "극미한, 대단히 정밀한",
+    baseKo: "분 (시간)",
+    mockKo: "극미한, 대단히 정밀한",
+    exampleEn: "Look at the minute details of the leaf.",
+    exampleKo: "나뭇잎의 극도로 미세하고 정밀한 세부구조를 보라.",
+    desc: "기존뜻: 1분 ➔ 9모뜻: 극미한, 정밀한 [mainjúːt]"
   },
   {
     en: "content",
     ipa: "[kəntént]",
-    ko: "(형) 만족하는, 자족하는; (동) 만족시키다 (≠ 내용물)",
-    desc: "💡 [실전 쓰임새] 강세가 뒤에 오며 [kəntént]! 'content with simple life(소박한 삶에 만족하는)'. 유튜브 영상 콘텐츠(내용물)가 아닌 형용사 '만족하는(=satisfied)'."
+    ko: "만족하는, 자족하는",
+    baseKo: "콘텐츠, 내용물",
+    mockKo: "만족하는 (=satisfied)",
+    exampleEn: "He is content with what he has.",
+    exampleKo: "그는 자신이 가진 것에 자족하고 만족한다.",
+    desc: "기존뜻: 내용물 ➔ 9모뜻: 만족하는 (=satisfied) [kəntént]"
   },
   {
     en: "will",
     ipa: "[wíl]",
-    ko: "(명) 의지, 유언장 (≠ ~할 것이다)",
-    desc: "💡 [실전 쓰임새] 'strong willpower/free will(강한 의지력/자유의지)', 'leave a will(유언장을 남기다)'. 조동사 미래 표현 외에 명사로 인간의 굳건한 '의지'와 '유언장'."
+    ko: "의지; 유언장",
+    baseKo: "~할 것이다",
+    mockKo: "의지 / 유언장",
+    exampleEn: "Where there is a will, there is a way.",
+    exampleKo: "의지가 있는 곳에 길이 있다.",
+    desc: "기존뜻: ~할 것이다 ➔ 9모뜻: 의지, 유언장"
   },
   {
     en: "issue",
     ipa: "[íʃuː]",
-    ko: "(동) (선언·명령을) 발표하다, (잡지·증서를) 발행하다 (≠ 문제, 논쟁)",
-    desc: "💡 [실전 쓰임새] 'issue a warning/statement(공식 경고나 성명을 발표하다)', 'issue a passport/visa(여권이나 비자를 발급하다)'. 쟁점(이슈) 외에 동사 '발표/발행하다'."
+    ko: "(공식 발표·경고를) 내다; 발행하다",
+    baseKo: "문제, 쟁점",
+    mockKo: "발표하다, 발급하다",
+    exampleEn: "The government issued a severe warning.",
+    exampleKo: "정부는 강력한 경고를 공식 발표했다.",
+    desc: "기존뜻: 문제 ➔ 9모뜻: 발표하다, 발급하다"
   },
   {
     en: "engage",
     ipa: "[engéidʒ]",
-    ko: "(동) (주의·관심을) 사로잡다, 관여하다, 교전하다 (≠ 약혼하다)",
-    desc: "💡 [실전 쓰임새] 'engage the reader\'s attention(독자의 흥미를 확 사로잡다)', 'engage in deep conversation(깊은 대화에 참여하다)'. 약혼하다가 아닌 '주의를 끌다'."
+    ko: "(주의·관심을) 사로잡다; 참여하다",
+    baseKo: "약혼하다",
+    mockKo: "사로잡다 / 참여하다",
+    exampleEn: "The novel engaged my attention completely.",
+    exampleKo: "그 소설은 내 주의를 완전히 사로잡았다.",
+    desc: "기존뜻: 약혼하다 ➔ 9모뜻: (관심을) 사로잡다 / 참여하다"
   },
   {
     en: "host",
     ipa: "[hóust]",
-    ko: "(명) 다수, 무리 (a host of); (동) 주최하다 (≠ 주인)",
-    desc: "💡 [실전 쓰임새] 지문 빈출 관용구 'a host of factors/reasons(수많은 요인들/이유들)'. 파티 호스트(주최자) 외에 a host of 형태로 '엄청난 수의 무리(=a multitude of)'."
+    ko: "다수, 수많은 무리 (a host of)",
+    baseKo: "주인, 주최자",
+    mockKo: "다수, 수많은 무리",
+    exampleEn: "A host of problems appeared.",
+    exampleKo: "수많은 골치 아픈 문제들이 나타났다.",
+    desc: "기존뜻: 주인 ➔ 9모뜻: 수많은 무리 (a host of = a lot of)"
   },
   {
     en: "lean",
     ipa: "[líːn]",
-    ko: "(형) 군살 없는, 빈약한, 메마른; (동) 기울다, 기대다 (≠ 기대다만 아님)",
-    desc: "💡 [실전 쓰임새] 'lean body/meat(군살 없는 날씬한 몸/지방 없는 살코기)', 'lean harvest(빈약한 흉작)'. 벽에 기대다 외에 형용사 '군살 없는/빈약한(=slender, sparse)'."
+    ko: "군살 없는; 빈약한",
+    baseKo: "기대다",
+    mockKo: "군살 없는 / 빈약한",
+    exampleEn: "He has a lean, athletic body.",
+    exampleKo: "그는 군살 없는 날렵하고 탄탄한 몸을 가졌다.",
+    desc: "기존뜻: 기대다 ➔ 9모뜻: 군살 없는, 빈약한"
   },
   {
     en: "flat",
     ipa: "[flǽt]",
-    ko: "(형) 단호한, 확고한, 활기 없는; (명) 아파트 (≠ 평평한만 아님)",
-    desc: "💡 [실전 쓰임새] 'a flat refusal/denial(단호하고 일말의 여지없는 거절/부인)', 'flat market(침체된 시장)'. 평평한 바닥 외에 태도가 '단호한', 기운이 '처진/활기 없는'."
+    ko: "단호한, 확고한; 침체된",
+    baseKo: "평평한",
+    mockKo: "단호한 / 침체된",
+    exampleEn: "She gave him a flat refusal.",
+    exampleKo: "그녀는 그에게 일말의 여지없는 단호한 거절을 했다.",
+    desc: "기존뜻: 평평한 ➔ 9모뜻: 단호한(flat refusal) / 침체된"
   },
   {
     en: "deliver",
     ipa: "[dilívər]",
-    ko: "(동) (약속을) 이행하다, (연설을) 하다, 구출하다 (≠ 배달하다)",
-    desc: "💡 [실전 쓰임새] 'deliver a speech/lecture(연설/강의를 하다)', 'deliver on a promise(공약이나 약속을 성실히 이행하다)'. 택배 배송이 아닌 '말을 전달하다/약속을 지키다'."
+    ko: "(약속을) 이행하다; 연설하다",
+    baseKo: "배달하다",
+    mockKo: "이행하다 / 연설하다",
+    exampleEn: "The politician delivered on his promise.",
+    exampleKo: "그 정치인은 자신의 공약을 성실히 이행했다.",
+    desc: "기존뜻: 배달하다 ➔ 9모뜻: (약속을) 이행하다 / 연설하다"
   },
   {
     en: "consume",
     ipa: "[kənsúːm]",
-    ko: "(동) (감정이) 사로잡다, 휩싸이게 하다; 소모하다 (≠ 소비하다)",
-    desc: "💡 [실전 쓰임새] 심리 지문에서 'be consumed with guilt/rage(죄책감이나 분노에 완전히 사로잡히다)'. 상품 소비가 아닌 감정에 '집어삼켜지다/사로잡히다'."
+    ko: "(강렬한 감정이) 사로잡다, 휩싸이다",
+    baseKo: "소비하다",
+    mockKo: "사로잡다, 휩싸이다",
+    exampleEn: "She was consumed with guilt.",
+    exampleKo: "그녀는 극심한 죄책감에 완전히 사로잡혔다.",
+    desc: "기존뜻: 소비하다 ➔ 9모뜻: (감정이) 집어삼키다, 사로잡다"
   },
   {
     en: "discipline",
     ipa: "[dísəplin]",
-    ko: "(명) 학문 분야, 규율; (동) 훈련하다 (≠ 벌주다만 아님)",
-    desc: "💡 [실전 쓰임새] 'scientific/academic discipline(과학적 학문 분야/연구 분과)', 'strict discipline(엄격한 자기 규율)'. 단순 체벌이 아닌 명사 '학문 분야'와 '절제력'."
+    ko: "학문 분야; 규율, 절제력",
+    baseKo: "벌주다",
+    mockKo: "학문 분야 / 규율",
+    exampleEn: "Physics is a fundamental discipline.",
+    exampleKo: "물리학은 대단히 기초적인 학문 분야이다.",
+    desc: "기존뜻: 벌주다 ➔ 9모뜻: 학문 분야 / 규율, 절제력"
   },
   {
     en: "exercise",
     ipa: "[éksərsàiz]",
-    ko: "(동) (권리·권력을) 행사하다, 발휘하다; (명) 운동 (≠ 운동하다)",
-    desc: "💡 [실전 쓰임새] 사회·정치에서 'exercise one\'s right to vote(투표권을 행사하다)', 'exercise caution(각별한 주의를 기울이다)'. 헬스 운동이 아닌 권리나 힘을 '행사하다'."
+    ko: "(권리·힘을) 행사하다, 발휘하다",
+    baseKo: "운동하다",
+    mockKo: "행사하다, 발휘하다",
+    exampleEn: "Citizens must exercise their right to vote.",
+    exampleKo: "시민들은 투표권을 적극적으로 행사해야 한다.",
+    desc: "기존뜻: 운동하다 ➔ 9모뜻: (권리·권력을) 행사하다"
   },
   {
     en: "harbor",
     ipa: "[hɑ́ːrbər]",
-    ko: "(동) (생각·원한을) 품다, 숨겨주다; (명) 항구 (≠ 항구)",
-    desc: "💡 [실전 쓰임새] 'harbor hatred/suspicion(원한이나 의심을 오랫동안 마음속에 품다)', 'harbor fugitives(탈주범을 은닉하다)'. 배를 대는 항구 외에 동사 '품다/숨겨주다'."
+    ko: "(생각·의심·원한을) 품다, 숨겨주다",
+    baseKo: "항구",
+    mockKo: "품다, 숨겨주다",
+    exampleEn: "Never harbor resentment in your heart.",
+    exampleKo: "마음속에 결코 원한을 품지 마라.",
+    desc: "기존뜻: 항구 ➔ 9모뜻: (생각·원한을) 품다"
   },
   {
     en: "pool",
     ipa: "[púːl]",
-    ko: "(동) (자금·정보를) 공동으로 모으다; (명) 수영장, 웅덩이 (≠ 수영장)",
-    desc: "💡 [실전 쓰임새] 'pool their knowledge and resources(지식과 자원을 한곳에 공동으로 모으다)'. 수영장 물웅덩이 외에 동사로 '공동 출자하다/모으다(=combine)'."
+    ko: "(자원·정보를) 공동으로 모으다",
+    baseKo: "수영장",
+    mockKo: "공동으로 모으다 (=combine)",
+    exampleEn: "Scientists pooled their data together.",
+    exampleKo: "과학자들은 연구 데이터를 한곳에 공동으로 모았다.",
+    desc: "기존뜻: 수영장 ➔ 9모뜻: (자금·정보를) 한데 모으다"
   },
   {
     en: "strike",
     ipa: "[stráik]",
-    ko: "(동) (생각이) 문득 떠오르다, 인상을 주다; 치다, 파업하다 (≠ 파업하다)",
-    desc: "💡 [실전 쓰임새] 'It struck me that...(문득 ~라는 생각이 뇌리를 스쳤다)', 'strike a chord with audience(청중의 심금을 울리다/공감을 사다)'. 문득 생각이 떠오르다."
+    ko: "(생각이) 문득 떠오르다",
+    baseKo: "치다, 파업",
+    mockKo: "문득 떠오르다",
+    exampleEn: "A great idea struck me suddenly.",
+    exampleKo: "기막힌 아이디어가 문득 내 머릿속에 떠올랐다.",
+    desc: "기존뜻: 치다 ➔ 9모뜻: (생각이) 문득 뇌리를 스치다"
   },
   {
     en: "treat",
     ipa: "[tríːt]",
-    ko: "(명) 특별한 선물, 큰 기쁨; (동) 대우하다, 치료하다 (≠ 치료하다)",
-    desc: "💡 [실전 쓰임새] 'Today\'s concert was a real treat.(오늘 콘서트는 정말 뜻밖의 큰 기쁨/선물이었다)'. 의사의 치료 외에 명사로 '뜻밖의 특별한 즐거움/대접'."
+    ko: "특별한 선물, 큰 기쁨, 대접",
+    baseKo: "치료하다, 대우하다",
+    mockKo: "뜻밖의 선물, 큰 기쁨",
+    exampleEn: "The ice cream was a real treat.",
+    exampleKo: "그 아이스크림은 정말 뜻밖의 큰 기쁨이자 선물이었다.",
+    desc: "기존뜻: 치료하다 ➔ 9모뜻: 뜻밖의 큰 기쁨, 특별한 대접"
   },
   {
     en: "weather",
     ipa: "[wéðər]",
-    ko: "(동) (폭풍·위기를) 무사히 헤쳐 나가다, 견디다 (≠ 날씨)",
-    desc: "💡 [실전 쓰임새] 경제·생존 지문에서 'weather the economic crisis/storm(경제 위기/모진 풍파를 무사히 헤쳐 나가다)'. 일기예보 날씨가 아닌 동사 '견디다/생존하다'."
+    ko: "(위기·풍파를) 헤쳐 나가다, 견디다",
+    baseKo: "날씨",
+    mockKo: "헤쳐 나가다, 견디다",
+    exampleEn: "The company weathered the financial crisis.",
+    exampleKo: "그 회사는 금융 위기를 무사히 헤쳐 나갔다.",
+    desc: "기존뜻: 날씨 ➔ 9모뜻: (위기를) 무사히 헤쳐 나가다"
   },
   {
     en: "room",
     ipa: "[rúːm]",
-    ko: "(명) 여지, 기회, 공간 (≠ 방)",
-    desc: "💡 [실전 쓰임새] 'There is no room for doubt/error.(의심이나 실수의 여지가 전혀 없다)', 'room for growth(성장의 여지)'. 방(房)이 아니라 셀 수 없는 명사 '여지/기회'."
+    ko: "여지, 기회, 공간",
+    baseKo: "방",
+    mockKo: "여지, 기회, 공간",
+    exampleEn: "There is no room for doubt.",
+    exampleKo: "의심의 여지가 전혀 없다.",
+    desc: "기존뜻: 방 ➔ 9모뜻: 여지, 기회 (no room for doubt)"
   },
   {
     en: "balance",
     ipa: "[bǽləns]",
-    ko: "(명) 잔고, 잔액; 균형 (≠ 균형)",
-    desc: "💡 [실전 쓰임새] 금융·경제 지문에서 'bank account balance(은행 계좌 잔고)', 'unpaid balance(미납 잔액)'. 시소의 균형 외에 회계 상의 '남아 있는 잔액'."
+    ko: "잔고, 잔액",
+    baseKo: "균형",
+    mockKo: "잔고, 잔액",
+    exampleEn: "Check your bank account balance.",
+    exampleKo: "당신의 은행 계좌 잔액을 확인하라.",
+    desc: "기존뜻: 균형 ➔ 9모뜻: 통장 잔고, 미납 잔액"
   },
   {
     en: "lot",
     ipa: "[lɑ́t]",
-    ko: "(명) 운명, 몫; 부지, 구역 (≠ 많은 것)",
-    desc: "💡 [실전 쓰임새] 'accept one\'s lot in life(자신에게 주어진 삶의 운명/몫을 받아들이다)', 'parking lot(주차 부지)'. a lot of(많은) 외에 명사로 '타고난 운명'과 '구역'."
+    ko: "운명, 몫; 부지, 구역",
+    baseKo: "많은 것",
+    mockKo: "운명, 몫 / 부지",
+    exampleEn: "He accepted his lot in life calmly.",
+    exampleKo: "그는 자신의 타고난 삶의 운명을 차분히 받아들였다.",
+    desc: "기존뜻: 많은 것 ➔ 9모뜻: 타고난 운명, 몫 / 부지"
   },
   {
     en: "post",
     ipa: "[póust]",
-    ko: "(명) 직책, 자리, 배치; (동) 게시하다 (≠ 우편)",
-    desc: "💡 [실전 쓰임새] 'take up an ambassadorial post(대사 직책을 맡다)', 'post guard(경비병을 배치하다)'. 우체국/SNS 게시글 외에 공식적인 '중요한 직책/자리'."
+    ko: "중요한 직책, 자리, 배치",
+    baseKo: "우편, 게시글",
+    mockKo: "중요한 직책, 자리",
+    exampleEn: "She was appointed to a high post.",
+    exampleKo: "그녀는 고위 요직에 임명되었다.",
+    desc: "기존뜻: 우편 ➔ 9모뜻: 중요한 직책, 요직"
   },
   {
     en: "state",
     ipa: "[stéit]",
-    ko: "(동) 진술하다, 말하다; (명) 상태, 국가 (≠ 국가)",
-    desc: "💡 [실전 쓰임새] 'state clearly that S+V(분명하고 단호하게 진술하다/밝히다)', 'as stated above(위에서 언급/진술되었듯이)'. 미국 주(State)나 국가 외에 동사 '진술하다'."
+    ko: "진술하다, 분명히 밝히다",
+    baseKo: "국가, 상태",
+    mockKo: "진술하다, 분명히 밝히다",
+    exampleEn: "Please state your opinion clearly.",
+    exampleKo: "당신의 의견을 분명하게 진술해주십시오.",
+    desc: "기존뜻: 국가, 상태 ➔ 9모뜻: 공식 진술하다, 말하다"
   },
   {
     en: "weigh",
     ipa: "[wéi]",
-    ko: "(동) 심사숙고하다, 비교 평가하다; 무게가 나가다 (≠ 무게를 재다)",
-    desc: "💡 [실전 쓰임새] 'weigh the pros and cons(장단점을 신중하게 저울질하며 심사숙고하다)', 'weigh heavily on my mind(마음을 무겁게 짓누르다)'."
+    ko: "심사숙고하다, 신중히 저울질하다",
+    baseKo: "무게를 재다",
+    mockKo: "심사숙고하다, 저울질하다",
+    exampleEn: "Weigh the pros and cons carefully.",
+    exampleKo: "장단점을 신중하게 저울질하며 심사숙고하라.",
+    desc: "기존뜻: 무게를 재다 ➔ 9모뜻: 심사숙고하다, 저울질하다"
   },
   {
     en: "stem",
     ipa: "[stém]",
-    ko: "(동) (흐름을) 막다, 저지하다; (~에서) 기인하다(stem from); (명) 줄기 (≠ 줄기)",
-    desc: "💡 [실전 쓰임새] 'stem the flow of false rumors(거짓 소문의 확산을 막다/저지하다)', 'Problems stem from misunderstanding.(문제는 오해에서 기인한다)'. 줄기 외에 '막다/기인하다'."
+    ko: "막다, 저지하다; 기인하다 (from)",
+    baseKo: "줄기",
+    mockKo: "막다 / 기인하다 (from)",
+    exampleEn: "Tears stem from deep sadness.",
+    exampleKo: "눈물은 깊은 슬픔에서 기인한다.",
+    desc: "기존뜻: 줄기 ➔ 9모뜻: 막다, 저지하다 / 기인하다(stem from)"
   }
 ];
 
 const MOCK_EXAM_VOCAB_SETS = [
   {
-    id: "mock2026_g1_sep_part1",
-    book: "2026 고1 6모/9모 대비",
-    title: "[6모/9모 킬러] 반전 다의어 정예 Part 1 (30단어)",
-    isMockSpecial: true,
-    studentIds: [1, 2, 3, 4, 5, 6],
-    words: MOCK_PART1_WORDS
-  },
-  {
-    id: "mock2026_g1_sep_part2",
-    book: "2026 고1 6모/9모 대비",
-    title: "[6모/9모 킬러] 반전 다의어 & 킬러 Part 2 (30단어)",
-    isMockSpecial: true,
-    studentIds: [1, 2, 3, 4, 5, 6],
-    words: MOCK_PART2_WORDS
-  },
-  {
-    id: "mock2026_g1_sep_all",
-    book: "2026 고1 6모/9모 대비",
-    title: "[6모/9모 파이널] 반전 다의어 통합 풀세트 Part 1+2 (60단어)",
+    id: "mock2026_g1_sep_9mo",
+    book: "2026 고1 9모 대비",
+    title: "[9모 대비] 1등급 킬러 반전 다의어 60선 (Part 1 + Part 2)",
     isMockSpecial: true,
     studentIds: [1, 2, 3, 4, 5, 6],
     words: [...MOCK_PART1_WORDS, ...MOCK_PART2_WORDS]

@@ -662,10 +662,10 @@ const App = {
           const isCompleted = badgeStyle.tag === '완료';
 
           if (isMockSpecial) {
-            // 🔥 6모/9모 대비 특별 단어 시험: 흐림 효과 없는 선명하고 강렬한 볼드 파이어 뱃지
-            const labelText = (test.title && test.title.includes('9모') && !test.title.includes('6모')) ? '9모 대비' : '6모 대비';
+            // 🔥 9모 대비 특별 단어 시험: 흐림 효과 없는 선명하고 강렬한 볼드 파이어 뱃지
+            const labelText = '9모 대비';
             testsHtml += `
-              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-2 py-1 rounded-md mb-1 font-black flex items-center justify-between gap-1 shadow-md ${isCompleted ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-2 border-emerald-300' : 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white border-2 border-amber-300 shadow-red-500/25'}" title="2026 고1 모의고사 대비 필수 단어 테스트">
+              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-2 py-1 rounded-md mb-1 font-black flex items-center justify-between gap-1 shadow-md ${isCompleted ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-2 border-emerald-300' : 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white border-2 border-amber-300 shadow-red-500/25'}" title="2026 고1 9모 대비 필수 단어 테스트">
                 <div class="truncate flex items-center gap-1.5 min-w-0">
                   <span><i class="fa-solid fa-fire text-amber-300 text-xs"></i></span>
                   <span class="truncate font-black tracking-tight text-xs">${labelText}</span>
@@ -1107,43 +1107,114 @@ const App = {
         </div>
       </div>` : ''}
 
-      <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <i class="fa-solid fa-book-open text-violet-600"></i> 단어 목록 (${set.words.length}개)
-          </h4>
-          <span class="text-[11px] text-slate-400">발음기호 및 실전 쓰임새 해설</span>
-        </div>
-        <div class="max-h-80 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white shadow-2xs">
-          ${set.words.map((word, index) => `
-            <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-baseline gap-2 min-w-0 flex-wrap">
-                  <span class="font-black text-indigo-500 w-5 flex-shrink-0">${index + 1}.</span>
-                  <strong class="text-slate-900 font-black text-sm tracking-tight">${this.escapeHtml(word.en)}</strong>
-                  ${word.ipa ? `<span class="text-[11px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-normal">${this.escapeHtml(word.ipa)}</span>` : ''}
-                </div>
+      ${!isMockExamTest ? `
+        <!-- 일반 단어 테스트: 원래 뜨던 기존 4컬럼 단어장 그대로 100% 복원 -->
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-book-open text-violet-600"></i> 단어장</h4>
+          <div class="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+            ${set.words.map((word, index) => `
+              <div class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 p-2.5 sm:p-3 text-xs hover:bg-slate-50 transition">
+                <span class="font-bold text-slate-400">${index + 1}</span>
+                <strong class="text-slate-800 break-words">${this.escapeHtml(word.en)}</strong>
+                <span class="text-slate-600 break-words">${this.escapeHtml(word.ko)}</span>
                 <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
-                  <i class="fa-solid fa-volume-high text-xs"></i>
+                  <i class="fa-solid fa-volume-high text-[11px]"></i>
                 </button>
-              </div>
-              <div class="text-slate-800 font-bold pl-7">
-                ${this.escapeHtml(word.ko)}
-              </div>
-              ${word.desc ? `
-                <div class="ml-7 p-2.5 rounded-lg bg-amber-50/90 border border-amber-200 text-[11px] text-amber-950 leading-relaxed font-medium">
-                  ${this.escapeHtml(word.desc)}
-                </div>
-              ` : ''}
-            </div>`).join('')}
+              </div>`).join('')}
+          </div>
         </div>
-      </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        ${this.renderVocabTestButton(set, test.studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
-        ${this.renderVocabTestButton(set, test.studentId, 3, '스펠링', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
-        ${this.renderVocabTestButton(set, test.studentId, 4, '통합', 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200', test.id)}
-      </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          ${this.renderVocabTestButton(set, test.studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
+          ${this.renderVocabTestButton(set, test.studentId, 3, '스펠링', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
+          ${this.renderVocabTestButton(set, test.studentId, 4, '통합', 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200', test.id)}
+        </div>
+      ` : `
+        <!-- 🔥 9모 대비 특별 단어 테스트 전용 UI -->
+        <div class="space-y-3">
+          <div class="p-3 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-2">
+              <span class="text-lg"><i class="fa-solid fa-fire text-amber-300"></i></span>
+              <div>
+                <h4 class="font-black text-xs sm:text-sm tracking-tight">[9모 대비] 1등급 킬러 반전 다의어 60선</h4>
+                <p class="text-[11px] text-amber-100 font-medium">Part 1 (1~30번) 합격 후 ➔ Part 2 (31~60번) 순서로 응시하세요!</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-black bg-black/30 border border-amber-300/50 text-amber-300 px-2 py-0.5 rounded-full flex-shrink-0">객관식 전용</span>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-book-bookmark text-rose-600"></i> 단어 해설 목록 (총 60단어)
+              </h4>
+              <span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                기존뜻 ➔ 9모 출제뜻 직관 비교
+              </span>
+            </div>
+            <div class="max-h-72 overflow-y-auto rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white shadow-2xs">
+              ${set.words.map((word, index) => {
+                const partNum = index < 30 ? 1 : 2;
+                const isPartStart = index === 0 || index === 30;
+                return `
+                  ${isPartStart ? `
+                    <div class="sticky top-0 z-10 px-3 py-1.5 bg-slate-100/95 backdrop-blur-xs font-black text-xs ${partNum === 1 ? 'text-indigo-800 border-indigo-200' : 'text-rose-800 border-rose-200'} border-y flex items-center justify-between">
+                      <span><i class="fa-solid fa-flag mr-1"></i> Part ${partNum} (${partNum === 1 ? '1~30번' : '31~60번'})</span>
+                      <span class="text-[10px] font-bold text-slate-500">${partNum === 1 ? '1차 관문' : '최종 관문'}</span>
+                    </div>` : ''}
+                  <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-baseline gap-2 flex-wrap min-w-0">
+                        <span class="font-black text-indigo-600 w-6 flex-shrink-0">${index + 1}.</span>
+                        <strong class="text-slate-900 font-black text-sm tracking-tight">${this.escapeHtml(word.en)}</strong>
+                        ${word.ipa ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${this.escapeHtml(word.ipa)}</span>` : ''}
+                      </div>
+                      <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
+                        <i class="fa-solid fa-volume-high text-xs"></i>
+                      </button>
+                    </div>
+
+                    <!-- 초고가독성 2줄 직관 해설 카드 -->
+                    <div class="ml-6 p-2 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
+                      <div class="flex items-center gap-1.5 flex-wrap font-bold text-xs">
+                        <span class="px-1.5 py-0.2 rounded bg-slate-200 text-slate-600 text-[10px] font-bold">기존뜻</span>
+                        <span class="text-slate-400 line-through text-[11px]">${this.escapeHtml(word.baseKo || '1차 뜻')}</span>
+                        <span class="text-rose-600 font-black text-xs">➔</span>
+                        <span class="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[10px] font-black">9모 출제</span>
+                        <span class="text-rose-950 font-black text-xs">${this.escapeHtml(word.mockKo || word.ko)}</span>
+                      </div>
+                      ${word.exampleEn ? `
+                        <div class="text-[11px] text-amber-950 pt-1 border-t border-amber-200/50 flex items-baseline gap-1">
+                          <span class="font-bold text-slate-700 flex-shrink-0">예문:</span>
+                          <span class="font-semibold text-slate-900">${this.escapeHtml(word.exampleEn)}</span>
+                          <span class="text-slate-500 font-normal">(${this.escapeHtml(word.exampleKo)})</span>
+                        </div>` : ''}
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- 오직 Part 1, Part 2 객관식 응시 버튼만 제공 (순차 잠금) -->
+          <div class="space-y-2.5 pt-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              ${this.renderMockPartButton(test, 1)}
+              ${this.renderMockPartButton(test, 2)}
+            </div>
+
+            ${test.mockPart2Passed ? `
+              <!-- 파트 2 최종 합격 시 행운을 빈다는 스페셜 카드 -->
+              <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 text-white text-center space-y-1 shadow-md animate-fade-in">
+                <div class="text-2xl">🍀✨</div>
+                <h4 class="font-black text-sm">9모 1등급 대비 최종 완료! 대박을 기원합니다!</h4>
+                <p class="text-xs text-amber-100 font-medium leading-relaxed">
+                  킬러 다의어 60선을 모두 완벽하게 통과했습니다.<br>
+                  내일 시험에서 최선의 실력을 발휘할 수 있도록 행운을 온 마음으로 빕니다! 🍀💪
+                </p>
+              </div>` : ''}
+          </div>
+        </div>
+      `}
 
       ${isAdmin ? `
         <div class="pt-2 border-t border-slate-100 flex items-center gap-2">
@@ -1157,6 +1228,113 @@ const App = {
       ` : ''}
     `;
     this.showModal('testDetailModal');
+  },
+
+  // ── 9모 대비 특별 단어 시험: Part 1, 2 버튼 렌더러 ──────────
+  renderMockPartButton(test, part) {
+    const isPart1 = part === 1;
+    const isPassed = isPart1 ? Boolean(test.mockPart1Passed) : Boolean(test.mockPart2Passed);
+    const score = isPart1 ? test.mockPart1Score : test.mockPart2Score;
+    const isLocked = !isPart1 && !test.mockPart1Passed;
+
+    if (isPassed) {
+      return `
+        <div class="p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex flex-col justify-between gap-2 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-emerald-950">Part ${part} 객관식 (30문항)</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200 text-emerald-900"><i class="fa-solid fa-check"></i> 합격 (PASS)</span>
+          </div>
+          <div class="text-xs font-bold text-emerald-800 flex items-center justify-between pt-1 border-t border-emerald-200/60">
+            <span>내 점수: <strong class="text-emerald-900">${score || 100}점</strong></span>
+            <button onclick="App.startMockPartTest('${test.id}', ${part})" class="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900">다시 풀기</button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (isLocked) {
+      return `
+        <div class="p-3.5 rounded-2xl bg-slate-100 border-2 border-slate-200 flex flex-col justify-between gap-2 opacity-75 cursor-not-allowed">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-slate-500">Part ${part} 객관식 (30문항)</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-600"><i class="fa-solid fa-lock"></i> 잠김</span>
+          </div>
+          <p class="text-[11px] text-slate-500 font-medium leading-snug">Part 1 시험을 먼저 합격해야 잠금이 해제됩니다.</p>
+        </div>
+      `;
+    }
+
+    // 응시 가능 상태
+    return `
+      <div class="p-3.5 rounded-2xl ${isPart1 ? 'bg-indigo-50/80 border-2 border-indigo-200' : 'bg-rose-50/80 border-2 border-rose-200'} flex flex-col justify-between gap-2.5 shadow-2xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-black text-slate-900">Part ${part} 객관식 (${isPart1 ? '1~30번' : '31~60번'})</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-slate-200">80점 이상 컷</span>
+        </div>
+        <button onclick="App.startMockPartTest('${test.id}', ${part})" class="w-full py-2.5 rounded-xl ${isPart1 ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 shadow-rose-200'} text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md">
+          <i class="fa-solid fa-play"></i> Part ${part} 객관식 시험 응시하기
+        </button>
+      </div>
+    `;
+  },
+
+  // ── 9모 대비 특별 단어 시험: Part 1, 2 응시 핸들러 ─────────
+  startMockPartTest(testId, part) {
+    const scheduledTest = AppData.getTests().find(t => t.id === testId);
+    if (!scheduledTest) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    if (part === 2 && !scheduledTest.mockPart1Passed) {
+      this.toast('Part 1 시험을 먼저 합격해야 Part 2에 응시할 수 있습니다.', 'warning');
+      return;
+    }
+
+    const allSets = AppData.getVocabSets();
+    const set = allSets.find(s => s.id === (scheduledTest.vocabSetId || 'mock2026_g1_sep_9mo'))
+      || allSets.find(s => s.isMockSpecial || (s.title && s.title.includes('9모')))
+      || (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' ? MOCK_EXAM_VOCAB_SETS[0] : null);
+
+    if (!set || !Array.isArray(set.words) || set.words.length < 30) {
+      this.toast('9모 대비 단어를 불러올 수 없습니다.', 'error');
+      return;
+    }
+
+    // Part 1: 1~30번 (인덱스 0~29), Part 2: 31~60번 (인덱스 30~59)
+    const targetWords = part === 1 ? set.words.slice(0, 30) : set.words.slice(30, 60);
+
+    // 객관식 문제 30문항 생성 (각 문제마다 전체 단어에서 오답 4개 무작위 추출)
+    const allWords = set.words;
+    const questions = targetWords.map(word => {
+      const otherWords = allWords.filter(w => w.en !== word.en);
+      const wrongChoices = this.shuffleArray(otherWords).slice(0, 4).map(w => w.ko);
+      const choices = this.shuffleArray([word.ko, ...wrongChoices]);
+      return {
+        word,
+        question: word.en,
+        correct: word.ko,
+        choices,
+        userAnswer: null
+      };
+    });
+
+    this.state.vocabTest = {
+      testId: scheduledTest.id,
+      setId: set.id,
+      setTitle: `${scheduledTest.title || '[9모 대비]'} - Part ${part}`,
+      studentId: scheduledTest.studentId,
+      direction: 2, // 객관식
+      isMockPart: true,
+      mockPartNumber: part,
+      words: targetWords,
+      questions: this.shuffleArray(questions),
+      currentIndex: 0,
+      userAnswers: [],
+      score: 0,
+      cutoffScore: 80,
+      startedAt: new Date().toISOString()
+    };
+
+    this.closeModal('testDetailModal');
+    this.renderVocabQuestion();
   },
 
   // ── 시험 시간 연장 모달 컨트롤러 ────────────────────────
@@ -4673,9 +4851,8 @@ const App = {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${sets.map(set => {
             const bookName = (set.book || '기본 단어장').trim();
-            const isMockSpecial = Boolean(set.isMockSpecial || bookName.includes('6모') || bookName.includes('9모') || bookName.includes('모의고사') || set.title.includes('6모') || set.title.includes('9모'));
-            const is6Mo = (bookName.includes('6모') || set.title.includes('6모')) && !(bookName.includes('9모') || set.title.includes('9모'));
-            const mockBadgeText = is6Mo ? '6모대비 특별단어' : '6모·9모 특별단어';
+            const isMockSpecial = Boolean(set.isMockSpecial || bookName.includes('9모') || bookName.includes('모의고사') || set.title.includes('9모'));
+            const mockBadgeText = '9모대비 특별단어';
             return `
             <div class="p-4 rounded-2xl ${isMockSpecial ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50/50 via-white to-rose-50/30 shadow-md ring-1 ring-amber-300/60' : 'border border-indigo-100 bg-white/90 shadow-2xs'} flex flex-col gap-3">
               <div>
@@ -5703,7 +5880,7 @@ const App = {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
     vt.isCompleted = true;
-    const total = vt.allWords.length;
+    const total = (vt.allWords && vt.allWords.length) || vt.questions.length;
     const directionLabel = this.getVocabDirectionLabel(vt.direction);
     const test = vt.testId && AppData.getTests().find(item => item.id === vt.testId);
     const currentRound = vt.currentRound || 1;
@@ -5790,7 +5967,23 @@ const App = {
         startedAt,
         completedAt
       });
-      if (test) await this.updateVocabScheduleStatus(test.id);
+      if (test) {
+        if (vt.isMockPart) {
+          if (vt.mockPartNumber === 1) {
+            test.mockPart1Passed = passed;
+            test.mockPart1Score = score;
+          } else if (vt.mockPartNumber === 2) {
+            test.mockPart2Passed = passed;
+            test.mockPart2Score = score;
+            if (passed) {
+              test.status = 'PASS';
+              test.score = `${score}점 (통과)`;
+            }
+          }
+          await AppData.saveOrUpdateTest(test);
+        }
+        await this.updateVocabScheduleStatus(test.id);
+      }
     } catch (error) {
       console.error('단어 테스트 결과 저장 오류:', error);
     }
@@ -5821,22 +6014,65 @@ const App = {
           <p class="text-xs text-amber-700">선생님이 작성하신 한국어 뜻을 검토 및 채점한 후 최종 합격(PASS) 여부가 반영됩니다.</p>
         </div>`;
     } else if (passed) {
-      statusHeaderHtml = `
-        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600">
-          <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <div>
-          <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-            ${currentRound}회차 합격
-          </span>
-          <h3 class="text-2xl font-black text-emerald-700 mt-2">테스트 통과 (PASS)</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${correctCount} / ${total} 정답 (커트라인 ${cutoffScore}점)</p>
-          <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
-        </div>`;
-      statusBannerHtml = `
-        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold">
-          축하합니다! ${currentRound}회차 커트라인(${cutoffScore}점)을 통과하여 ${directionLabel} 테스트가 완료되었습니다.
-        </div>`;
+      if (vt.isMockPart && vt.mockPartNumber === 2) {
+        // 🍀 파트2 시험 합격 시 행운을 빈다는 대박 축하 화면
+        statusHeaderHtml = `
+          <div class="mx-auto w-24 h-24 rounded-full flex items-center justify-center text-5xl bg-gradient-to-tr from-amber-400 via-rose-500 to-indigo-600 text-white shadow-xl shadow-amber-300/40">
+            🍀
+          </div>
+          <div class="space-y-2 mt-3">
+            <span class="px-3.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-400 to-rose-500 text-white shadow-xs">
+              🎉 9모 킬러 다의어 정복 완료!
+            </span>
+            <h3 class="text-3xl font-black text-slate-900 mt-2">수능·9모 대박을 기원합니다!</h3>
+            <p class="text-slate-600 text-sm font-semibold">Part 2 객관식 테스트 <strong>${score}점</strong>으로 완벽 합격 (기준: ${cutoffScore}점)</p>
+          </div>`;
+        statusBannerHtml = `
+          <div class="p-6 rounded-2xl bg-gradient-to-br from-amber-50 via-rose-50 to-indigo-50 border-2 border-amber-300 text-slate-800 text-center space-y-2.5 shadow-sm">
+            <div class="text-3xl">✨ 🍀 🎯 ✨</div>
+            <h4 class="text-base font-black text-rose-800">선생님이 여러분의 9월 모의고사 대박과 최고의 행운을 온 마음으로 빕니다!</h4>
+            <p class="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
+              수능·모의고사 1등급을 가르는 <strong>킬러 반전 다의어 60선</strong>을 모두 완벽하게 마스터했습니다.<br>
+              내일 시험지에서 오늘 배운 반전 뜻이 분명히 눈에 번쩍 띌 것입니다.<br>
+              자신감을 가지고 침착하게 끝까지 최선을 다하세요. <strong>반드시 1등급을 쟁취할 것입니다!</strong> 화이팅! 🍀💪
+            </p>
+          </div>`;
+      } else if (vt.isMockPart && vt.mockPartNumber === 1) {
+        statusHeaderHtml = `
+          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div>
+            <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              Part 1 합격 (${score}점)
+            </span>
+            <h3 class="text-2xl font-black text-emerald-700 mt-2">Part 1 통과 완료!</h3>
+            <p class="text-slate-500 text-sm mt-1">1~30번 킬러 다의어 정복 완료! 이제 Part 2에 도전하세요.</p>
+            <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
+          </div>`;
+        statusBannerHtml = `
+          <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm font-semibold text-center space-y-1">
+            <p class="font-black text-indigo-800 flex items-center justify-center gap-1.5"><i class="fa-solid fa-unlock text-indigo-600"></i> Part 2 시험이 잠금 해제되었습니다!</p>
+            <p class="text-xs text-indigo-700">Part 2 (31~60번) 객관식 시험을 이어서 응시하고 최종 행운의 대박 축하를 완성하세요.</p>
+          </div>`;
+      } else {
+        statusHeaderHtml = `
+          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div>
+            <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              ${currentRound}회차 합격
+            </span>
+            <h3 class="text-2xl font-black text-emerald-700 mt-2">테스트 통과 (PASS)</h3>
+            <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${correctCount} / ${total} 정답 (커트라인 ${cutoffScore}점)</p>
+            <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
+          </div>`;
+        statusBannerHtml = `
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold">
+            축하합니다! ${currentRound}회차 커트라인(${cutoffScore}점)을 통과하여 ${directionLabel} 테스트가 완료되었습니다.
+          </div>`;
+      }
     } else {
       statusHeaderHtml = `
         <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-rose-100 text-rose-600">
@@ -6038,6 +6274,24 @@ const App = {
   async updateVocabScheduleStatus(testId) {
     const test = AppData.getTests().find(item => item.id === testId);
     if (!test || test.type !== 'VOCAB') return;
+
+    // 🔥 9모 대비 특별 시험인 경우: Part 1, Part 2 합격 여부로 전체 상태 판정
+    const isMockSpecial = Boolean(test.isMockSpecial || (test.title && test.title.includes('9모')));
+    if (isMockSpecial) {
+      if (test.mockPart1Passed && test.mockPart2Passed) {
+        test.status = 'PASS';
+        test.score = `Part 1 (${test.mockPart1Score || 100}점) · Part 2 (${test.mockPart2Score || 100}점) 합격`;
+      } else if (test.mockPart1Passed) {
+        test.status = 'SCHEDULED';
+        test.score = `Part 1 (${test.mockPart1Score || 100}점) 합격 (Part 2 대기)`;
+      } else {
+        test.status = 'SCHEDULED';
+      }
+      test.retestStatus = 'NONE';
+      await AppData.saveOrUpdateTest(test);
+      return;
+    }
+
     const results = AppData.getVocabTestResults().filter(result => result.testId === testId);
     const requiredDirections = [2, 3, 4];
     // 3가지 종목(2: 객관식, 3: 스펠링, 4: 스펠링, 뜻)이 모두 응시 완료되고 모두 통과해야만 전체 PASS!
