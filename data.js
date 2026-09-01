@@ -942,10 +942,10 @@ const AppData = {
           time: '08:00',
           endTime: '23:59',
           scope: '2026 고1 9모 대비 1등급 필수 반전 다의어 60선 (Part 1 통과 후 ➔ Part 2 최종 합격)',
-          cutoff: '객관식 80점 이상',
-          cutoffScore: 80,
-          vocabCutoff: 80,
-          vocabCutoffs: { 2: 80 },
+          cutoff: '객관식 90점 이상',
+          cutoffScore: 90,
+          vocabCutoff: 90,
+          vocabCutoffs: { 2: 90 },
           vocabSetId: 'mock2026_g1_sep_9mo',
           vocabSetIds: ['mock2026_g1_sep_9mo'],
           score: existingFinal?.score || '',
@@ -965,8 +965,11 @@ const AppData = {
         if (!existingFinal) {
           filteredTests.push(mockTestConfig);
           testsModified = true;
-        } else if (existingFinal.title !== mockTestConfig.title || existingFinal.vocabSetId !== mockTestConfig.vocabSetId) {
-          Object.assign(existingFinal, mockTestConfig);
+        } else if (existingFinal.title !== mockTestConfig.title || existingFinal.vocabSetId !== mockTestConfig.vocabSetId || existingFinal.cutoffScore !== 90 || existingFinal.vocabCutoff !== 90) {
+          existingFinal.cutoff = '객관식 90점 이상';
+          existingFinal.cutoffScore = 90;
+          existingFinal.vocabCutoff = 90;
+          existingFinal.vocabCutoffs = { 2: 90 };
           testsModified = true;
         }
       });

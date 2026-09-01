@@ -1270,7 +1270,7 @@ const App = {
       <div class="p-3.5 rounded-2xl ${isPart1 ? 'bg-indigo-50/80 border-2 border-indigo-200' : 'bg-rose-50/80 border-2 border-rose-200'} flex flex-col justify-between gap-2.5 shadow-2xs">
         <div class="flex items-center justify-between">
           <span class="text-xs font-black text-slate-900">Part ${part} 객관식 (${isPart1 ? '1~30번' : '31~60번'})</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-slate-200">80점 이상 컷</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-slate-200">90점 이상 컷</span>
         </div>
         <button onclick="App.startMockPartTest('${test.id}', ${part})" class="w-full py-2.5 rounded-xl ${isPart1 ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 shadow-rose-200'} text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md">
           <i class="fa-solid fa-play"></i> Part ${part} 객관식 시험 응시하기
@@ -1313,11 +1313,12 @@ const App = {
         question: word.en,
         correct: word.ko,
         choices,
-        userAnswer: null
+        answered: null,
+        isCorrect: false
       };
     });
 
-    const initialTime = targetWords.length * 15; // 30단어 * 15초 = 450초
+    const perQuestionTime = 10; // 모고특별세트 한 문제당 제한시간 10초
 
     this.state.vocabTest = {
       testId: scheduledTest.id,
@@ -1327,6 +1328,7 @@ const App = {
       studentId: Number(scheduledTest.studentId),
       direction: 2, // 객관식
       isMockPart: true,
+      isMockSpecial: true,
       mockPartNumber: part,
       words: targetWords,
       allWords: targetWords,
@@ -1335,11 +1337,11 @@ const App = {
       currentIndex: 0,
       score: 0,
       currentRound: 1,
-      cutoffScore: 80,
-      baseCutoff: 80,
+      cutoffScore: 90,
+      baseCutoff: 90,
       timerId: null,
-      timeRemaining: initialTime,
-      initialTimeLimit: initialTime,
+      timeRemaining: perQuestionTime,
+      initialTimeLimit: perQuestionTime,
       isCompleted: false,
       startedAt: new Date().toISOString()
     };
@@ -4923,9 +4925,11 @@ const App = {
     const scheduledTest = testId && AppData.getTests().find(test => test.id === testId);
     const result = AppData.getVocabTestResult(studentId, set.id, direction, testId);
 
+    const testOrSet = scheduledTest || set;
+
     // 1. 통과 완료 상태: 통과 당시의 커트라인(기본 커트라인)을 고정 노출 (다음 회차 +2점 가산점 노출 버그 완벽 방지)
     if (result?.passed) {
-      const passedCutoff = result.cutoffScore || this.getBaseVocabCutoffScore(scheduledTest, direction);
+      const passedCutoff = result.cutoffScore || this.getBaseVocabCutoffScore(testOrSet, direction);
       return `
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2 shadow-2xs">
           <div class="flex items-center justify-between gap-1">
@@ -4944,7 +4948,7 @@ const App = {
     // 2. 미통과/재시험 상태일 때만 다음 회차 커트라인 계산
     const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
     const nextRound = attemptCount + 1;
-    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction, nextRound);
+    const cutoffScore = this.getVocabCutoffScore(testOrSet, direction, nextRound);
 
     // 3. 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
     const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, testId);
@@ -5443,12 +5447,18 @@ const App = {
 
     const startedAt = new Date().toISOString();
     const testWords = this.selectVocabTestWords(set.words);
-    const initialTime = direction === 2 ? 7 : (direction === 3 ? 15 : 20);
+    const isMockSpecial = Boolean(
+      (scheduledTest && (scheduledTest.isMockSpecial || (scheduledTest.title && (scheduledTest.title.includes('9모') || scheduledTest.title.includes('모의고사')))))
+      || set.isMockSpecial
+      || (set.book && (set.book.includes('9모') || set.book.includes('모의고사')))
+      || (set.title && set.title.includes('9모'))
+    );
+    const initialTime = isMockSpecial ? 10 : (direction === 2 ? 7 : (direction === 3 ? 15 : 20));
 
     const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
     const currentRound = attemptCount + 1;
-    const baseCutoff = this.getBaseVocabCutoffScore(scheduledTest, direction);
-    const cutoffScore = this.getVocabCutoffScore(scheduledTest, direction, currentRound);
+    const baseCutoff = isMockSpecial ? 90 : this.getBaseVocabCutoffScore(scheduledTest, direction);
+    const cutoffScore = isMockSpecial ? 90 : this.getVocabCutoffScore(scheduledTest, direction, currentRound);
 
     // 모드 3, 4인 경우 사전에 모든 단어의 발음기호를 즉시 백그라운드 프리페치하여 렉 완전 제거
     if (direction === 3 || direction === 4) {
@@ -5465,6 +5475,7 @@ const App = {
       bookName: bookName || '기본 단어장',
       testId,
       startedAt,
+      isMockSpecial,
       allWords: testWords,
       sourceWordCount: set.words.length,
       direction,
@@ -5739,7 +5750,9 @@ const App = {
   startVocabQuestionTimer() {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
-    vt.timeRemaining = vt.initialTimeLimit || (vt.direction === 2 ? 7 : (vt.direction === 3 ? 15 : 20));
+    const isMock = Boolean(vt.isMockPart || vt.isMockSpecial || (vt.bookName && (vt.bookName.includes('9모') || vt.bookName.includes('모의고사'))) || (vt.setTitle && vt.setTitle.includes('9모')));
+    const defaultTime = isMock ? 10 : (vt.direction === 2 ? 7 : (vt.direction === 3 ? 15 : 20));
+    vt.timeRemaining = vt.initialTimeLimit || defaultTime;
     const timer = document.getElementById('vocabTestTimer');
     if (timer) timer.innerHTML = `<i class="fa-regular fa-clock"></i>${vt.timeRemaining}초`;
     vt.timerId = setInterval(() => {
@@ -5773,7 +5786,7 @@ const App = {
   submitVocabAnswer(choiceIndex, timedOut) {
     const vt = this.state.vocabTest;
     const q = vt.questions[vt.currentIndex];
-    if (q.answered !== null) return;
+    if (q.answered !== null && q.answered !== undefined) return;
     this.clearVocabQuestionTimer();
 
     const chosen = timedOut ? '시간 초과' : q.choices[choiceIndex];
@@ -5805,7 +5818,7 @@ const App = {
   submitVocabSpellingAnswer(timedOut) {
     const vt = this.state.vocabTest;
     const q = vt.questions[vt.currentIndex];
-    if (q.answered !== null) return;
+    if (q.answered !== null && q.answered !== undefined) return;
     this.clearVocabQuestionTimer();
 
     let inputVal = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
@@ -5840,7 +5853,7 @@ const App = {
   submitVocabComprehensiveAnswer(timedOut) {
     const vt = this.state.vocabTest;
     const q = vt.questions[vt.currentIndex];
-    if (q.answered !== null) return;
+    if (q.answered !== null && q.answered !== undefined) return;
     this.clearVocabQuestionTimer();
 
     let spelling = timedOut ? '' : (document.getElementById('vocabSpellingInput')?.value || '').trim();
@@ -6237,6 +6250,11 @@ const App = {
 
   getBaseVocabCutoffScore(test, direction = null) {
     if (!test) return 80;
+
+    // 🔥 9모 대비 특별 단어 시험은 커트라인 90점 고정
+    if (test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))) || (test.book && (test.book.includes('9모') || test.book.includes('모의고사')))) {
+      return 90;
+    }
 
     // 1. 유형별 개별 커트라인 우선 조회
     if (direction) {
