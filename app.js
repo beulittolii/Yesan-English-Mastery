@@ -988,7 +988,7 @@ const App = {
     this.hideModal('testDetailModal');
   },
 
-  // ── 단어 시험 제목 간결화 포맷터 ────────────────────────
+  // ── 단어 시험 제목 간결화 포맷터 (교재명은 알아볼 수 있게 온전히 유지) ──
   formatCleanVocabTitle(rawTitle) {
     if (!rawTitle) return '단어 테스트';
     let t = String(rawTitle).trim();
@@ -1002,14 +1002,7 @@ const App = {
     t = t.replace(/\s*단어\s*(?:테스트|시험)/gi, '');
     t = t.replace(/\s*\([^)]*(?:Part|part|문항|출제|세트|합격|랜덤|통과|선|대비|단어)[^)]*\)/gi, '');
 
-    // 3. 긴 교재명 핵심 위주 간결화
-    t = t.replace(/\[\s*워드마스터\s*수능\s*2000\s*\]/gi, '[워마 2000]');
-    t = t.replace(/워드마스터\s*수능\s*2000/gi, '워마 2000');
-    t = t.replace(/\[\s*워드마스터\s*고등\s*(?:BASIC|베이직)\s*\]/gi, '[워마 베이직]');
-    t = t.replace(/워드마스터\s*고등\s*(?:BASIC|베이직)/gi, '워마 베이직');
-    t = t.replace(/\[\s*YBM\s*영어2\s*\]/gi, '[YBM 영어2]');
-
-    // 4. Day 06 + Day 07 -> Day 06~07 연속 축약
+    // 3. Day 06 + Day 07 -> Day 06~07 연속 축약 (교재명은 원본 그대로 명확히 유지!)
     const dayMatches = [...t.matchAll(/Day\s*(\d+)/gi)];
     if (dayMatches.length > 1) {
       const nums = dayMatches.map(m => parseInt(m[1], 10));
@@ -1211,7 +1204,7 @@ const App = {
                   const isPartStart = index === 0 || index === 30;
                   return `
                     ${isPartStart ? `
-                      <div class="sticky top-0 z-10 px-2.5 py-1.5 bg-white/95 backdrop-blur-md">
+                      <div class="sticky top-0 z-10 px-2.5 py-1.5 bg-white/95 backdrop-blur-md ${index === 0 ? 'rounded-t-2xl' : ''}">
                         <div class="px-3 py-1.5 rounded-xl ${partNum === 1 ? 'bg-indigo-50 border border-indigo-200 text-indigo-950' : 'bg-rose-50 border border-rose-200 text-rose-950'} flex items-center justify-between shadow-2xs">
                           <div class="flex items-center gap-1.5 font-black text-xs">
                             <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${partNum === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'} text-[9px] font-black">${partNum}</span>
