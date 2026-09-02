@@ -3469,8 +3469,6 @@ const App = {
 
     document.getElementById('formVocabSetSection').classList.toggle('hidden', !isVocab);
     document.getElementById('formVocabCutoffSection').classList.toggle('hidden', !isVocab);
-    const mockSpecialSection = document.getElementById('formMockSpecialSection');
-    if (mockSpecialSection) mockSpecialSection.classList.toggle('hidden', !isVocab);
     document.getElementById('formPracticeCutoffSection').classList.toggle('hidden', !isPractice);
     document.getElementById('formPracticeSection').classList.toggle('hidden', !isPractice);
     document.getElementById('formTextMemorizeSection').classList.toggle('hidden', !isTextMemorize);
@@ -3827,7 +3825,8 @@ const App = {
 
     const status = isRegularTest ? (document.querySelector('input[name="formStatus"]:checked')?.value || 'SCHEDULED') : 'SCHEDULED';
     const retestStatus = isRegularTest ? (document.querySelector('input[name="formRetestStatus"]:checked')?.value || 'NONE') : 'NONE';
-    const isMockSpecial = isVocabTest ? Boolean(document.getElementById('formIsMockSpecial')?.checked) : false;
+    const existingTest = id ? AppData.getTests().find(t => t.id === id) : null;
+    const isMockSpecial = isVocabTest ? Boolean(existingTest?.isMockSpecial || (title && (title.includes('9모') || title.includes('모의고사')))) : false;
 
     // 공통 검사
     if (!title || !date) {
