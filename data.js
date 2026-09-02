@@ -937,7 +937,7 @@ const AppData = {
         const mockTestConfig = {
           id: `mock2026_final_student_${student.id}`,
           studentId: student.id,
-          title: '[9모 킬러] 반전 다의어 60선 (Part 1 ➔ Part 2)',
+          title: '[9모 킬러] 반전 다의어 60선',
           date: targetExamDate,
           time: '08:00',
           endTime: '23:59',
@@ -966,6 +966,7 @@ const AppData = {
           filteredTests.push(mockTestConfig);
           testsModified = true;
         } else if (existingFinal.title !== mockTestConfig.title || existingFinal.vocabSetId !== mockTestConfig.vocabSetId || existingFinal.cutoffScore !== 90 || existingFinal.vocabCutoff !== 90) {
+          existingFinal.title = mockTestConfig.title;
           existingFinal.cutoff = '객관식 90점 이상';
           existingFinal.cutoffScore = 90;
           existingFinal.vocabCutoff = 90;

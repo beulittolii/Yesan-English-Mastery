@@ -1038,8 +1038,33 @@ const App = {
     const hasSpecialBook = bookName && bookName !== '기본 단어장';
     const isMockExamTest = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
 
+    // 제목을 간결하고 짧고 깔끔하게 정리
+    let cleanModalTitle = '';
+    let cleanCardTitle = '';
+    if (isMockExamTest) {
+      cleanModalTitle = '[9모 킬러] 반전 다의어 60선';
+      cleanCardTitle = '1등급 킬러 반전 다의어 60선';
+    } else {
+      if (test.title) {
+        cleanModalTitle = test.title.replace(/\s*\([^)]*(?:Part|part|문항|출제|세트|합격|랜덤|통과)[^)]*\)/gi, '').trim();
+      } else if (hasSpecialBook) {
+        cleanModalTitle = matchingSets.length > 1
+          ? `[${bookName}] ${matchingSets[0].title} 외 ${matchingSets.length - 1}개`
+          : `[${bookName}] ${matchingSets[0]?.title || set.title}`;
+      } else {
+        cleanModalTitle = matchingSets.length > 1
+          ? `${matchingSets[0].title} 외 ${matchingSets.length - 1}개`
+          : (matchingSets[0]?.title || set.title);
+      }
+      cleanModalTitle = cleanModalTitle.replace(/\s*\([^)]*(?:Part|part|문항|출제|세트|합격|랜덤|통과)[^)]*\)/gi, '').trim();
+
+      cleanCardTitle = matchingSets.length > 2
+        ? `${matchingSets[0].title} ~ ${matchingSets[matchingSets.length - 1].title}`
+        : set.title;
+    }
+
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
-    document.getElementById('detailModalTitle').innerText = test.title || (hasSpecialBook ? `[${bookName}] ${set.title}` : set.title);
+    document.getElementById('detailModalTitle').innerText = cleanModalTitle;
     document.getElementById('detailModalBody').innerHTML = `
       ${isFailed ? `
         <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs flex items-center justify-between gap-2 flex-wrap mb-1">
@@ -1059,7 +1084,7 @@ const App = {
                 <i class="fa-solid fa-book text-[9px]"></i> ${this.escapeHtml(bookName)}
               </span>
             ` : ''}
-            <p class="text-xs sm:text-sm font-black text-violet-950">${this.escapeHtml(set.title)}</p>
+            <p class="text-xs sm:text-sm font-black text-violet-950">${this.escapeHtml(cleanCardTitle)}</p>
           </div>
           <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">
             ${statusBadge.label}
@@ -1153,46 +1178,53 @@ const App = {
                 기존뜻 ➔ 9모 출제뜻 직관 비교
               </span>
             </div>
-            <div class="max-h-72 overflow-y-auto rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white shadow-2xs">
-              ${set.words.map((word, index) => {
-                const partNum = index < 30 ? 1 : 2;
-                const isPartStart = index === 0 || index === 30;
-                return `
-                  ${isPartStart ? `
-                    <div class="sticky top-0 z-10 px-3 py-1.5 bg-slate-100/95 backdrop-blur-xs font-black text-xs ${partNum === 1 ? 'text-indigo-800 border-indigo-200' : 'text-rose-800 border-rose-200'} border-y flex items-center justify-between">
-                      <span><i class="fa-solid fa-flag mr-1"></i> Part ${partNum} (${partNum === 1 ? '1~30번' : '31~60번'})</span>
-                      <span class="text-[10px] font-bold text-slate-500">${partNum === 1 ? '1차 관문' : '최종 관문'}</span>
-                    </div>` : ''}
-                  <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="flex items-baseline gap-2 flex-wrap min-w-0">
-                        <span class="font-black text-indigo-600 w-6 flex-shrink-0">${index + 1}.</span>
-                        <strong class="text-slate-900 font-black text-sm tracking-tight">${this.escapeHtml(word.en)}</strong>
-                        ${word.ipa ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${this.escapeHtml(word.ipa)}</span>` : ''}
+            <div class="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
+              <div class="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                ${set.words.map((word, index) => {
+                  const partNum = index < 30 ? 1 : 2;
+                  const isPartStart = index === 0 || index === 30;
+                  return `
+                    ${isPartStart ? `
+                      <div class="sticky top-0 z-10 px-3.5 py-2 ${partNum === 1 ? 'bg-indigo-50/95 text-indigo-900 border-indigo-200/80' : 'bg-rose-50/95 text-rose-900 border-rose-200/80'} backdrop-blur-sm font-black text-xs border-b flex items-center justify-between shadow-2xs">
+                        <div class="flex items-center gap-1.5">
+                          <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${partNum === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'} text-[9px] font-black shadow-2xs">${partNum}</span>
+                          <span>Part ${partNum} (${partNum === 1 ? '1~30번' : '31~60번'})</span>
+                        </div>
+                        <span class="text-[10px] font-bold ${partNum === 1 ? 'text-indigo-700 bg-white/90 border-indigo-200' : 'text-rose-700 bg-white/90 border-rose-200'} px-2 py-0.5 rounded-full border shadow-2xs">
+                          ${partNum === 1 ? '1차 관문 (30문항)' : '최종 관문 (30문항)'}
+                        </span>
+                      </div>` : ''}
+                    <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-baseline gap-2 flex-wrap min-w-0">
+                          <span class="font-black text-indigo-600 w-6 flex-shrink-0">${index + 1}.</span>
+                          <strong class="text-slate-900 font-black text-sm tracking-tight">${this.escapeHtml(word.en)}</strong>
+                          ${word.ipa ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${this.escapeHtml(word.ipa)}</span>` : ''}
+                        </div>
+                        <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
+                          <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
                       </div>
-                      <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
-                        <i class="fa-solid fa-volume-high text-xs"></i>
-                      </button>
-                    </div>
 
-                    <!-- 초고가독성 2줄 직관 해설 카드 -->
-                    <div class="ml-6 p-2 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
-                      <div class="flex items-center gap-1.5 flex-wrap font-bold text-xs">
-                        <span class="px-1.5 py-0.2 rounded bg-slate-200 text-slate-600 text-[10px] font-bold">기존뜻</span>
-                        <span class="text-slate-400 line-through text-[11px]">${this.escapeHtml(word.baseKo || '1차 뜻')}</span>
-                        <span class="text-rose-600 font-black text-xs">➔</span>
-                        <span class="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[10px] font-black">9모 출제</span>
-                        <span class="text-rose-950 font-black text-xs">${this.escapeHtml(word.mockKo || word.ko)}</span>
+                      <!-- 초고가독성 2줄 직관 해설 카드 -->
+                      <div class="ml-6 p-2 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
+                        <div class="flex items-center gap-1.5 flex-wrap font-bold text-xs">
+                          <span class="px-1.5 py-0.2 rounded bg-slate-200 text-slate-600 text-[10px] font-bold">기존뜻</span>
+                          <span class="text-slate-400 line-through text-[11px]">${this.escapeHtml(word.baseKo || '1차 뜻')}</span>
+                          <span class="text-rose-600 font-black text-xs">➔</span>
+                          <span class="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[10px] font-black">9모 출제</span>
+                          <span class="text-rose-950 font-black text-xs">${this.escapeHtml(word.mockKo || word.ko)}</span>
+                        </div>
+                        ${word.exampleEn ? `
+                          <div class="text-[11px] text-amber-950 pt-1 border-t border-amber-200/50 flex items-baseline gap-1">
+                            <span class="font-bold text-slate-700 flex-shrink-0">예문:</span>
+                            <span class="font-semibold text-slate-900">${this.escapeHtml(word.exampleEn)}</span>
+                            <span class="text-slate-500 font-normal">(${this.escapeHtml(word.exampleKo)})</span>
+                          </div>` : ''}
                       </div>
-                      ${word.exampleEn ? `
-                        <div class="text-[11px] text-amber-950 pt-1 border-t border-amber-200/50 flex items-baseline gap-1">
-                          <span class="font-bold text-slate-700 flex-shrink-0">예문:</span>
-                          <span class="font-semibold text-slate-900">${this.escapeHtml(word.exampleEn)}</span>
-                          <span class="text-slate-500 font-normal">(${this.escapeHtml(word.exampleKo)})</span>
-                        </div>` : ''}
-                    </div>
-                  </div>`;
-              }).join('')}
+                    </div>`;
+                }).join('')}
+              </div>
             </div>
           </div>
 
