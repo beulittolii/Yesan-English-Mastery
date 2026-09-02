@@ -988,6 +988,45 @@ const App = {
     this.hideModal('testDetailModal');
   },
 
+  // ── 단어 시험 제목 간결화 포맷터 ────────────────────────
+  formatCleanVocabTitle(rawTitle) {
+    if (!rawTitle) return '단어 테스트';
+    let t = String(rawTitle).trim();
+
+    // 1. 9모 모의고사 특별 시험
+    if (t.includes('9모') || t.includes('모의고사')) {
+      return '[9모 킬러] 반전 다의어 60선';
+    }
+
+    // 2. 단어 테스트 / 시험 등 불필요한 사족 접미사 및 설명 괄호 제거
+    t = t.replace(/\s*단어\s*(?:테스트|시험)/gi, '');
+    t = t.replace(/\s*\([^)]*(?:Part|part|문항|출제|세트|합격|랜덤|통과|선|대비|단어)[^)]*\)/gi, '');
+
+    // 3. 긴 교재명 핵심 위주 간결화
+    t = t.replace(/\[\s*워드마스터\s*수능\s*2000\s*\]/gi, '[워마 2000]');
+    t = t.replace(/워드마스터\s*수능\s*2000/gi, '워마 2000');
+    t = t.replace(/\[\s*워드마스터\s*고등\s*(?:BASIC|베이직)\s*\]/gi, '[워마 베이직]');
+    t = t.replace(/워드마스터\s*고등\s*(?:BASIC|베이직)/gi, '워마 베이직');
+    t = t.replace(/\[\s*YBM\s*영어2\s*\]/gi, '[YBM 영어2]');
+
+    // 4. Day 06 + Day 07 -> Day 06~07 연속 축약
+    const dayMatches = [...t.matchAll(/Day\s*(\d+)/gi)];
+    if (dayMatches.length > 1) {
+      const nums = dayMatches.map(m => parseInt(m[1], 10));
+      const isConsecutive = nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
+      const pad = (n) => String(n).padStart(2, '0');
+      let rangeStr = '';
+      if (isConsecutive) {
+        rangeStr = `Day ${pad(nums[0])}~${pad(nums[nums.length - 1])}`;
+      } else {
+        rangeStr = `Day ${nums.map(pad).join(', ')}`;
+      }
+      t = t.replace(/Day\s*\d+(\s*\+\s*Day\s*\d+)+/gi, rangeStr);
+    }
+
+    return t.trim();
+  },
+
   openVocabTestScheduleModal(testId) {
     const test = AppData.getTests().find(item => item.id === testId);
     if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
@@ -1039,28 +1078,15 @@ const App = {
     const isMockExamTest = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
 
     // 제목을 간결하고 짧고 깔끔하게 정리
-    let cleanModalTitle = '';
+    const rawTitle = test.title || (hasSpecialBook ? `[${bookName}] ${set.title}` : set.title);
+    const cleanModalTitle = this.formatCleanVocabTitle(rawTitle);
+
     let cleanCardTitle = '';
     if (isMockExamTest) {
-      cleanModalTitle = '[9모 킬러] 반전 다의어 60선';
       cleanCardTitle = '1등급 킬러 반전 다의어 60선';
     } else {
-      if (test.title) {
-        cleanModalTitle = test.title.replace(/\s*\([^)]*(?:Part|part|문항|출제|세트|합격|랜덤|통과)[^)]*\)/gi, '').trim();
-      } else if (hasSpecialBook) {
-        cleanModalTitle = matchingSets.length > 1
-          ? `[${bookName}] ${matchingSets[0].title} 외 ${matchingSets.length - 1}개`
-          : `[${bookName}] ${matchingSets[0]?.title || set.title}`;
-      } else {
-        cleanModalTitle = matchingSets.length > 1
-          ? `${matchingSets[0].title} 외 ${matchingSets.length - 1}개`
-          : (matchingSets[0]?.title || set.title);
-      }
-      cleanModalTitle = cleanModalTitle.replace(/\s*\([^)]*(?:Part|part|문항|출제|세트|합격|랜덤|통과)[^)]*\)/gi, '').trim();
-
-      cleanCardTitle = matchingSets.length > 2
-        ? `${matchingSets[0].title} ~ ${matchingSets[matchingSets.length - 1].title}`
-        : set.title;
+      const dayOnly = cleanModalTitle.replace(/\[[^\]]+\]\s*/g, '').trim();
+      cleanCardTitle = dayOnly || set.title;
     }
 
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
@@ -1185,14 +1211,16 @@ const App = {
                   const isPartStart = index === 0 || index === 30;
                   return `
                     ${isPartStart ? `
-                      <div class="sticky top-0 z-10 px-3.5 py-2 ${partNum === 1 ? 'bg-indigo-50/95 text-indigo-900 border-indigo-200/80' : 'bg-rose-50/95 text-rose-900 border-rose-200/80'} backdrop-blur-sm font-black text-xs border-b flex items-center justify-between shadow-2xs">
-                        <div class="flex items-center gap-1.5">
-                          <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${partNum === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'} text-[9px] font-black shadow-2xs">${partNum}</span>
-                          <span>Part ${partNum} (${partNum === 1 ? '1~30번' : '31~60번'})</span>
+                      <div class="sticky top-0 z-10 px-2.5 py-1.5 bg-white/95 backdrop-blur-md">
+                        <div class="px-3 py-1.5 rounded-xl ${partNum === 1 ? 'bg-indigo-50 border border-indigo-200 text-indigo-950' : 'bg-rose-50 border border-rose-200 text-rose-950'} flex items-center justify-between shadow-2xs">
+                          <div class="flex items-center gap-1.5 font-black text-xs">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${partNum === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'} text-[9px] font-black">${partNum}</span>
+                            <span>Part ${partNum} (${partNum === 1 ? '1~30번' : '31~60번'})</span>
+                          </div>
+                          <span class="text-[10px] font-bold ${partNum === 1 ? 'text-indigo-700 bg-white border-indigo-200' : 'text-rose-700 bg-white border-rose-200'} px-2 py-0.5 rounded-full border shadow-2xs">
+                            ${partNum === 1 ? '1차 관문 (30문항)' : '최종 관문 (30문항)'}
+                          </span>
                         </div>
-                        <span class="text-[10px] font-bold ${partNum === 1 ? 'text-indigo-700 bg-white/90 border-indigo-200' : 'text-rose-700 bg-white/90 border-rose-200'} px-2 py-0.5 rounded-full border shadow-2xs">
-                          ${partNum === 1 ? '1차 관문 (30문항)' : '최종 관문 (30문항)'}
-                        </span>
                       </div>` : ''}
                     <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
                       <div class="flex items-center justify-between gap-2">
@@ -3321,11 +3349,12 @@ const App = {
       if (testType === 'VOCAB') {
         const formTitle = document.getElementById('formTitle');
         const formScope = document.getElementById('formScope');
-        const combinedTitle = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${setTitles} 단어 테스트` : `${setTitles} 단어 테스트`;
+        const rawTitle = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${setTitles}` : `${setTitles}`;
+        const combinedTitle = this.formatCleanVocabTitle(rawTitle);
         const wordsText = isRandom40 ? `(총 ${totalWords}단어 / 40단어 랜덤 출제)` : `(총 ${totalWords}단어)`;
         const combinedScope = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${matchingSets.map(s => s.title).join(', ')} ${wordsText}` : `${matchingSets.map(s => s.title).join(', ')} ${wordsText}`;
         
-        if (formTitle && (!formTitle.value || formTitle.value === '단어 테스트' || formTitle.value.endsWith('단어 테스트'))) {
+        if (formTitle && (!formTitle.value || formTitle.value === '단어 테스트' || formTitle.value.includes('단어 테스트') || formTitle.value.includes('워드마스터'))) {
           formTitle.value = combinedTitle;
         }
         if (formScope) {
@@ -3757,8 +3786,9 @@ const App = {
         const totalWords = matchingSets.reduce((sum, s) => sum + (s.words?.length || 0), 0);
         const bookName = matchingSets[0]?.book || '';
         scope = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${setTitles} (총 ${totalWords}단어)` : `${setTitles} (총 ${totalWords}단어)`;
-        if (!title || title === '단어 테스트' || title.endsWith('단어 테스트')) {
-          title = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${matchingSets.map(s => s.title).join(' + ')} 단어 테스트` : `${matchingSets.map(s => s.title).join(' + ')} 단어 테스트`;
+        if (!title || title === '단어 테스트' || title.endsWith('단어 테스트') || title.includes('워드마스터')) {
+          const raw = bookName && bookName !== '기본 단어장' ? `[${bookName}] ${matchingSets.map(s => s.title).join(' + ')}` : `${matchingSets.map(s => s.title).join(' + ')}`;
+          title = this.formatCleanVocabTitle(raw);
         }
       } else {
         scope = '단어 세트 기반 5지선다 테스트';
