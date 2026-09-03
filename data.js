@@ -233,18 +233,18 @@ const YBM2_L1_PRACTICE_QUESTIONS = [
   {
     id: 'ybm2_l1_q9',
     type: 'ESSAY',
-    question: `윗글의 빈칸 (A)에 들어갈 말을 <우리말> 뜻에 맞도록, <보기>의 단어들을 모두 한 번씩 사용하여 <조건>에 맞게 완전한 영어 문장으로 영작하시오.
+    question: `윗글의 빈칸 (A)에 들어갈 말을 <우리말> 뜻에 맞도록, <보기>의 단어들을 모두 활용하고 <조건>에 맞게 완전한 영어 문장으로 영작하시오.
 
 <우리말>
 "많은 이재민들이 여진에 대해 너무 불안해해서 정부는 그 정보가 가짜라고 발표해야만 했다."
 
 <보기>
-many / people / were / anxious / about / aftershocks / the government / to / announce / that / the information / fake / had / displaced / so / that / was
+many / displace / people / were / so / anxious / about / aftershocks / that / the / government / had / to / announce / the / information / was / fake
 
 <조건>
 1. '너무 ~해서 ...하다'를 나타내는 「so + 형용사 + that절」 구문을 반드시 활용할 것.
-2. 주어진 17단어를 변형 없이 모두 빠짐없이 배열할 것.
-3. 완전한 하나의 문장으로 작성할 것 (대소문자 및 구두점 유의).`,
+2. <보기>의 단어 중 1단어(displace)의 어형을 문맥에 맞게 변형할 것.
+3. <보기>에 주어진 18단어를 모두 활용하되, 필요한 단어 1단어(접속사)를 직접 추가하여 총 19단어의 완전한 문장으로 작성할 것 (대소문자 및 구두점 유의).`,
     passage: `It is very common for fake news to spread during states of emergency. For example, after an earthquake measuring 6.5 struck Ambon, Indonesia, in September 2019, thousands of residents did not return to their homes and were still in shelters for two weeks. This was because of fake news stories on social media that another earthquake followed by a tsunami was about to strike. One of those messages said, “It’s up to you if you want to believe me or not, but apparently Ambon is going to sink in the next few days.”\n[ (A) ____________________________________________________________________ ]`,
     choices: [],
     answer: 'Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake.',
@@ -253,7 +253,7 @@ many / people / were / anxious / about / aftershocks / the government / to / ann
       'Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake'
     ],
     keywords: ['Many displaced people', 'so anxious about aftershocks that', 'the government had to announce that', 'the information was fake'],
-    explanation: '「so + 형용사 + that + 주어 + 동사」 결과 구문과 과거분사 displaced의 명사 수식을 결합한 고난도 필수 내신 영작 문제입니다.\n- 주어부: Many displaced people\n- 서술부 1: were so anxious about aftershocks\n- 접속사 that절: that the government had to announce that the information was fake.'
+    explanation: '「so + 형용사 + that + 주어 + 동사」 결과 구문과 과거분사 displaced의 명사 수식, 그리고 announce 뒤에 이끄는 목적어절 접속사 that(1단어 추가)을 결합한 실전 내신 서술형 문제입니다.\n- displace → displaced (어형 변화: 재난으로 인해 거처를 잃은 이재민들)\n- 접속사 that 1단어 추가 (so ~ that 결과절 외에 announce that 명사절에 필요한 접속사 that 직접 추가)\n- 완성 문장: Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake. (총 19단어)'
   },
   {
     id: 'ybm2_l1_q10',
@@ -264,12 +264,12 @@ many / people / were / anxious / about / aftershocks / the government / to / ann
 "지나는 자신이 가짜 뉴스를 퍼뜨렸었다는 사실에 당황했다."
 
 <보기>
-embarrass / spread / Gina / by / the fact / the fake news / she / be
+Gina / be / embarrass / by / the / fact / she / had / spread / the / fake / news
 
 <조건>
 1. 감정을 나타내는 분사 표현(수동태)과 「the fact that + 완전한 절」(동격의 that) 구조를 사용할 것.
 2. 당황한 시점(과거)보다 가짜 뉴스를 퍼뜨린 시점이 더 앞선 과거임을 나타내는 시제(과거완료 had p.p.)를 반드시 적용할 것.
-3. <보기>의 단어 중 필요한 단어는 어형을 변화시키고, 필요한 접속사를 추가하여 총 12단어로 작성할 것.`,
+3. <보기>의 단어 중 필요한 단어는 어형을 변화시키고, 필요한 단어 1단어(접속사)를 직접 추가하여 총 13단어의 완전한 문장으로 작성할 것.`,
     passage: `While scrolling through her social media one day, Gina was astonished when she saw the news headline, “The Heundeulbawi in Seoraksan National Park Has Fallen.” Gina immediately shared the shocking story with her close friends. Later, during the morning news on TV, a reporter standing next to the undamaged Heundeulbawi said, “Today’s Internet stories of the Heundeulbawi being damaged were fake.”\n[ (A) ____________________________________________________________________ ]`,
     choices: [],
     answer: 'Gina was embarrassed by the fact that she had spread the fake news.',
@@ -278,7 +278,7 @@ embarrass / spread / Gina / by / the fact / the fake news / she / be
       'Gina was embarrassed by the fact that she had spread the fake news'
     ],
     keywords: ['Gina was embarrassed', 'by the fact that', 'had spread the fake news'],
-    explanation: '1) Gina가 당황함을 느낀 수동태 표현: Gina was embarrassed\n2) \'~라는 사실에\': by the fact that (동격 접속사 that 추가)\n3) 당황한 과거 시점(was) 이전에 이미 가짜 뉴스를 퍼뜨렸으므로 대과거/과거완료(had p.p.): she had spread the fake news\n따라서 정답은 "Gina was embarrassed by the fact that she had spread the fake news."입니다.'
+    explanation: '1) Gina가 당황함을 느낀 수동태 표현: be + embarrass → was embarrassed\n2) \'~라는 사실에\': by the fact that (동격 접속사 that 1단어 추가)\n3) 당황한 과거 시점(was) 이전에 이미 가짜 뉴스를 퍼뜨렸으므로 대과거/과거완료(had p.p.): had spread\n따라서 완성 문장은 "Gina was embarrassed by the fact that she had spread the fake news." (총 13단어)입니다.'
   }
 ];
 
