@@ -25,51 +25,260 @@ const TEACHER_PASSWORD = '1357';
 
 
 // ========================================================
-// 기본 6명 학생 프로필
+// 등록 학생 기본 프로필 목록 (1~6번 및 11~14번)
 // ========================================================
 
 const DEFAULT_STUDENTS = [
   {
     id: 1,
-    name: '김민준',
-    target: '수능 1등급 & 내신 1등급',
+    name: '김단하',
+    target: '내신 2등급',
     loginId: 'student1',
     password: '1234'
   },
   {
     id: 2,
-    name: '이서연',
-    target: '내신 영어 100점 & 모의고사 1등급',
+    name: '김성헌',
+    target: '내신 1등급',
     loginId: 'student2',
     password: '1234'
   },
   {
     id: 3,
-    name: '박도현',
-    target: '고등 선행 문법 & 천일문 마스터',
+    name: '김영빈',
+    target: '내신 1등급',
     loginId: 'student3',
     password: '1234'
   },
   {
     id: 4,
-    name: '최지우',
-    target: '수능 어휘 완성 & 구문 독해 정복',
+    name: '백승조',
+    target: '내신 2등급',
     loginId: 'student4',
     password: '1234'
   },
   {
     id: 5,
-    name: '정현우',
-    target: '수능 연계 교재 완벽 분석',
+    name: '이상록',
+    target: '내신 2등급',
     loginId: 'student5',
     password: '1234'
   },
   {
     id: 6,
-    name: '한유진',
-    target: '내신 영문법 기초 & 필수 단어 1500',
+    name: '조용준',
+    target: '내신 2등급',
     loginId: 'student6',
     password: '1234'
+  },
+  {
+    id: 11,
+    name: '송규인',
+    target: '내신 영어 100점',
+    loginId: 'gyuin',
+    password: '1012'
+  },
+  {
+    id: 12,
+    name: '강민수',
+    target: '내신 영어 1등급',
+    loginId: 'kangminsu',
+    password: '1031'
+  },
+  {
+    id: 13,
+    name: '이현민',
+    target: '내신 영어 2등급',
+    loginId: 'gusals',
+    password: '1006'
+  },
+  {
+    id: 14,
+    name: '테스트',
+    target: '',
+    loginId: 'test',
+    password: '1234'
+  }
+];
+
+
+// ========================================================
+// YBM(박준언) 공통영어 2 본문 1과 (1~4문단) 실전 내신 킬러 10문항
+// ========================================================
+
+const YBM2_L1_PRACTICE_QUESTIONS = [
+  {
+    id: 'ybm2_l1_q1',
+    type: 'CHOICE',
+    question: '다음 글의 밑줄 친 ①~⑤ 중, 어법상 틀린 것은?',
+    passage: `While scrolling through her social media one day, Gina was astonished when she saw the news headline, “The Heundeulbawi in Seoraksan National Park Has Fallen.” Gina immediately shared the shocking story with her close friends. Later, during the morning news on TV, a reporter ①**standing** next to the undamaged Heundeulbawi said, “Today’s Internet stories of the Heundeulbawi ②**being damaged** were fake.” Gina was embarrassed by the fact ③**which** she had spread the fake news. It reminded her of another incident of fake news that ④**had happened** a while ago. The news that a famous athlete had died became the number one issue online, but it turned out ⑤**to be** fake.`,
+    choices: [
+      'standing',
+      'being damaged',
+      'which',
+      'had happened',
+      'to be'
+    ],
+    answer: 3,
+    explanation: '③번의 which 뒤에는 완전한 절(she had spread the fake news)이 이어지므로 관계대명사 which가 올 수 없으며, 추상명사 the fact와 동격을 이루는 접속사 that으로 고쳐야 합니다.\n(①은 a reporter를 수식하는 능동 분사, ②는 전치사 of의 목적어로 쓰인 수동형 동명사, ④는 과거 특정 시점 이전의 일을 나타내는 과거완료, ⑤는 turn out to be 구문으로 모두 적절합니다.)'
+  },
+  {
+    id: 'ybm2_l1_q2',
+    type: 'CHOICE',
+    question: '다음 글의 밑줄 친 ①~⑤ 중, 문맥상 낱말의 쓰임이 적절하지 않은 것은?',
+    passage: `The news that a famous athlete had died became the number one issue online, but it turned out to be fake. It had been made by content creators who sought people’s attention. They produced ①**provocative** false stories to make money by raising the number of views of their posts. At that time, Gina criticized those who had made and spread fake news because it had hurt the athlete and ②**confused** people. This time, however, Gina herself had ③**accidentally** contributed to the spread of fake news. Unfortunately, becoming an accidental distributor of fake news like Gina is not unusual. Fake news is a ④**deliberate** attempt to manipulate people by spreading ⑤**accurate** information.`,
+    choices: [
+      'provocative',
+      'confused',
+      'accidentally',
+      'deliberate',
+      'accurate'
+    ],
+    answer: 5,
+    explanation: '가짜 뉴스는 사람들을 조종하기 위해 "부정확한 정보(inaccurate information)"를 퍼뜨리는 의도적인 시도이므로, ⑤의 accurate(정확한)는 문맥상 어색하며 inaccurate(부정확한) 또는 false로 고쳐야 합니다.\n(① provocative: 자극적인, ② confused: 혼란스럽게 한, ③ accidentally: 우발적으로, ④ deliberate: 의도적인)'
+  },
+  {
+    id: 'ybm2_l1_q3',
+    type: 'CHOICE',
+    question: '다음 글의 빈칸에 들어갈 말로 가장 적절한 것은?',
+    passage: `It is made by certain groups with the intention of attracting people’s attention, making profits, or gaining political benefits. It can confuse people, disturb society, and even seriously harm the public as well as all individuals involved. It is very common for fake news to spread __________________________________________________. For example, after an earthquake measuring 6.5 struck Ambon, Indonesia, in September 2019, thousands of residents did not return to their homes and were still in shelters for two weeks. This was because of fake news stories on social media that another earthquake followed by a tsunami was about to strike.`,
+    choices: [
+      'through official government press releases',
+      'during states of emergency',
+      'only among people who dislike social media',
+      'when scientific facts are proven without doubt',
+      'after the public has thoroughly verified the sources'
+    ],
+    answer: 2,
+    explanation: '빈칸 뒤에 이어지는 인도네시아 암본 지진 발생 후 주민들이 대피소에 머물며 쓰나미 가짜 뉴스가 급속도로 퍼진 사례를 볼 때, 가짜 뉴스는 "비상사태 동안(during states of emergency)"에 퍼지는 것이 매우 흔하다는 내용이 가장 적절합니다.'
+  },
+  {
+    id: 'ybm2_l1_q4',
+    type: 'CHOICE',
+    question: '위 글의 내용과 일치하지 않는 것은? (According to the passage, which of the following is NOT true?)',
+    passage: `While scrolling through her social media one day, Gina was astonished when she saw the news headline, “The Heundeulbawi in Seoraksan National Park Has Fallen.” Gina immediately shared the shocking story with her close friends. Later, during the morning news on TV, a reporter standing next to the undamaged Heundeulbawi said, “Today’s Internet stories of the Heundeulbawi being damaged were fake.” Gina was embarrassed by the fact that she had spread the fake news. It reminded her of another incident of fake news that had happened a while ago. The news that a famous athlete had died became the number one issue online, but it turned out to be fake. It had been made by content creators who sought people’s attention. They produced provocative false stories to make money by raising the number of views of their posts. At that time, Gina criticized those who had made and spread fake news because it had hurt the athlete and confused people. This time, however, Gina herself had accidentally contributed to the spread of fake news.`,
+    choices: [
+      'Gina first learned about the falling of Heundeulbawi through a morning news broadcast on television.',
+      'The television reporter confirmed that Heundeulbawi was completely undamaged.',
+      'Content creators had created false rumors about a famous athlete’s death for financial gain through views.',
+      'In the past, Gina condemned people who produced and circulated fake news.',
+      'Gina felt embarrassed because she unintentionally participated in distributing misinformation.'
+    ],
+    answer: 1,
+    explanation: '지나는 흔들바위가 떨어졌다는 소식을 TV 아침 뉴스가 아니라 소셜 미디어를 스크롤하다가 뉴스 헤드라인으로 처음 보았고(While scrolling through her social media one day, Gina was astonished when she saw the news headline...), 이후 TV 아침 뉴스에서는 해당 기사가 가짜였음을 기자가 전했습니다. 따라서 ①번은 본문 내용과 일치하지 않습니다.'
+  },
+  {
+    id: 'ybm2_l1_q5',
+    type: 'CHOICE',
+    question: '위 글의 밑줄 친 [A]~[D]의 It에 대한 설명으로 가장 적절하지 않은 것은?',
+    passage: `Unfortunately, becoming an accidental distributor of fake news like Gina is not unusual. Fake news is a deliberate attempt to manipulate people by spreading inaccurate information. **[A] It** is made by certain groups with the intention of attracting people’s attention, making profits, or gaining political benefits. **[B] It** can confuse people, disturb society, and even seriously harm the public as well as all individuals involved. **[C] It** is very common for fake news to spread during states of emergency. For example, after an earthquake measuring 6.5 struck Ambon, Indonesia, in September 2019, thousands of residents did not return to their homes and were still in shelters for two weeks. This was because of fake news stories on social media that another earthquake followed by a tsunami was about to strike. One of those messages said, “**[D] It**’s up to you if you want to believe me or not, but apparently Ambon is going to sink in the next few days.” Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake.`,
+    choices: [
+      '[A]의 It은 앞 문장의 \'Fake news\'를 가리킨다.',
+      '[B]의 It은 사람들을 혼란스럽게 하고 사회를 어지럽히는 \'Fake news\'를 가리킨다.',
+      '[C]의 It은 형식상의 주어(가주어)이며, 진주어는 뒤에 나오는 to부정사구(to spread during states of emergency)이다.',
+      '[D]의 It은 인도네시아 암본에서 발생한 \'규모 6.5의 지진\'을 직접 가리킨다.',
+      '[D]의 It은 관용 표현 "It’s up to ~" (~는 당신에게 달려있다)에서 비인칭/상황을 나타내는 it이다.'
+    ],
+    answer: 4,
+    explanation: '[D]의 "It’s up to you if you want to believe me or not"에서 \'It\'s up to ~\'는 \'~에게 달려 있다\'는 관용 표현으로, 믿고 안 믿고는 상대방의 선택에 달려있다는 의미입니다. 따라서 암본에서 발생한 6.5 지진을 가리킨다는 ④번의 설명은 옳지 않습니다.'
+  },
+  {
+    id: 'ybm2_l1_q6',
+    type: 'CHOICE',
+    question: '주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?',
+    passage: `While scrolling through her social media one day, Gina was astonished when she saw the news headline, “The Heundeulbawi in Seoraksan National Park Has Fallen.” Gina immediately shared the shocking story with her close friends.
+
+<보기>
+(A) It had been made by content creators who sought people’s attention. They produced provocative false stories to make money by raising the number of views of their posts.
+(B) Later, during the morning news on TV, a reporter standing next to the undamaged Heundeulbawi said, “Today’s Internet stories of the Heundeulbawi being damaged were fake.” Gina was embarrassed by the fact that she had spread the fake news.
+(C) This reminded her of another incident of fake news that had happened a while ago. The news that a famous athlete had died became the number one issue online, but it turned out to be fake. At that time, Gina had criticized those creators, but this time she herself had accidentally contributed to spreading false stories.`,
+    choices: [
+      '(A) - (C) - (B)',
+      '(B) - (A) - (C)',
+      '(B) - (C) - (A)',
+      '(C) - (A) - (B)',
+      '(C) - (B) - (A)'
+    ],
+    answer: 3,
+    explanation: '주어진 글(지나가 흔들바위 헤드라인을 보고 친구들에게 공유함) 뒤에는 (B) TV 아침 뉴스에서 가짜 뉴스임을 알게 되고 당황했다는 내용이 와야 합니다. 그 다음 (C) 이것이 과거 유명 운동선수의 사망 가짜 뉴스 사건을 떠올리게 했다(It reminded her of another incident...)는 내용이 이어지며, 마지막으로 (A) 그 사건의 가짜 뉴스를 만든 배후(content creators who sought people\'s attention)에 대한 구체적 설명이 이어지는 것이 자연스럽습니다. 따라서 올바른 순서는 (B) - (C) - (A)입니다.'
+  },
+  {
+    id: 'ybm2_l1_q7',
+    type: 'CHOICE',
+    question: '다음 글의 (A), (B), (C)의 각 네모 안에서 어법에 맞는 표현으로 가장 적절한 것은?',
+    passage: `It is very common (A)[for / of] fake news to spread during states of emergency. For example, after an earthquake measuring 6.5 struck Ambon, Indonesia, in September 2019, thousands of residents did not return to their homes and were still in shelters for two weeks. This was because of fake news stories on social media (B)[that / what] another earthquake followed by a tsunami was about to strike. One of those messages said, “It’s up to you if you want to believe me or not, but apparently Ambon is going to sink in the next few days.” Many (C)[displacing / displaced] people were so anxious about aftershocks that the government had to announce that the information was fake.`,
+    choices: [
+      '(A) for  — (B) that — (C) displaced',
+      '(A) for  — (B) what — (C) displacing',
+      '(A) for  — (B) that — (C) displacing',
+      '(A) of   — (B) what — (C) displaced',
+      '(A) of   — (B) that — (C) displacing'
+    ],
+    answer: 1,
+    explanation: '(A): to부정사(to spread)의 의미상 주어로 일반적인 사물/개념을 나타낼 때는 [for + 목적격]을 취하므로 for가 적절합니다.\n(B): 뒤에 완전한 절(another earthquake followed by a tsunami was about to strike)이 이어지므로 동격의 접속사 that이 올바릅니다.\n(C): 재난으로 인해 \'집을 잃고 난민이 된\' 사람들은 수동의 의미를 지니므로 과거분사 displaced가 people을 수식해야 합니다.'
+  },
+  {
+    id: 'ybm2_l1_q8',
+    type: 'SHORT',
+    question: `다음 영영풀이에 해당하는 단어를 윗글에서 찾아 원형(한 단어의 영어)으로 쓰시오.
+
+<영영풀이>
+"done consciously and intentionally; on purpose rather than by accident"`,
+    passage: `Unfortunately, becoming an accidental distributor of fake news like Gina is not unusual. Fake news is a deliberate attempt to manipulate people by spreading inaccurate information. It is made by certain groups with the intention of attracting people’s attention, making profits, or gaining political benefits. It can confuse people, disturb society, and even seriously harm the public as well as all individuals involved.`,
+    choices: [],
+    answer: 'deliberate',
+    acceptableAnswers: ['deliberate', 'Deliberate'],
+    explanation: '영영 풀이는 \'의도적인, 계획적인\'을 뜻하며, 윗글의 "Fake news is a deliberate attempt to manipulate people..."에서 이에 해당하는 단어는 deliberate입니다.'
+  },
+  {
+    id: 'ybm2_l1_q9',
+    type: 'ESSAY',
+    question: `윗글의 빈칸 (A)에 들어갈 말을 <우리말> 뜻에 맞도록, <보기>의 단어들을 모두 한 번씩 사용하여 <조건>에 맞게 완전한 영어 문장으로 영작하시오.
+
+<우리말>
+"많은 이재민들이 여진에 대해 너무 불안해해서 정부는 그 정보가 가짜라고 발표해야만 했다."
+
+<보기>
+many / people / were / anxious / about / aftershocks / the government / to / announce / that / the information / fake / had / displaced / so / that / was
+
+<조건>
+1. '너무 ~해서 ...하다'를 나타내는 「so + 형용사 + that절」 구문을 반드시 활용할 것.
+2. 주어진 17단어를 변형 없이 모두 빠짐없이 배열할 것.
+3. 완전한 하나의 문장으로 작성할 것 (대소문자 및 구두점 유의).`,
+    passage: `It is very common for fake news to spread during states of emergency. For example, after an earthquake measuring 6.5 struck Ambon, Indonesia, in September 2019, thousands of residents did not return to their homes and were still in shelters for two weeks. This was because of fake news stories on social media that another earthquake followed by a tsunami was about to strike. One of those messages said, “It’s up to you if you want to believe me or not, but apparently Ambon is going to sink in the next few days.”\n[ (A) ____________________________________________________________________ ]`,
+    choices: [],
+    answer: 'Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake.',
+    acceptableAnswers: [
+      'Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake.',
+      'Many displaced people were so anxious about aftershocks that the government had to announce that the information was fake'
+    ],
+    keywords: ['Many displaced people', 'so anxious about aftershocks that', 'the government had to announce that', 'the information was fake'],
+    explanation: '「so + 형용사 + that + 주어 + 동사」 결과 구문과 과거분사 displaced의 명사 수식을 결합한 고난도 필수 내신 영작 문제입니다.\n- 주어부: Many displaced people\n- 서술부 1: were so anxious about aftershocks\n- 접속사 that절: that the government had to announce that the information was fake.'
+  },
+  {
+    id: 'ybm2_l1_q10',
+    type: 'ESSAY',
+    question: `윗글의 빈칸 (A)에 들어갈 말을 <우리말> 뜻에 맞도록, <보기>의 단어들을 활용하여 <조건>에 맞게 완전한 영어 문장으로 영작하시오.
+
+<우리말>
+"지나는 자신이 가짜 뉴스를 퍼뜨렸었다는 사실에 당황했다."
+
+<보기>
+embarrass / spread / Gina / by / the fact / the fake news / she / be
+
+<조건>
+1. 감정을 나타내는 분사 표현(수동태)과 「the fact that + 완전한 절」(동격의 that) 구조를 사용할 것.
+2. 당황한 시점(과거)보다 가짜 뉴스를 퍼뜨린 시점이 더 앞선 과거임을 나타내는 시제(과거완료 had p.p.)를 반드시 적용할 것.
+3. <보기>의 단어 중 필요한 단어는 어형을 변화시키고, 필요한 접속사를 추가하여 총 12단어로 작성할 것.`,
+    passage: `While scrolling through her social media one day, Gina was astonished when she saw the news headline, “The Heundeulbawi in Seoraksan National Park Has Fallen.” Gina immediately shared the shocking story with her close friends. Later, during the morning news on TV, a reporter standing next to the undamaged Heundeulbawi said, “Today’s Internet stories of the Heundeulbawi being damaged were fake.”\n[ (A) ____________________________________________________________________ ]`,
+    choices: [],
+    answer: 'Gina was embarrassed by the fact that she had spread the fake news.',
+    acceptableAnswers: [
+      'Gina was embarrassed by the fact that she had spread the fake news.',
+      'Gina was embarrassed by the fact that she had spread the fake news'
+    ],
+    keywords: ['Gina was embarrassed', 'by the fact that', 'had spread the fake news'],
+    explanation: '1) Gina가 당황함을 느낀 수동태 표현: Gina was embarrassed\n2) \'~라는 사실에\': by the fact that (동격 접속사 that 추가)\n3) 당황한 과거 시점(was) 이전에 이미 가짜 뉴스를 퍼뜨렸으므로 대과거/과거완료(had p.p.): she had spread the fake news\n따라서 정답은 "Gina was embarrassed by the fact that she had spread the fake news."입니다.'
   }
 ];
 
@@ -96,7 +305,7 @@ function generateDefaultTests() {
   return [
 
     // ======================================================
-    // 학생 1: 김민준
+    // 학생 1: 김단하
     // ======================================================
 
     {
@@ -144,9 +353,31 @@ function generateDefaultTests() {
       teacherNote: '패러프레이징 원리와 연결사 전후 논리 관계를 집중적으로 점검할 예정입니다.'
     },
 
+    {
+      id: 'practice_20260904_student_1',
+      studentId: 1,
+      title: '9/4(금) 문제풀이 테스트',
+      date: '2026-09-04',
+      time: '13:10',
+      endTime: '13:30',
+      scope: 'YBM(박준언) 공통영어 2 - Lesson 1 (1~4문단) 실전 내신 킬러 문제풀이 (총 10문항)',
+      cutoff: '80점 이상',
+      cutoffScore: 80,
+      practiceCutoff: 80,
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: 'YBM(박준언) 공통영어 2 본문 1과 1~4문단 실전 내신 대비 테스트입니다. 어법, 어휘, 빈칸, 내용일치, 순서배열, 영영풀이 단답형 및 조건부 영작 서술형 2문항이 포함되어 있습니다. 제한시간(13:10~13:30) 내에 집중하여 풀어보세요!',
+      type: 'PRACTICE',
+      questions: YBM2_L1_PRACTICE_QUESTIONS,
+      practiceResult: null,
+      allowLate: false
+    },
+
 
     // ======================================================
-    // 학생 2: 이서연
+    // 학생 2: 김성헌
     // ======================================================
 
     {
@@ -196,7 +427,7 @@ function generateDefaultTests() {
 
 
     // ======================================================
-    // 학생 3: 박도현
+    // 학생 3: 김영빈
     // ======================================================
 
     {
@@ -246,7 +477,7 @@ function generateDefaultTests() {
 
 
     // ======================================================
-    // 학생 4: 최지우
+    // 학생 4: 백승조
     // ======================================================
 
     {
@@ -266,7 +497,7 @@ function generateDefaultTests() {
 
 
     // ======================================================
-    // 학생 5: 정현우
+    // 학생 5: 이상록
     // ======================================================
 
     {
@@ -316,7 +547,7 @@ function generateDefaultTests() {
 
 
     // ======================================================
-    // 학생 6: 한유진
+    // 학생 6: 조용준
     // ======================================================
 
     {
@@ -387,6 +618,42 @@ const AppData = {
       !!window.firebaseDB &&
       !!window.firebaseFns
     );
+  },
+
+  async waitForFirebase(timeoutMs = 6000) {
+    if (this.isFirebaseReady()) return true;
+
+    return new Promise(resolve => {
+      const startTime = Date.now();
+      let timer = null;
+
+      const onReady = () => {
+        cleanup();
+        resolve(true);
+      };
+
+      const cleanup = () => {
+        if (timer) clearInterval(timer);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('firebase-ready', onReady);
+        }
+      };
+
+      if (typeof window !== 'undefined') {
+        window.addEventListener('firebase-ready', onReady);
+      }
+
+      timer = setInterval(() => {
+        if (this.isFirebaseReady()) {
+          cleanup();
+          resolve(true);
+        } else if (Date.now() - startTime > timeoutMs) {
+          cleanup();
+          console.warn('⚠️ Firebase 준비 대기 타임아웃');
+          resolve(false);
+        }
+      }, 50);
+    });
   },
 
 
@@ -513,70 +780,81 @@ const AppData = {
   // ======================================================
 
   async initializeStudents() {
+    await this.waitForFirebase();
 
     try {
+      const students = await this.loadStudentsFromFirestore();
 
-      const students =
-        await this.loadStudentsFromFirestore();
+      const dummyNames = ['김민준', '이서연', '박도현', '최지우', '정현우', '한유진'];
+      const realProfileMap = {
+        1: { name: '김단하', target: '내신 2등급', loginId: 'student1', password: '1234' },
+        2: { name: '김성헌', target: '내신 1등급', loginId: 'student2', password: '1234' },
+        3: { name: '김영빈', target: '내신 1등급', loginId: 'student3', password: '1234' },
+        4: { name: '백승조', target: '내신 2등급', loginId: 'student4', password: '1234' },
+        5: { name: '이상록', target: '내신 2등급', loginId: 'student5', password: '1234' },
+        6: { name: '조용준', target: '내신 2등급', loginId: 'student6', password: '1234' }
+      };
 
-      // Firestore에 학생 데이터가 아직 없는 경우
-      if (students.length === 0) {
+      let needsSync = false;
+      let updatedStudents = [...students];
 
-        console.log(
-          '📦 Firestore에 학생 데이터가 없습니다.'
-        );
-
-        console.log(
-          '📤 기본 학생 6명을 Firestore에 저장합니다.'
-        );
-
-        await this.saveStudents(
-          DEFAULT_STUDENTS
-        );
-
-        FirebaseStore.students =
-          [...DEFAULT_STUDENTS];
-
-        console.log(
-          '✅ 기본 학생 데이터 초기 저장 완료'
-        );
-      } else {
-        // 기존 프로필 선택 방식에서 사용하던 학생 문서에
-        // 로그인 정보가 없을 때만 최초 로그인용 기본 계정을 부여합니다.
-        const migratedStudents = students.map(student => ({
-          ...student,
-          loginId: student.loginId || `student${student.id}`,
-          password: /^\d{4}$/.test(String(student.password || ''))
-            ? String(student.password)
-            : '1234'
-        }));
-        const needsCredentialMigration = migratedStudents.some((student, index) =>
-          student.loginId !== students[index].loginId ||
-          student.password !== students[index].password
-        );
-
-        if (needsCredentialMigration) {
-          await this.saveStudents(migratedStudents);
-          console.log('✅ 기존 학생 계정에 로그인 정보 초기 설정 완료');
-        }
+      // 1. Firestore에 학생 데이터가 아예 없는 경우 전체 DEFAULT_STUDENTS로 초기화
+      if (updatedStudents.length === 0) {
+        console.log('📦 Firestore에 학생 데이터가 없어 실제 학생 목록으로 초기화합니다.');
+        await this.saveStudents(DEFAULT_STUDENTS);
+        FirebaseStore.students = [...DEFAULT_STUDENTS];
+        FirebaseStore.studentsLoaded = true;
+        return FirebaseStore.students;
       }
 
+      // 2. 가짜 샘플 이름(김민준, 이서연 등)이 남아있으면 실제 학생으로 보정
+      //    (선생님이 추가한 11: 송규인, 12: 강민수, 13: 이현민, 14: 테스트 등은 온전히 유지)
+      updatedStudents = updatedStudents.map(student => {
+        const id = Number(student.id);
+        if (dummyNames.includes(student.name) && realProfileMap[id]) {
+          needsSync = true;
+          return {
+            ...student,
+            name: realProfileMap[id].name,
+            target: student.target && !student.target.includes('수능') ? student.target : realProfileMap[id].target,
+            loginId: student.loginId || realProfileMap[id].loginId,
+            password: student.password || realProfileMap[id].password
+          };
+        }
+        return student;
+      });
+
+      // 3. 1~6번 기본 학생 중 혹시 누락된 학생이 있다면 추가 보충
+      DEFAULT_STUDENTS.forEach(defStudent => {
+        if (!updatedStudents.some(s => s.id === defStudent.id)) {
+          updatedStudents.push({ ...defStudent });
+          needsSync = true;
+        }
+      });
+
+      // 4. 로그인 정보(loginId, password) 누락 방지
+      updatedStudents = updatedStudents.map(student => ({
+        ...student,
+        loginId: student.loginId || `student${student.id}`,
+        password: /^\d{4}$/.test(String(student.password || '')) ? String(student.password) : '1234'
+      }));
+
+      // ID 순 정렬
+      updatedStudents.sort((a, b) => a.id - b.id);
+
+      if (needsSync) {
+        await this.saveStudents(updatedStudents);
+        console.log('✅ 학생 프로필 정상화 및 Firestore 동기화 완료');
+      }
+
+      FirebaseStore.students = updatedStudents;
+      FirebaseStore.studentsLoaded = true;
       return FirebaseStore.students;
 
     } catch (error) {
-
-      console.error(
-        '❌ 학생 데이터 초기화 실패:',
-        error
-      );
-
-      // Firebase 연결에 문제가 있더라도
-      // 사이트 자체가 완전히 깨지지 않도록 기본 데이터 사용
-      FirebaseStore.students =
-        [...DEFAULT_STUDENTS];
-
+      console.error('❌ 학생 데이터 초기화 실패:', error);
+      FirebaseStore.students = [...DEFAULT_STUDENTS];
       FirebaseStore.studentsLoaded = true;
-
       return FirebaseStore.students;
     }
   },
@@ -819,6 +1097,8 @@ const AppData = {
   // ======================================================
 
   async initializeCloudData() {
+    await this.waitForFirebase();
+
     const [tests, vocabSets, vocabTestResults] = await Promise.all([
       this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })),
       this.loadCollection('vocabSets', set => ({
@@ -982,6 +1262,75 @@ const AppData = {
       }
     } catch (err) {
       console.warn('9/2 파이널 시험 일괄 등록 동기화 안내:', err);
+    }
+
+    // 9/4(금) 문제풀이 테스트: 전체 학생 대상 일괄 등록 및 동기화 (13:10 ~ 13:30)
+    try {
+      const practiceExamDate = '2026-09-04';
+      const students = this.getStudents();
+      let currentTests = this.getTests();
+      let practiceModified = false;
+
+      students.forEach(student => {
+        const existingTest = currentTests.find(t => t.studentId === student.id && t.date === practiceExamDate && (t.id === `practice_20260904_student_${student.id}` || (t.type === 'PRACTICE' && t.title && t.title.includes('문제풀이'))));
+        const practiceTestConfig = {
+          id: `practice_20260904_student_${student.id}`,
+          studentId: student.id,
+          title: '9/4(금) 문제풀이 테스트',
+          date: practiceExamDate,
+          time: '13:10',
+          endTime: '13:30',
+          scope: 'YBM(박준언) 공통영어 2 - Lesson 1 (1~4문단) 실전 내신 킬러 문제풀이 (총 10문항)',
+          cutoff: '80점 이상',
+          cutoffScore: 80,
+          practiceCutoff: 80,
+          score: existingTest?.score || '',
+          status: existingTest?.status || 'SCHEDULED',
+          retestStatus: existingTest?.retestStatus || 'NONE',
+          retestDate: existingTest?.retestDate || '',
+          teacherNote: 'YBM(박준언) 공통영어 2 본문 1과 1~4문단 실전 내신 대비 테스트입니다. 어법, 어휘, 빈칸, 내용일치, 순서배열, 영영풀이 단답형 및 조건부 영작 서술형 2문항이 포함되어 있습니다. 제한시간(13:10~13:30) 내에 집중하여 풀어보세요!',
+          type: 'PRACTICE',
+          questions: YBM2_L1_PRACTICE_QUESTIONS,
+          practiceResult: existingTest?.practiceResult || null,
+          allowLate: false
+        };
+
+        if (!existingTest) {
+          currentTests.push(practiceTestConfig);
+          practiceModified = true;
+        } else if (
+          existingTest.title !== practiceTestConfig.title ||
+          existingTest.time !== '13:10' ||
+          existingTest.endTime !== '13:30' ||
+          existingTest.allowLate !== false ||
+          !existingTest.questions ||
+          existingTest.questions.length !== 10 ||
+          (existingTest.questions[0] && existingTest.questions[0].question && existingTest.questions[0].question.includes('[1과')) ||
+          (existingTest.questions[7] && existingTest.questions[7].question && existingTest.questions[7].question.includes('영영 풀이')) ||
+          (existingTest.questions[8] && existingTest.questions[8].passage && existingTest.questions[8].passage.includes('**[많은'))
+        ) {
+          existingTest.title = practiceTestConfig.title;
+          existingTest.time = '13:10';
+          existingTest.endTime = '13:30';
+          existingTest.scope = practiceTestConfig.scope;
+          existingTest.questions = practiceTestConfig.questions;
+          existingTest.type = 'PRACTICE';
+          existingTest.cutoff = '80점 이상';
+          existingTest.cutoffScore = 80;
+          existingTest.practiceCutoff = 80;
+          existingTest.teacherNote = practiceTestConfig.teacherNote;
+          existingTest.allowLate = false;
+          practiceModified = true;
+        }
+      });
+
+      if (practiceModified) {
+        FirebaseStore.tests = currentTests;
+        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Practice tests sync notice:', e));
+        console.log('9/4(금) YBM(박준언) 1과 실전 문제풀이 테스트가 전체 학생에게 성공적으로 일괄 등록되었습니다.');
+      }
+    } catch (err) {
+      console.warn('9/4 문제풀이 테스트 일괄 등록 동기화 안내:', err);
     }
 
     if (vocabTestResults.length === 0) {

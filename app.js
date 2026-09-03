@@ -1056,12 +1056,12 @@ const App = {
       ? { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', label: '완료' }
       : (isFailed
           ? { class: 'bg-rose-100 text-rose-800 border border-rose-300', label: '불합격 (FAIL)' }
-          : (test.allowLate
-              ? { class: 'bg-emerald-100 text-emerald-800', label: '상시 응시 허용됨' }
+          : (timeStatus.status === 'NOT_STARTED'
+              ? { class: 'bg-blue-100 text-blue-800 border border-blue-200', label: timeStatus.label || '시작 전' }
               : (timeStatus.status === 'EXPIRED'
                   ? { class: 'bg-rose-100 text-rose-800', label: '마감' }
-                  : (timeStatus.status === 'NOT_STARTED'
-                      ? { class: 'bg-blue-100 text-blue-800', label: '시작 전' }
+                  : (test.allowLate
+                      ? { class: 'bg-amber-100 text-amber-800 border border-amber-200', label: '지각 응시 허용됨' }
                       : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' }))));
     const baseTimeStr = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : (test.endTime ? `~ ${test.endTime}까지` : '23:59까지');
     const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
@@ -1850,21 +1850,7 @@ const App = {
       return { status: 'IN_PROGRESS', label: '재시험 응시 가능', canStart: true, message: '' };
     }
 
-    if (test.allowLate) {
-      return { status: 'IN_PROGRESS', label: '응시 가능 (상시 허용)', canStart: true, message: '' };
-    }
-
-    // 3. 마감이 지난 경우 (미통과 상태에서 시간 종료)
-    if (now > endDateTime) {
-      return {
-        status: 'EXPIRED',
-        label: '마감',
-        canStart: false,
-        message: '응시 시간이 마감되었습니다.'
-      };
-    }
-
-    // 4. 단어 테스트(VOCAB)는 시험 날짜 이전이라도 언제든 사전 응시 가능
+    // 3. 단어 테스트(VOCAB)는 시험 날짜 이전이라도 언제든 사전 응시 가능
     if (test.type === 'VOCAB') {
       return {
         status: 'IN_PROGRESS',
@@ -1874,6 +1860,7 @@ const App = {
       };
     }
 
+    // 4. 시험 시작 전 여부 체크 (단어 시험 외 문제풀이 시험 등은 시작 시간 전 절대 응시 불가)
     if (now < startDateTime) {
       const timeStr = test.time ? `${test.time}` : '시험 당일';
       return {
@@ -1881,6 +1868,19 @@ const App = {
         label: `시작 전 (${timeStr}부터 가능)`,
         canStart: false,
         message: `시험 시작 시간이 아닙니다. ${test.date} ${test.time || ''}부터 응시할 수 있습니다.`
+      };
+    }
+
+    // 5. 마감이 지난 경우 (미통과 상태에서 종료 시간 초과)
+    if (now > endDateTime) {
+      if (test.allowLate) {
+        return { status: 'IN_PROGRESS', label: '지각 응시 허용', canStart: true, message: '' };
+      }
+      return {
+        status: 'EXPIRED',
+        label: '마감',
+        canStart: false,
+        message: '응시 시간이 마감되었습니다.'
       };
     }
 
@@ -2052,12 +2052,19 @@ const App = {
             <span class="text-[11px] text-indigo-600">열기/닫기</span>
           </summary>
           <div class="mt-2 space-y-2 pt-2 border-t border-slate-200 max-h-48 overflow-y-auto pr-1">
-            ${questions.map((q, idx) => `
-              <div class="p-2 rounded-lg bg-white border border-slate-200 text-[11px] leading-snug">
-                <strong>${idx + 1}. ${this.renderRichText(q.question)}</strong>
-                <div class="text-slate-500 mt-0.5">정답: ${q.answer}번 (${this.renderRichText(q.choices?.[q.answer - 1] || '')})</div>
-              </div>
-            `).join('')}
+            ${questions.map((q, idx) => {
+              const qType = q.type || 'CHOICE';
+              const typeLabel = qType === 'SHORT' ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mr-1">주관식</span>' : (qType === 'ESSAY' ? '<span class="text-[10px] font-bold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded mr-1">서술형</span>' : '');
+              const answerText = (qType === 'SHORT' || qType === 'ESSAY')
+                ? `정답/모범답안: ${this.escapeHtml(q.answer || '')}`
+                : `정답: ${q.answer}번 (${this.renderRichText(q.choices?.[q.answer - 1] || '')})`;
+              return `
+                <div class="p-2.5 rounded-lg bg-white border border-slate-200 text-[11px] leading-snug">
+                  <div>${typeLabel}<span class="font-black text-slate-800">${idx + 1}번.</span> <div class="mt-1">${this.renderRichText(q.question)}</div></div>
+                  <div class="text-slate-600 mt-1.5 font-mono pt-1 border-t border-slate-100">${answerText}</div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </details>
       ` : ''}
@@ -2160,9 +2167,11 @@ const App = {
 
     const total = pt.questions.length;
     const q = pt.questions[index];
+    const qType = q.type || 'CHOICE';
     const choices = q.choices || ['', '', '', '', ''];
-    const currentAnswer = pt.answers[index] || null;
+    const currentAnswer = pt.answers[index] != null ? pt.answers[index] : '';
     const choiceLabels = ['①', '②', '③', '④', '⑤'];
+    const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && String(pt.answers[k]).trim() !== '').length;
 
     document.getElementById('practiceTestTopInfo').innerHTML = `
       <div class="flex items-center justify-between gap-4 flex-wrap w-full">
@@ -2177,17 +2186,95 @@ const App = {
       <div class="flex flex-wrap gap-1.5 mt-3">
         ${pt.questions.map((_, i) => {
           const isCurrent = i === index;
-          const isAnswered = pt.answers[i] != null;
+          const ans = pt.answers[i];
+          const isAnswered = ans != null && String(ans).trim() !== '';
           const btnClass = isCurrent
             ? 'bg-slate-900 text-white border-slate-900 font-black ring-2 ring-slate-400'
             : isAnswered
               ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
               : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50';
-          return `<button onclick="App.goToPracticeQuestion(${i})" class="w-8 h-8 rounded-lg border text-xs transition ${btnClass}">${i + 1}</button>`;
+          return `<button id="practiceTopBtn_${i}" onclick="App.goToPracticeQuestion(${i})" class="w-8 h-8 rounded-lg border text-xs transition ${btnClass}">${i + 1}</button>`;
         }).join('')}
       </div>
     `;
 
+    // 문항 유형 뱃지
+    const typeBadge = qType === 'CHOICE'
+      ? '<span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">5지선다</span>'
+      : (qType === 'SHORT'
+        ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">주관식 단답형</span>'
+        : '<span class="text-[10px] font-black text-violet-700 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">서술형 영작</span>');
+
+    // 답안 작성 컨트롤 (객관식 / 단답형 / 서술형)
+    let answerControlHtml = '';
+    if (qType === 'CHOICE') {
+      answerControlHtml = `
+        <div class="space-y-2.5 pt-2">
+          ${choices.map((choice, cIdx) => {
+            const choiceNum = cIdx + 1;
+            const isSelected = Number(currentAnswer) === choiceNum;
+            return `
+              <button type="button" onclick="App.selectPracticeChoice(${choiceNum})" class="w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${isSelected ? 'bg-indigo-50 border-indigo-600 text-indigo-950 font-bold shadow-xs' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
+                <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
+                  ${choiceLabels[cIdx]}
+                </span>
+                <span class="flex-1">${this.renderRichText(choice)}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else if (qType === 'SHORT') {
+      answerControlHtml = `
+        <div class="pt-2 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-i-cursor text-indigo-600"></i> 주관식 답안 입력
+            </label>
+            <span class="text-[11px] text-slate-400 font-medium">영문 대소문자 무관 / 철자 유의</span>
+          </div>
+          <div class="relative">
+            <input
+              type="text"
+              id="practiceAnswerInput"
+              value="${this.escapeHtml(currentAnswer)}"
+              placeholder="답안을 입력하세요 (예: 본문에서 찾은 영어 단어/어구)"
+              oninput="App.updatePracticeTextAnswer(this.value)"
+              class="w-full py-3 px-4 rounded-xl border-2 border-indigo-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 text-sm font-semibold transition bg-white shadow-xs font-sans"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+      `;
+    } else if (qType === 'ESSAY') {
+      const wordsCount = String(currentAnswer).trim() ? String(currentAnswer).trim().split(/\s+/).length : 0;
+      answerControlHtml = `
+        <div class="pt-2 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-violet-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-pen-nib text-violet-600"></i> 서술형 영작 답안 작성
+            </label>
+            <span id="practiceWordCountBadge" class="text-[11px] text-violet-700 bg-violet-100 px-2.5 py-0.5 rounded-full font-bold">
+              ${wordsCount}단어 작성
+            </span>
+          </div>
+          <div class="relative">
+            <textarea
+              id="practiceAnswerInput"
+              rows="4"
+              placeholder="<조건>에 맞추어 완전한 영어 문장으로 작성하세요."
+              oninput="App.updatePracticeTextAnswer(this.value)"
+              class="w-full p-3.5 rounded-xl border-2 border-violet-200 focus:border-violet-600 focus:ring-4 focus:ring-violet-100 text-sm font-semibold transition bg-white shadow-xs font-sans leading-relaxed"
+              spellcheck="false"
+            >${this.escapeHtml(currentAnswer)}</textarea>
+          </div>
+          <p class="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-indigo-500"></i> 조건에 제시된 필수 어휘, 어형 변화, 단어 수, 구두점(마침표 등)에 유의하여 완전한 문장으로 작성하세요.
+          </p>
+        </div>
+      `;
+    }
 
     // 문제 뷰 본문
     document.getElementById('practiceTestContent').innerHTML = `
@@ -2200,35 +2287,25 @@ const App = {
         <!-- Question Card -->
         <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">문제 ${index + 1}</span>
-            <span class="text-xs text-slate-400 font-medium">${Object.keys(pt.answers).length} / ${total}문제 작성 완료</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">문제 ${index + 1}</span>
+              ${typeBadge}
+            </div>
+            <span class="text-xs text-slate-400 font-medium">${answeredCount} / ${total}문제 작성 완료</span>
           </div>
 
-          <!-- Question Text -->
+          <!-- Question Text & Structured Boxes -->
           <div class="space-y-2">
-            <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">${this.renderRichText(q.question)}</h3>
+            <div class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">${this.renderRichText(q.question)}</div>
           </div>
 
           <!-- Passage (제시문) 있을 경우만 노출 -->
           ${q.passage && q.passage.trim() ? `
-            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-relaxed font-serif whitespace-pre-line">${this.renderRichText(q.passage.trim())}</div>
+            <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 leading-relaxed font-exam">${this.renderRichText(q.passage.trim())}</div>
           ` : ''}
 
-          <!-- 5 Choices -->
-          <div class="space-y-2.5 pt-2">
-            ${choices.map((choice, cIdx) => {
-              const choiceNum = cIdx + 1;
-              const isSelected = currentAnswer === choiceNum;
-              return `
-                <button type="button" onclick="App.selectPracticeChoice(${choiceNum})" class="w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${isSelected ? 'bg-indigo-50 border-indigo-600 text-indigo-950 font-bold shadow-xs' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
-                  <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
-                    ${choiceLabels[cIdx]}
-                  </span>
-                  <span class="flex-1">${this.renderRichText(choice)}</span>
-                </button>
-              `;
-            }).join('')}
-          </div>
+          <!-- Answer Control (Choices or Text/Essay Input) -->
+          ${answerControlHtml}
 
           <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
             <button
@@ -2267,18 +2344,104 @@ const App = {
     this.renderPracticeQuestion(pt.currentIndex);
   },
 
+  updatePracticeTextAnswer(value) {
+    const pt = this.state.practiceTest;
+    if (!pt) return;
+    const trimmed = String(value || '').trim();
+    pt.answers[pt.currentIndex] = trimmed ? value : null;
+
+    const topBtn = document.getElementById(`practiceTopBtn_${pt.currentIndex}`);
+    if (topBtn) {
+      if (trimmed) {
+        topBtn.className = 'w-8 h-8 rounded-lg border text-xs transition bg-indigo-600 text-white border-indigo-600 font-bold ring-2 ring-slate-400';
+      } else {
+        topBtn.className = 'w-8 h-8 rounded-lg border text-xs transition bg-slate-900 text-white border-slate-900 font-black ring-2 ring-slate-400';
+      }
+    }
+
+    const wordBadge = document.getElementById('practiceWordCountBadge');
+    if (wordBadge) {
+      const words = trimmed ? trimmed.split(/\s+/).length : 0;
+      wordBadge.innerText = `${words}단어 작성`;
+    }
+  },
+
   goToPracticeQuestion(index) {
     this.renderPracticeQuestion(index);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
+  // ── 정답 정규화 및 단답형/서술형 채점 알고리즘 ────────────────────
+  normalizeAnswer(str) {
+    if (!str) return '';
+    return String(str)
+      .trim()
+      .toLowerCase()
+      .replace(/[‘’]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/\s+/g, ' ')
+      .replace(/[.,;!?]+$/, '');
+  },
+
+  checkShortAnswer(studentAnswer, correctAnswer, acceptableAnswers = []) {
+    if (!studentAnswer) return false;
+    const normStudent = this.normalizeAnswer(studentAnswer);
+    if (!normStudent) return false;
+
+    const candidates = [
+      correctAnswer,
+      ...(Array.isArray(acceptableAnswers) ? acceptableAnswers : [])
+    ].flatMap(a => String(a || '').split(/[/,\n]/))
+     .map(s => this.normalizeAnswer(s))
+     .filter(Boolean);
+
+    return candidates.some(cand => cand === normStudent);
+  },
+
+  checkEssayAnswer(studentAnswer, modelAnswer, acceptableAnswers = [], keywords = []) {
+    if (!studentAnswer) return false;
+    const normStudent = this.normalizeAnswer(studentAnswer);
+    if (!normStudent) return false;
+
+    const candidates = [
+      modelAnswer,
+      ...(Array.isArray(acceptableAnswers) ? acceptableAnswers : [])
+    ].flatMap(a => String(a || '').split(/[/|\n]/))
+     .map(s => this.normalizeAnswer(s))
+     .filter(Boolean);
+
+    // 1. 후보 정답과의 정규화 일치
+    if (candidates.some(cand => cand === normStudent)) return true;
+
+    // 2. 내부 문장부호 제거 후 일치 비교 (쉼표 등 부호 차이 허용)
+    const stripPunct = s => s.replace(/[,;:"'?!]/g, '').replace(/\s+/g, ' ').trim();
+    const strippedStudent = stripPunct(normStudent);
+    if (candidates.some(cand => stripPunct(cand) === strippedStudent)) return true;
+
+    // 3. 필수 키워드 포함 검증
+    const kwList = Array.isArray(keywords) && keywords.length > 0
+      ? keywords
+      : (typeof keywords === 'string' && keywords.trim() ? keywords.split(/[,/]/).map(k => k.trim()).filter(Boolean) : []);
+
+    if (kwList.length > 0) {
+      const allKeywordsPresent = kwList.every(kw => normStudent.includes(this.normalizeAnswer(kw)));
+      if (allKeywordsPresent) {
+        const minLen = Math.min(...candidates.map(c => c.length));
+        if (normStudent.length >= minLen * 0.75) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  },
 
   async submitPracticeTest() {
     const pt = this.state.practiceTest;
     if (!pt) return;
 
     const total = pt.questions.length;
-    const answeredCount = Object.keys(pt.answers).length;
+    const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && String(pt.answers[k]).trim() !== '').length;
     const unAnsweredCount = total - answeredCount;
 
     if (unAnsweredCount > 0) {
@@ -2291,19 +2454,33 @@ const App = {
       }
     }
 
-    // 채점 진행
+    // 채점 진행 (객관식, 주관식 단답형, 서술형 영작 지원)
     let correctCount = 0;
     const reviewItems = pt.questions.map((q, idx) => {
-      const studentAnswer = pt.answers[idx] || null;
-      const isCorrect = studentAnswer === Number(q.answer);
+      const studentAnswer = pt.answers[idx] != null ? pt.answers[idx] : null;
+      const qType = q.type || 'CHOICE';
+      let isCorrect = false;
+
+      if (qType === 'CHOICE') {
+        isCorrect = Number(studentAnswer) === Number(q.answer);
+      } else if (qType === 'SHORT') {
+        isCorrect = this.checkShortAnswer(studentAnswer, q.answer, q.acceptableAnswers);
+      } else if (qType === 'ESSAY') {
+        isCorrect = this.checkEssayAnswer(studentAnswer, q.answer, q.acceptableAnswers, q.keywords);
+      }
+
       if (isCorrect) correctCount++;
+
       return {
         questionNumber: idx + 1,
+        type: qType,
         question: q.question,
         passage: q.passage || '',
         choices: q.choices || [],
-        studentAnswer,
-        correctAnswer: Number(q.answer),
+        studentAnswer: studentAnswer,
+        correctAnswer: (qType === 'SHORT' || qType === 'ESSAY') ? q.answer : Number(q.answer),
+        acceptableAnswers: q.acceptableAnswers || [],
+        keywords: q.keywords || [],
         isCorrect,
         explanation: q.explanation || ''
       };
@@ -2399,33 +2576,17 @@ const App = {
 
           <div class="space-y-4">
             ${reviewItems.map((item, idx) => {
-              return `
-                <div class="p-4 rounded-xl border ${item.isCorrect ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'} space-y-3">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <span class="w-6 h-6 rounded-full ${item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'} text-xs font-black flex items-center justify-center">${idx + 1}</span>
-                      <span class="font-bold text-xs ${item.isCorrect ? 'text-emerald-900' : 'text-rose-900'}">${item.isCorrect ? '정답' : '오답'}</span>
-                    </div>
-                    <span class="text-xs font-bold ${item.isCorrect ? 'text-emerald-700' : 'text-rose-600'}">
-                      학생 선택: ${item.studentAnswer ? `${choiceLabels[item.studentAnswer - 1]} (${item.studentAnswer}번)` : '미응답'} · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)
-                    </span>
-                  </div>
+              const qType = item.type || 'CHOICE';
+              const isChoice = qType === 'CHOICE';
 
-                  <!-- 1. 문제 -->
-                  <p class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${this.renderRichText(item.question)}</p>
-
-                  <!-- 2. 제시문 (있을 때만) -->
-                  ${item.passage && item.passage.trim() ? `
-                    <div class="py-2 px-3 rounded-lg bg-white/90 border border-slate-200 text-xs text-slate-700 leading-snug font-serif break-words">
-                      ${this.renderRichText(item.passage)}
-                    </div>
-                  ` : ''}
-
+              let answerDisplayHtml = '';
+              if (isChoice) {
+                answerDisplayHtml = `
                   <div class="space-y-1 text-xs">
                     ${(item.choices || []).map((ch, cIdx) => {
                       const cNum = cIdx + 1;
                       const isCorrectChoice = cNum === item.correctAnswer;
-                      const isStudentChoice = cNum === item.studentAnswer;
+                      const isStudentChoice = cNum === Number(item.studentAnswer);
                       let choiceStyle = 'bg-white text-slate-700 border-slate-200';
                       if (isCorrectChoice) choiceStyle = 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
                       else if (isStudentChoice && !item.isCorrect) choiceStyle = 'bg-rose-100 text-rose-900 border-rose-300 line-through';
@@ -2440,11 +2601,71 @@ const App = {
                       `;
                     }).join('')}
                   </div>
+                `;
+              } else {
+                answerDisplayHtml = `
+                  <div class="space-y-2 p-3.5 rounded-xl ${item.isCorrect ? 'bg-emerald-50/70 border border-emerald-200' : 'bg-rose-50/70 border border-rose-200'}">
+                    <div>
+                      <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="font-bold text-slate-700"><i class="fa-solid fa-pencil mr-1 text-slate-500"></i>학생 작성 답안:</span>
+                        <span class="font-black ${item.isCorrect ? 'text-emerald-700' : 'text-rose-600'}">${item.isCorrect ? '✓ 정답 인정' : '✗ 오답'}</span>
+                      </div>
+                      <div class="p-2.5 rounded-lg bg-white border border-slate-200 text-xs font-mono font-bold ${item.isCorrect ? 'text-emerald-950' : 'text-rose-950'} whitespace-pre-wrap">
+                        ${item.studentAnswer && String(item.studentAnswer).trim() ? this.escapeHtml(item.studentAnswer) : '<span class="text-slate-400 font-normal italic">미작성 (빈칸 제출)</span>'}
+                      </div>
+                    </div>
 
+                    <div>
+                      <div class="text-xs font-bold text-indigo-900 mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-star text-amber-500"></i>정답 / 모범 답안:
+                      </div>
+                      <div class="p-2.5 rounded-lg bg-white border border-indigo-200 text-xs font-mono font-bold text-indigo-950 whitespace-pre-wrap">
+                        ${this.escapeHtml(item.correctAnswer || '')}
+                      </div>
+                    </div>
+
+                    ${(item.keywords && item.keywords.length > 0) ? `
+                      <div class="text-[11px] text-slate-600 pt-1">
+                        <strong>채점 기준 / 필수 포함 어구:</strong> <span class="text-indigo-700 font-semibold">${Array.isArray(item.keywords) ? item.keywords.join(', ') : item.keywords}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }
+
+              return `
+                <div class="p-4 rounded-xl border ${item.isCorrect ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'} space-y-3">
+                  <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="w-6 h-6 rounded-full ${item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'} text-xs font-black flex items-center justify-center">${idx + 1}</span>
+                      <span class="font-bold text-xs ${item.isCorrect ? 'text-emerald-900' : 'text-rose-900'}">${item.isCorrect ? '정답' : '오답'}</span>
+                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${qType === 'SHORT' ? 'bg-indigo-100 text-indigo-800' : (qType === 'ESSAY' ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700')}">
+                        ${qType === 'SHORT' ? '주관식 단답형' : (qType === 'ESSAY' ? '서술형 영작' : '5지선다')}
+                      </span>
+                    </div>
+                    <span class="text-xs font-bold ${item.isCorrect ? 'text-emerald-700' : 'text-rose-600'}">
+                      ${isChoice ? (item.studentAnswer ? `선택: ${choiceLabels[item.studentAnswer - 1]} (${item.studentAnswer}번) · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)` : `미응답 · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)`) : (item.isCorrect ? '채점 결과: PASS' : '채점 결과: FAIL')}
+                    </span>
+                  </div>
+
+                  <!-- 1. 문제 -->
+                  <div class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${this.renderRichText(item.question)}</div>
+
+                  <!-- 2. 제시문 (있을 때만) -->
+                  ${item.passage && item.passage.trim() ? `
+                    <div class="py-2.5 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-exam break-words">
+                      ${this.renderRichText(item.passage)}
+                    </div>
+                  ` : ''}
+
+                  <!-- 3. 답안 영역 (객관식 선지 or 주관식/서술형 카드) -->
+                  ${answerDisplayHtml}
+
+                  <!-- 4. 해설 -->
                   ${item.explanation ? `
-                    <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-xs text-indigo-950 space-y-0.5">
+                    <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-xs text-indigo-950 space-y-1">
                       <strong class="font-bold text-indigo-700 flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> 선생님 해설:</strong>
-                      <p>${this.renderRichText(item.explanation)}</p>
+                      <div class="text-xs text-slate-700 leading-relaxed">${this.renderRichText(item.explanation)}</div>
                     </div>
                   ` : ''}
                 </div>
@@ -2488,16 +2709,22 @@ const App = {
       passed: false,
       cutoffScore: pt.cutoffScore,
       answers: pt.answers || {},
-      reviewItems: (pt.questions || []).map((q, idx) => ({
-        questionNumber: idx + 1,
-        question: q.question,
-        passage: q.passage || '',
-        choices: q.choices || [],
-        studentAnswer: pt.answers?.[idx] || null,
-        correctAnswer: Number(q.answer),
-        isCorrect: false,
-        explanation: q.explanation || ''
-      })),
+      reviewItems: (pt.questions || []).map((q, idx) => {
+        const qType = q.type || 'CHOICE';
+        return {
+          questionNumber: idx + 1,
+          type: qType,
+          question: q.question,
+          passage: q.passage || '',
+          choices: q.choices || [],
+          studentAnswer: pt.answers?.[idx] || null,
+          correctAnswer: (qType === 'SHORT' || qType === 'ESSAY') ? q.answer : Number(q.answer),
+          acceptableAnswers: q.acceptableAnswers || [],
+          keywords: q.keywords || [],
+          isCorrect: false,
+          explanation: q.explanation || ''
+        };
+      }),
       startedAt: pt.startedAt || completedAt,
       completedAt,
       forceFailed: true
@@ -3518,14 +3745,43 @@ const App = {
   addPracticeQuestionRow(data = null) {
     const newQuestion = data || {
       id: 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'CHOICE',
       question: '',
       passage: '',
       choices: ['', '', '', '', ''],
       answer: 1,
+      acceptableAnswers: [],
+      keywords: [],
       explanation: ''
     };
+    if (!newQuestion.type) newQuestion.type = 'CHOICE';
     this.state.editingPracticeQuestions.push(newQuestion);
     this.renderPracticeQuestionsForm();
+  },
+
+  updatePracticeQuestionType(qIndex, newType) {
+    const q = this.state.editingPracticeQuestions[qIndex];
+    if (!q) return;
+    q.type = newType;
+    if (newType === 'CHOICE') {
+      if (!Array.isArray(q.choices) || q.choices.length !== 5) {
+        q.choices = ['', '', '', '', ''];
+      }
+      if (typeof q.answer !== 'number' || q.answer < 1 || q.answer > 5) {
+        q.answer = 1;
+      }
+    } else {
+      if (typeof q.answer === 'number') {
+        q.answer = '';
+      }
+    }
+    this.renderPracticeQuestionsForm();
+  },
+
+  updatePracticeQuestionKeywords(qIndex, value) {
+    const q = this.state.editingPracticeQuestions[qIndex];
+    if (!q) return;
+    q.keywords = String(value || '').split(',').map(k => k.trim()).filter(Boolean);
   },
 
   removePracticeQuestionRow(index) {
@@ -3561,17 +3817,146 @@ const App = {
   renderRichText(text) {
     if (!text) return '';
     let trimmed = String(text).trim();
+
+    // 0. <보기>, <조건>, <우리말>, <영영 풀이> 등 독립 섹션 블록 추출
+    const blockRegex = /(?:^|\n)\s*(?:&lt;|<)(보기|조건|우리말|영영 풀이|영영풀이|도움말)(?:&gt;|>)\s*\n([\s\S]*?)(?=(?:\n\s*(?:&lt;|<)(?:보기|조건|우리말|영영 풀이|영영풀이|도움말)(?:&gt;|>))|$)/gi;
+
+    const blocks = [];
+    trimmed = trimmed.replace(blockRegex, (match, tag, content) => {
+      const idx = blocks.length;
+      blocks.push({ tag: tag.trim(), content: content.trim() });
+      return `\n%%RICH_BLOCK_${idx}%%\n`;
+    });
+
     let escaped = this.escapeHtml(trimmed);
-    // 1. 볼드: **text**
+
+    // 1. 긴 빈칸 밑줄 렌더링: 4개 이상의 연속된 _ 또는 [ (A) _____ ]
+    escaped = escaped.replace(/\[\s*\((A|B|C|\d+)\)\s*_{4,}\s*\]/g, '<span class="inline-flex items-baseline gap-1 font-bold text-slate-800">[ ($1) <span class="inline-block border-b-2 border-slate-700 min-w-[160px] sm:min-w-[220px] mx-1.5 align-baseline"></span> ]</span>');
+    escaped = escaped.replace(/_{4,}/g, '<span class="inline-block border-b-2 border-slate-700 min-w-[140px] sm:min-w-[180px] mx-1.5 align-baseline"></span>');
+
+    // 2. 가로 구분선: ---...---
+    escaped = escaped.replace(/(?:^|<br>)\s*-{3,}\s*(?:<br>|$)/g, '<hr class="my-3 border-slate-300">');
+
+    // 3. 볼드: **text**
     escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-slate-950">$1</strong>');
-    // 2. 밑줄: __text__ → 일반 밑줄
-    escaped = escaped.replace(/__(.+?)__/g, '<u>$1</u>');
-    // 3. 이탤릭: *text* (단, **는 제외)
+    // 4. 밑줄: __text__ → 일반 밑줄 (currentColor, 보라색 없음)
+    escaped = escaped.replace(/__(.+?)__/g, '<u class="underline decoration-1 text-slate-900">$1</u>');
+    // 5. 이탤릭: *text* (단, **는 제외)
     escaped = escaped.replace(/(?<!\*)\*(?!\*)([^\*\n]+?)(?<!\*)\*(?!\*)/g, '<em class="italic text-slate-800">$1</em>');
-    // 4. 형광펜: ==text==
+    // 6. 형광펜: ==text==
     escaped = escaped.replace(/==(.+?)==/g, '<mark class="bg-amber-200/90 text-amber-950 px-1 py-0.5 rounded font-medium">$1</mark>');
-    // 5. 지문 내 줄바꿈 지원
+    // 7. 줄바꿈 지원
     escaped = escaped.replace(/\n/g, '<br>');
+
+    // 8. 플레이스홀더를 심플하고 예쁜 전용 카드 박스로 복원
+    blocks.forEach((block, idx) => {
+      const rawContent = block.content;
+      let contentHtml = this.escapeHtml(rawContent);
+      contentHtml = contentHtml.replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-slate-950">$1</strong>');
+      contentHtml = contentHtml.replace(/__(.+?)__/g, '<u class="underline decoration-1 text-slate-900">$1</u>');
+      contentHtml = contentHtml.replace(/(?<!\*)\*(?!\*)([^\*\n]+?)(?<!\*)\*(?!\*)/g, '<em class="italic text-slate-800">$1</em>');
+
+      let boxHtml = '';
+      if (block.tag === '보기') {
+        let innerContent = '';
+        if (/\([A-C]\)/.test(rawContent)) {
+          const parts = rawContent.split(/(\([A-C]\))/g).filter(Boolean);
+          let itemsHtml = '';
+          for (let i = 0; i < parts.length; i++) {
+            if (/^\([A-C]\)$/.test(parts[i].trim())) {
+              const label = parts[i].trim();
+              const text = parts[i + 1] ? parts[i + 1].trim() : '';
+              i++;
+              itemsHtml += `
+                <div class="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1 my-1.5">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-xs border border-indigo-100">${label}</span>
+                  <div class="text-xs sm:text-sm text-slate-800 leading-relaxed font-sans pl-0.5">${this.escapeHtml(text)}</div>
+                </div>
+              `;
+            } else if (parts[i].trim()) {
+              itemsHtml += `<div class="text-xs text-slate-600 mb-1 font-sans">${this.escapeHtml(parts[i].trim())}</div>`;
+            }
+          }
+          innerContent = itemsHtml;
+        } else if (rawContent.includes('/')) {
+          const words = rawContent.split('/').map(w => w.trim()).filter(Boolean);
+          const chips = words.map(w => `
+            <span class="inline-flex items-center px-2.5 py-1 m-0.5 rounded-lg bg-white border border-slate-200 text-slate-800 font-sans text-xs font-semibold shadow-2xs">${this.escapeHtml(w)}</span>
+          `).join('');
+          innerContent = `<div class="flex flex-wrap items-center gap-1 p-2 rounded-xl bg-slate-100/80 border border-slate-200/80">${chips}</div>`;
+        } else {
+          innerContent = `<div class="text-xs sm:text-sm text-slate-800 leading-relaxed font-sans pl-0.5">${contentHtml.replace(/\n/g, '<br>')}</div>`;
+        }
+
+        boxHtml = `
+          <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-800 text-[11px] font-bold mb-2">
+              <i class="fa-solid fa-layer-group text-slate-500"></i> 보기
+            </div>
+            ${innerContent}
+          </div>
+        `;
+      } else if (block.tag === '조건') {
+        const lines = rawContent.split('\n').map(l => l.trim()).filter(Boolean);
+        const conditionItems = lines.map(line => `
+          <div class="flex items-start gap-2 text-xs sm:text-sm text-slate-800 font-sans leading-relaxed">
+            <i class="fa-solid fa-check text-amber-600 text-xs mt-1 flex-shrink-0"></i>
+            <span>${this.escapeHtml(line)}</span>
+          </div>
+        `).join('');
+
+        boxHtml = `
+          <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-amber-50/50 border border-amber-200/80">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[11px] font-bold mb-2">
+              <i class="fa-solid fa-list-check text-amber-600"></i> 조건
+            </div>
+            <div class="space-y-1.5">
+              ${conditionItems}
+            </div>
+          </div>
+        `;
+      } else if (block.tag === '우리말' || block.tag === '해석') {
+        boxHtml = `
+          <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-indigo-50/50 border border-indigo-200/80">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-900 text-[11px] font-bold mb-2">
+              <i class="fa-solid fa-language text-indigo-600"></i> 우리말
+            </div>
+            <div class="text-xs sm:text-sm font-semibold text-slate-900 leading-relaxed font-sans pl-0.5">
+              ${contentHtml.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+        `;
+      } else if (block.tag.includes('영영')) {
+        // 영어 정의문만 깔끔하게 추출 (한글 번역/해설 제거)
+        const lines = rawContent.split('\n').map(l => l.trim()).filter(Boolean);
+        const engLines = lines.filter(l => !/^[(\[]?[가-힣\s,.;·]+[)\]]?$/.test(l));
+        const cleanEng = engLines.join(' ') || lines[0] || '';
+
+        boxHtml = `
+          <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-sky-50/50 border border-sky-200/80">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-sky-100 text-sky-900 text-[11px] font-bold mb-2">
+              <i class="fa-solid fa-book text-sky-600"></i> 영영풀이
+            </div>
+            <div class="text-xs sm:text-sm font-medium text-slate-900 leading-relaxed font-sans pl-0.5">
+              ${this.escapeHtml(cleanEng)}
+            </div>
+          </div>
+        `;
+      } else {
+        boxHtml = `
+          <div class="my-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="inline-flex items-center gap-1.5 font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded text-[11px] mb-2">
+              <i class="fa-solid fa-circle-info text-slate-500"></i> ${this.escapeHtml(block.tag)}
+            </div>
+            <div class="text-xs sm:text-sm text-slate-800 pl-0.5 leading-relaxed font-sans">${contentHtml.replace(/\n/g, '<br>')}</div>
+          </div>
+        `;
+      }
+
+      const placeholderPattern = new RegExp(`(?:<br>)?%%RICH_BLOCK_${idx}%%(?:<br>)?`, 'g');
+      escaped = escaped.replace(placeholderPattern, boxHtml.trim());
+    });
+
     return escaped;
   },
 
@@ -3583,13 +3968,13 @@ const App = {
           <strong class="font-black">B</strong> 굵게
         </button>
         <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'underline')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 transition active:scale-95" title="밑줄 (__밑줄__)">
-          <u class="underline decoration-2">U</u> 밑줄
+          <u class="underline decoration-1">U</u> 밑줄
         </button>
         <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'italic')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-200 transition active:scale-95" title="기울임 (*기울임*)">
           <em class="italic">I</em> 기울임
         </button>
-        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'blank')" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold border border-indigo-200 transition active:scale-95" title="빈칸 만들기">
-          <span class="font-mono tracking-tight">( __ )</span> 빈칸
+        <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'blank')" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold border border-indigo-200 transition active:scale-95" title="빈칸 밑줄 만들기">
+          <span class="font-mono tracking-tight font-bold">________</span> 빈칸
         </button>
         <button type="button" onmousedown="event.preventDefault(); App.applyFormatToField(${qIndex}, '${field}', 'highlight')" class="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200 transition active:scale-95" title="형광펜 강조 (==강조==)">
           <i class="fa-solid fa-highlighter text-[10px]"></i> 형광펜
@@ -3658,16 +4043,31 @@ const App = {
     if (badge) badge.innerText = `${questions.length}문항`;
 
     container.innerHTML = questions.map((q, qIndex) => {
+      const qType = q.type || 'CHOICE';
       const choices = Array.isArray(q.choices) && q.choices.length === 5 ? q.choices : ['', '', '', '', ''];
       const qAnswer = Number(q.answer) || 1;
 
       return `
         <div class="p-4 rounded-xl border border-emerald-200 bg-white shadow-xs space-y-3">
-          <div class="flex items-center justify-between gap-2 border-b border-emerald-100 pb-2.5">
+          <div class="flex items-center justify-between gap-2 border-b border-emerald-100 pb-2.5 flex-wrap">
             <div class="flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center">${qIndex + 1}</span>
               <span class="text-xs font-bold text-slate-800">문제 ${qIndex + 1}</span>
             </div>
+
+            <!-- 문제 유형 선택 (5지선다 / 단답형 / 서술형) -->
+            <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <button type="button" onclick="App.updatePracticeQuestionType(${qIndex}, 'CHOICE')" class="px-2.5 py-1 rounded-md font-bold transition ${qType === 'CHOICE' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
+                <i class="fa-solid fa-list-ol mr-1"></i>5지선다
+              </button>
+              <button type="button" onclick="App.updatePracticeQuestionType(${qIndex}, 'SHORT')" class="px-2.5 py-1 rounded-md font-bold transition ${qType === 'SHORT' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
+                <i class="fa-solid fa-i-cursor mr-1"></i>주관식(단답)
+              </button>
+              <button type="button" onclick="App.updatePracticeQuestionType(${qIndex}, 'ESSAY')" class="px-2.5 py-1 rounded-md font-bold transition ${qType === 'ESSAY' ? 'bg-white text-violet-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
+                <i class="fa-solid fa-pen-nib mr-1"></i>서술형(영작)
+              </button>
+            </div>
+
             <button type="button" onclick="App.removePracticeQuestionRow(${qIndex})" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition text-xs flex items-center gap-1">
               <i class="fa-solid fa-trash-can"></i> 문제 삭제
             </button>
@@ -3680,7 +4080,7 @@ const App = {
               <span class="text-[10px] text-slate-400 font-medium">드래그 후 서식 버튼 클릭 가능</span>
             </div>
             ${this.renderTextFormatToolbar(qIndex, 'question')}
-            <input id="practice_question_${qIndex}" type="text" placeholder="예: 다음 글의 밑줄 친 __8__이 가리키는 것으로 알맞은 것은?" value="${this.escapeHtml(q.question || '')}" oninput="App.updatePracticeQuestionField(${qIndex}, 'question', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-xs font-semibold" />
+            <textarea id="practice_question_${qIndex}" rows="2" placeholder="예: 다음 글의 밑줄 친 우리말 뜻에 맞게 조건에 따라 영작하시오." oninput="App.updatePracticeQuestionField(${qIndex}, 'question', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-xs font-semibold leading-relaxed">${this.escapeHtml(q.question || '')}</textarea>
           </div>
 
           <!-- 지문 / 본문 (선택) -->
@@ -3693,34 +4093,82 @@ const App = {
             <textarea id="practice_passage_${qIndex}" rows="3" placeholder="예: In 1990, she **was born** in London. She wanted to __study__ math." oninput="App.updatePracticeQuestionField(${qIndex}, 'passage', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs bg-slate-50 font-mono leading-relaxed">${this.escapeHtml(q.passage || '')}</textarea>
           </div>
 
-          <!-- 5지선다 보기 및 정답 선택 -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="block text-[11px] font-bold text-slate-700">5지선다 보기 입력 & 정답 체크 <span class="text-rose-500">*</span></label>
-              <span class="text-[10px] text-emerald-700 font-semibold">정답인 번호의 라디오를 선택하세요</span>
+          <!-- 정답 및 보기 입력 영역 (유형별) -->
+          ${qType === 'CHOICE' ? `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-[11px] font-bold text-slate-700">5지선다 보기 입력 & 정답 체크 <span class="text-rose-500">*</span></label>
+                <span class="text-[10px] text-emerald-700 font-semibold">정답인 번호의 라디오를 선택하세요</span>
+              </div>
+              <div class="space-y-1.5">
+                ${choices.map((choice, cIndex) => {
+                  const choiceNum = cIndex + 1;
+                  const isCorrect = qAnswer === choiceNum;
+                  const choiceLabels = ['①', '②', '③', '④', '⑤'];
+                  return `
+                    <div class="flex items-center gap-2 p-1.5 rounded-lg border transition ${isCorrect ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-white'}">
+                      <label class="flex items-center gap-1.5 cursor-pointer flex-shrink-0 px-1">
+                        <input type="radio" name="practiceAnswer_${qIndex}" value="${choiceNum}" ${isCorrect ? 'checked' : ''} onchange="App.updatePracticeAnswer(${qIndex}, ${choiceNum})" class="text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer" />
+                        <span class="text-xs font-bold ${isCorrect ? 'text-emerald-800' : 'text-slate-600'}">${choiceLabels[cIndex]} 정답</span>
+                      </label>
+                      <input type="text" placeholder="${choiceNum}번 보기 입력 (서식 지원: **굵게**, __밑줄__)" value="${this.escapeHtml(choice || '')}" oninput="App.updatePracticeChoice(${qIndex}, ${cIndex}, this.value)" class="flex-1 py-1.5 px-2.5 rounded-md border border-slate-200 focus:ring-1 focus:ring-emerald-500 text-xs bg-white" />
+                    </div>
+                  `;
+                }).join('')}
+              </div>
             </div>
-            <div class="space-y-1.5">
-              ${choices.map((choice, cIndex) => {
-                const choiceNum = cIndex + 1;
-                const isCorrect = qAnswer === choiceNum;
-                const choiceLabels = ['①', '②', '③', '④', '⑤'];
-                return `
-                  <div class="flex items-center gap-2 p-1.5 rounded-lg border transition ${isCorrect ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-white'}">
-                    <label class="flex items-center gap-1.5 cursor-pointer flex-shrink-0 px-1">
-                      <input type="radio" name="practiceAnswer_${qIndex}" value="${choiceNum}" ${isCorrect ? 'checked' : ''} onchange="App.updatePracticeAnswer(${qIndex}, ${choiceNum})" class="text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer" />
-                      <span class="text-xs font-bold ${isCorrect ? 'text-emerald-800' : 'text-slate-600'}">${choiceLabels[cIndex]} 정답</span>
-                    </label>
-                    <input type="text" placeholder="${choiceNum}번 보기 입력 (서식 지원: **굵게**, __밑줄__)" value="${this.escapeHtml(choice || '')}" oninput="App.updatePracticeChoice(${qIndex}, ${cIndex}, this.value)" class="flex-1 py-1.5 px-2.5 rounded-md border border-slate-200 focus:ring-1 focus:ring-emerald-500 text-xs bg-white" />
-                  </div>
-                `;
-              }).join('')}
+          ` : (qType === 'SHORT' ? `
+            <div class="space-y-1.5 p-3 rounded-xl bg-indigo-50/60 border border-indigo-200">
+              <div class="flex items-center justify-between">
+                <label class="block text-[11px] font-bold text-indigo-950 flex items-center gap-1.5">
+                  <i class="fa-solid fa-i-cursor text-indigo-600"></i> 주관식 단답형 정답 <span class="text-rose-500">*</span>
+                </label>
+                <span class="text-[10px] text-indigo-600 font-medium">복수 인정 답안은 슬래시(/)나 쉼표(,)로 구분</span>
+              </div>
+              <input
+                type="text"
+                placeholder="예: deliberate / intentional (대소문자 무관 자동 채점)"
+                value="${this.escapeHtml(q.answer || '')}"
+                oninput="App.updatePracticeQuestionField(${qIndex}, 'answer', this.value)"
+                class="w-full py-2 px-3 rounded-xl border border-indigo-300 focus:ring-2 focus:ring-indigo-500 text-xs bg-white font-mono font-bold"
+              />
             </div>
-          </div>
+          ` : `
+            <div class="space-y-2.5 p-3 rounded-xl bg-violet-50/60 border border-violet-200">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-[11px] font-bold text-violet-950 flex items-center gap-1.5">
+                    <i class="fa-solid fa-pen-nib text-violet-600"></i> 서술형 모범 답안 <span class="text-rose-500">*</span>
+                  </label>
+                  <span class="text-[10px] text-violet-600 font-medium">복수 인정 문장은 슬래시(/)로 구분</span>
+                </div>
+                <textarea
+                  rows="2"
+                  placeholder="예: Gina was embarrassed by the fact that she had spread the fake news."
+                  oninput="App.updatePracticeQuestionField(${qIndex}, 'answer', this.value)"
+                  class="w-full py-2 px-3 rounded-xl border border-violet-300 focus:ring-2 focus:ring-violet-500 text-xs bg-white font-mono font-bold leading-relaxed"
+                >${this.escapeHtml(q.answer || '')}</textarea>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-[11px] font-bold text-slate-700">채점 기준 및 필수 포함 어구 (선택사항)</label>
+                  <span class="text-[10px] text-slate-400">쉼표(,)로 구분</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="예: was embarrassed, by the fact that, had spread"
+                  value="${Array.isArray(q.keywords) ? this.escapeHtml(q.keywords.join(', ')) : this.escapeHtml(q.keywords || '')}"
+                  oninput="App.updatePracticeQuestionKeywords(${qIndex}, this.value)"
+                  class="w-full py-1.5 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-violet-500 text-xs bg-white"
+                />
+              </div>
+            </div>
+          `)}
 
           <!-- 해설 / 오답노트 코멘트 -->
           <div>
             <label class="block text-[11px] font-bold text-slate-600 mb-1">선생님 문제 해설 / 풀이 팁 (선택사항)</label>
-            <input type="text" placeholder="예: 관계대명사 뒤에는 불완전한 절이 와야 하므로 that이 적절합니다." value="${this.escapeHtml(q.explanation || '')}" oninput="App.updatePracticeQuestionField(${qIndex}, 'explanation', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs bg-slate-50" />
+            <textarea rows="2" placeholder="예: 관계대명사 뒤에는 불완전한 절이 와야 하므로 that이 적절합니다." oninput="App.updatePracticeQuestionField(${qIndex}, 'explanation', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs bg-slate-50 leading-relaxed">${this.escapeHtml(q.explanation || '')}</textarea>
           </div>
         </div>
       `;
@@ -3860,13 +4308,26 @@ const App = {
           this.toast(`${i + 1}번 문제의 질문 내용을 입력해주세요.`, 'error');
           return;
         }
-        if (!Array.isArray(q.choices) || q.choices.some(c => !String(c).trim())) {
-          this.toast(`${i + 1}번 문제의 1~5번 보기를 모두 입력해주세요.`, 'error');
-          return;
-        }
-        if (!q.answer || q.answer < 1 || q.answer > 5) {
-          this.toast(`${i + 1}번 문제의 정답 번호를 선택해주세요.`, 'error');
-          return;
+        const qType = q.type || 'CHOICE';
+        if (qType === 'CHOICE') {
+          if (!Array.isArray(q.choices) || q.choices.some(c => !String(c).trim())) {
+            this.toast(`${i + 1}번 문제의 1~5번 보기를 모두 입력해주세요.`, 'error');
+            return;
+          }
+          if (!q.answer || q.answer < 1 || q.answer > 5) {
+            this.toast(`${i + 1}번 문제의 정답 번호를 선택해주세요.`, 'error');
+            return;
+          }
+        } else if (qType === 'SHORT') {
+          if (!q.answer || !String(q.answer).trim()) {
+            this.toast(`${i + 1}번 문제의 주관식 정답을 입력해주세요.`, 'error');
+            return;
+          }
+        } else if (qType === 'ESSAY') {
+          if (!q.answer || !String(q.answer).trim()) {
+            this.toast(`${i + 1}번 문제의 서술형 모범 답안을 입력해주세요.`, 'error');
+            return;
+          }
         }
       }
     }
@@ -7770,22 +8231,25 @@ const App = {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 사이트 초기화 시작');
 
-  // 1. DOM이 준비되는 즉시 동기적으로 세션 복원 및 UI 렌더링 (새로고침 시 로그인 풀림 방지)
-  App.init();
-
   try {
-    // 2. Firestore에서 학생 데이터 불러오기
+    // 1. Firebase 준비 대기 (모듈 스크립트 비동기 로딩 완료 보장)
+    await AppData.waitForFirebase();
+
+    // 2. Firestore에서 학생 데이터 먼저 준비
     await AppData.initializeStudents();
     console.log('👨‍🎓 학생 데이터 준비 완료');
 
-    // 3. 시험 / 단어 데이터도 Firestore에서 준비
+    // 3. 세션 복원 및 UI 초기 렌더링 (최신 학생 목록을 바탕으로 세션 복원)
+    App.init();
+
+    // 4. 시험 / 단어 데이터도 Firestore에서 준비
     await AppData.initializeCloudData();
 
-    // 4. Firestore 실시간 감시 시작
+    // 5. Firestore 실시간 감시 시작
     AppData.startStudentListener();
     AppData.startCloudListeners();
 
-    // 5. 클라우드 최신 데이터가 로드된 후 현재 활성 세션 화면 다시 갱신
+    // 6. 클라우드 최신 데이터가 로드된 후 현재 활성 세션 화면 다시 갱신
     if (App.state.isStudentLoggedIn && App.state.selectedStudentId) {
       App.renderStudentDashboard();
     } else if (App.state.isAdminLoggedIn) {
@@ -7795,5 +8259,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('사이트 초기화 및 클라우드 동기화 완료');
   } catch (error) {
     console.error('클라우드 동기화 실패 (오프라인 모드로 동작):', error);
+    App.init();
   }
 });

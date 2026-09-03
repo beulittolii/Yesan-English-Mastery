@@ -756,7 +756,7 @@
                 <i class="fa-solid fa-list-check text-emerald-600"></i>
                 문제 출제 목록 <span id="formPracticeQuestionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 font-black">0문항</span>
               </h4>
-              <p class="text-[11px] text-emerald-700 mt-0.5">문제 질문, 5개 보기, 정답 번호, 해설을 입력하세요.</p>
+              <p class="text-[11px] text-emerald-700 mt-0.5">객관식(5지선다), 주관식(단답형), 서술형(영작) 문제를 자유롭게 출제하세요.</p>
             </div>
             <button type="button" onclick="App.addPracticeQuestionRow()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-emerald-200">
               <i class="fa-solid fa-plus"></i> 새 문제 추가
@@ -1283,15 +1283,17 @@
     onSnapshot
   };
 
-  console.log("Firebase DB:", window.firebaseDB);
+  window.firebaseReady = true;
+  window.dispatchEvent(new CustomEvent("firebase-ready"));
+  console.log("Firebase DB 연결 완료 및 이벤트 발생:", window.firebaseDB);
 </script>
 
 
 <!-- Scripts -->
-<script src="wordmaster2000_data.js?v=20260902_2220"></script>
-<script src="mock_vocab_data.js?v=20260902_2220"></script>
-<script src="ybm_english2_data.js?v=20260902_2220"></script>
-<script src="data.js?v=20260902_2220"></script>
-<script src="app.js?v=20260902_2220"></script>
+<script src="wordmaster2000_data.js?v=20260904_0200"></script>
+<script src="mock_vocab_data.js?v=20260904_0200"></script>
+<script src="ybm_english2_data.js?v=20260904_0200"></script>
+<script src="data.js?v=20260904_0200"></script>
+<script src="app.js?v=20260904_0200"></script>
 </body>
 </html>
