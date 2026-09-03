@@ -234,15 +234,15 @@ body {
   overflow-wrap: break-word;
 }
 
-u, .font-exam u, .passage-text u {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1.5px;
-  text-decoration-color: currentColor !important; /* 표준 시험지 밑줄 (보라색 제거) */
+u, .font-exam u, .passage-text u, .underline {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 1.5px !important;
+  text-decoration-color: #0f172a !important; /* 보라색 밑줄 완전 제거: 시험지 표준 흑회색 */
 }
 
 /* 주관식/서술형 입력창 한글 글꼴 (모노스페이스 대신 깔끔한 프리텐다드 산세리프) */
-#practiceAnswerInput {
+#practiceAnswerInput, .practice-answer-field {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif !important;
 }
 

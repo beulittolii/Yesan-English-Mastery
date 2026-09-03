@@ -2218,7 +2218,7 @@ const App = {
                 <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
                   ${choiceLabels[cIdx]}
                 </span>
-                <span class="flex-1">${this.renderRichText(choice)}</span>
+                <span class="flex-1 font-exam text-sm sm:text-base leading-relaxed">${this.renderRichText(choice)}</span>
               </button>
             `;
           }).join('')}
@@ -2241,6 +2241,7 @@ const App = {
               placeholder="답안을 입력하세요 (예: 본문에서 찾은 영어 단어/어구)"
               oninput="App.updatePracticeTextAnswer(this.value)"
               class="w-full py-3 px-4 rounded-xl border-2 border-indigo-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 text-sm font-semibold transition bg-white shadow-xs font-sans"
+              style="font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif !important;"
               autocomplete="off"
               spellcheck="false"
             />
@@ -2266,6 +2267,7 @@ const App = {
               placeholder="<조건>에 맞추어 완전한 영어 문장으로 작성하세요."
               oninput="App.updatePracticeTextAnswer(this.value)"
               class="w-full p-3.5 rounded-xl border-2 border-violet-200 focus:border-violet-600 focus:ring-4 focus:ring-violet-100 text-sm font-semibold transition bg-white shadow-xs font-sans leading-relaxed"
+              style="font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif !important;"
               spellcheck="false"
             >${this.escapeHtml(currentAnswer)}</textarea>
           </div>
@@ -2594,7 +2596,7 @@ const App = {
                       return `
                         <div class="p-2 rounded-lg border flex items-center gap-2 ${choiceStyle}">
                           <span class="font-bold flex-shrink-0">${choiceLabels[cIdx]}</span>
-                          <span class="flex-1">${this.renderRichText(ch)}</span>
+                          <span class="flex-1 font-exam">${this.renderRichText(ch)}</span>
                           ${isCorrectChoice ? '<span class="text-[10px] font-black text-emerald-700">★ 정답</span>' : ''}
                           ${isStudentChoice && !item.isCorrect ? '<span class="text-[10px] font-black text-rose-600">내 오답</span>' : ''}
                         </div>
@@ -3817,30 +3819,40 @@ const App = {
   renderRichText(text) {
     if (!text) return '';
     let trimmed = String(text).trim();
+    // 0. <보 기> 등 공백 태그 정규화
+    trimmed = trimmed.replace(/&lt;\s*보\s*기\s*&gt;/g, '<보기>');
+    trimmed = trimmed.replace(/<\s*보\s*기\s*>/g, '<보기>');
+    trimmed = trimmed.replace(/&lt;\s*영영\s*풀이\s*&gt;/g, '<영영풀이>');
+    trimmed = trimmed.replace(/<\s*영영\s*풀이\s*>/g, '<영영풀이>');
+    trimmed = trimmed.replace(/&lt;\s*조\s*건\s*&gt;/g, '<조건>');
+    trimmed = trimmed.replace(/<\s*조\s*건\s*>/g, '<조건>');
+    trimmed = trimmed.replace(/&lt;\s*우리\s*말\s*&gt;/g, '<우리말>');
+    trimmed = trimmed.replace(/<\s*우리\s*말\s*>/g, '<우리말>');
 
-    // 0. <보기>, <조건>, <우리말>, <영영 풀이> 등 독립 섹션 블록 추출
+    // <보기>, <조건>, <우리말>, <영영풀이> 등 독립 섹션 블록 추출
     const blockRegex = /(?:^|\n)\s*(?:&lt;|<)(보기|조건|우리말|영영 풀이|영영풀이|도움말)(?:&gt;|>)\s*\n([\s\S]*?)(?=(?:\n\s*(?:&lt;|<)(?:보기|조건|우리말|영영 풀이|영영풀이|도움말)(?:&gt;|>))|$)/gi;
 
     const blocks = [];
     trimmed = trimmed.replace(blockRegex, (match, tag, content) => {
+      let normalizedTag = tag.trim().replace(/\s+/g, '');
       const idx = blocks.length;
-      blocks.push({ tag: tag.trim(), content: content.trim() });
+      blocks.push({ tag: normalizedTag, content: content.trim() });
       return `\n%%RICH_BLOCK_${idx}%%\n`;
     });
 
     let escaped = this.escapeHtml(trimmed);
 
     // 1. 긴 빈칸 밑줄 렌더링: 4개 이상의 연속된 _ 또는 [ (A) _____ ]
-    escaped = escaped.replace(/\[\s*\((A|B|C|\d+)\)\s*_{4,}\s*\]/g, '<span class="inline-flex items-baseline gap-1 font-bold text-slate-800">[ ($1) <span class="inline-block border-b-2 border-slate-700 min-w-[160px] sm:min-w-[220px] mx-1.5 align-baseline"></span> ]</span>');
-    escaped = escaped.replace(/_{4,}/g, '<span class="inline-block border-b-2 border-slate-700 min-w-[140px] sm:min-w-[180px] mx-1.5 align-baseline"></span>');
+    escaped = escaped.replace(/\[\s*\((A|B|C|\d+)\)\s*_{4,}\s*\]/g, '<span class="inline-flex items-baseline gap-1 font-bold text-slate-900 font-serif">[ ($1) <span class="inline-block border-b-2 border-slate-900 min-w-[220px] sm:min-w-[320px] mx-2 align-baseline"></span> ]</span>');
+    escaped = escaped.replace(/_{4,}/g, '<span class="inline-block border-b-2 border-slate-900 min-w-[180px] sm:min-w-[260px] mx-2 align-baseline"></span>');
 
     // 2. 가로 구분선: ---...---
     escaped = escaped.replace(/(?:^|<br>)\s*-{3,}\s*(?:<br>|$)/g, '<hr class="my-3 border-slate-300">');
 
     // 3. 볼드: **text**
     escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-slate-950">$1</strong>');
-    // 4. 밑줄: __text__ → 일반 밑줄 (currentColor, 보라색 없음)
-    escaped = escaped.replace(/__(.+?)__/g, '<u class="underline decoration-1 text-slate-900">$1</u>');
+    // 4. 밑줄: __text__ → 보라색 절대 없는 진회색/검정 인쇄용 밑줄 (인라인 스타일 강제)
+    escaped = escaped.replace(/__(.+?)__/g, '<u class="underline text-slate-900" style="text-decoration: underline !important; text-decoration-color: #0f172a !important; text-underline-offset: 3px !important; text-decoration-thickness: 1.5px !important;">$1</u>');
     // 5. 이탤릭: *text* (단, **는 제외)
     escaped = escaped.replace(/(?<!\*)\*(?!\*)([^\*\n]+?)(?<!\*)\*(?!\*)/g, '<em class="italic text-slate-800">$1</em>');
     // 6. 형광펜: ==text==
@@ -3853,7 +3865,7 @@ const App = {
       const rawContent = block.content;
       let contentHtml = this.escapeHtml(rawContent);
       contentHtml = contentHtml.replace(/\*\*(.+?)\*\*/g, '<strong class="font-black text-slate-950">$1</strong>');
-      contentHtml = contentHtml.replace(/__(.+?)__/g, '<u class="underline decoration-1 text-slate-900">$1</u>');
+      contentHtml = contentHtml.replace(/__(.+?)__/g, '<u class="underline text-slate-900" style="text-decoration: underline !important; text-decoration-color: #0f172a !important; text-underline-offset: 3px !important; text-decoration-thickness: 1.5px !important;">$1</u>');
       contentHtml = contentHtml.replace(/(?<!\*)\*(?!\*)([^\*\n]+?)(?<!\*)\*(?!\*)/g, '<em class="italic text-slate-800">$1</em>');
 
       let boxHtml = '';
@@ -3868,29 +3880,29 @@ const App = {
               const text = parts[i + 1] ? parts[i + 1].trim() : '';
               i++;
               itemsHtml += `
-                <div class="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1 my-1.5">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-xs border border-indigo-100">${label}</span>
-                  <div class="text-xs sm:text-sm text-slate-800 leading-relaxed font-sans pl-0.5">${this.escapeHtml(text)}</div>
+                <div class="flex items-start gap-2.5 py-1.5 font-exam text-xs sm:text-sm text-slate-900 leading-relaxed">
+                  <span class="font-bold text-slate-950 font-serif text-sm sm:text-base tracking-tight flex-shrink-0">${label}</span>
+                  <div class="flex-1 font-exam text-slate-900 leading-relaxed">${this.escapeHtml(text)}</div>
                 </div>
               `;
             } else if (parts[i].trim()) {
-              itemsHtml += `<div class="text-xs text-slate-600 mb-1 font-sans">${this.escapeHtml(parts[i].trim())}</div>`;
+              itemsHtml += `<div class="text-xs text-slate-700 mb-1 font-exam">${this.escapeHtml(parts[i].trim())}</div>`;
             }
           }
-          innerContent = itemsHtml;
+          innerContent = `<div class="space-y-1 divide-y divide-slate-200/60">${itemsHtml}</div>`;
         } else if (rawContent.includes('/')) {
           const words = rawContent.split('/').map(w => w.trim()).filter(Boolean);
           const chips = words.map(w => `
-            <span class="inline-flex items-center px-2.5 py-1 m-0.5 rounded-lg bg-white border border-slate-200 text-slate-800 font-sans text-xs font-semibold shadow-2xs">${this.escapeHtml(w)}</span>
+            <span class="inline-flex items-center px-2.5 py-1 m-0.5 rounded-md bg-white border border-slate-200 text-slate-900 font-exam text-xs sm:text-sm font-medium shadow-2xs">${this.escapeHtml(w)}</span>
           `).join('');
-          innerContent = `<div class="flex flex-wrap items-center gap-1 p-2 rounded-xl bg-slate-100/80 border border-slate-200/80">${chips}</div>`;
+          innerContent = `<div class="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-100/70 border border-slate-200/80 font-exam">${chips}</div>`;
         } else {
-          innerContent = `<div class="text-xs sm:text-sm text-slate-800 leading-relaxed font-sans pl-0.5">${contentHtml.replace(/\n/g, '<br>')}</div>`;
+          innerContent = `<div class="text-xs sm:text-sm text-slate-900 leading-relaxed font-exam pl-0.5">${contentHtml.replace(/\n/g, '<br>')}</div>`;
         }
 
         boxHtml = `
-          <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-800 text-[11px] font-bold mb-2">
+          <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 font-exam">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-800 text-[11px] font-bold mb-2 font-sans">
               <i class="fa-solid fa-layer-group text-slate-500"></i> 보기
             </div>
             ${innerContent}
@@ -3927,14 +3939,21 @@ const App = {
           </div>
         `;
       } else if (block.tag.includes('영영')) {
-        // 영어 정의문만 깔끔하게 추출 (한글 번역/해설 제거)
-        const lines = rawContent.split('\n').map(l => l.trim()).filter(Boolean);
-        const engLines = lines.filter(l => !/^[(\[]?[가-힣\s,.;·]+[)\]]?$/.test(l));
-        const cleanEng = engLines.join(' ') || lines[0] || '';
+        // 영어 정의문만 깔끔하게 추출 (한글 번역/해설 및 단어추론힌트 등 제거)
+        let cleanEng = rawContent
+          .replace(/단어\s*(?:추론|찾기)?\s*힌트/gi, '')
+          .replace(/\([가-힣\s,.;·~!?]+\)/g, '')
+          .replace(/\[[가-힣\s,.;·~!?]+\]/g, '')
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l && !/^[가-힣\s,.;·~!?]+$/.test(l))
+          .join(' ')
+          .trim();
+        if (!cleanEng) cleanEng = rawContent;
 
         boxHtml = `
           <div class="my-3 p-3.5 sm:p-4 rounded-xl bg-sky-50/50 border border-sky-200/80">
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-sky-100 text-sky-900 text-[11px] font-bold mb-2">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-sky-100 text-sky-900 text-[11px] font-bold mb-2 font-sans">
               <i class="fa-solid fa-book text-sky-600"></i> 영영풀이
             </div>
             <div class="text-xs sm:text-sm font-medium text-slate-900 leading-relaxed font-sans pl-0.5">
