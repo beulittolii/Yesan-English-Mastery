@@ -662,6 +662,9 @@ const AppData = {
   // ======================================================
 
   getStudents() {
+    if (FirebaseStore.studentsLoaded && Array.isArray(FirebaseStore.students)) {
+      return FirebaseStore.students;
+    }
     if (Array.isArray(FirebaseStore.students) && FirebaseStore.students.length > 0) {
       return FirebaseStore.students;
     }
@@ -824,15 +827,7 @@ const AppData = {
         return student;
       });
 
-      // 3. 1~6번 기본 학생 중 혹시 누락된 학생이 있다면 추가 보충
-      DEFAULT_STUDENTS.forEach(defStudent => {
-        if (!updatedStudents.some(s => s.id === defStudent.id)) {
-          updatedStudents.push({ ...defStudent });
-          needsSync = true;
-        }
-      });
-
-      // 4. 로그인 정보(loginId, password) 누락 방지
+      // 3. 로그인 정보(loginId, password) 누락 방지 (기존 계정에 아이디/비번 없을 때만 기본값 부여)
       updatedStudents = updatedStudents.map(student => ({
         ...student,
         loginId: student.loginId || `student${student.id}`,
@@ -1298,17 +1293,7 @@ const AppData = {
         if (!existingTest) {
           currentTests.push(practiceTestConfig);
           practiceModified = true;
-        } else if (
-          existingTest.title !== practiceTestConfig.title ||
-          existingTest.time !== '13:10' ||
-          existingTest.endTime !== '13:30' ||
-          existingTest.allowLate !== false ||
-          !existingTest.questions ||
-          existingTest.questions.length !== 10 ||
-          (existingTest.questions[0] && existingTest.questions[0].question && existingTest.questions[0].question.includes('[1과')) ||
-          (existingTest.questions[7] && existingTest.questions[7].question && existingTest.questions[7].question.includes('영영 풀이')) ||
-          (existingTest.questions[8] && existingTest.questions[8].passage && existingTest.questions[8].passage.includes('**[많은'))
-        ) {
+        } else {
           existingTest.title = practiceTestConfig.title;
           existingTest.time = '13:10';
           existingTest.endTime = '13:30';
