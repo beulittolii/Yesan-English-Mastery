@@ -246,4 +246,11 @@ u, .font-exam u, .passage-text u, .underline {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif !important;
 }
 
+/* 선지(객관식 보기 옵션) 전용 깔끔체 (Pretendard 기반 모던 산세리프) */
+.font-clean, .practice-choice-text {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif !important;
+  letter-spacing: -0.015em !important;
+}
+
+
 

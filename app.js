@@ -2218,7 +2218,7 @@ const App = {
                 <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
                   ${choiceLabels[cIdx]}
                 </span>
-                <span class="flex-1 font-exam text-sm sm:text-base leading-relaxed">${this.renderRichText(choice)}</span>
+                <span class="flex-1 font-clean text-sm sm:text-[15px] leading-relaxed text-slate-900">${this.renderRichText(choice)}</span>
               </button>
             `;
           }).join('')}
@@ -2596,7 +2596,7 @@ const App = {
                       return `
                         <div class="p-2 rounded-lg border flex items-center gap-2 ${choiceStyle}">
                           <span class="font-bold flex-shrink-0">${choiceLabels[cIdx]}</span>
-                          <span class="flex-1 font-exam">${this.renderRichText(ch)}</span>
+                          <span class="flex-1 font-clean text-xs sm:text-sm leading-relaxed">${this.renderRichText(ch)}</span>
                           ${isCorrectChoice ? '<span class="text-[10px] font-black text-emerald-700">★ 정답</span>' : ''}
                           ${isStudentChoice && !item.isCorrect ? '<span class="text-[10px] font-black text-rose-600">내 오답</span>' : ''}
                         </div>
