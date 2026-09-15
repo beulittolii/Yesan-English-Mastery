@@ -578,6 +578,356 @@ function generateDefaultTests() {
       retestStatus: 'NONE',
       retestDate: '',
       teacherNote: '조동사 뒤 동사원형 오는 규칙 잊지 말고 숙제 오답 정리해오기.'
+    },
+
+    // ======================================================
+    // 학생 11: 송규인 (워드마스터 수능 2000 Day 12~40 일일 단어테스트)
+    // ======================================================
+
+    {
+      id: 'vocab_wm2000_d12_13_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 12~13',
+      date: '2026-09-15',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 12, Day 13 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_12',
+      vocabSetIds: ['wm2000_day_12', 'wm2000_day_13'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d14_15_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 14~15',
+      date: '2026-09-16',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 14, Day 15 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_14',
+      vocabSetIds: ['wm2000_day_14', 'wm2000_day_15'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d16_17_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 16~17',
+      date: '2026-09-17',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 16, Day 17 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_16',
+      vocabSetIds: ['wm2000_day_16', 'wm2000_day_17'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d18_19_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 18~19',
+      date: '2026-09-18',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 18, Day 19 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_18',
+      vocabSetIds: ['wm2000_day_18', 'wm2000_day_19'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d20_21_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 20~21',
+      date: '2026-09-19',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 20, Day 21 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_20',
+      vocabSetIds: ['wm2000_day_20', 'wm2000_day_21'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d22_23_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 22~23',
+      date: '2026-09-21',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 22, Day 23 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_22',
+      vocabSetIds: ['wm2000_day_22', 'wm2000_day_23'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d24_25_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 24~25',
+      date: '2026-09-22',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 24, Day 25 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_24',
+      vocabSetIds: ['wm2000_day_24', 'wm2000_day_25'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d26_27_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 26~27',
+      date: '2026-09-23',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 26, Day 27 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_26',
+      vocabSetIds: ['wm2000_day_26', 'wm2000_day_27'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d28_29_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 28~29',
+      date: '2026-09-24',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 28, Day 29 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_28',
+      vocabSetIds: ['wm2000_day_28', 'wm2000_day_29'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d30_31_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 30~31',
+      date: '2026-09-25',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 30, Day 31 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_30',
+      vocabSetIds: ['wm2000_day_30', 'wm2000_day_31'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d32_33_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 32~33',
+      date: '2026-09-26',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_32',
+      vocabSetIds: ['wm2000_day_32', 'wm2000_day_33'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d34_35_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 34~35',
+      date: '2026-09-28',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_34',
+      vocabSetIds: ['wm2000_day_34', 'wm2000_day_35'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d36_37_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 36~37',
+      date: '2026-09-29',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_36',
+      vocabSetIds: ['wm2000_day_36', 'wm2000_day_37'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d38_39_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 38~39',
+      date: '2026-09-30',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_38',
+      vocabSetIds: ['wm2000_day_38', 'wm2000_day_39'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
+    },
+    {
+      id: 'vocab_wm2000_d40_student_11',
+      studentId: 11,
+      title: '[워드마스터 수능 2000] Day 40',
+      date: '2026-10-01',
+      time: '18:00',
+      endTime: '23:59',
+      scope: '[워드마스터 수능 2000] Day 40 (총 40단어)',
+      cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+      cutoffScore: 80,
+      vocabCutoff: 80,
+      vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+      vocabSetId: 'wm2000_day_40',
+      vocabSetIds: ['wm2000_day_40'],
+      score: '',
+      status: 'SCHEDULED',
+      retestStatus: 'NONE',
+      retestDate: '',
+      teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+      type: 'VOCAB',
+      allowLate: false,
+      isMockSpecial: false
     }
   ];
 }
@@ -1118,6 +1468,14 @@ const AppData = {
       if (legacyTests) localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
     }
 
+    // 워드마스터 수능 2000 데이터셋에 송규인(11) 학생 권한 보장
+    if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+      WORDMASTER_2000_SETS.forEach(s => {
+        if (!Array.isArray(s.studentIds)) s.studentIds = [];
+        if (!s.studentIds.includes(11)) s.studentIds.push(11);
+      });
+    }
+
     // 워드마스터 수능 2000 기본 세트 자동 연동 (세트가 없거나 워드마스터가 미등록된 경우)
     if (vocabSets.length === 0) {
       const legacySets = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabSets);
@@ -1316,6 +1674,113 @@ const AppData = {
       }
     } catch (err) {
       console.warn('9/4 문제풀이 테스트 일괄 등록 동기화 안내:', err);
+    }
+
+    // 송규인(id: 11) 학생에게 워드마스터 2000 단어 세트 권한 부여
+    try {
+      let vocabSetsModified = false;
+      const currentVocabSets = FirebaseStore.vocabSets || [];
+      currentVocabSets.forEach(set => {
+        if (set.book === '워드마스터 수능 2000' || (set.id && set.id.startsWith('wm2000_'))) {
+          if (!Array.isArray(set.studentIds)) set.studentIds = [];
+          if (!set.studentIds.includes(11)) {
+            set.studentIds.push(11);
+            vocabSetsModified = true;
+          }
+        }
+      });
+      if (vocabSetsModified) {
+        FirebaseStore.vocabSets = currentVocabSets;
+        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Vocab studentIds sync notice:', e));
+      }
+    } catch (err) {
+      console.warn('워드마스터 학생 권한 동기화 안내:', err);
+    }
+
+    // 9/15~10/1 송규인(id: 11) 학생 워드마스터 2000 단어 테스트 일괄 등록 (일요일 제외, 하루 2 Day씩 Day 12~40)
+    try {
+      const gyuinStudentId = 11;
+      let currentTests = this.getTests();
+      let gyuinModified = false;
+
+      const gyuinVocabSchedules = [
+        { id: 'vocab_wm2000_d12_13_student_11', date: '2026-09-15', setIds: ['wm2000_day_12', 'wm2000_day_13'], title: '[워드마스터 수능 2000] Day 12~13', scope: '[워드마스터 수능 2000] Day 12, Day 13 (총 80단어)' },
+        { id: 'vocab_wm2000_d14_15_student_11', date: '2026-09-16', setIds: ['wm2000_day_14', 'wm2000_day_15'], title: '[워드마스터 수능 2000] Day 14~15', scope: '[워드마스터 수능 2000] Day 14, Day 15 (총 80단어)' },
+        { id: 'vocab_wm2000_d16_17_student_11', date: '2026-09-17', setIds: ['wm2000_day_16', 'wm2000_day_17'], title: '[워드마스터 수능 2000] Day 16~17', scope: '[워드마스터 수능 2000] Day 16, Day 17 (총 80단어)' },
+        { id: 'vocab_wm2000_d18_19_student_11', date: '2026-09-18', setIds: ['wm2000_day_18', 'wm2000_day_19'], title: '[워드마스터 수능 2000] Day 18~19', scope: '[워드마스터 수능 2000] Day 18, Day 19 (총 80단어)' },
+        { id: 'vocab_wm2000_d20_21_student_11', date: '2026-09-19', setIds: ['wm2000_day_20', 'wm2000_day_21'], title: '[워드마스터 수능 2000] Day 20~21', scope: '[워드마스터 수능 2000] Day 20, Day 21 (총 80단어)' },
+        // 9/20(일) 제외
+        { id: 'vocab_wm2000_d22_23_student_11', date: '2026-09-21', setIds: ['wm2000_day_22', 'wm2000_day_23'], title: '[워드마스터 수능 2000] Day 22~23', scope: '[워드마스터 수능 2000] Day 22, Day 23 (총 80단어)' },
+        { id: 'vocab_wm2000_d24_25_student_11', date: '2026-09-22', setIds: ['wm2000_day_24', 'wm2000_day_25'], title: '[워드마스터 수능 2000] Day 24~25', scope: '[워드마스터 수능 2000] Day 24, Day 25 (총 80단어)' },
+        { id: 'vocab_wm2000_d26_27_student_11', date: '2026-09-23', setIds: ['wm2000_day_26', 'wm2000_day_27'], title: '[워드마스터 수능 2000] Day 26~27', scope: '[워드마스터 수능 2000] Day 26, Day 27 (총 80단어)' },
+        { id: 'vocab_wm2000_d28_29_student_11', date: '2026-09-24', setIds: ['wm2000_day_28', 'wm2000_day_29'], title: '[워드마스터 수능 2000] Day 28~29', scope: '[워드마스터 수능 2000] Day 28, Day 29 (총 80단어)' },
+        { id: 'vocab_wm2000_d30_31_student_11', date: '2026-09-25', setIds: ['wm2000_day_30', 'wm2000_day_31'], title: '[워드마스터 수능 2000] Day 30~31', scope: '[워드마스터 수능 2000] Day 30, Day 31 (총 80단어)' },
+        { id: 'vocab_wm2000_d32_33_student_11', date: '2026-09-26', setIds: ['wm2000_day_32', 'wm2000_day_33'], title: '[워드마스터 수능 2000] Day 32~33', scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)' },
+        // 9/27(일) 제외
+        { id: 'vocab_wm2000_d34_35_student_11', date: '2026-09-28', setIds: ['wm2000_day_34', 'wm2000_day_35'], title: '[워드마스터 수능 2000] Day 34~35', scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)' },
+        { id: 'vocab_wm2000_d36_37_student_11', date: '2026-09-29', setIds: ['wm2000_day_36', 'wm2000_day_37'], title: '[워드마스터 수능 2000] Day 36~37', scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)' },
+        { id: 'vocab_wm2000_d38_39_student_11', date: '2026-09-30', setIds: ['wm2000_day_38', 'wm2000_day_39'], title: '[워드마스터 수능 2000] Day 38~39', scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)' },
+        { id: 'vocab_wm2000_d40_student_11', date: '2026-10-01', setIds: ['wm2000_day_40'], title: '[워드마스터 수능 2000] Day 40', scope: '[워드마스터 수능 2000] Day 40 (총 40단어)' }
+      ];
+
+      gyuinVocabSchedules.forEach(scheduleItem => {
+        const existingTest = currentTests.find(t => t.studentId === gyuinStudentId && (t.id === scheduleItem.id || (t.type === 'VOCAB' && t.date === scheduleItem.date && t.title === scheduleItem.title)));
+        const vocabTestConfig = {
+          id: scheduleItem.id,
+          studentId: gyuinStudentId,
+          title: scheduleItem.title,
+          date: scheduleItem.date,
+          time: '18:00',
+          endTime: '23:59',
+          scope: scheduleItem.scope,
+          cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
+          cutoffScore: 80,
+          vocabCutoff: 80,
+          vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
+          vocabSetId: scheduleItem.setIds[0],
+          vocabSetIds: scheduleItem.setIds,
+          score: existingTest?.score || '',
+          status: existingTest?.status || 'SCHEDULED',
+          retestStatus: existingTest?.retestStatus || 'NONE',
+          retestDate: existingTest?.retestDate || '',
+          teacherNote: existingTest?.teacherNote || '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
+          type: 'VOCAB',
+          allowLate: false,
+          isMockSpecial: false
+        };
+
+        if (!existingTest) {
+          currentTests.push(vocabTestConfig);
+          gyuinModified = true;
+        } else {
+          let itemUpdated = false;
+          if (existingTest.vocabSetId !== vocabTestConfig.vocabSetId || JSON.stringify(existingTest.vocabSetIds) !== JSON.stringify(vocabTestConfig.vocabSetIds)) {
+            existingTest.vocabSetId = vocabTestConfig.vocabSetId;
+            existingTest.vocabSetIds = vocabTestConfig.vocabSetIds;
+            itemUpdated = true;
+          }
+          if (existingTest.scope !== vocabTestConfig.scope) {
+            existingTest.scope = vocabTestConfig.scope;
+            itemUpdated = true;
+          }
+          if (existingTest.cutoff !== vocabTestConfig.cutoff) {
+            existingTest.cutoff = vocabTestConfig.cutoff;
+            existingTest.cutoffScore = vocabTestConfig.cutoffScore;
+            existingTest.vocabCutoff = vocabTestConfig.vocabCutoff;
+            existingTest.vocabCutoffs = vocabTestConfig.vocabCutoffs;
+            itemUpdated = true;
+          }
+          if (itemUpdated) gyuinModified = true;
+        }
+      });
+
+      if (gyuinModified) {
+        FirebaseStore.tests = currentTests;
+        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Gyuin tests sync notice:', e));
+        console.log('송규인 학생 워드마스터 2000 단어테스트 (Day 12~40) 일정이 성공적으로 일괄 등록되었습니다.');
+      }
+    } catch (err) {
+      console.warn('송규인 학생 단어테스트 일괄 등록 동기화 안내:', err);
     }
 
     if (vocabTestResults.length === 0) {
