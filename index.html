@@ -3174,6 +3174,7 @@
     getFirestore,
     collection,
     doc,
+    getDoc,
     getDocs,
     setDoc,
     deleteDoc,
@@ -3206,6 +3207,7 @@
   window.firebaseFns = {
     collection,
     doc,
+    getDoc,
     getDocs,
     setDoc,
     deleteDoc,
@@ -3406,7 +3408,8 @@ const AcademicManager = {
   init() {
     this.seedDefaultDataIfEmpty();
     this.hookIntoApp();
-    console.log('✅ YEM 학업관리 플랫폼 엔진 초기화 완료 (100점 만점 수행평가 + 한학기 중간·기말·수행 통합 내신 + 대학로고)');
+    this.initCloudSync();
+    console.log('✅ YEM 학업관리 플랫폼 엔진 초기화 완료 (수행평가·내신·모의고사·목표대학 클라우드 실시간 동기화 가동)');
   },
 
   seedDefaultDataIfEmpty() {
@@ -3962,6 +3965,143 @@ const AcademicManager = {
     } catch (err) {
       // 오프라인 혹은 권한 오류 무시
     }
+  },
+
+  // ----------------------------------------------------
+  // 클라우드(Firebase Firestore) 실시간 양방향 동기화
+  // ----------------------------------------------------
+  initCloudSync() {
+    const startSync = () => {
+      if (!window.firebaseDB || !window.firebaseFns) return;
+      this.listenToCloudAcademicData();
+    };
+
+    if (window.firebaseReady && window.firebaseDB) {
+      startSync();
+    } else {
+      window.addEventListener('firebase-ready', () => {
+        startSync();
+      }, { once: true });
+    }
+  },
+
+  listenToCloudAcademicData() {
+    if (!window.firebaseDB || !window.firebaseFns) return;
+    const { doc, onSnapshot } = window.firebaseFns;
+    const db = window.firebaseDB;
+
+    // 1. 수행평가 실시간 동기화 (academicAssessments)
+    try {
+      const assessRef = doc(db, 'academicData', 'academicAssessments');
+      onSnapshot(assessRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data.items)) {
+            const localRaw = localStorage.getItem(this.storageKeys.assessments) || '[]';
+            const remoteRaw = JSON.stringify(data.items);
+            if (localRaw !== remoteRaw) {
+              localStorage.setItem(this.storageKeys.assessments, remoteRaw);
+              this.refreshAcademicViews();
+            }
+          }
+        } else {
+          // 클라우드에 아직 없으면 현재 로컬 데이터로 최초 시드
+          const current = this.getAssessments();
+          if (current.length > 0) {
+            this.syncCloud('academicAssessments', current);
+          }
+        }
+      }, (err) => {
+        console.warn('수행평가 클라우드 동기화 대기 중 (오프라인 모드 유지):', err);
+      });
+    } catch (e) {
+      console.warn('수행평가 리스너 등록 실패:', e);
+    }
+
+    // 2. 내신 성적 실시간 동기화 (academicSchoolGrades)
+    try {
+      const gradeRef = doc(db, 'academicData', 'academicSchoolGrades');
+      onSnapshot(gradeRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data.items)) {
+            const localRaw = localStorage.getItem(this.storageKeys.schoolGrades) || '[]';
+            const remoteRaw = JSON.stringify(data.items);
+            if (localRaw !== remoteRaw) {
+              localStorage.setItem(this.storageKeys.schoolGrades, remoteRaw);
+              this.refreshAcademicViews();
+            }
+          }
+        } else {
+          const current = this.getSchoolGrades();
+          if (current.length > 0) this.syncCloud('academicSchoolGrades', current);
+        }
+      }, (err) => {});
+    } catch (e) {}
+
+    // 3. 모의고사 성적 실시간 동기화 (academicMockExams)
+    try {
+      const mockRef = doc(db, 'academicData', 'academicMockExams');
+      onSnapshot(mockRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data.items)) {
+            const localRaw = localStorage.getItem(this.storageKeys.mockExams) || '[]';
+            const remoteRaw = JSON.stringify(data.items);
+            if (localRaw !== remoteRaw) {
+              localStorage.setItem(this.storageKeys.mockExams, remoteRaw);
+              this.refreshAcademicViews();
+            }
+          }
+        } else {
+          const current = this.getMockExams();
+          if (current.length > 0) this.syncCloud('academicMockExams', current);
+        }
+      }, (err) => {});
+    } catch (e) {}
+
+    // 4. 목표 대학 실시간 동기화 (academicTargetUnivs)
+    try {
+      const univRef = doc(db, 'academicData', 'academicTargetUnivs');
+      onSnapshot(univRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && typeof data.items === 'object') {
+            const localRaw = localStorage.getItem(this.storageKeys.targetUnivs) || '{}';
+            const remoteRaw = JSON.stringify(data.items);
+            if (localRaw !== remoteRaw) {
+              localStorage.setItem(this.storageKeys.targetUnivs, remoteRaw);
+              this.refreshAcademicViews();
+            }
+          }
+        } else {
+          const current = this.getTargetUnivs();
+          if (Object.keys(current).length > 0) this.syncCloud('academicTargetUnivs', current);
+        }
+      }, (err) => {});
+    } catch (e) {}
+  },
+
+  refreshAcademicViews() {
+    // 캘린더 리렌더링
+    if (typeof App !== 'undefined' && App.renderCalendar && App.state && App.state.studentViewTab === 'calendar') {
+      App.renderCalendar();
+    }
+    // 대시보드 배너 및 수행평가 카운트 리렌더링
+    if (typeof App !== 'undefined' && App.state && App.state.selectedStudentId) {
+      this.enhanceStudentDashboard();
+    }
+    // 학생 화면 탭 리렌더링
+    if (this.studentTab === 'assessment') this.renderStudentAssessments();
+    if (this.studentTab === 'schoolGrade') this.renderStudentSchoolGrades();
+    if (this.studentTab === 'mockExam') this.renderStudentMockExams();
+    if (this.studentTab === 'targetUniv') this.renderStudentTargetUnivs();
+
+    // 관리자 화면 탭 리렌더링
+    if (this.adminTab === 'assessment') this.renderAdminAssessmentTab();
+    if (this.adminTab === 'schoolGrade') this.renderAdminSchoolGradeTab();
+    if (this.adminTab === 'mockExam') this.renderAdminMockExamTab();
+    if (this.adminTab === 'targetUniv') this.renderAdminTargetUnivTab();
   },
 
   // ----------------------------------------------------
