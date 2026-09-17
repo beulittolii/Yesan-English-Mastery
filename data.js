@@ -944,6 +944,7 @@ const FirebaseStore = {
   vocabTestResults: [],
   textMemorizeResults: [],
   studentsLoaded: false,
+  testsLoaded: false,
   studentListenerStarted: false,
   testsListenerStarted: false,
   vocabSetsListenerStarted: false,
@@ -1413,6 +1414,7 @@ const AppData = {
       }));
       if (sort) items.sort(sort);
       FirebaseStore[cacheKey] = items;
+      if (cacheKey === 'tests') FirebaseStore.testsLoaded = true;
       this.refreshCloudScreens();
     }, error => {
       console.error(`Firestore ${collectionName} 실시간 동기화 실패:`, error);
@@ -1459,13 +1461,16 @@ const AppData = {
     ]);
 
     FirebaseStore.tests = tests;
+    FirebaseStore.testsLoaded = true;
     FirebaseStore.vocabSets = vocabSets;
     FirebaseStore.vocabTestResults = vocabTestResults;
 
     if (tests.length === 0) {
       const legacyTests = this.getLegacyArray(LEGACY_STORAGE_KEYS.tests);
-      await this.saveTests(legacyTests || generateDefaultTests());
-      if (legacyTests) localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
+      if (legacyTests && legacyTests.length > 0) {
+        await this.saveTests(legacyTests);
+        localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
+      }
     }
 
     // 워드마스터 수능 2000 데이터셋에 송규인(11) 학생 권한 보장
@@ -1822,6 +1827,9 @@ const AppData = {
   // ======================================================
 
   getTests() {
+    if (FirebaseStore.testsLoaded && Array.isArray(FirebaseStore.tests)) {
+      return FirebaseStore.tests;
+    }
     if (Array.isArray(FirebaseStore.tests) && FirebaseStore.tests.length > 0) {
       return FirebaseStore.tests;
     }

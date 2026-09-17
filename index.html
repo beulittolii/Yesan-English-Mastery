@@ -727,6 +727,78 @@
             </button>
           </div>
         </div>
+
+        <!-- 학업관리 데이터 클라우드 동기화 및 관리 섹션 -->
+        <div class="mt-8 pt-8 border-t border-slate-200">
+          <div class="mb-4">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-cloud text-indigo-500"></i>
+              <span>학업관리 데이터 클라우드 동기화 및 관리</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              수행평가, 내신 성적, 모의고사, 목표대학 데이터를 Firebase 클라우드와 수동 동기화하거나 초기화합니다.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Push to Cloud Card -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl mb-4">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h4 class="font-bold text-slate-900">클라우드로 즉시 업로드</h4>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  현재 이 브라우저에 저장된 학업관리 데이터를 Firestore 클라우드에 강제로 업로드합니다. (다른 기기 및 학생 화면에 즉시 동기화)
+                </p>
+              </div>
+              <button onclick="AcademicManager.pushAllLocalToCloud(true)" class="mt-6 w-full py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>로컬 &rarr; 클라우드 업로드</span>
+              </button>
+            </div>
+
+            <!-- Pull from Cloud Card -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl mb-4">
+                  <i class="fa-solid fa-cloud-arrow-down"></i>
+                </div>
+                <h4 class="font-bold text-slate-900">클라우드에서 최신 불러오기</h4>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  Firestore 클라우드에 저장된 최신 학업관리 데이터를 내려받아 이 브라우저의 화면과 로컬 스토리지를 갱신합니다.
+                </p>
+              </div>
+              <button onclick="AcademicManager.pullCloudDataToLocal(true)" class="mt-6 w-full py-2.5 rounded-xl bg-sky-600 text-white font-semibold text-xs sm:text-sm hover:bg-sky-700 transition flex items-center justify-center gap-2 shadow-sm">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                <span>클라우드 &rarr; 로컬 불러오기</span>
+              </button>
+            </div>
+
+            <!-- Clear or Load Sample Card -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between border border-amber-100">
+              <div>
+                <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl mb-4">
+                  <i class="fa-solid fa-database"></i>
+                </div>
+                <h4 class="font-bold text-slate-900">학업 데이터 비우기 / 샘플</h4>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  기존 더미/샘플 데이터를 완전히 삭제하여 깨끗한 상태로 비우거나, 테스트를 위해 샘플 데이터를 채울 수 있습니다.
+                </p>
+              </div>
+              <div class="mt-6 space-y-2">
+                <button onclick="AcademicManager.clearAllAcademicData()" class="w-full py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 font-semibold text-xs sm:text-sm hover:bg-rose-100 transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>학업관리 데이터 완전 비우기</span>
+                </button>
+                <button onclick="AcademicManager.loadSampleAcademicData()" class="w-full py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-200 transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  <span>샘플 데이터 다시 채우기</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ================= Admin Tab 5: Vocab Set Management ================= -->
@@ -753,6 +825,10 @@
             <!-- Populated by JS -->
           </div>
           <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="AcademicManager.pullCloudDataToLocal(true)" title="클라우드 최신 데이터 동기화" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-200 transition flex items-center gap-1.5 whitespace-nowrap border border-slate-200 shadow-sm">
+              <i class="fa-solid fa-arrows-rotate text-indigo-600"></i>
+              <span>동기화</span>
+            </button>
             <button onclick="AcademicManager.openAssessmentModal(null, true)" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs sm:text-sm hover:bg-emerald-700 shadow-md shadow-emerald-200 transition flex items-center gap-2 whitespace-nowrap">
               <i class="fa-solid fa-plus"></i>
               <span>새 수행평가 과제 등록</span>
@@ -3225,11 +3301,11 @@
 
 
 <!-- Scripts -->
-<script src="wordmaster2000_data.js?v=20260915_2215"></script>
-<script src="mock_vocab_data.js?v=20260915_2215"></script>
-<script src="ybm_english2_data.js?v=20260915_2215"></script>
-<script src="data.js?v=20260915_2215"></script>
-<script src="app.js?v=20260915_2215"></script>
+<script src="wordmaster2000_data.js?v=20260918_0145"></script>
+<script src="mock_vocab_data.js?v=20260918_0145"></script>
+<script src="ybm_english2_data.js?v=20260918_0145"></script>
+<script src="data.js?v=20260918_0145"></script>
+<script src="app.js?v=20260918_0145"></script>
 
 <!-- ========================================== -->
 <!-- YEM ACADEMIC MANAGEMENT PLATFORM JAVASCRIPT -->
@@ -3258,7 +3334,8 @@ const AcademicManager = {
     assessments: 'yem_academic_assessments_v3',
     schoolGrades: 'yem_academic_school_grades_v3',
     mockExams: 'yem_academic_mock_exams_v3',
-    targetUnivs: 'yem_academic_target_univs_v3'
+    targetUnivs: 'yem_academic_target_univs_v3',
+    initialized: 'yem_academic_initialized_v3'
   },
 
   // 대한민국 대학교 실제 공식 로고 CDN 라이브러리 (jsDelivr / GitHub 공식 고화질 투명 PNG - CORS 허용 및 403 없음)
@@ -3417,332 +3494,182 @@ const AcademicManager = {
   },
 
   seedDefaultDataIfEmpty() {
-    // 1. 수행평가 (100점 만점 + 반영 비율 % 적용 + 학교 교시 설정)
-    if (!localStorage.getItem(this.storageKeys.assessments)) {
-      const defaultAssessments = [
-        {
-          id: 'assess_sample_1',
-          studentId: 11, // 송규인
-          term: '1-2',
-          subject: '국어',
-          teacherName: '김국어 선생님',
-          title: '현대시 심층 비평문 작성 및 구술 발표',
-          dueDate: '2026-09-24',
-          dueTime: '17:00',
-          period: '3교시',
-          status: '준비 후',
-          maxScore: 100,
-          ratio: 20, // 20%
-          linkType: 'assess1',
-          studentScore: null,
-          content: '김소월·윤동주 시의 상징적 시어 비교 분석 비평문 (A4 2장)',
-          note: '도입부 논지 설정 우수, 발표 연습 1회 점검 권장'
-        },
-        {
-          id: 'assess_sample_2',
-          studentId: 11, // 송규인
-          term: '1-2',
-          subject: '수학',
-          teacherName: '이수학 선생님',
-          title: '지수·로그함수의 실생활 활용 탐구 보고서',
-          dueDate: '2026-09-18',
-          dueTime: '23:59',
-          period: '2교시',
-          status: '응시 후',
-          maxScore: 100,
-          ratio: 20,
-          linkType: 'assess2',
-          studentScore: 100, // 100점 만점 중 100점 -> 내신 20.0점 기여
-          content: '지진의 규모(리히터 규모)와 소리의 데시벨 공식 수학적 모델링',
-          note: '수식 유도 및 결론 도출 완벽함 (만점 획득)'
-        },
-        {
-          id: 'assess_sample_3',
-          studentId: 11, // 송규인
-          term: '1-2',
-          subject: '영어',
-          teacherName: '박영어 선생님',
-          title: 'TED 강연 비판적 에세이 및 영어 찬반 토론',
-          dueDate: '2026-09-29',
-          dueTime: '18:00',
-          period: '5교시',
-          status: '준비 전',
-          maxScore: 100,
-          ratio: 20,
-          linkType: 'assess1',
-          studentScore: null,
-          content: 'AI 윤리와 일자리 변화 주제 강연 요약 및 개인 견해 영작',
-          note: '교재 Lesson 2 핵심 어휘 5개 이상 활용 필수'
-        },
-        {
-          id: 'assess_sample_4',
-          studentId: 1, // 김단하
-          term: '1-2',
-          subject: '통합과학',
-          teacherName: '최과학 선생님',
-          title: '신소재 그래핀과 초전도체의 물성 탐구 보고서',
-          dueDate: '2026-09-22',
-          dueTime: '18:00',
-          period: '4교시',
-          status: '응시 후',
-          maxScore: 100,
-          ratio: 20,
-          linkType: 'assess1',
-          studentScore: 95, // 95점 -> 내신 19.0점 기여
-          content: '상온 초전도체의 발전 가능성과 전력 손실 저감 원리 탐구',
-          note: '실험 데이터 시각화 우수'
-        },
-        {
-          id: 'assess_sample_5',
-          studentId: 2, // 김성헌
-          term: '1-2',
-          subject: '정보',
-          teacherName: '정정보 선생님',
-          title: '알고리즘을 활용한 실생활 문제 해결 프로그래밍',
-          dueDate: '2026-09-25',
-          dueTime: '23:59',
-          period: '6교시',
-          status: '준비 후',
-          maxScore: 100,
-          ratio: 30,
-          linkType: 'none',
-          studentScore: null,
-          content: '최단 경로 탐색 알고리즘(다익스트라) 구현 및 복잡도 분석',
-          note: ''
-        }
-      ];
-      this.saveAssessments(defaultAssessments);
-    } else {
-      // 기존 저장된 수행평가 데이터에 period, linkType, term 누락 시 자동 마이그레이션
-      try {
-        let saved = JSON.parse(localStorage.getItem(this.storageKeys.assessments) || '[]');
-        let migrated = false;
-        saved = saved.map(item => {
-          if (!item.period) {
-            item.period = '3교시';
-            migrated = true;
-          }
-          if (!item.linkType) {
-            item.linkType = 'assess1';
-            migrated = true;
-          }
-          if (!item.term) {
-            item.term = '1-2';
-            migrated = true;
-          }
-          return item;
-        });
-        if (migrated) {
-          localStorage.setItem(this.storageKeys.assessments, JSON.stringify(saved));
-        }
-      } catch (e) {}
+    // 1. 이미 초기화 마커가 있거나, 기존 로컬스토리지에 저장된 항목이 있으면 샘플 재주입 절대 금지
+    if (localStorage.getItem(this.storageKeys.initialized) === 'true') {
+      return;
     }
 
-    // 2. 내신 성적 (한 학기 중간 30% + 기말 30% + 수행1 20% + 수행2 20% 통합 종합)
-    if (!localStorage.getItem(this.storageKeys.schoolGrades)) {
-      const defaultSchoolGrades = [
-        {
-          id: 'grade_sample_11_1',
-          studentId: 11,
-          term: '1-1',
-          termName: '1학년 1학기',
-          examType: '학기말 종합 (중간+기말+수행 합산)',
-          subjects: [
-            { name: '국어', evalType: 'relative', unit: 4, midScore: 96, midRatio: 30, finalScore: 94, finalRatio: 30, assess1Score: 98, assess1Ratio: 20, assess2Score: 98, assess2Ratio: 20, rawScore: 96, avg: 68.4, sd: null, schoolRank: '3', grade: 1, achievement: 'A' },
-            { name: '수학', evalType: 'relative', unit: 4, midScore: 92, midRatio: 30, finalScore: 90, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 100, assess2Ratio: 20, rawScore: 95, avg: 65.1, sd: null, schoolRank: '5', grade: 1, achievement: 'A' },
-            { name: '영어', evalType: 'relative', unit: 4, midScore: 98, midRatio: 30, finalScore: 96, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 100, assess2Ratio: 20, rawScore: 98, avg: 70.3, sd: null, schoolRank: '1', grade: 1, achievement: 'A' },
-            { name: '통합사회', evalType: 'relative', unit: 3, midScore: 95, midRatio: 30, finalScore: 93, finalRatio: 30, assess1Score: 97, assess1Ratio: 20, assess2Score: 97, assess2Ratio: 20, rawScore: 95, avg: 71.8, sd: null, schoolRank: '4', grade: 1, achievement: 'A' },
-            { name: '통합과학', evalType: 'relative', unit: 3, midScore: 88, midRatio: 30, finalScore: 86, finalRatio: 30, assess1Score: 96, assess1Ratio: 20, assess2Score: 96, assess2Ratio: 20, rawScore: 91, avg: 67.2, sd: null, schoolRank: '14', grade: 2, achievement: 'A' },
-            { name: '한국사', evalType: 'relative', unit: 3, midScore: 96, midRatio: 30, finalScore: 94, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 100, assess2Ratio: 20, rawScore: 97, avg: 69.5, sd: null, schoolRank: '2', grade: 1, achievement: 'A' },
-            { name: '진로와 직업', evalType: 'absolute', unit: 2, obtainedScore: 96.5, rawScore: 97, grade: '-', achievement: 'A' },
-            { name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' }
-          ]
-        },
-        {
-          id: 'grade_sample_11_2',
-          studentId: 11,
-          term: '1-2',
-          termName: '1학년 2학기',
-          examType: '학기말 종합 (중간+기말+수행 합산)',
-          subjects: [
-            { name: '국어', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '수학', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: 20, avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '영어', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '한국사', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '통합사회', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '통합과학', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '진로와 직업', evalType: 'absolute', unit: 2, obtainedScore: '', rawScore: '', grade: '-', achievement: '' },
-            { name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' }
-          ]
-        },
-        {
-          id: 'grade_sample_1_1',
-          studentId: 1,
-          term: '1-1',
-          termName: '1학년 1학기',
-          examType: '학기말 종합 (중간+기말+수행 합산)',
-          subjects: [
-            { name: '국어', evalType: 'relative', unit: 4, midScore: 86, midRatio: 30, finalScore: 88, finalRatio: 30, assess1Score: 92, assess1Ratio: 20, assess2Score: 92, assess2Ratio: 20, rawScore: 89, avg: 68.4, sd: null, schoolRank: '18', grade: 2, achievement: 'A' },
-            { name: '수학', evalType: 'relative', unit: 4, midScore: 88, midRatio: 30, finalScore: 89, finalRatio: 30, assess1Score: 94, assess1Ratio: 20, assess2Score: 94, assess2Ratio: 20, rawScore: 91, avg: 65.1, sd: null, schoolRank: '15', grade: 2, achievement: 'A' },
-            { name: '영어', evalType: 'relative', unit: 4, midScore: 92, midRatio: 30, finalScore: 91, finalRatio: 30, assess1Score: 95, assess1Ratio: 20, assess2Score: 95, assess2Ratio: 20, rawScore: 93, avg: 70.3, sd: null, schoolRank: '8', grade: 1, achievement: 'A' },
-            { name: '통합사회', evalType: 'relative', unit: 3, midScore: 85, midRatio: 30, finalScore: 87, finalRatio: 30, assess1Score: 90, assess1Ratio: 20, assess2Score: 90, assess2Ratio: 20, rawScore: 88, avg: 71.8, sd: null, schoolRank: '22', grade: 2, achievement: 'B' },
-            { name: '통합과학', evalType: 'relative', unit: 3, midScore: 92, midRatio: 30, finalScore: 94, finalRatio: 30, assess1Score: 96, assess1Ratio: 20, assess2Score: 96, assess2Ratio: 20, rawScore: 94, avg: 67.2, sd: null, schoolRank: '6', grade: 1, achievement: 'A' },
-            { name: '한국사', evalType: 'relative', unit: 3, midScore: 89, midRatio: 30, finalScore: 90, finalRatio: 30, assess1Score: 95, assess1Ratio: 20, assess2Score: 95, assess2Ratio: 20, rawScore: 92, avg: 69.5, sd: null, schoolRank: '16', grade: 2, achievement: 'A' },
-            { name: '진로와 직업', evalType: 'absolute', unit: 2, obtainedScore: 92.5, rawScore: 93, grade: '-', achievement: 'A' },
-            { name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' }
-          ]
-        },
-        {
-          id: 'grade_sample_1_2',
-          studentId: 1,
-          term: '1-2',
-          termName: '1학년 2학기',
-          examType: '학기말 종합 (중간+기말+수행 합산)',
-          subjects: [
-            { name: '국어', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '수학', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '영어', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '한국사', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '통합사회', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '통합과학', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: 95, assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: 19, avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-            { name: '진로와 직업', evalType: 'absolute', unit: 2, obtainedScore: '', rawScore: '', grade: '-', achievement: '' },
-            { name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' }
-          ]
-        }
-      ];
-      this.saveSchoolGrades(defaultSchoolGrades);
-    } else {
-      // 기존 저장된 내신 데이터에 수행1/2 분리, 교양 과목 누락, 1학년 2학기 데이터 누락 시 자동 마이그레이션
-      try {
-        let savedGrades = JSON.parse(localStorage.getItem(this.storageKeys.schoolGrades) || '[]');
-        let gradesMigrated = false;
-        savedGrades.forEach(g => {
-          (g.subjects || []).forEach(s => {
-            if (s.evalType === 'relative' || (!s.evalType && s.grade && s.grade !== '-')) {
-              if (s.assess1Score == null && s.assessScore != null) {
-                s.assess1Score = s.assessScore;
-                s.assess1Ratio = s.assessRatio ? Math.round(s.assessRatio / 2) : 20;
-                s.assess2Score = s.assessScore;
-                s.assess2Ratio = s.assessRatio ? (s.assessRatio - s.assess1Ratio) : 20;
-                gradesMigrated = true;
-              }
-            }
-          });
-          const hasGen = (g.subjects || []).some(s => s.evalType === 'general');
-          if (!hasGen) {
-            g.subjects.push({ name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' });
-            gradesMigrated = true;
-          }
-        });
+    const hasAssess = localStorage.getItem(this.storageKeys.assessments) !== null;
+    const hasGrades = localStorage.getItem(this.storageKeys.schoolGrades) !== null;
+    const hasMocks = localStorage.getItem(this.storageKeys.mockExams) !== null;
+    const hasUnivs = localStorage.getItem(this.storageKeys.targetUnivs) !== null;
 
-        // 1-2 학기 성적표가 없는 학생에게 1-2 성적표 데이터 자동 보강
-        const studentIdsWith1_2 = new Set(savedGrades.filter(g => g.term === '1-2').map(g => g.studentId));
-        [11, 1].forEach(sId => {
-          if (!studentIdsWith1_2.has(sId)) {
-            const is11 = (sId === 11);
-            savedGrades.push({
-              id: `grade_sample_${sId}_2`,
-              studentId: sId,
-              term: '1-2',
-              termName: '1학년 2학기',
-              examType: '학기말 종합 (중간+기말+수행 합산)',
-              subjects: [
-                { name: '국어', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-                { name: '수학', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: is11 ? 100 : '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: is11 ? 20 : '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-                { name: '영어', evalType: 'relative', unit: 4, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-                { name: '한국사', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-                { name: '통합사회', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: '', assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: '', avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-                { name: '통합과학', evalType: 'relative', unit: 3, midScore: '', midRatio: 30, finalScore: '', finalRatio: 30, assess1Score: (!is11 ? 95 : ''), assess1Ratio: 20, assess2Score: '', assess2Ratio: 20, rawScore: (!is11 ? 19 : ''), avg: '', sd: null, schoolRank: '', grade: '', achievement: '' },
-                { name: '진로와 직업', evalType: 'absolute', unit: 2, obtainedScore: '', rawScore: '', grade: '-', achievement: '' },
-                { name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' }
-              ]
-            });
-            gradesMigrated = true;
-          }
-        });
-
-        if (gradesMigrated) {
-          localStorage.setItem(this.storageKeys.schoolGrades, JSON.stringify(savedGrades));
-        }
-      } catch (e) {}
+    if (hasAssess || hasGrades || hasMocks || hasUnivs) {
+      localStorage.setItem(this.storageKeys.initialized, 'true');
+      return;
     }
 
-    // 3. 모의고사 (교육청 전국연합 기본 + 평가원 + 사설 모의고사 부가기능)
-    if (!localStorage.getItem(this.storageKeys.mockExams)) {
-      const defaultMockExams = [
-        {
-          id: 'mock_sample_11_1',
-          studentId: 11,
-          category: 'OFFICIAL', // 교육청 전국연합 (기본)
-          provider: '서울특별시교육청',
-          title: '2026학년도 3월 전국연합학력평가',
-          date: '2026-03-26',
-          scores: {
-            korChoice: '공통', korRaw: 94, korStd: 138, korPct: 98, korGrd: 1,
-            mathChoice: '공통', mathRaw: 88, mathStd: 136, mathPct: 95, mathGrd: 2,
-            engRaw: 95, engGrd: 1,
-            hisRaw: 48, hisGrd: 1,
-            inq1Name: '통합사회', inq1Raw: 48, inq1Std: 68, inq1Pct: 98, inq1Grd: 1,
-            inq2Name: '통합과학', inq2Raw: 46, inq2Std: 66, inq2Pct: 96, inq2Grd: 1
-          }
-        },
-        {
-          id: 'mock_sample_11_2',
-          studentId: 11,
-          category: 'PRIVATE', // 사설 모의고사 (부가 기록)
-          provider: '대성 THE PREMIUM (더프)',
-          title: '2026학년도 4월 대성 더 프리미엄 모의고사',
-          date: '2026-04-18',
-          scores: {
-            korChoice: '언어와매체', korRaw: 92, korStd: 136, korPct: 97, korGrd: 1,
-            mathChoice: '미적분', mathRaw: 90, mathStd: 140, mathPct: 98, mathGrd: 1,
-            engRaw: 94, engGrd: 1,
-            hisRaw: 46, hisGrd: 1,
-            inq1Name: '물리학I', inq1Raw: 47, inq1Std: 67, inq1Pct: 96, inq1Grd: 1,
-            inq2Name: '화학I', inq2Raw: 43, inq2Std: 64, inq2Pct: 92, inq2Grd: 2
-          }
-        },
-        {
-          id: 'mock_sample_1_1',
-          studentId: 1,
-          category: 'OFFICIAL',
-          provider: '경기도교육청',
-          title: '2026학년도 3월 전국연합학력평가',
-          date: '2026-03-26',
-          scores: {
-            korChoice: '공통', korRaw: 88, korStd: 130, korPct: 91, korGrd: 2,
-            mathChoice: '공통', mathRaw: 84, mathStd: 130, mathPct: 90, mathGrd: 2,
-            engRaw: 90, engGrd: 1,
-            hisRaw: 44, hisGrd: 1,
-            inq1Name: '통합사회', inq1Raw: 45, inq1Std: 64, inq1Pct: 93, inq1Grd: 2,
-            inq2Name: '통합과학', inq2Raw: 44, inq2Std: 63, inq2Pct: 91, inq2Grd: 2
-          }
-        }
-      ];
-      this.saveMockExams(defaultMockExams);
-    }
+    // 2. 새 브라우저/첫 방문 시: 로컬스토리지에 빈 데이터 상태([])로 안전하게 초기화
+    // ⚠️ 절대로 this.save*()를 호출하지 않음 (클라우드 Firebase로 샘플 역전파 원천 차단!)
+    localStorage.setItem(this.storageKeys.assessments, '[]');
+    localStorage.setItem(this.storageKeys.schoolGrades, '[]');
+    localStorage.setItem(this.storageKeys.mockExams, '[]');
+    localStorage.setItem(this.storageKeys.targetUnivs, '{}');
+    localStorage.setItem(this.storageKeys.initialized, 'true');
+  },
 
-    // 4. 목표 대학 및 학과 (1지망, 2지망, 3지망 명칭 통일)
-    if (!localStorage.getItem(this.storageKeys.targetUnivs)) {
-      const defaultTargetUnivs = {
-        11: [
-          { rank: 1, name: '연세대학교', major: '경영학과', type: '학생부종합', targetGrade: '1.2등급', targetMin: '3합 5 이내' },
-          { rank: 2, name: '고려대학교', major: '경영대학', type: '학생부교과', targetGrade: '1.3등급', targetMin: '3합 6 이내' },
-          { rank: 3, name: '서강대학교', major: '경영학부', type: '논술', targetGrade: '1.5등급', targetMin: '3합 7 이내' }
-        ],
-        1: [
-          { rank: 1, name: '중앙대학교', major: '전자전기공학부', type: '학생부종합', targetGrade: '2.0등급', targetMin: '3합 7 이내' },
-          { rank: 2, name: '경희대학교', major: '전자공학과', type: '학생부교과', targetGrade: '2.1등급', targetMin: '2합 5 이내' },
-          { rank: 3, name: '인하대학교', major: '기계공학과', type: '학생부교과', targetGrade: '2.4등급', targetMin: '2합 6 이내' }
-        ],
-        2: [
-          { rank: 1, name: '서울대학교', major: '컴퓨터공학부', type: '학생부종합', targetGrade: '1.1등급', targetMin: '3합 7 이내' },
-          { rank: 2, name: 'KAIST', major: '전산학부', type: '학생부종합', targetGrade: '1.2등급', targetMin: '최저 없음' },
-          { rank: 3, name: '성균관대학교', major: '소프트웨어학과', type: '학생부종합', targetGrade: '1.3등급', targetMin: '2합 5 이내' }
+  // 샘플 데이터 사전 (필요 시 관리자가 수동으로 채울 때만 활용)
+  sampleData: {
+    assessments: [
+      {
+        id: 'assess_sample_1',
+        studentId: 11, // 송규인
+        term: '1-2',
+        subject: '국어',
+        teacherName: '김국어 선생님',
+        title: '현대시 심층 비평문 작성 및 구술 발표',
+        dueDate: '2026-09-24',
+        dueTime: '17:00',
+        period: '3교시',
+        status: '준비 후',
+        maxScore: 100,
+        ratio: 20,
+        linkType: 'assess1',
+        studentScore: null,
+        content: '김소월·윤동주 시의 상징적 시어 비교 분석 비평문 (A4 2장)',
+        note: '도입부 논지 설정 우수, 발표 연습 1회 점검 권장'
+      },
+      {
+        id: 'assess_sample_2',
+        studentId: 11,
+        term: '1-2',
+        subject: '수학',
+        teacherName: '이수학 선생님',
+        title: '지수·로그함수의 실생활 활용 탐구 보고서',
+        dueDate: '2026-09-18',
+        dueTime: '23:59',
+        period: '2교시',
+        status: '응시 후',
+        maxScore: 100,
+        ratio: 20,
+        linkType: 'assess2',
+        studentScore: 100,
+        content: '지진의 규모(리히터 규모)와 소리의 데시벨 공식 수학적 모델링',
+        note: '수식 유도 및 결론 도출 완벽함 (만점 획득)'
+      },
+      {
+        id: 'assess_sample_3',
+        studentId: 11,
+        term: '1-2',
+        subject: '영어',
+        teacherName: '박영어 선생님',
+        title: 'TED 강연 비판적 에세이 및 영어 찬반 토론',
+        dueDate: '2026-09-29',
+        dueTime: '18:00',
+        period: '5교시',
+        status: '준비 전',
+        maxScore: 100,
+        ratio: 20,
+        linkType: 'assess1',
+        studentScore: null,
+        content: 'AI 윤리와 일자리 변화 주제 강연 요약 및 개인 견해 영작',
+        note: '교재 Lesson 2 핵심 어휘 5개 이상 활용 필수'
+      },
+      {
+        id: 'assess_sample_4',
+        studentId: 1, // 김단하
+        term: '1-2',
+        subject: '통합과학',
+        teacherName: '최과학 선생님',
+        title: '신소재 그래핀과 초전도체의 물성 탐구 보고서',
+        dueDate: '2026-09-22',
+        dueTime: '18:00',
+        period: '4교시',
+        status: '응시 후',
+        maxScore: 100,
+        ratio: 20,
+        linkType: 'assess1',
+        studentScore: 95,
+        content: '상온 초전도체의 발전 가능성과 전력 손실 저감 원리 탐구',
+        note: '실험 데이터 시각화 우수'
+      },
+      {
+        id: 'assess_sample_5',
+        studentId: 2, // 김성헌
+        term: '1-2',
+        subject: '정보',
+        teacherName: '정정보 선생님',
+        title: '알고리즘을 활용한 실생활 문제 해결 프로그래밍',
+        dueDate: '2026-09-25',
+        dueTime: '23:59',
+        period: '6교시',
+        status: '준비 후',
+        maxScore: 100,
+        ratio: 30,
+        linkType: 'none',
+        studentScore: null,
+        content: '최단 경로 탐색 알고리즘(다익스트라) 구현 및 복잡도 분석',
+        note: ''
+      }
+    ],
+    schoolGrades: [
+      {
+        id: 'grade_sample_11_1',
+        studentId: 11,
+        term: '1-1',
+        termName: '1학년 1학기',
+        examType: '학기말 종합 (중간+기말+수행 합산)',
+        subjects: [
+          { name: '국어', evalType: 'relative', unit: 4, midScore: 92, midRatio: 30, finalScore: 95, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 95, assess2Ratio: 20, rawScore: 95.1, avg: 72.4, sd: 14.2, schoolRank: '3/180', grade: '1', achievement: 'A' },
+          { name: '수학', evalType: 'relative', unit: 4, midScore: 88, midRatio: 30, finalScore: 94, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 100, assess2Ratio: 20, rawScore: 94.6, avg: 65.8, sd: 18.5, schoolRank: '4/180', grade: '1', achievement: 'A' },
+          { name: '영어', evalType: 'relative', unit: 4, midScore: 96, midRatio: 30, finalScore: 100, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 100, assess2Ratio: 20, rawScore: 98.8, avg: 68.2, sd: 16.1, schoolRank: '1/180', grade: '1', achievement: 'A' },
+          { name: '한국사', evalType: 'relative', unit: 3, midScore: 90, midRatio: 30, finalScore: 92, finalRatio: 30, assess1Score: 95, assess1Ratio: 20, assess2Score: 95, assess2Ratio: 20, rawScore: 92.6, avg: 70.1, sd: 15.0, schoolRank: '8/180', grade: '2', achievement: 'A' },
+          { name: '통합사회', evalType: 'relative', unit: 3, midScore: 94, midRatio: 30, finalScore: 96, finalRatio: 30, assess1Score: 100, assess1Ratio: 20, assess2Score: 100, assess2Ratio: 20, rawScore: 97.0, avg: 74.0, sd: 13.5, schoolRank: '2/180', grade: '1', achievement: 'A' },
+          { name: '통합과학', evalType: 'relative', unit: 3, midScore: 90, midRatio: 30, finalScore: 91, finalRatio: 30, assess1Score: 95, assess1Ratio: 20, assess2Score: 95, assess2Ratio: 20, rawScore: 92.3, avg: 69.5, sd: 16.2, schoolRank: '9/180', grade: '2', achievement: 'A' },
+          { name: '진로와 직업', evalType: 'absolute', unit: 2, obtainedScore: 95, rawScore: 95, grade: '-', achievement: 'A' },
+          { name: '철학', evalType: 'general', unit: 2, isPass: true, achievement: 'P', grade: '-' }
         ]
-      };
-      this.saveTargetUnivs(defaultTargetUnivs);
+      }
+    ],
+    mockExams: [
+      {
+        id: 'mock_sample_11_1',
+        studentId: 11,
+        category: 'OFFICIAL',
+        provider: '서울특별시교육청',
+        title: '2026학년도 3월 전국연합학력평가',
+        date: '2026-03-26',
+        scores: {
+          korChoice: '공통', korRaw: 94, korStd: 138, korPct: 98, korGrd: 1,
+          mathChoice: '공통', mathRaw: 88, mathStd: 136, mathPct: 95, mathGrd: 2,
+          engRaw: 95, engGrd: 1,
+          hisRaw: 48, hisGrd: 1,
+          inq1Name: '통합사회', inq1Raw: 48, inq1Std: 68, inq1Pct: 98, inq1Grd: 1,
+          inq2Name: '통합과학', inq2Raw: 46, inq2Std: 66, inq2Pct: 96, inq2Grd: 1
+        }
+      }
+    ],
+    targetUnivs: {
+      11: [
+        { rank: 1, name: '연세대학교', major: '경영학과', type: '학생부종합', targetGrade: '1.2등급', targetMin: '3합 5 이내' },
+        { rank: 2, name: '고려대학교', major: '경영대학', type: '학생부교과', targetGrade: '1.3등급', targetMin: '3합 6 이내' },
+        { rank: 3, name: '서강대학교', major: '경영학부', type: '논술', targetGrade: '1.5등급', targetMin: '3합 7 이내' }
+      ]
     }
+  },
+
+  // 수동 샘플 데이터 적용 (선생님이 명시적으로 불러올 때만 동작)
+  async loadSampleAcademicData() {
+    if (!confirm('학업관리 샘플 데이터(수행평가, 내신, 모의고사, 목표대학)를 불러와 적용하시겠습니까?\n\n현재 로컬 및 클라우드 데이터가 샘플 데이터로 대체됩니다.')) {
+      return;
+    }
+    this.saveAssessments(JSON.parse(JSON.stringify(this.sampleData.assessments)));
+    this.saveSchoolGrades(JSON.parse(JSON.stringify(this.sampleData.schoolGrades)));
+    this.saveMockExams(JSON.parse(JSON.stringify(this.sampleData.mockExams)));
+    this.saveTargetUnivs(JSON.parse(JSON.stringify(this.sampleData.targetUnivs)));
+    localStorage.setItem(this.storageKeys.initialized, 'true');
+    this.refreshAcademicViews();
+    this.notify('샘플 학업관리 데이터가 적용되었습니다.', 'success');
   },
 
   // ----------------------------------------------------
@@ -3965,9 +3892,14 @@ const AcademicManager = {
     try {
       const { doc, setDoc } = window.firebaseFns;
       const ref = doc(window.firebaseDB, 'academicData', collectionName);
-      await setDoc(ref, { items: data, updatedAt: new Date().toISOString() }, { merge: true });
+      const cleanData = JSON.parse(JSON.stringify(data, (key, value) => value === undefined ? null : value));
+      await setDoc(ref, { items: cleanData, updatedAt: new Date().toISOString() }, { merge: true });
+      console.log(`✅ [Firestore] ${collectionName} 클라우드 동기화 완료`);
     } catch (err) {
-      // 오프라인 혹은 권한 오류 무시
+      console.error(`❌ [Firestore] ${collectionName} 클라우드 저장 실패:`, err);
+      if (typeof this.notify === 'function') {
+        this.notify(`클라우드 동기화 실패 (${collectionName}): ${err.message}`, 'warning');
+      }
     }
   },
 
@@ -3984,10 +3916,11 @@ const AcademicManager = {
       const { doc, setDoc } = window.firebaseFns;
       const db = window.firebaseDB;
 
-      const assessments = this.getAssessments();
-      const schoolGrades = this.getSchoolGrades();
-      const mockExams = this.getMockExams();
-      const targetUnivs = this.getTargetUnivs();
+      const sanitize = obj => JSON.parse(JSON.stringify(obj, (k, v) => v === undefined ? null : v));
+      const assessments = sanitize(this.getAssessments());
+      const schoolGrades = sanitize(this.getSchoolGrades());
+      const mockExams = sanitize(this.getMockExams());
+      const targetUnivs = sanitize(this.getTargetUnivs());
 
       const now = new Date().toISOString();
 
@@ -4031,7 +3964,7 @@ const AcademicManager = {
       const assessDoc = await getDoc(doc(db, 'academicData', 'academicAssessments'));
       if (assessDoc.exists()) {
         const data = assessDoc.data();
-        if (Array.isArray(data.items) && data.items.length > 0) {
+        if (Array.isArray(data?.items)) {
           localStorage.setItem(this.storageKeys.assessments, JSON.stringify(data.items));
           pulledCount = data.items.length;
         }
@@ -4041,7 +3974,7 @@ const AcademicManager = {
       const gradeDoc = await getDoc(doc(db, 'academicData', 'academicSchoolGrades'));
       if (gradeDoc.exists()) {
         const data = gradeDoc.data();
-        if (Array.isArray(data.items) && data.items.length > 0) {
+        if (Array.isArray(data?.items)) {
           localStorage.setItem(this.storageKeys.schoolGrades, JSON.stringify(data.items));
         }
       }
@@ -4050,7 +3983,7 @@ const AcademicManager = {
       const mockDoc = await getDoc(doc(db, 'academicData', 'academicMockExams'));
       if (mockDoc.exists()) {
         const data = mockDoc.data();
-        if (Array.isArray(data.items) && data.items.length > 0) {
+        if (Array.isArray(data?.items)) {
           localStorage.setItem(this.storageKeys.mockExams, JSON.stringify(data.items));
         }
       }
@@ -4059,11 +3992,12 @@ const AcademicManager = {
       const univDoc = await getDoc(doc(db, 'academicData', 'academicTargetUnivs'));
       if (univDoc.exists()) {
         const data = univDoc.data();
-        if (data && typeof data.items === 'object' && Object.keys(data.items).length > 0) {
+        if (data && typeof data.items === 'object' && data.items !== null) {
           localStorage.setItem(this.storageKeys.targetUnivs, JSON.stringify(data.items));
         }
       }
 
+      localStorage.setItem(this.storageKeys.initialized, 'true');
       this.refreshAcademicViews();
 
       if (showToast) {
@@ -4076,6 +4010,40 @@ const AcademicManager = {
         this.notify('클라우드 데이터를 불러오지 못했습니다: ' + err.message, 'warning');
       }
       return false;
+    }
+  },
+
+  // 학업관리 데이터 완전히 비우기 (로컬 + 클라우드 모두 초기화)
+  async clearAllAcademicData() {
+    if (!confirm('수행평가, 내신 성적, 모의고사, 목표대학의 모든 데이터를 완전히 삭제(비우기)하시겠습니까?\n\n이 작업은 클라우드와 로컬 모두에 적용되며 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(this.storageKeys.assessments, '[]');
+      localStorage.setItem(this.storageKeys.schoolGrades, '[]');
+      localStorage.setItem(this.storageKeys.mockExams, '[]');
+      localStorage.setItem(this.storageKeys.targetUnivs, '{}');
+      localStorage.setItem(this.storageKeys.initialized, 'true');
+
+      if (window.firebaseDB && window.firebaseFns) {
+        const { doc, setDoc } = window.firebaseFns;
+        const db = window.firebaseDB;
+        const now = new Date().toISOString();
+
+        await Promise.all([
+          setDoc(doc(db, 'academicData', 'academicAssessments'), { items: [], updatedAt: now, count: 0 }),
+          setDoc(doc(db, 'academicData', 'academicSchoolGrades'), { items: [], updatedAt: now }),
+          setDoc(doc(db, 'academicData', 'academicMockExams'), { items: [], updatedAt: now }),
+          setDoc(doc(db, 'academicData', 'academicTargetUnivs'), { items: {}, updatedAt: now })
+        ]);
+      }
+
+      this.refreshAcademicViews();
+      this.notify('🗑️ 모든 학업관리 데이터가 클라우드 및 로컬에서 완전히 삭제되었습니다.', 'success');
+    } catch (err) {
+      console.error('데이터 비우기 실패:', err);
+      this.notify('데이터 삭제 중 오류가 발생했습니다: ' + err.message, 'error');
     }
   },
 
