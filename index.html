@@ -3328,6 +3328,7 @@ const AcademicManager = {
   adminAssessFilter: 'ALL',
   adminMockFilter: 'ALL',
   adminSelectedGradeTerm: '1-2', // 현재 학기: 1학년 2학기
+  currentAdminTab: 'tests',
 
   // 저장소 키 (새 스키마 v3)
   storageKeys: {
@@ -4165,10 +4166,11 @@ const AcademicManager = {
     if (this.studentTab === 'targetUniv') this.renderStudentTargetUnivs();
 
     // 관리자 화면 탭 리렌더링
-    if (this.adminTab === 'assessment') this.renderAdminAssessmentTab();
-    if (this.adminTab === 'schoolGrade') this.renderAdminSchoolGradeTab();
-    if (this.adminTab === 'mockExam') this.renderAdminMockExamTab();
-    if (this.adminTab === 'targetUniv') this.renderAdminTargetUnivTab();
+    const adminTab = this.currentAdminTab || String(App?.state?.adminTab || '').toLowerCase();
+    if (adminTab === 'assessment') this.renderAdminAssessmentsTab();
+    if (adminTab === 'schoolgrade') this.renderAdminSchoolGradeTab();
+    if (adminTab === 'mockexam') this.renderAdminMockExamTab();
+    if (adminTab === 'targetuniv') this.renderAdminTargetUnivTab();
   },
 
   // ----------------------------------------------------
@@ -4190,18 +4192,20 @@ const AcademicManager = {
           const dayItems = [];
 
           allAssessments.forEach(item => {
+            const hasMultipleSessions = item.isMultiSchedule && Array.isArray(item.sessions) && item.sessions.length > 1;
             if (item.isMultiSchedule && Array.isArray(item.sessions) && item.sessions.length > 0) {
               item.sessions.forEach((s, sIdx) => {
                 if (s && s.date === dateStr) {
                   dayItems.push({
                     item,
                     period: s.period || item.period || '3교시',
-                    sessionTitle: s.title || `${s.sessionNum || (sIdx + 1)}차`,
+                    sessionTitle: hasMultipleSessions ? (s.title || `${s.sessionNum || (sIdx + 1)}차`) : '',
                     memo: s.memo || ''
                   });
                 }
               });
             } else if (item.dueDate === dateStr) {
+              // 1회만 실시하는 단일 수행평가는 '1차'를 붙이지 않고 깔끔하게 표기
               dayItems.push({
                 item,
                 period: item.period || '3교시',
@@ -4245,50 +4249,56 @@ const AcademicManager = {
               const isReady = item.status === '준비 후';
               
               let statusText = '예정';
-              let statusBg = 'bg-emerald-900/60 text-emerald-100';
+              let statusBg = 'bg-emerald-900/70 text-emerald-100';
               if (isDone) {
                 statusText = item.studentScore != null ? `${item.studentScore}점` : '완료';
-                statusBg = 'bg-white text-emerald-700 shadow-2xs';
+                statusBg = 'bg-white text-emerald-700 shadow-2xs font-bold';
               } else if (isReady) {
                 statusText = '준비';
-                statusBg = 'bg-amber-300 text-amber-950';
+                statusBg = 'bg-amber-300 text-amber-950 font-bold';
               }
 
               const hasContent = Boolean(item.content && item.content.trim());
-              const cleanSessionTitle = sessionTitle ? sessionTitle.replace(/^\(+|\)+$/g, '').trim() : '';
-              const line1Title = hasContent
-                ? `<span class="text-[9.5px] font-medium text-emerald-100 truncate ml-0.5">${this.escapeHtml(item.title)}</span>`
-                : '';
+              
+              // 다회차(2차시 이상)일 때만 1차, 2차 표기 (1회성 수행평가는 차시 표기 일체 안 함)
+              const cleanSessionTitle = sessionTitle ? String(sessionTitle).replace(/^\(+|\)+$/g, '').trim() : '';
 
-              let secondLineText = '';
+              // 설명 행(2번째 줄): 과제명과 세부내용/차시메모 정돈
+              const descTitle = this.escapeHtml(item.title || '');
+              let descSub = '';
               if (memo && memo.trim()) {
-                secondLineText = this.escapeHtml(memo.trim());
-              } else if (hasContent) {
-                secondLineText = this.escapeHtml(item.content.trim());
-              } else {
-                secondLineText = this.escapeHtml(item.title);
+                descSub = ` (${this.escapeHtml(memo.trim())})`;
+              } else if (hasContent && item.content.trim() !== item.title) {
+                descSub = ` · ${this.escapeHtml(item.content.trim())}`;
+              }
+
+              // 1차, 2차가 있는 경우 밑의 설명 줄 맨 앞에 예쁜 동그라미 뱃지로 배치
+              let sessionPrefix = '';
+              if (cleanSessionTitle) {
+                const regex = new RegExp(`^\\[?\\s*${cleanSessionTitle}`, 'i');
+                if (!regex.test(descTitle)) {
+                  sessionPrefix = `<span class="inline-flex items-center justify-center px-1.5 py-[0.5px] rounded-full text-[8px] font-black bg-amber-300 text-amber-950 mr-1 shadow-2xs leading-none align-middle border border-amber-400/80 flex-shrink-0">${this.escapeHtml(cleanSessionTitle)}</span>`;
+                }
               }
 
               const secondLineHtml = `
-                <div class="text-[9.5px] text-emerald-50/95 font-medium truncate leading-tight mt-0.5">
-                  <span class="truncate">${secondLineText}</span>
+                <div class="text-[9px] truncate leading-tight mt-[2px] min-w-0" title="${cleanSessionTitle ? '[' + cleanSessionTitle + '] ' : ''}${descTitle}${descSub}">
+                  ${sessionPrefix}<span class="text-white font-semibold align-middle">${descTitle}</span><span class="text-emerald-100/80 font-normal align-middle">${descSub}</span>
                 </div>
               `;
 
               const teacherLabel = item.teacherName ? ` (${this.escapeHtml(item.teacherName)})` : '';
               return `
                 <div onclick="AcademicManager.openAssessmentDetailModal('${item.id}'); event.stopPropagation();" 
-                     class="test-event-pill px-1.5 py-1 rounded-lg mb-1.5 font-bold text-[10px] sm:text-[11px] flex flex-col justify-center shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400/80 cursor-pointer transition" 
-                     title="[학교 수행평가] ${this.escapeHtml(item.subject)}${teacherLabel} - ${cleanSessionTitle ? '[' + cleanSessionTitle + '] ' : ''}${this.escapeHtml(item.title)} (${periodLabel})${hasContent ? ' | 내용: ' + this.escapeHtml(item.content) : ''}${memo ? ' | 차시: ' + this.escapeHtml(memo) : ''}">
+                     class="test-event-pill px-1.5 py-[3px] rounded-md mb-1 text-[10px] flex flex-col justify-center shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400/80 cursor-pointer transition" 
+                     title="[학교 수행평가] ${this.escapeHtml(item.subject)}${teacherLabel} - ${cleanSessionTitle ? '[' + cleanSessionTitle + '] ' : ''}${this.escapeHtml(item.title)} (${periodLabel})${hasContent ? ' | 내용: ' + this.escapeHtml(item.content) : ''}${memo ? ' | 차시: ' + this.escapeHtml(memo) : ''}${isDone && item.studentScore != null ? ' | 점수: ' + item.studentScore + '점' : ''}">
                   <div class="flex items-center justify-between gap-1 w-full min-w-0">
-                    <div class="truncate flex items-center gap-1 min-w-0">
-                      <i class="fa-solid fa-school text-[9px] text-emerald-200 flex-shrink-0"></i>
-                      <span class="bg-emerald-800/80 px-1 py-0.2 rounded text-[9px] font-black text-emerald-100 flex-shrink-0">${this.escapeHtml(periodLabel)}</span>
-                      <span class="font-extrabold text-[10px] sm:text-[10.5px] text-white flex-shrink-0">${this.escapeHtml(item.subject)}</span>
-                      ${cleanSessionTitle ? `<span class="px-1.5 py-0.2 rounded-md text-[9px] font-black bg-amber-300 text-amber-950 border border-amber-400/80 shadow-3xs flex-shrink-0 tracking-tight">${this.escapeHtml(cleanSessionTitle)}</span>` : ''}
-                      ${line1Title}
+                    <div class="flex items-center gap-1 min-w-0 truncate">
+                      <i class="fa-solid fa-school text-[8.5px] text-emerald-200 flex-shrink-0"></i>
+                      <span class="bg-emerald-800/90 px-1 py-[1.5px] rounded text-[8.5px] font-bold text-emerald-100 flex-shrink-0 leading-none">${this.escapeHtml(periodLabel)}</span>
+                      <span class="font-bold text-[9.5px] text-white truncate leading-none min-w-0">${this.escapeHtml(item.subject)}</span>
                     </div>
-                    <span class="text-[9px] px-1.5 py-0.2 rounded-full font-black flex-shrink-0 shadow-3xs ${statusBg}">${statusText}</span>
+                    <span class="text-[8.5px] px-1.5 py-[1.5px] rounded-full font-bold flex-shrink-0 shadow-2xs leading-none ${statusBg}">${statusText}</span>
                   </div>
                   ${secondLineHtml}
                 </div>
@@ -4322,13 +4332,12 @@ const AcademicManager = {
     if (origSwitchAdminTab) {
       App.switchAdminTab = (tabName) => {
         const lower = String(tabName).toLowerCase();
-        const academicTabs = ['assessment', 'schoolgrade', 'mockexam', 'targetuniv'];
-        if (academicTabs.includes(lower)) {
-          this.handleAdminTabSwitch(lower);
-        } else {
+        if (App.state) App.state.adminTab = lower;
+        this.currentAdminTab = lower;
+        if (origSwitchAdminTab) {
           origSwitchAdminTab(tabName);
-          this.handleAdminTabSwitch(lower);
         }
+        this.handleAdminTabSwitch(lower);
       };
     }
 
@@ -4337,7 +4346,7 @@ const AcademicManager = {
     if (origRenderAdminDashboard) {
       App.renderAdminDashboard = () => {
         origRenderAdminDashboard();
-        const lower = String(App.state.adminTab || '').toLowerCase();
+        const lower = this.currentAdminTab || String(App.state?.adminTab || '').toLowerCase();
         const academicTabs = ['assessment', 'schoolgrade', 'mockexam', 'targetuniv'];
         if (academicTabs.includes(lower)) {
           this.handleAdminTabSwitch(lower);
@@ -4349,8 +4358,10 @@ const AcademicManager = {
     const origSetAdminSelectedStudent = App.setAdminSelectedStudent ? App.setAdminSelectedStudent.bind(App) : null;
     if (origSetAdminSelectedStudent) {
       App.setAdminSelectedStudent = (studentId) => {
-        origSetAdminSelectedStudent(studentId);
-        this.onAdminStudentChange(studentId);
+        const sId = Number(studentId);
+        if (App.state) App.state.adminSelectedStudentId = sId;
+        origSetAdminSelectedStudent(sId);
+        this.onAdminStudentChange(sId);
       };
     }
   },
@@ -7618,13 +7629,51 @@ const AcademicManager = {
   // ----------------------------------------------------
   // 관리자 학업관리 탭 처리
   // ----------------------------------------------------
+  getAdminSelectedStudentId() {
+    let sId = Number(App?.state?.adminSelectedStudentId);
+    if (typeof AppData !== 'undefined') {
+      const students = AppData.getStudents();
+      if (students && students.length > 0) {
+        if (!sId || !students.some(s => s.id === sId)) {
+          sId = students[0].id;
+          if (App && App.state) App.state.adminSelectedStudentId = sId;
+        }
+      }
+    }
+    return sId || 1;
+  },
+
+  selectAdminStudent(studentId) {
+    const sId = Number(studentId);
+    if (App && App.state) {
+      App.state.adminSelectedStudentId = sId;
+    }
+    if (typeof App !== 'undefined' && typeof App.setAdminSelectedStudent === 'function') {
+      App.setAdminSelectedStudent(sId);
+    }
+    this.onAdminStudentChange(sId);
+  },
+
   handleAdminTabSwitch(tabName) {
     const lower = String(tabName).toLowerCase();
-    const tabs = ['tests', 'assessment', 'schoolgrade', 'mockexam', 'targetuniv', 'overview', 'students', 'vocab', 'backup'];
+    this.currentAdminTab = lower;
+    if (App && App.state) App.state.adminTab = lower;
 
-    tabs.forEach(t => {
-      const btn = document.getElementById(`adminTabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
-      const content = document.getElementById(`adminTabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    const tabMap = {
+      tests: 'Tests',
+      assessment: 'Assessment',
+      schoolgrade: 'SchoolGrade',
+      mockexam: 'MockExam',
+      targetuniv: 'TargetUniv',
+      overview: 'Overview',
+      students: 'Students',
+      vocab: 'Vocab',
+      backup: 'Backup'
+    };
+
+    Object.entries(tabMap).forEach(([t, suffix]) => {
+      const btn = document.getElementById(`adminTabBtn${suffix}`);
+      const content = document.getElementById(`adminTabContent${suffix}`);
 
       if (t === lower) {
         if (btn) {
@@ -7640,28 +7689,28 @@ const AcademicManager = {
     });
 
     if (lower === 'assessment') this.renderAdminAssessmentsTab();
-    if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
-    if (lower === 'mockexam') this.renderAdminMockExamTab();
-    if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
+    else if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
+    else if (lower === 'mockexam') this.renderAdminMockExamTab();
+    else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
   },
 
   onAdminStudentChange(studentId) {
-    const lower = String(App.state.adminTab || '').toLowerCase();
+    const lower = this.currentAdminTab || String(App?.state?.adminTab || '').toLowerCase();
     if (lower === 'assessment') this.renderAdminAssessmentsTab();
-    if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
-    if (lower === 'mockexam') this.renderAdminMockExamTab();
-    if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
+    else if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
+    else if (lower === 'mockexam') this.renderAdminMockExamTab();
+    else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
   },
 
   renderAdminAssessmentsTab() {
-    const studentId = Number(App.state.adminSelectedStudentId);
+    const studentId = this.getAdminSelectedStudentId();
     const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
     const nameEl = document.getElementById('adminAssessSelectedStudentName');
-    if (nameEl && student) nameEl.textContent = `${student.name} 학생`;
+    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
 
     this.renderAdminPills('adminAssessmentStudentPills');
 
-    let list = this.getAssessments().filter(a => a.studentId === studentId);
+    let list = this.getAssessments().filter(a => Number(a.studentId) === studentId);
     if (this.adminAssessFilter !== 'ALL') {
       list = list.filter(a => a.status === this.adminAssessFilter);
     }
@@ -7731,14 +7780,14 @@ const AcademicManager = {
   },
 
   renderAdminSchoolGradeTab() {
-    const studentId = Number(App.state.adminSelectedStudentId);
+    const studentId = this.getAdminSelectedStudentId();
     const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
     const nameEl = document.getElementById('adminGradeSelectedStudentName');
-    if (nameEl && student) nameEl.textContent = `${student.name} 학생`;
+    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
 
     this.renderAdminPills('adminGradeStudentPills');
 
-    const allGrades = this.getSchoolGrades().filter(g => g.studentId === studentId);
+    const allGrades = this.getSchoolGrades().filter(g => Number(g.studentId) === studentId);
     const terms = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2'];
     const termNames = { '1-1': '1학년 1학기', '1-2': '1학년 2학기', '2-1': '2학년 1학기', '2-2': '2학년 2학기', '3-1': '3학년 1학기', '3-2': '3학년 2학기' };
 
@@ -8056,14 +8105,14 @@ const AcademicManager = {
   },
 
   renderAdminMockExamTab() {
-    const studentId = Number(App.state.adminSelectedStudentId);
+    const studentId = this.getAdminSelectedStudentId();
     const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
     const nameEl = document.getElementById('adminMockSelectedStudentName');
-    if (nameEl && student) nameEl.textContent = `${student.name} 학생`;
+    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
 
     this.renderAdminPills('adminMockStudentPills');
 
-    let list = this.getMockExams().filter(m => m.studentId === studentId);
+    let list = this.getMockExams().filter(m => Number(m.studentId) === studentId);
     if (this.adminMockFilter !== 'ALL') {
       list = list.filter(m => m.category === this.adminMockFilter);
     }
@@ -8122,15 +8171,15 @@ const AcademicManager = {
   },
 
   renderAdminTargetUnivTab() {
-    const studentId = Number(App.state.adminSelectedStudentId);
+    const studentId = this.getAdminSelectedStudentId();
     const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
     const nameEl = document.getElementById('adminTargetUnivSelectedStudentName');
-    if (nameEl && student) nameEl.textContent = `${student.name} 학생`;
+    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
 
     this.renderAdminPills('adminTargetUnivStudentPills');
 
     const map = this.getTargetUnivs();
-    const list = map[studentId] || [];
+    const list = map[studentId] || map[String(studentId)] || [];
 
     const container = document.getElementById('adminTargetUnivCardsGrid');
     if (!container) return;
@@ -8170,12 +8219,17 @@ const AcademicManager = {
     if (!container || typeof AppData === 'undefined') return;
 
     const students = AppData.getStudents();
-    const currentId = Number(App.state.adminSelectedStudentId);
+    const currentId = this.getAdminSelectedStudentId();
+
+    if (!students || students.length === 0) {
+      container.innerHTML = '<span class="text-xs text-slate-400">등록된 학생이 없습니다.</span>';
+      return;
+    }
 
     container.innerHTML = students.map(s => {
       const isSel = (s.id === currentId);
       return `
-        <button onclick="App.setAdminSelectedStudent(${s.id})" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${isSel ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+        <button type="button" onclick="AcademicManager.selectAdminStudent(${s.id})" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${isSel ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
           <span>${this.escapeHtml(s.name)}</span>
         </button>
       `;
