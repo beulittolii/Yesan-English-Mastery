@@ -103,7 +103,64 @@ const App = {
           }
           return;
         }
+
+        // 단어장 크게 보기 모달이 열려있으면 단어장 닫기(시험 창 복귀)
+        const vocabStudyModal = document.getElementById('vocabStudyModal');
+        if (vocabStudyModal && !vocabStudyModal.classList.contains('hidden')) {
+          this.closeVocabStudyModal();
+          return;
+        }
+
         this.closeAllModals();
+      }
+
+      // 객관식 단어테스트 PC 키보드 숫자 단축키 (1~5 및 넘패드 1~5)
+      const vt = this.state.vocabTest;
+      if (this.state.view === 'vocabTest' && vt && vt.direction === 2 && !vt.isCompleted) {
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+          let num = null;
+          if (e.key >= '1' && e.key <= '5') {
+            num = parseInt(e.key, 10);
+          } else if (e.code && e.code.startsWith('Numpad')) {
+            const digit = e.code.replace('Numpad', '');
+            if (digit >= '1' && digit <= '5') {
+              num = parseInt(digit, 10);
+            }
+          }
+          if (num !== null) {
+            const choiceIndex = num - 1;
+            const q = vt.questions && vt.questions[vt.currentIndex];
+            if (q && q.choices && choiceIndex >= 0 && choiceIndex < q.choices.length) {
+              if (q.answered === null || q.answered === undefined) {
+                e.preventDefault();
+                this.selectVocabAnswer(choiceIndex);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // 단어장 크게 보기 모달 - 플래시카드 모드 키보드 단축키 (←, →, Space)
+      const vsModal = document.getElementById('vocabStudyModal');
+      if (vsModal && !vsModal.classList.contains('hidden') && this.state.vocabStudy?.viewMode === 'card') {
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            this.vocabStudyPrevCard();
+            return;
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            this.vocabStudyNextCard();
+            return;
+          } else if (e.key === ' ' || e.key === 'Spacebar') {
+            e.preventDefault();
+            this.vocabStudyFlipCard();
+            return;
+          }
+        }
       }
     });
 
@@ -1153,20 +1210,24 @@ const App = {
       </div>` : ''}
 
       ${!isMockExamTest ? `
-        <!-- 일반 단어 테스트: 원래 뜨던 기존 4컬럼 단어장 그대로 100% 복원 -->
-        <div class="space-y-2">
-          <h4 class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-book-open text-violet-600"></i> 단어장</h4>
-          <div class="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
-            ${set.words.map((word, index) => `
-              <div class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 p-2.5 sm:p-3 text-xs hover:bg-slate-50 transition">
-                <span class="font-bold text-slate-400">${index + 1}</span>
-                <strong class="text-slate-800 break-words">${this.escapeHtml(word.en)}</strong>
-                <span class="text-slate-600 break-words">${this.escapeHtml(word.ko)}</span>
-                <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
-                  <i class="fa-solid fa-volume-high text-[11px]"></i>
-                </button>
-              </div>`).join('')}
+        <!-- 단어장 크게 보기 안내 & 버튼 카드 -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-violet-50 via-indigo-50 to-purple-50 border border-violet-200 shadow-2xs flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-lg shadow-xs flex-shrink-0">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h4 class="text-sm font-black text-slate-900 truncate">단어장 학습 & 암기</h4>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-violet-200 text-violet-800">총 ${set.words.length}단어</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">시험 시작 전 단어를 크게 보며 뜻 가리기 및 발음을 확인하세요</p>
+            </div>
           </div>
+          <button type="button" onclick="App.openVocabStudyModal('${set.id}', '${test.id}')" class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs flex-shrink-0 cursor-pointer">
+            <i class="fa-solid fa-expand text-[11px]"></i>
+            <span>단어장 크게 보기</span>
+          </button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -1188,65 +1249,24 @@ const App = {
             <span class="text-[10px] font-black bg-black/30 border border-amber-300/50 text-amber-300 px-2 py-0.5 rounded-full flex-shrink-0">객관식 전용</span>
           </div>
 
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                <i class="fa-solid fa-book-bookmark text-rose-600"></i> 단어 해설 목록 (총 60단어)
-              </h4>
-              <span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                기존뜻 ➔ 9모 출제뜻 직관 비교
-              </span>
-            </div>
-            <div class="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
-              <div class="max-h-72 overflow-y-auto divide-y divide-slate-100">
-                ${set.words.map((word, index) => {
-                  const partNum = index < 30 ? 1 : 2;
-                  const isPartStart = index === 0 || index === 30;
-                  return `
-                    ${isPartStart ? `
-                      <div class="sticky top-0 z-10 px-2.5 py-1.5 bg-white/95 backdrop-blur-md ${index === 0 ? 'rounded-t-2xl' : ''}">
-                        <div class="px-3 py-1.5 rounded-xl ${partNum === 1 ? 'bg-indigo-50 border border-indigo-200 text-indigo-950' : 'bg-rose-50 border border-rose-200 text-rose-950'} flex items-center justify-between shadow-2xs">
-                          <div class="flex items-center gap-1.5 font-black text-xs">
-                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${partNum === 1 ? 'bg-indigo-600 text-white' : 'bg-rose-600 text-white'} text-[9px] font-black">${partNum}</span>
-                            <span>Part ${partNum} (${partNum === 1 ? '1~30번' : '31~60번'})</span>
-                          </div>
-                          <span class="text-[10px] font-bold ${partNum === 1 ? 'text-indigo-700 bg-white border-indigo-200' : 'text-rose-700 bg-white border-rose-200'} px-2 py-0.5 rounded-full border shadow-2xs">
-                            ${partNum === 1 ? '1차 관문 (30문항)' : '최종 관문 (30문항)'}
-                          </span>
-                        </div>
-                      </div>` : ''}
-                    <div class="p-3 text-xs hover:bg-slate-50 transition space-y-1.5">
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-baseline gap-2 flex-wrap min-w-0">
-                          <span class="font-black text-indigo-600 w-6 flex-shrink-0">${index + 1}.</span>
-                          <strong class="text-slate-900 font-black text-sm tracking-tight">${this.escapeHtml(word.en)}</strong>
-                          ${word.ipa ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${this.escapeHtml(word.ipa)}</span>` : ''}
-                        </div>
-                        <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0" title="발음 듣기">
-                          <i class="fa-solid fa-volume-high text-xs"></i>
-                        </button>
-                      </div>
-
-                      <!-- 초고가독성 2줄 직관 해설 카드 -->
-                      <div class="ml-6 p-2 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
-                        <div class="flex items-center gap-1.5 flex-wrap font-bold text-xs">
-                          <span class="px-1.5 py-0.2 rounded bg-slate-200 text-slate-600 text-[10px] font-bold">기존뜻</span>
-                          <span class="text-slate-400 line-through text-[11px]">${this.escapeHtml(word.baseKo || '1차 뜻')}</span>
-                          <span class="text-rose-600 font-black text-xs">➔</span>
-                          <span class="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[10px] font-black">9모 출제</span>
-                          <span class="text-rose-950 font-black text-xs">${this.escapeHtml(word.mockKo || word.ko)}</span>
-                        </div>
-                        ${word.exampleEn ? `
-                          <div class="text-[11px] text-amber-950 pt-1 border-t border-amber-200/50 flex items-baseline gap-1">
-                            <span class="font-bold text-slate-700 flex-shrink-0">예문:</span>
-                            <span class="font-semibold text-slate-900">${this.escapeHtml(word.exampleEn)}</span>
-                            <span class="text-slate-500 font-normal">(${this.escapeHtml(word.exampleKo)})</span>
-                          </div>` : ''}
-                      </div>
-                    </div>`;
-                }).join('')}
+          <!-- 9모 단어 해설 크게 보기 카드 -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 border border-rose-200 shadow-2xs flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-600 text-white flex items-center justify-center text-lg shadow-xs flex-shrink-0">
+                <i class="fa-solid fa-book-bookmark"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <h4 class="text-sm font-black text-slate-900 truncate">9모 킬러 반전 다의어 60선</h4>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800">총 60단어</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">기존뜻 ➔ 9모 출제뜻 직관 비교 해설 및 예문 크게 보기</p>
               </div>
             </div>
+            <button type="button" onclick="App.openVocabStudyModal('${set.id}', '${test.id}')" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs flex-shrink-0 cursor-pointer">
+              <i class="fa-solid fa-expand text-[11px]"></i>
+              <span>단어 해설 크게 보기</span>
+            </button>
           </div>
 
           <!-- 오직 Part 1, Part 2 객관식 응시 버튼만 제공 (순차 잠금) -->
@@ -4708,7 +4728,7 @@ const App = {
 
   closeAllModals() {
     this._activeModals.clear();
-    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal', 'textMemorizeExamModal', 'textMemorizeResultModal', 'textMemorizeScheduleModal', 'extendTestModal'].forEach(id => {
+    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal', 'vocabStudyModal', 'textMemorizeExamModal', 'textMemorizeResultModal', 'textMemorizeScheduleModal', 'extendTestModal'].forEach(id => {
       const modal = document.getElementById(id);
       if (modal) modal.classList.add('hidden');
     });
@@ -4953,10 +4973,13 @@ const App = {
                                   </p>
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
-                                  <button onclick="App.openVocabSetModal('${set.id}')" class="px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">
+                                  <button onclick="App.openVocabStudyModal('${set.id}')" class="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition cursor-pointer" title="단어장 크게 보기">
+                                    <i class="fa-solid fa-expand text-[10px]"></i> 크게 보기
+                                  </button>
+                                  <button onclick="App.openVocabSetModal('${set.id}')" class="px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer">
                                     <i class="fa-solid fa-pen-to-square text-[10px]"></i> 수정
                                   </button>
-                                  <button onclick="App.confirmDeleteVocabSet('${set.id}')" class="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-100 transition">
+                                  <button onclick="App.confirmDeleteVocabSet('${set.id}')" class="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-100 transition cursor-pointer">
                                     <i class="fa-solid fa-trash-can text-[10px]"></i>
                                   </button>
                                 </div>
@@ -5495,7 +5518,13 @@ const App = {
                   <i class="fa-solid ${isMockSpecial ? 'fa-star text-amber-500' : 'fa-file-lines text-indigo-500'} text-xs"></i>
                   <span class="${isMockSpecial ? 'text-amber-950 font-black' : ''}">${this.escapeHtml(set.title)}</span>
                 </p>
-                <p class="text-xs ${isMockSpecial ? 'text-amber-800 font-semibold' : 'text-slate-500'} mt-0.5">${set.words.length}개 단어 · 객관식, 스펠링, 통합</p>
+                <div class="flex items-center justify-between gap-2 mt-0.5">
+                  <p class="text-xs ${isMockSpecial ? 'text-amber-800 font-semibold' : 'text-slate-500'}">${set.words.length}개 단어 · 객관식, 스펠링, 통합</p>
+                  <button type="button" onclick="App.openVocabStudyModal('${set.id}')" class="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-book-open text-[11px]"></i>
+                    <span>단어장 보기</span>
+                  </button>
+                </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 ${this.renderVocabTestButton(set, studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200')}
@@ -5691,6 +5720,413 @@ const App = {
       return;
     }
     this.toast('이미 완료되어 응시할 수 없습니다.', 'info');
+  },
+
+  // ========================================================
+  // 단어장 크게 보기 전용 학습 모달 (Vocab Study Modal)
+  // ========================================================
+  openVocabStudyModal(setId, testId = null) {
+    const allSets = AppData.getVocabSets();
+    let words = [];
+    let title = '';
+    let bookName = '';
+    let isMockSpecial = false;
+
+    // 1. testId가 전달된 경우 해당 시험 정보 우선 파싱
+    if (testId) {
+      const scheduledTest = AppData.getTests().find(t => t.id === testId);
+      if (scheduledTest) {
+        isMockSpecial = Boolean(
+          scheduledTest.isMockSpecial ||
+          (scheduledTest.title && (scheduledTest.title.includes('9모') || scheduledTest.title.includes('모의고사')))
+        );
+
+        const setIds = Array.isArray(scheduledTest.vocabSetIds) && scheduledTest.vocabSetIds.length > 0
+          ? scheduledTest.vocabSetIds
+          : (scheduledTest.vocabSetId ? [scheduledTest.vocabSetId] : []);
+
+        const matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+        if (matchingSets.length > 0) {
+          matchingSets.forEach(s => {
+            if (Array.isArray(s.words)) words.push(...s.words);
+          });
+          bookName = matchingSets[0]?.book || '기본 단어장';
+          title = matchingSets.map(s => s.title).join(' + ');
+        }
+      }
+    }
+
+    // 2. setId로 추가 보완 (쉼표로 구분된 다중 세트 지원)
+    if (words.length === 0 && setId) {
+      const idList = String(setId).split(',').map(s => s.trim()).filter(Boolean);
+      const matchingSets = idList.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+      if (matchingSets.length > 0) {
+        matchingSets.forEach(s => {
+          if (Array.isArray(s.words)) words.push(...s.words);
+        });
+        bookName = matchingSets[0]?.book || '기본 단어장';
+        title = matchingSets.map(s => s.title).join(' + ');
+      } else {
+        // 혹시 9모 특별 세트인지 체크
+        const mockSet = allSets.find(s => s.isMockSpecial || (s.title && s.title.includes('9모')))
+          || (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' ? MOCK_EXAM_VOCAB_SETS[0] : null);
+        if (mockSet && Array.isArray(mockSet.words)) {
+          words = [...mockSet.words];
+          title = mockSet.title || '1등급 킬러 반전 다의어 60선';
+          bookName = mockSet.book || '2026 고1 9모 대비';
+          isMockSpecial = true;
+        }
+      }
+    }
+
+    if (words.length === 0) {
+      this.toast('단어 목록을 불러올 수 없습니다.', 'error');
+      return;
+    }
+
+    // 모달 출처(원래 열려있던 시험 상세 모달) 기억
+    const detailModal = document.getElementById('testDetailModal');
+    if (detailModal && !detailModal.classList.contains('hidden')) {
+      this._vocabStudyOriginTestId = testId;
+      this.hideModal('testDetailModal');
+    } else {
+      this._vocabStudyOriginTestId = testId || null;
+    }
+
+    // 포맷된 깔끔한 제목 생성
+    const rawTitle = (bookName && bookName !== '기본 단어장') ? `[${bookName}] ${title}` : title;
+    const cleanTitle = this.formatCleanVocabTitle(rawTitle);
+
+    this.state.vocabStudy = {
+      allWords: words,
+      words: [...words],
+      title: cleanTitle || title || '단어장',
+      bookName: bookName || '기본 단어장',
+      originTestId: this._vocabStudyOriginTestId,
+      setId,
+      isMockSpecial,
+      meaningHidden: false,
+      revealedIndices: new Set(),
+      viewMode: 'list', // 'list' | 'card'
+      cardIndex: 0,
+      isCardFlipped: false,
+      searchQuery: ''
+    };
+
+    // UI 헤더 및 검색창 초기화
+    const titleEl = document.getElementById('vocabStudyTitle');
+    const badgeEl = document.getElementById('vocabStudyBadge');
+    const countBadgeEl = document.getElementById('vocabStudyCountBadge');
+    const searchInput = document.getElementById('vocabStudySearchInput');
+
+    if (titleEl) titleEl.innerText = this.state.vocabStudy.title;
+    if (badgeEl) badgeEl.innerText = bookName || '단어장 학습';
+    if (countBadgeEl) countBadgeEl.innerText = `총 ${words.length}단어`;
+    if (searchInput) searchInput.value = '';
+
+    this.updateVocabStudyMeaningToggleBtn();
+    this.updateVocabStudyModeButtons();
+    this.renderVocabStudyContent();
+    this.renderVocabStudyFooter();
+
+    this.showModal('vocabStudyModal');
+  },
+
+  closeVocabStudyModal() {
+    this.hideModal('vocabStudyModal');
+    const originTestId = this._vocabStudyOriginTestId;
+    this._vocabStudyOriginTestId = null;
+
+    // 시험 창에서 열었던 경우 원래 시험 상세 창으로 자연스럽게 복귀
+    if (originTestId) {
+      setTimeout(() => {
+        this.openVocabTestScheduleModal(originTestId);
+      }, 150);
+    }
+  },
+
+  toggleVocabStudyMeaningHidden() {
+    if (!this.state.vocabStudy) return;
+    this.state.vocabStudy.meaningHidden = !this.state.vocabStudy.meaningHidden;
+    this.state.vocabStudy.revealedIndices.clear();
+    this.updateVocabStudyMeaningToggleBtn();
+    this.renderVocabStudyContent();
+  },
+
+  updateVocabStudyMeaningToggleBtn() {
+    const vs = this.state.vocabStudy;
+    const btn = document.getElementById('vocabStudyMeaningToggleBtn');
+    const icon = document.getElementById('vocabStudyMeaningToggleIcon');
+    const text = document.getElementById('vocabStudyMeaningToggleText');
+    if (!btn || !vs) return;
+
+    if (vs.meaningHidden) {
+      btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 border border-indigo-600 text-white shadow-xs cursor-pointer';
+      if (icon) icon.className = 'fa-solid fa-eye text-indigo-100';
+      if (text) text.innerText = '뜻 함께 보기';
+    } else {
+      btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs cursor-pointer';
+      if (icon) icon.className = 'fa-solid fa-eye-slash text-indigo-600';
+      if (text) text.innerText = '단어만 보기 (뜻 가리기)';
+    }
+  },
+
+  setVocabStudyViewMode(mode) {
+    if (!this.state.vocabStudy) return;
+    this.state.vocabStudy.viewMode = mode;
+    this.state.vocabStudy.cardIndex = 0;
+    this.state.vocabStudy.isCardFlipped = false;
+    this.updateVocabStudyModeButtons();
+    this.renderVocabStudyContent();
+  },
+
+  updateVocabStudyModeButtons() {
+    const vs = this.state.vocabStudy;
+    const listBtn = document.getElementById('vocabStudyModeListBtn');
+    const cardBtn = document.getElementById('vocabStudyModeCardBtn');
+    if (!listBtn || !cardBtn || !vs) return;
+
+    if (vs.viewMode === 'list') {
+      listBtn.className = 'px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer';
+      cardBtn.className = 'px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer';
+    } else {
+      listBtn.className = 'px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer';
+      cardBtn.className = 'px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer';
+    }
+  },
+
+  filterVocabStudyWords(query) {
+    if (!this.state.vocabStudy) return;
+    const q = (query || '').trim().toLowerCase();
+    this.state.vocabStudy.searchQuery = q;
+
+    if (!q) {
+      this.state.vocabStudy.words = [...this.state.vocabStudy.allWords];
+    } else {
+      this.state.vocabStudy.words = this.state.vocabStudy.allWords.filter(w => {
+        const en = (w.en || '').toLowerCase();
+        const ko = (w.ko || '').toLowerCase();
+        const baseKo = (w.baseKo || '').toLowerCase();
+        const mockKo = (w.mockKo || '').toLowerCase();
+        return en.includes(q) || ko.includes(q) || baseKo.includes(q) || mockKo.includes(q);
+      });
+    }
+    this.state.vocabStudy.cardIndex = 0;
+    this.state.vocabStudy.isCardFlipped = false;
+    this.renderVocabStudyContent();
+  },
+
+  toggleVocabStudyWordReveal(index) {
+    if (!this.state.vocabStudy) return;
+    if (this.state.vocabStudy.revealedIndices.has(index)) {
+      this.state.vocabStudy.revealedIndices.delete(index);
+    } else {
+      this.state.vocabStudy.revealedIndices.add(index);
+    }
+    this.renderVocabStudyContent();
+  },
+
+  vocabStudyNextCard() {
+    const vs = this.state.vocabStudy;
+    if (!vs || vs.words.length === 0) return;
+    vs.cardIndex = (vs.cardIndex + 1) % vs.words.length;
+    vs.isCardFlipped = false;
+    this.renderVocabStudyContent();
+  },
+
+  vocabStudyPrevCard() {
+    const vs = this.state.vocabStudy;
+    if (!vs || vs.words.length === 0) return;
+    vs.cardIndex = (vs.cardIndex - 1 + vs.words.length) % vs.words.length;
+    vs.isCardFlipped = false;
+    this.renderVocabStudyContent();
+  },
+
+  vocabStudyFlipCard() {
+    const vs = this.state.vocabStudy;
+    if (!vs) return;
+    vs.isCardFlipped = !vs.isCardFlipped;
+    this.renderVocabStudyContent();
+  },
+
+  renderVocabStudyContent() {
+    const vs = this.state.vocabStudy;
+    const container = document.getElementById('vocabStudyModalBody');
+    if (!container || !vs) return;
+
+    if (vs.words.length === 0) {
+      container.innerHTML = `
+        <div class="p-12 text-center text-slate-400 space-y-2">
+          <i class="fa-solid fa-magnifying-glass text-3xl mb-1 text-slate-300"></i>
+          <p class="text-sm font-bold text-slate-600">검색 조건과 일치하는 단어가 없습니다.</p>
+          <p class="text-xs text-slate-400">검색어를 지우거나 다른 검색어를 입력해보세요.</p>
+        </div>`;
+      return;
+    }
+
+    // ── 뷰 모드 1: 목록형 크게 보기 ────────────────────────
+    if (vs.viewMode === 'list') {
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          ${vs.words.map((word, index) => {
+            const isRevealed = vs.revealedIndices.has(index);
+            const isHidden = vs.meaningHidden && !isRevealed;
+            const is9Mo = Boolean(word.baseKo && (word.mockKo || word.ko));
+
+            return `
+              <div class="p-4 sm:p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-300 hover:shadow-md transition flex flex-col justify-between gap-3 group">
+                <div class="space-y-2">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-baseline gap-2.5 flex-wrap min-w-0">
+                      <span class="text-xs font-black text-indigo-500 font-mono">#${String(index + 1).padStart(2, '0')}</span>
+                      <strong class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight break-words select-text">${this.escapeHtml(word.en)}</strong>
+                      ${word.ipa ? `<span class="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">${this.escapeHtml(word.ipa)}</span>` : ''}
+                    </div>
+                    <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(word.en)}'); event.stopPropagation();" class="w-9 h-9 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition flex-shrink-0 cursor-pointer shadow-2xs" title="발음 듣기">
+                      <i class="fa-solid fa-volume-high text-sm"></i>
+                    </button>
+                  </div>
+
+                  ${is9Mo ? `
+                    <!-- 9모 전용 대형 직관 비교 카드 -->
+                    <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1.5 mt-1">
+                      <div class="flex items-center gap-2 flex-wrap font-bold">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 text-[10px] font-bold">기존뜻</span>
+                        <span class="text-slate-400 line-through text-xs">${this.escapeHtml(word.baseKo)}</span>
+                        <span class="text-rose-600 font-black text-xs">➔</span>
+                        <span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black">9모 출제</span>
+                        ${isHidden ? `
+                          <span onclick="App.toggleVocabStudyWordReveal(${index})" class="px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-500 text-xs font-bold border border-dashed border-slate-300 cursor-pointer select-none hover:bg-indigo-50 hover:text-indigo-600 transition">
+                            <i class="fa-solid fa-eye-slash text-[10px] mr-1"></i>클릭하여 뜻 확인
+                          </span>
+                        ` : `
+                          <span class="text-rose-950 font-black text-sm">${this.escapeHtml(word.mockKo || word.ko)}</span>
+                        `}
+                      </div>
+                      ${word.exampleEn ? `
+                        <div class="text-[11px] text-slate-700 pt-1.5 border-t border-amber-200/50 space-y-0.5">
+                          <p class="font-semibold text-slate-900">${this.escapeHtml(word.exampleEn)}</p>
+                          <p class="text-slate-500 font-normal">(${this.escapeHtml(word.exampleKo)})</p>
+                        </div>
+                      ` : ''}
+                    </div>
+                  ` : `
+                    <!-- 일반 단어 한국어 뜻 (단어만 보기 모드 지원) -->
+                    <div class="pt-1">
+                      ${isHidden ? `
+                        <div onclick="App.toggleVocabStudyWordReveal(${index})" class="py-2 px-3 rounded-xl bg-slate-100/90 hover:bg-indigo-50 text-slate-400 hover:text-indigo-700 border border-dashed border-slate-300 text-xs font-bold transition flex items-center justify-between cursor-pointer select-none">
+                          <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye-slash text-[11px]"></i>
+                            <span>클릭하여 한국어 뜻 확인</span>
+                          </span>
+                          <span class="text-[10px] text-slate-400 font-normal">터치 시 열림</span>
+                        </div>
+                      ` : `
+                        <p class="text-base sm:text-lg font-bold text-violet-950 break-words">${this.escapeHtml(word.ko)}</p>
+                      `}
+                    </div>
+                  `}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>`;
+    } else {
+      // ── 뷰 모드 2: 플래시카드 모드 (한 단어씩 크게 넘겨보기) ───────
+      const currentWord = vs.words[vs.cardIndex];
+      const is9Mo = Boolean(currentWord && currentWord.baseKo && (currentWord.mockKo || currentWord.ko));
+      const totalCards = vs.words.length;
+
+      container.innerHTML = `
+        <div class="max-w-xl mx-auto py-4 space-y-5">
+          <!-- 상단 진행도 및 키보드 힌트 -->
+          <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span class="font-bold text-slate-700">단어 <strong>${vs.cardIndex + 1}</strong> / ${totalCards}</span>
+            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-400">
+              <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold text-[10px]">←</kbd>
+              <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold text-[10px]">→</kbd> 넘기기 ·
+              <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold text-[10px]">Space</kbd> 뒤집기
+            </span>
+          </div>
+
+          <!-- 대형 플래시카드 본체 -->
+          <div onclick="App.vocabStudyFlipCard()" class="min-h-[260px] sm:min-h-[300px] p-8 rounded-3xl border-2 ${vs.isCardFlipped ? 'border-indigo-400 bg-gradient-to-b from-indigo-50/50 to-white' : 'border-slate-200 bg-white'} shadow-lg hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-4 group select-none">
+            <span class="text-xs font-black text-indigo-500 font-mono bg-indigo-50 px-3 py-1 rounded-full">#${String(vs.cardIndex + 1).padStart(2, '0')}</span>
+
+            <!-- 영어 단어 -->
+            <div class="space-y-1">
+              <h2 class="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">${this.escapeHtml(currentWord.en)}</h2>
+              ${currentWord.ipa ? `<p class="text-sm sm:text-base font-mono text-slate-400 font-bold">${this.escapeHtml(currentWord.ipa)}</p>` : ''}
+            </div>
+
+            <!-- 발음 버튼 -->
+            <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(currentWord.en)}'); event.stopPropagation();" class="w-11 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition shadow-md cursor-pointer" title="발음 듣기">
+              <i class="fa-solid fa-volume-high text-base"></i>
+            </button>
+
+            <!-- 한국어 뜻 영역 -->
+            <div class="w-full pt-3 border-t border-slate-100 min-h-[70px] flex items-center justify-center">
+              ${vs.isCardFlipped ? `
+                ${is9Mo ? `
+                  <div class="space-y-1 text-center animate-fade-in">
+                    <div class="flex items-center justify-center gap-2 font-bold text-sm">
+                      <span class="text-slate-400 line-through">${this.escapeHtml(currentWord.baseKo)}</span>
+                      <span class="text-rose-600 font-black">➔</span>
+                      <span class="text-rose-950 font-black text-base sm:text-lg">${this.escapeHtml(currentWord.mockKo || currentWord.ko)}</span>
+                    </div>
+                    ${currentWord.exampleEn ? `<p class="text-xs text-slate-600 font-medium">${this.escapeHtml(currentWord.exampleEn)}</p>` : ''}
+                  </div>
+                ` : `
+                  <p class="text-2xl sm:text-3xl font-black text-indigo-950 animate-fade-in">${this.escapeHtml(currentWord.ko)}</p>
+                `}
+              ` : `
+                <div class="text-xs font-bold text-slate-400 group-hover:text-indigo-600 transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-hand-pointer text-sm animate-bounce"></i>
+                  <span>카드를 클릭하거나 Space를 누르면 뜻이 나타납니다</span>
+                </div>
+              `}
+            </div>
+          </div>
+
+          <!-- 네비게이션 컨트롤 -->
+          <div class="flex items-center justify-between gap-3">
+            <button type="button" onclick="App.vocabStudyPrevCard()" class="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs">
+              <i class="fa-solid fa-chevron-left"></i>
+              <span>이전 단어</span>
+            </button>
+            <button type="button" onclick="App.vocabStudyFlipCard()" class="py-3 px-5 rounded-2xl ${vs.isCardFlipped ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 shadow-md'} text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-rotate text-xs"></i>
+              <span>${vs.isCardFlipped ? '단어 다시 가리기' : '뜻 확인하기'}</span>
+            </button>
+            <button type="button" onclick="App.vocabStudyNextCard()" class="flex-1 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs">
+              <span>다음 단어</span>
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>`;
+    }
+  },
+
+  renderVocabStudyFooter() {
+    const vs = this.state.vocabStudy;
+    const footer = document.getElementById('vocabStudyModalFooter');
+    if (!footer || !vs) return;
+
+    if (vs.originTestId) {
+      footer.innerHTML = `
+        <button type="button" onclick="App.closeVocabStudyModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition flex items-center gap-2 shadow-xs cursor-pointer">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>시험 응시 창으로 돌아가기</span>
+        </button>
+        <button type="button" onclick="App.closeVocabStudyModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition cursor-pointer">
+          닫기
+        </button>`;
+    } else {
+      footer.innerHTML = `
+        <div class="text-xs text-slate-400 font-medium">단어를 충분히 암기한 후 시험에 도전하세요!</div>
+        <button type="button" onclick="App.closeVocabStudyModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm transition cursor-pointer shadow-xs">
+          확인 완료
+        </button>`;
+    }
   },
 
   // ── 단어 테스트 10분 재응시 대기시간 즉시 해제 (선생님 관리자 권한 일회성 허용) ──
@@ -6203,6 +6639,7 @@ const App = {
           <div class="glass-card rounded-2xl p-6 sm:p-8 text-center space-y-6">
             <p class="text-xs font-bold text-slate-400">
               다음 영어 단어의 올바른 한국어 뜻을 고르세요
+              <span class="hidden sm:inline font-medium text-slate-400 ml-1.5">(키보드 숫자 <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold text-slate-700">1</kbd> ~ <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-300 text-[11px] font-mono font-bold text-slate-700">5</kbd> 로도 선택 가능)</span>
             </p>
             <div class="flex items-center justify-center gap-3 py-4 px-6 bg-indigo-50/80 rounded-2xl border border-indigo-100 inline-flex min-w-[220px] shadow-inner">
               <span class="text-3xl sm:text-4xl font-black text-slate-900">${this.escapeHtml(q.word.en)}</span>
@@ -6216,10 +6653,13 @@ const App = {
                 <button
                   id="vocabChoice_${i}"
                   onclick="App.selectVocabAnswer(${i})"
-                  class="vocab-choice-btn w-full p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 text-sm font-semibold text-slate-800 transition text-left flex items-center gap-3"
+                  class="vocab-choice-btn w-full p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 text-sm font-semibold text-slate-800 transition text-left flex items-center justify-between gap-3 group cursor-pointer"
                 >
-                  <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold flex-shrink-0">${['①','②','③','④','⑤'][i]}</span>
-                  <span>${this.escapeHtml(choice)}</span>
+                  <div class="flex items-center gap-3 min-w-0">
+                    <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0 transition">${['①','②','③','④','⑤'][i]}</span>
+                    <span class="break-words">${this.escapeHtml(choice)}</span>
+                  </div>
+                  <kbd class="hidden sm:inline-flex items-center justify-center w-6 h-6 text-[11px] font-mono font-bold text-slate-400 group-hover:text-indigo-600 bg-slate-100 group-hover:bg-indigo-50 rounded border border-slate-200 transition flex-shrink-0">${i + 1}</kbd>
                 </button>
               `).join('')}
             </div>
