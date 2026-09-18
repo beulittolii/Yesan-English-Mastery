@@ -934,13 +934,49 @@ function generateDefaultTests() {
 
 
 // ========================================================
+// 단어 세트 기본 데이터 (워드마스터 2000 전체 50개 Day + 2026 고1 9모 대비 특별단어)
+// 브라우저 초기 로딩 즉시 모든 학생에게 100% 가용 보장
+// ========================================================
+
+function getDefaultVocabSets() {
+  const allSets = [];
+  const allStudentIds = DEFAULT_STUDENTS.map(s => Number(s.id));
+
+  // 1. 2026 고1 9모 대비 특별 단어 세트
+  if (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' && Array.isArray(MOCK_EXAM_VOCAB_SETS)) {
+    MOCK_EXAM_VOCAB_SETS.forEach(set => {
+      allSets.push({
+        ...set,
+        isMockSpecial: true,
+        book: (set.book || '2026 고1 9모 대비').trim(),
+        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+      });
+    });
+  }
+
+  // 2. 워드마스터 수능 2000 전체 50개 Day 세트
+  if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+    WORDMASTER_2000_SETS.forEach(set => {
+      allSets.push({
+        ...set,
+        book: (set.book || '워드마스터 수능 2000').trim(),
+        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+      });
+    });
+  }
+
+  return allSets;
+}
+
+
+// ========================================================
 // Firebase 데이터 캐시 (기본 데이터로 즉시 초기화하여 오프라인/지연 시에도 100% 동작 보장)
 // ========================================================
 
 const FirebaseStore = {
   students: [...DEFAULT_STUDENTS],
   tests: generateDefaultTests(),
-  vocabSets: [],
+  vocabSets: getDefaultVocabSets(),
   vocabTestResults: [],
   textMemorizeResults: [],
   studentsLoaded: false,
@@ -1392,15 +1428,20 @@ const AppData = {
     const targetIds = new Set(items.map(item => String(getId(item))));
     const existing = await getDocs(collection(db, collectionName));
 
-    await Promise.all([
-      ...items.map(item => setDoc(
-        doc(collection(db, collectionName), String(getId(item))),
-        item
-      )),
-      ...existing.docs
-        .filter(document => !targetIds.has(document.id))
-        .map(document => deleteDoc(document.ref))
-    ]);
+    // 대량 저장 시(예: 50개 단어 세트) 네트워크 타임아웃 및 Firestore 동시성 오류 방지를 위해 10개씩 청크 분할 저장
+    for (let i = 0; i < items.length; i += 10) {
+      const chunk = items.slice(i, i + 10);
+      await Promise.all(chunk.map(item => {
+        const cleanItem = JSON.parse(JSON.stringify(item, (key, value) => value === undefined ? null : value));
+        return setDoc(doc(collection(db, collectionName), String(getId(item))), cleanItem);
+      }));
+    }
+
+    const docsToDelete = existing.docs.filter(document => !targetIds.has(document.id));
+    for (let i = 0; i < docsToDelete.length; i += 10) {
+      const chunk = docsToDelete.slice(i, i + 10);
+      await Promise.all(chunk.map(document => deleteDoc(document.ref)));
+    }
   },
 
   startCollectionListener({ collectionName, cacheKey, listenerKey, normalize, sort }) {
@@ -1408,11 +1449,33 @@ const AppData = {
 
     const { collection, onSnapshot } = window.firebaseFns;
     onSnapshot(collection(window.firebaseDB, collectionName), snapshot => {
-      const items = snapshot.docs.map(document => normalize({
+      let items = snapshot.docs.map(document => normalize({
         ...document.data(),
         id: document.data().id || document.id
       }));
       if (sort) items.sort(sort);
+
+      // vocabSets 컬렉션 보호: Firestore에서 빈 배열이 오거나 워드마스터/9모가 누락된 경우 기본 세트를 자동 병합하여 절대 소실되지 않도록 함
+      if (cacheKey === 'vocabSets') {
+        const defSets = getDefaultVocabSets();
+        const existingIds = new Set(items.map(s => s.id));
+        defSets.forEach(defSet => {
+          if (!existingIds.has(defSet.id)) {
+            items.push(defSet);
+          }
+        });
+        // 모든 학생 ID 매핑 보장
+        const currentStudentIds = (FirebaseStore.students || DEFAULT_STUDENTS).map(s => Number(s.id));
+        items.forEach(s => {
+          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial) {
+            if (!Array.isArray(s.studentIds)) s.studentIds = [];
+            currentStudentIds.forEach(sid => {
+              if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
+            });
+          }
+        });
+      }
+
       FirebaseStore[cacheKey] = items;
       if (cacheKey === 'tests') FirebaseStore.testsLoaded = true;
       this.refreshCloudScreens();
@@ -1473,82 +1536,58 @@ const AppData = {
       }
     }
 
-    // 워드마스터 수능 2000 데이터셋에 송규인(11) 학생 권한 보장
-    if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
-      WORDMASTER_2000_SETS.forEach(s => {
-        if (!Array.isArray(s.studentIds)) s.studentIds = [];
-        if (!s.studentIds.includes(11)) s.studentIds.push(11);
+    // 기본 단어 세트(워드마스터 2000 50개 Day + 2026 고1 9모 대비 특별단어) 전체 복원 및 학생 권한 보장
+    try {
+      const defSets = getDefaultVocabSets();
+      const currentSets = FirebaseStore.vocabSets || [];
+      const setMap = new Map();
+      defSets.forEach(s => setMap.set(s.id, s));
+      currentSets.forEach(s => {
+        const base = setMap.get(s.id);
+        setMap.set(s.id, base ? { ...base, ...s } : s);
       });
-    }
 
-    // 워드마스터 수능 2000 기본 세트 자동 연동 (세트가 없거나 워드마스터가 미등록된 경우)
-    if (vocabSets.length === 0) {
-      const legacySets = this.getLegacyArray(LEGACY_STORAGE_KEYS.vocabSets);
-      if (legacySets && legacySets.length > 0) {
-        await this.saveVocabSets(legacySets);
-        localStorage.removeItem(LEGACY_STORAGE_KEYS.vocabSets);
-      } else if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
-        console.log('Auto-seeding Wordmaster 2000 vocab sets...');
-        FirebaseStore.vocabSets = WORDMASTER_2000_SETS;
-        // background async sync
-        this.replaceCollection('vocabSets', WORDMASTER_2000_SETS, set => set.id).catch(e => console.warn('Vocab seed sync notice:', e));
-      }
-    } else {
-      // 기존에 다른 세트만 있고 워드마스터 2000이 하나도 없으면 병합 추가
-      const hasWm = vocabSets.some(s => s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')));
-      if (!hasWm && typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
-        console.log('Merging Wordmaster 2000 sets into existing vocab sets...');
-        FirebaseStore.vocabSets = [...vocabSets, ...WORDMASTER_2000_SETS];
-        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Vocab merge sync notice:', e));
-      }
-    }
-
-    // 기존에 로드된 모든 단어 세트에 대해 워드마스터 교재 발음기호(ipa)가 누락되어 있다면 자동 보강
-    if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
-      const wmIpaLookup = new Map();
-      WORDMASTER_2000_SETS.forEach(s => {
-        (s.words || []).forEach(w => {
-          if (w.en && w.ipa) wmIpaLookup.set(w.en.trim().toLowerCase(), w.ipa);
-        });
-      });
-      let enriched = false;
-      (FirebaseStore.vocabSets || []).forEach(s => {
-        (s.words || []).forEach(w => {
-          if (w.en && !w.ipa) {
-            const foundIpa = wmIpaLookup.get(w.en.trim().toLowerCase());
-            if (foundIpa) {
-              w.ipa = foundIpa;
-              enriched = true;
-            }
-          }
-        });
-      });
-      if (enriched) {
-        console.log('기존 단어장에 워드마스터 교재 발음기호(IPA)가 성공적으로 자동 보강되었습니다.');
-      }
-    }
-
-    // 2026 고1 9모 대비 특별 단어 세트 자동 연동 (최우선 상단 배치)
-    if (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' && Array.isArray(MOCK_EXAM_VOCAB_SETS)) {
-      let updatedMock = false;
-      const currentVocabSets = FirebaseStore.vocabSets || [];
-      // 구형 6모/9모 세트 ID가 남아있다면 정리
-      const cleanedVocabSets = currentVocabSets.filter(s => !s.id.startsWith('mock2026_g1_sep_part') && s.id !== 'mock2026_g1_sep_all');
-      MOCK_EXAM_VOCAB_SETS.forEach(mockSet => {
-        const existingIdx = cleanedVocabSets.findIndex(s => s.id === mockSet.id);
-        if (existingIdx === -1) {
-          cleanedVocabSets.unshift(mockSet);
-          updatedMock = true;
-        } else {
-          cleanedVocabSets[existingIdx] = { ...cleanedVocabSets[existingIdx], ...mockSet };
-          updatedMock = true;
+      // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터/9모 단어 세트 권한 보장
+      const allStudentIds = this.getStudents().map(s => Number(s.id));
+      setMap.forEach(s => {
+        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial) {
+          if (!Array.isArray(s.studentIds)) s.studentIds = [];
+          allStudentIds.forEach(sid => {
+            if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
+          });
         }
       });
-      if (updatedMock || cleanedVocabSets.length !== currentVocabSets.length) {
-        FirebaseStore.vocabSets = cleanedVocabSets;
-        console.log('2026 고1 9모 대비 특별 단어 세트가 성공적으로 동기화되었습니다.');
-        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Mock vocab sync notice:', e));
+
+      // 구형 6모/9모 분할 세트 ID 정리
+      const fullSets = Array.from(setMap.values()).filter(s => !s.id.startsWith('mock2026_g1_sep_part') && s.id !== 'mock2026_g1_sep_all');
+
+      // 발음기호(IPA) 누락 자동 보강
+      if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+        const wmIpaLookup = new Map();
+        WORDMASTER_2000_SETS.forEach(s => {
+          (s.words || []).forEach(w => {
+            if (w.en && w.ipa) wmIpaLookup.set(w.en.trim().toLowerCase(), w.ipa);
+          });
+        });
+        fullSets.forEach(s => {
+          (s.words || []).forEach(w => {
+            if (w.en && !w.ipa) {
+              const foundIpa = wmIpaLookup.get(w.en.trim().toLowerCase());
+              if (foundIpa) w.ipa = foundIpa;
+            }
+          });
+        });
       }
+
+      const needsSync = currentSets.length < defSets.length || fullSets.length !== currentSets.length;
+      FirebaseStore.vocabSets = fullSets;
+
+      if (needsSync) {
+        console.log('기본 단어 세트 전체 51개(워드마스터 50개 + 9모 특별단어)가 성공적으로 복원 및 동기화되었습니다.');
+        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Vocab sets auto-healing notice:', e));
+      }
+    } catch (vocabSyncErr) {
+      console.warn('단어 세트 자동 복원 동기화 안내:', vocabSyncErr);
     }
 
     // 9/2 모의고사 D-Day: 기존 9/2 단어 시험 일정을 삭제하고, 모든 학생에게 [9모 킬러] 시험 일괄 등록
@@ -1786,6 +1825,45 @@ const AppData = {
       }
     } catch (err) {
       console.warn('송규인 학생 단어테스트 일괄 등록 동기화 안내:', err);
+    }
+
+    // 모든 학생의 단어 시험(VOCAB)에 대해 vocabSetId / vocabSetIds 누락 자동 탐지 및 원래 일정대로 완벽 자동 재연동
+    try {
+      const allVocabSets = this.getVocabSets();
+      let testsRelinked = false;
+      const testsList = FirebaseStore.tests || [];
+
+      testsList.forEach(t => {
+        const isVocab = t.type === 'VOCAB' || (t.id && String(t.id).startsWith('vocab_')) || (t.title && (t.title.includes('워드마스터') || t.title.includes('Day') || t.title.includes('9모')));
+        if (isVocab) {
+          const currentSetIds = Array.isArray(t.vocabSetIds) && t.vocabSetIds.length > 0 ? t.vocabSetIds : (t.vocabSetId ? [t.vocabSetId] : []);
+          const hasValidMatching = currentSetIds.length > 0 && currentSetIds.every(id => allVocabSets.some(s => s.id === id));
+          
+          if (!hasValidMatching) {
+            const textToSearch = `${t.title || ''} ${t.scope || ''} ${t.id || ''}`;
+            const dayMatches = [...textToSearch.matchAll(/Day\s*(\d+)/gi)];
+            if (dayMatches.length > 0) {
+              const extractedSetIds = [...new Set(dayMatches.map(m => `wm2000_day_${String(m[1]).padStart(2, '0')}`))];
+              t.vocabSetIds = extractedSetIds;
+              t.vocabSetId = extractedSetIds[0];
+              t.type = 'VOCAB';
+              testsRelinked = true;
+            } else if (t.isMockSpecial || textToSearch.includes('9모') || textToSearch.includes('다의어')) {
+              t.vocabSetIds = ['mock2026_g1_sep_9mo'];
+              t.vocabSetId = 'mock2026_g1_sep_9mo';
+              t.type = 'VOCAB';
+              testsRelinked = true;
+            }
+          }
+        }
+      });
+
+      if (testsRelinked) {
+        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Auto-relink tests sync notice:', e));
+        console.log('단어 시험 일정과 단어 세트 간의 자동 재연동이 성공적으로 완료되었습니다.');
+      }
+    } catch (relinkErr) {
+      console.warn('단어 시험 일정 자동 재연동 점검 안내:', relinkErr);
     }
 
     if (vocabTestResults.length === 0) {
@@ -2060,7 +2138,7 @@ const AppData = {
       generateDefaultTests();
 
     await this.saveTests(defTests);
-    await this.saveVocabSets([]);
+    await this.saveVocabSets(getDefaultVocabSets());
     await this.saveVocabTestResults([]);
 
   },
@@ -2153,7 +2231,32 @@ const AppData = {
   // ======================================================
 
   getVocabSets() {
-    return FirebaseStore.vocabSets;
+    const current = FirebaseStore.vocabSets;
+    const defSets = getDefaultVocabSets();
+
+    if (!Array.isArray(current) || current.length === 0) {
+      FirebaseStore.vocabSets = defSets;
+      return defSets;
+    }
+
+    // 기본 세트(50개 Day + 9모) 중 하나라도 누락되어 있다면 자동 보강
+    const currentIds = new Set(current.map(s => s.id));
+    let missingFound = false;
+    const merged = [...current];
+
+    defSets.forEach(defSet => {
+      if (!currentIds.has(defSet.id)) {
+        merged.push(defSet);
+        missingFound = true;
+      }
+    });
+
+    if (missingFound) {
+      FirebaseStore.vocabSets = merged;
+      return merged;
+    }
+
+    return current;
   },
 
 
@@ -2240,17 +2343,24 @@ const AppData = {
 
 
   getVocabSetsByStudentId(studentId) {
-
-    return this
-      .getVocabSets()
-      .filter(
-        s =>
-          s.studentIds &&
-          s.studentIds.includes(
-            Number(studentId)
-          )
-      );
-
+    const numId = Number(studentId);
+    return this.getVocabSets().filter(s => {
+      // 1. studentIds 목록에 학생 ID가 포함되어 있는 경우
+      if (Array.isArray(s.studentIds) && s.studentIds.includes(numId)) {
+        return true;
+      }
+      // 2. 워드마스터 2000 및 9모 특별단어는 전교생 공통 교재이므로 무조건 접근 보장
+      if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial) {
+        if (!Array.isArray(s.studentIds)) s.studentIds = [];
+        if (!s.studentIds.includes(numId)) s.studentIds.push(numId);
+        return true;
+      }
+      // 3. studentIds가 비어있는 세트도 기본 접근 허용
+      if (!Array.isArray(s.studentIds) || s.studentIds.length === 0) {
+        return true;
+      }
+      return false;
+    });
   },
 
 

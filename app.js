@@ -1085,7 +1085,30 @@ const App = {
       ? test.vocabSetIds
       : (test.vocabSetId ? [test.vocabSetId] : []);
     const allSets = AppData.getVocabSets();
-    const matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+    let matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+
+    if (matchingSets.length === 0) {
+      // 자가 복원(Self-Healing): 시험 제목/범위에서 Day 번호 또는 9모 추출하여 즉시 자동 재연동
+      const textToSearch = `${test.title || ''} ${test.scope || ''} ${test.id || ''}`;
+      const dayMatches = [...textToSearch.matchAll(/Day\s*(\d+)/gi)];
+      if (dayMatches.length > 0) {
+        const extractedSetIds = [...new Set(dayMatches.map(m => `wm2000_day_${String(m[1]).padStart(2, '0')}`))];
+        matchingSets = extractedSetIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+        if (matchingSets.length > 0) {
+          test.vocabSetIds = extractedSetIds;
+          test.vocabSetId = extractedSetIds[0];
+          AppData.saveOrUpdateTest(test).catch(e => console.warn('Auto-relink test notice:', e));
+        }
+      } else if (test.isMockSpecial || textToSearch.includes('9모') || textToSearch.includes('다의어')) {
+        const mockSet = allSets.find(s => s.id === 'mock2026_g1_sep_9mo');
+        if (mockSet) {
+          matchingSets = [mockSet];
+          test.vocabSetIds = ['mock2026_g1_sep_9mo'];
+          test.vocabSetId = 'mock2026_g1_sep_9mo';
+          AppData.saveOrUpdateTest(test).catch(e => console.warn('Auto-relink 9mo test notice:', e));
+        }
+      }
+    }
 
     if (matchingSets.length === 0) { this.toast('연결된 단어 세트를 찾을 수 없습니다.', 'error'); return; }
 
@@ -5775,6 +5798,15 @@ const App = {
           title = mockSet.title || '1등급 킬러 반전 다의어 60선';
           bookName = mockSet.book || '2026 고1 9모 대비';
           isMockSpecial = true;
+        } else if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+          const wmMatches = WORDMASTER_2000_SETS.filter(s => idList.includes(s.id));
+          if (wmMatches.length > 0) {
+            wmMatches.forEach(s => {
+              if (Array.isArray(s.words)) words.push(...s.words);
+            });
+            bookName = wmMatches[0]?.book || '워드마스터 수능 2000';
+            title = wmMatches.map(s => s.title).join(' + ');
+          }
         }
       }
     }
@@ -6451,7 +6483,30 @@ const App = {
         ? scheduledTest.vocabSetIds
         : (scheduledTest.vocabSetId ? [scheduledTest.vocabSetId] : []);
       const allSets = AppData.getVocabSets();
-      const matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+      let matchingSets = setIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+
+      if (matchingSets.length === 0) {
+        // 자가 복원(Self-Healing): 시험 제목/범위에서 Day 번호 또는 9모 추출
+        const textToSearch = `${scheduledTest.title || ''} ${scheduledTest.scope || ''} ${scheduledTest.id || ''}`;
+        const dayMatches = [...textToSearch.matchAll(/Day\s*(\d+)/gi)];
+        if (dayMatches.length > 0) {
+          const extractedSetIds = [...new Set(dayMatches.map(m => `wm2000_day_${String(m[1]).padStart(2, '0')}`))];
+          matchingSets = extractedSetIds.map(id => allSets.find(s => s.id === id)).filter(Boolean);
+          if (matchingSets.length > 0) {
+            scheduledTest.vocabSetIds = extractedSetIds;
+            scheduledTest.vocabSetId = extractedSetIds[0];
+            AppData.saveOrUpdateTest(scheduledTest).catch(e => console.warn('Auto-relink test notice:', e));
+          }
+        } else if (scheduledTest.isMockSpecial || textToSearch.includes('9모') || textToSearch.includes('다의어')) {
+          const mockSet = allSets.find(s => s.id === 'mock2026_g1_sep_9mo');
+          if (mockSet) {
+            matchingSets = [mockSet];
+            scheduledTest.vocabSetIds = ['mock2026_g1_sep_9mo'];
+            scheduledTest.vocabSetId = 'mock2026_g1_sep_9mo';
+            AppData.saveOrUpdateTest(scheduledTest).catch(e => console.warn('Auto-relink 9mo test notice:', e));
+          }
+        }
+      }
       if (matchingSets.length > 0) {
         const combinedWords = [];
         matchingSets.forEach(s => {
