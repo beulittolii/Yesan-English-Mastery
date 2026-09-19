@@ -1210,7 +1210,7 @@
             <span id="vocabStudyMeaningToggleText">단어만 보기 (뜻 가리기)</span>
           </button>
 
-          <!-- View Mode Toggle (목록 / 플래시카드) -->
+          <!-- View Mode Toggle (목록 / 플래시카드 암기학습) -->
           <div class="inline-flex rounded-xl bg-slate-200/80 p-0.5 text-xs font-bold">
             <button
               type="button"
@@ -1228,7 +1228,7 @@
               class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
             >
               <i class="fa-solid fa-clone text-[11px]"></i>
-              <span class="hidden sm:inline">플래시카드</span>
+              <span>플래시카드 암기학습</span>
             </button>
           </div>
         </div>
@@ -1357,6 +1357,20 @@
             <p id="formVocabSelectedListText" class="text-[11px] text-slate-600 font-medium truncate">선택된 단어 세트가 없습니다.</p>
           </div>
 
+          <!-- 영영풀이 전용 시험 출제 옵션 (영영풀이 보유 세트 선택 시에만 동적 노출) -->
+          <div id="formEnglishDefOptionContainer" class="hidden p-3.5 rounded-2xl bg-teal-50/90 border border-teal-200 space-y-2">
+            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" id="formIsEnglishDefTest" onchange="App.onEnglishDefTestToggle()" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300" />
+              <span class="text-xs font-black text-teal-950 flex items-center gap-1.5">
+                <i class="fa-solid fa-graduation-cap text-teal-600 text-sm"></i>
+                영영풀이 전용 테스트로 출제 (체크 시 객관식·스펠링·통합 제외)
+              </span>
+            </label>
+            <p class="text-[11px] text-teal-700 ml-6 leading-relaxed">
+              선택된 단어 세트에 영영풀이 데이터가 포함되어 있습니다. 이 옵션을 켜면 학생은 <strong>객관식, 스펠링, 통합 시험을 보지 않고 영영풀이 주관식(스펠링) 테스트만 단독으로 응시</strong>하게 됩니다.
+            </p>
+          </div>
+
           <p class="text-[11px] text-violet-700">단어 세트를 2개 지정하면 두 세트의 모든 단어가 랜덤 순서로 통합 출제됩니다.</p>
         </div>
 
@@ -1386,7 +1400,7 @@
             </div>
           </div>
 
-          <!-- 교재 선택 -->
+          <!-- 본문 암기 출제 교재 선택 -->
           <div>
             <label class="block text-xs font-bold text-indigo-900 mb-1">출제 교재</label>
             <select id="formTextMemorizeBookSelect" onchange="App.onTextMemorizeBookChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-indigo-200 bg-white focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-bold text-slate-800">
@@ -1430,30 +1444,37 @@
           </div>
           <div id="formVocabCutoffSection" class="hidden sm:col-span-2 p-4 rounded-xl bg-violet-50/80 border border-violet-200 space-y-3">
             <div class="flex items-center justify-between">
-              <label class="block text-xs font-bold text-violet-900">
+              <label class="block text-xs font-bold text-violet-900" id="formVocabCutoffSectionLabel">
                 <i class="fa-solid fa-sliders mr-1 text-violet-600"></i>유형별 통과 커트라인 설정 (점수) <span class="text-rose-500">*</span>
               </label>
               <span class="text-[11px] text-violet-600">100점 만점 기준 (1~100)</span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+            <div id="formVocabCutoffGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div id="formVocabCutoffCard_2" class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
                 <label class="block text-[11px] font-bold text-slate-700">1. 객관식 커트라인</label>
                 <div class="flex items-center gap-1.5">
                   <input type="number" id="formVocabCutoff_2" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
                   <span class="text-xs font-bold text-slate-500">점</span>
                 </div>
               </div>
-              <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+              <div id="formVocabCutoffCard_3" class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
                 <label class="block text-[11px] font-bold text-slate-700">2. 스펠링 커트라인</label>
                 <div class="flex items-center gap-1.5">
                   <input type="number" id="formVocabCutoff_3" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
                   <span class="text-xs font-bold text-slate-500">점</span>
                 </div>
               </div>
-              <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+              <div id="formVocabCutoffCard_4" class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
                 <label class="block text-[11px] font-bold text-slate-700">3. 통합 커트라인</label>
                 <div class="flex items-center gap-1.5">
                   <input type="number" id="formVocabCutoff_4" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                  <span class="text-xs font-bold text-slate-500">점</span>
+                </div>
+              </div>
+              <div id="formVocabCutoffCard_5" class="hidden bg-white p-3 rounded-xl border border-teal-200 space-y-1">
+                <label class="block text-[11px] font-bold text-teal-800">영영풀이 커트라인</label>
+                <div class="flex items-center gap-1.5">
+                  <input type="number" id="formVocabCutoff_5" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 text-xs sm:text-sm font-bold text-slate-900" />
                   <span class="text-xs font-bold text-slate-500">점</span>
                 </div>
               </div>
@@ -1637,10 +1658,12 @@
             </button>
           </div>
           <!-- Column Headers -->
-          <div class="grid grid-cols-[1fr_1fr_auto] gap-2 px-2 mb-1">
+          <div class="grid grid-cols-[1fr_1fr_1.5fr_auto_auto] gap-2 px-2 mb-1">
             <span class="text-[11px] font-bold text-slate-500">영어 단어</span>
             <span class="text-[11px] font-bold text-slate-500">한국어 뜻</span>
-            <span class="w-6"></span>
+            <span class="text-[11px] font-bold text-teal-600">영영풀이 (선택)</span>
+            <span class="w-7"></span>
+            <span class="w-7"></span>
           </div>
           <div id="vocabWordRows" class="space-y-2 max-h-60 overflow-y-auto pr-1">
             <!-- Populated by JS -->

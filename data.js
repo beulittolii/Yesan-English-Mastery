@@ -965,6 +965,17 @@ function getDefaultVocabSets() {
     });
   }
 
+  // 3. YBM(박준언) 공통영어 2 단어 세트 (백발백중)
+  if (typeof YBM_ENGLISH2_VOCAB_SETS !== 'undefined' && Array.isArray(YBM_ENGLISH2_VOCAB_SETS)) {
+    YBM_ENGLISH2_VOCAB_SETS.forEach(set => {
+      allSets.push({
+        ...set,
+        book: (set.book || '백발백중 공통영어 2').trim(),
+        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+      });
+    });
+  }
+
   return allSets;
 }
 
@@ -1467,7 +1478,7 @@ const AppData = {
         // 모든 학생 ID 매핑 보장
         const currentStudentIds = (FirebaseStore.students || DEFAULT_STUDENTS).map(s => Number(s.id));
         items.forEach(s => {
-          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial) {
+          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
             if (!Array.isArray(s.studentIds)) s.studentIds = [];
             currentStudentIds.forEach(sid => {
               if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
@@ -1550,7 +1561,7 @@ const AppData = {
       // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터/9모 단어 세트 권한 보장
       const allStudentIds = this.getStudents().map(s => Number(s.id));
       setMap.forEach(s => {
-        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial) {
+        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
           if (!Array.isArray(s.studentIds)) s.studentIds = [];
           allStudentIds.forEach(sid => {
             if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
@@ -2349,8 +2360,8 @@ const AppData = {
       if (Array.isArray(s.studentIds) && s.studentIds.includes(numId)) {
         return true;
       }
-      // 2. 워드마스터 2000 및 9모 특별단어는 전교생 공통 교재이므로 무조건 접근 보장
-      if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial) {
+      // 2. 워드마스터 2000 및 9모 특별단어, YBM 공통영어 2는 전교생 공통 교재이므로 무조건 접근 보장
+      if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
         if (!Array.isArray(s.studentIds)) s.studentIds = [];
         if (!s.studentIds.includes(numId)) s.studentIds.push(numId);
         return true;

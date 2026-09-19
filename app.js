@@ -142,23 +142,40 @@ const App = {
         }
       }
 
-      // 단어장 크게 보기 모달 - 플래시카드 모드 키보드 단축키 (←, →, Space)
+      // 단어장 크게 보기 모달 - 플래시카드 암기학습 키보드 단축키
       const vsModal = document.getElementById('vocabStudyModal');
-      if (vsModal && !vsModal.classList.contains('hidden') && this.state.vocabStudy?.viewMode === 'card') {
+      if (vsModal && !vsModal.classList.contains('hidden')) {
         const activeTag = document.activeElement ? document.activeElement.tagName : '';
         if (activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
-          if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            this.vocabStudyPrevCard();
-            return;
-          } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            this.vocabStudyNextCard();
-            return;
-          } else if (e.key === ' ' || e.key === 'Spacebar') {
-            e.preventDefault();
-            this.vocabStudyFlipCard();
-            return;
+          const vs = this.state.vocabStudy;
+          if (vs?.viewMode === 'card') {
+            if (vs.isMasteryFinished) {
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                this.setVocabStudyViewMode('list');
+                return;
+              }
+            } else if (vs.isRoundFinished) {
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                this.vocabStudyStartNextRound();
+                return;
+              }
+            } else {
+              if (e.key === 'ArrowLeft' || e.key === '1') {
+                e.preventDefault();
+                this.vocabStudyMarkWord(false);
+                return;
+              } else if (e.key === 'ArrowRight' || e.key === '2') {
+                e.preventDefault();
+                this.vocabStudyMarkWord(true);
+                return;
+              } else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                this.vocabStudyFlipCard();
+                return;
+              }
+            }
           }
         }
       }
@@ -730,10 +747,13 @@ const App = {
                 <span class="text-[10px] font-black ${isCompleted ? 'bg-white/25 text-white' : 'bg-black/40 text-amber-300 border border-amber-300/60'} px-1.5 py-0.2 rounded-full flex-shrink-0 shadow-2xs">${isCompleted ? '완료' : '필출'}</span>
               </div>`;
           } else {
-            const vocabCalendarLabel = '단어 테스트';
+            const isEngDef = Boolean(test.isEnglishDefTest);
+            const vocabCalendarLabel = isEngDef ? '영영풀이 테스트' : '단어 테스트';
+            const pillClass = badgeStyle.class;
+            const pillIcon = isEngDef ? 'fa-graduation-cap' : 'fa-spell-check';
             testsHtml += `
-              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="단어 테스트">
-                <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-spell-check"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
+              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${pillClass}" title="${vocabCalendarLabel}">
+                <div class="truncate flex items-center gap-1"><span><i class="fa-solid ${pillIcon}"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
               </div>`;
           }
         }
@@ -1253,11 +1273,17 @@ const App = {
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          ${this.renderVocabTestButton(set, test.studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
-          ${this.renderVocabTestButton(set, test.studentId, 3, '스펠링', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
-          ${this.renderVocabTestButton(set, test.studentId, 4, '통합', 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200', test.id)}
-        </div>
+        ${test.isEnglishDefTest ? `
+          <div class="grid grid-cols-1 gap-2.5">
+            ${this.renderVocabTestButton(set, test.studentId, 5, '영영풀이 테스트 (주관식)', 'bg-teal-600 hover:bg-teal-700 shadow-teal-200', test.id)}
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            ${this.renderVocabTestButton(set, test.studentId, 2, '객관식', 'bg-violet-600 hover:bg-violet-700 shadow-violet-200', test.id)}
+            ${this.renderVocabTestButton(set, test.studentId, 3, '스펠링', 'bg-blue-600 hover:bg-blue-700 shadow-blue-200', test.id)}
+            ${this.renderVocabTestButton(set, test.studentId, 4, '통합', 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200', test.id)}
+          </div>
+        `}
       ` : `
         <!-- 🔥 9모 대비 특별 단어 테스트 전용 UI -->
         <div class="space-y-3">
@@ -2951,7 +2977,7 @@ const App = {
           <!-- 시험명 & 범위 -->
           <td class="py-3.5 px-4 max-w-xs">
             <div class="font-bold text-slate-900 text-sm hover:text-indigo-600 cursor-pointer flex items-center gap-1.5" onclick="App.openTestDetailModal('${test.id}')">
-              ${test.type === 'VOCAB' ? (test.isMockSpecial ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white">🔥 9모단어</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">단어</span>') : (test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : (test.type === 'TEXT_MEMORIZE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">본문암기</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">일반</span>'))}
+              ${test.type === 'VOCAB' ? (test.isMockSpecial ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white">🔥 9모단어</span>' : (test.isEnglishDefTest ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-teal-600 text-white">영영풀이</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">단어</span>')) : (test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : (test.type === 'TEXT_MEMORIZE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">본문암기</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">일반</span>'))}
               <span>${this.escapeHtml(test.title)}</span>
             </div>
             <div class="text-xs text-slate-500 truncate mt-0.5">${this.escapeHtml(test.scope || '-')}</div>
@@ -3411,7 +3437,10 @@ const App = {
     if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = '80';
     if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = '80';
     if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = '80';
+    if (document.getElementById('formVocabCutoff_5')) document.getElementById('formVocabCutoff_5').value = '80';
     if (document.getElementById('formIsMockSpecial')) document.getElementById('formIsMockSpecial').checked = false;
+    if (document.getElementById('formIsEnglishDefTest')) document.getElementById('formIsEnglishDefTest').checked = false;
+    this.onEnglishDefTestToggle();
     document.getElementById('formPracticeCutoff').value = '80';
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
@@ -3483,9 +3512,14 @@ const App = {
     if (document.getElementById('formVocabCutoff_2')) document.getElementById('formVocabCutoff_2').value = this.getBaseVocabCutoffScore(test, 2);
     if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = this.getBaseVocabCutoffScore(test, 3);
     if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = this.getBaseVocabCutoffScore(test, 4);
+    if (document.getElementById('formVocabCutoff_5')) document.getElementById('formVocabCutoff_5').value = this.getBaseVocabCutoffScore(test, 5);
     if (document.getElementById('formIsMockSpecial')) {
       document.getElementById('formIsMockSpecial').checked = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
     }
+    if (document.getElementById('formIsEnglishDefTest')) {
+      document.getElementById('formIsEnglishDefTest').checked = Boolean(test.isEnglishDefTest);
+    }
+    this.onEnglishDefTestToggle();
     document.getElementById('formPracticeCutoff').value = test.cutoffScore || test.practiceCutoff || 80;
     if (document.getElementById('formTextMemorizeCutoff')) {
       document.getElementById('formTextMemorizeCutoff').value = test.textMemorizeCutoff || test.cutoffScore || 80;
@@ -3625,6 +3659,68 @@ const App = {
         if (formScope) {
           formScope.value = combinedScope;
         }
+      }
+    }
+
+    // 영영풀이 데이터 포함 여부에 따른 옵션 체크박스 노출 및 상태 갱신
+    const hasDefEn = matchingSets.some(s => Array.isArray(s.words) && s.words.some(w => w.defEn && w.defEn.trim().length > 0));
+    const engDefOptionContainer = document.getElementById('formEnglishDefOptionContainer');
+    const isEngDefCheckbox = document.getElementById('formIsEnglishDefTest');
+    if (engDefOptionContainer) {
+      if (hasDefEn) {
+        engDefOptionContainer.classList.remove('hidden');
+      } else {
+        engDefOptionContainer.classList.add('hidden');
+        if (isEngDefCheckbox) isEngDefCheckbox.checked = false;
+      }
+    }
+    this.onEnglishDefTestToggle();
+  },
+
+  onEnglishDefTestToggle() {
+    const isEngDefCheckbox = document.getElementById('formIsEnglishDefTest');
+    const isChecked = isEngDefCheckbox ? isEngDefCheckbox.checked : false;
+
+    const card2 = document.getElementById('formVocabCutoffCard_2');
+    const card3 = document.getElementById('formVocabCutoffCard_3');
+    const card4 = document.getElementById('formVocabCutoffCard_4');
+    const card5 = document.getElementById('formVocabCutoffCard_5');
+    const cutoffSectionLabel = document.getElementById('formVocabCutoffSectionLabel');
+    const cutoffGrid = document.getElementById('formVocabCutoffGrid');
+
+    if (isChecked) {
+      if (card2) card2.classList.add('hidden');
+      if (card3) card3.classList.add('hidden');
+      if (card4) card4.classList.add('hidden');
+      if (card5) card5.classList.remove('hidden');
+      if (cutoffGrid) {
+        cutoffGrid.classList.remove('sm:grid-cols-3');
+        cutoffGrid.classList.add('sm:grid-cols-1');
+      }
+      if (cutoffSectionLabel) {
+        cutoffSectionLabel.innerHTML = '<i class="fa-solid fa-graduation-cap mr-1 text-teal-600"></i>영영풀이 통과 커트라인 설정 (점수) <span class="text-rose-500">*</span>';
+      }
+
+      const formTitle = document.getElementById('formTitle');
+      if (formTitle && formTitle.value && !formTitle.value.includes('(영영풀이)')) {
+        formTitle.value = formTitle.value.trim() + ' (영영풀이)';
+      }
+    } else {
+      if (card2) card2.classList.remove('hidden');
+      if (card3) card3.classList.remove('hidden');
+      if (card4) card4.classList.remove('hidden');
+      if (card5) card5.classList.add('hidden');
+      if (cutoffGrid) {
+        cutoffGrid.classList.add('sm:grid-cols-3');
+        cutoffGrid.classList.remove('sm:grid-cols-1');
+      }
+      if (cutoffSectionLabel) {
+        cutoffSectionLabel.innerHTML = '<i class="fa-solid fa-sliders mr-1 text-violet-600"></i>유형별 통과 커트라인 설정 (점수) <span class="text-rose-500">*</span>';
+      }
+
+      const formTitle = document.getElementById('formTitle');
+      if (formTitle && formTitle.value && formTitle.value.includes('(영영풀이)')) {
+        formTitle.value = formTitle.value.replace(/\s*\(영영풀이\)/g, '').trim();
       }
     }
   },
@@ -4250,6 +4346,7 @@ const App = {
     const isPracticeTest = testType === 'PRACTICE';
     const isRegularTest = testType === 'REGULAR';
     const isTextMemorize = testType === 'TEXT_MEMORIZE';
+    const isEnglishDefTest = isVocabTest && Boolean(document.getElementById('formIsEnglishDefTest')?.checked);
 
     const vocabSetId1 = isVocabTest ? document.getElementById('formVocabSetId')?.value : null;
     const vocabSetId2 = isVocabTest ? document.getElementById('formVocabSetId2')?.value : null;
@@ -4265,7 +4362,8 @@ const App = {
     const vocabCutoff2 = Number(document.getElementById('formVocabCutoff_2')?.value ?? 80);
     const vocabCutoff3 = Number(document.getElementById('formVocabCutoff_3')?.value ?? 80);
     const vocabCutoff4 = Number(document.getElementById('formVocabCutoff_4')?.value ?? 80);
-    const vocabCutoffs = isVocabTest ? { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4 } : null;
+    const vocabCutoff5 = Number(document.getElementById('formVocabCutoff_5')?.value ?? 80);
+    const vocabCutoffs = isVocabTest ? { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4, 5: vocabCutoff5 } : null;
     const practiceCutoff = Number(document.getElementById('formPracticeCutoff')?.value ?? 80);
 
     const textMemorizeMode = isTextMemorize ? (document.querySelector('input[name="formTextMemorizeMode"]:checked')?.value || 'CLOZE') : null;
@@ -4311,8 +4409,13 @@ const App = {
     let cutoff = regularCutoff;
     let cutoffScore = null;
     if (isVocabTest) {
-      cutoff = `객관식 ${vocabCutoff2}점 · 스펠링 ${vocabCutoff3}점 · 통합 ${vocabCutoff4}점`;
-      cutoffScore = Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4);
+      if (isEnglishDefTest) {
+        cutoff = `영영풀이 ${vocabCutoff5}점`;
+        cutoffScore = vocabCutoff5;
+      } else {
+        cutoff = `객관식 ${vocabCutoff2}점 · 스펠링 ${vocabCutoff3}점 · 통합 ${vocabCutoff4}점`;
+        cutoffScore = Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4);
+      }
     } else if (isPracticeTest) {
       cutoff = `${practiceCutoff}점 이상`;
       cutoffScore = practiceCutoff;
@@ -4345,10 +4448,17 @@ const App = {
     }
 
     if (isVocabTest) {
-      const allValid = [vocabCutoff2, vocabCutoff3, vocabCutoff4].every(v => Number.isInteger(v) && v >= 1 && v <= 100);
-      if (vocabSetIds.length === 0 || !allValid) {
-        this.toast('단어 세트를 최소 1개 이상 선택하고 각 유형별 커트라인을 1~100점 사이로 입력해주세요.', 'error');
-        return;
+      if (isEnglishDefTest) {
+        if (vocabSetIds.length === 0 || !Number.isInteger(vocabCutoff5) || vocabCutoff5 < 1 || vocabCutoff5 > 100) {
+          this.toast('단어 세트를 최소 1개 이상 선택하고 영영풀이 커트라인을 1~100점 사이로 입력해주세요.', 'error');
+          return;
+        }
+      } else {
+        const allValid = [vocabCutoff2, vocabCutoff3, vocabCutoff4].every(v => Number.isInteger(v) && v >= 1 && v <= 100);
+        if (vocabSetIds.length === 0 || !allValid) {
+          this.toast('단어 세트를 최소 1개 이상 선택하고 각 유형별 커트라인을 1~100점 사이로 입력해주세요.', 'error');
+          return;
+        }
       }
     }
 
@@ -4451,8 +4561,9 @@ const App = {
             teacherNote,
             vocabSetId,
             vocabSetIds,
-            vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+            vocabCutoff: isVocabTest ? (isEnglishDefTest ? vocabCutoff5 : Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4)) : null,
             vocabCutoffs: isVocabTest ? vocabCutoffs : null,
+            isEnglishDefTest: isVocabTest ? isEnglishDefTest : false,
             practiceCutoff: isPracticeTest ? practiceCutoff : null,
             questions: isPracticeTest ? practiceQuestions : null,
             practiceResult: isPracticeTest ? existingTest?.practiceResult : null,
@@ -4501,8 +4612,9 @@ const App = {
               cutoffScore,
               vocabSetId,
               vocabSetIds,
-              vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+              vocabCutoff: isVocabTest ? (isEnglishDefTest ? vocabCutoff5 : Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4)) : null,
               vocabCutoffs: isVocabTest ? vocabCutoffs : null,
+              isEnglishDefTest: isVocabTest ? isEnglishDefTest : false,
               practiceCutoff: isPracticeTest ? practiceCutoff : null,
               questions: isPracticeTest ? practiceQuestions : null,
               passageIds: isTextMemorize ? selectedPassageIds : (matchingExistingTest.passageIds || null),
@@ -4540,8 +4652,9 @@ const App = {
               teacherNote: isRegularTest ? teacherNote : '',
               vocabSetId,
               vocabSetIds,
-              vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+              vocabCutoff: isVocabTest ? (isEnglishDefTest ? vocabCutoff5 : Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4)) : null,
               vocabCutoffs: isVocabTest ? vocabCutoffs : null,
+              isEnglishDefTest: isVocabTest ? isEnglishDefTest : false,
               practiceCutoff: isPracticeTest ? practiceCutoff : null,
               questions: isPracticeTest ? practiceQuestions : null,
               practiceResult: null,
@@ -4591,8 +4704,9 @@ const App = {
           teacherNote: isRegularTest ? teacherNote : '',
           vocabSetId,
           vocabSetIds,
-          vocabCutoff: isVocabTest ? Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4) : null,
+          vocabCutoff: isVocabTest ? (isEnglishDefTest ? vocabCutoff5 : Math.min(vocabCutoff2, vocabCutoff3, vocabCutoff4)) : null,
           vocabCutoffs: isVocabTest ? vocabCutoffs : null,
+          isEnglishDefTest: isVocabTest ? isEnglishDefTest : false,
           practiceCutoff: isPracticeTest ? practiceCutoff : null,
           questions: isPracticeTest ? practiceQuestions : null,
           practiceResult: null,
@@ -5334,7 +5448,7 @@ const App = {
 
     // 기존 단어 행 채우기
     if (existingSet && existingSet.words) {
-      existingSet.words.forEach(w => this.addVocabWordRow(w.en, w.ko));
+      existingSet.words.forEach(w => this.addVocabWordRow(w.en, w.ko, w.defEn || ''));
     } else {
       // 기본 5개 빈 행
       for (let i = 0; i < 5; i++) this.addVocabWordRow();
@@ -5439,14 +5553,15 @@ const App = {
     this.hideModal('vocabSetModal');
   },
 
-  addVocabWordRow(enVal = '', koVal = '') {
+  addVocabWordRow(enVal = '', koVal = '', defEnVal = '') {
     const container = document.getElementById('vocabWordRows');
     const idx = Date.now() + Math.random();
     const div = document.createElement('div');
-    div.className = 'grid grid-cols-[1fr_1fr_auto_auto] gap-1.5 items-center vocab-word-row';
+    div.className = 'grid grid-cols-[1fr_1fr_1.5fr_auto_auto] gap-1.5 items-center vocab-word-row';
     div.innerHTML = `
       <input type="text" placeholder="영어 단어" value="${this.escapeHtml(enVal)}" class="vocab-en py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs" oninput="App.updateVocabWordCount()" />
       <input type="text" placeholder="한국어 뜻" value="${this.escapeHtml(koVal)}" class="vocab-ko py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs" />
+      <input type="text" placeholder="영영풀이 (선택)" value="${this.escapeHtml(defEnVal)}" class="vocab-def-en py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 text-xs" />
       <button type="button" onclick="App.playDictionaryAudio(this.closest('.vocab-word-row').querySelector('.vocab-en').value)" class="w-7 h-7 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 flex items-center justify-center transition text-xs" title="발음 듣기">
         <i class="fa-solid fa-volume-high"></i>
       </button>
@@ -5472,7 +5587,12 @@ const App = {
 
     const rows = document.querySelectorAll('.vocab-word-row');
     const words = Array.from(rows)
-      .map(r => ({ en: r.querySelector('.vocab-en').value.trim(), ko: r.querySelector('.vocab-ko').value.trim() }))
+      .map(r => {
+        const en = r.querySelector('.vocab-en').value.trim();
+        const ko = r.querySelector('.vocab-ko').value.trim();
+        const defEn = r.querySelector('.vocab-def-en')?.value.trim() || '';
+        return { en, ko, ...(defEn ? { defEn } : {}) };
+      })
       .filter(w => w.en && w.ko);
 
     if (words.length < 5) { this.toast('5지선다 시험을 위해 단어를 최소 5개 입력해주세요.', 'error'); return; }
@@ -5839,8 +5959,14 @@ const App = {
       isMockSpecial,
       meaningHidden: false,
       revealedIndices: new Set(),
-      viewMode: 'list', // 'list' | 'card'
+      viewMode: 'card', // 'card' (플래시카드 암기학습 기본) | 'list' (목록형)
+      flashcardDeck: [...words],
       cardIndex: 0,
+      round: 1,
+      unknownWords: [],
+      knownWords: [],
+      isRoundFinished: false,
+      isMasteryFinished: false,
       isCardFlipped: false,
       searchQuery: ''
     };
@@ -5906,25 +6032,113 @@ const App = {
   setVocabStudyViewMode(mode) {
     if (!this.state.vocabStudy) return;
     this.state.vocabStudy.viewMode = mode;
-    this.state.vocabStudy.cardIndex = 0;
-    this.state.vocabStudy.isCardFlipped = false;
+    if (mode === 'card') {
+      if (!this.state.vocabStudy.flashcardDeck || this.state.vocabStudy.flashcardDeck.length === 0) {
+        this.vocabStudyRestartMastery();
+      }
+    }
     this.updateVocabStudyModeButtons();
     this.renderVocabStudyContent();
+    this.renderVocabStudyFooter();
   },
 
   updateVocabStudyModeButtons() {
     const vs = this.state.vocabStudy;
     const listBtn = document.getElementById('vocabStudyModeListBtn');
     const cardBtn = document.getElementById('vocabStudyModeCardBtn');
-    if (!listBtn || !cardBtn || !vs) return;
+    const searchWrap = document.getElementById('vocabStudySearchInput')?.parentElement;
+    const meaningToggleBtn = document.getElementById('vocabStudyMeaningToggleBtn');
+    if (!vs) return;
 
-    if (vs.viewMode === 'list') {
-      listBtn.className = 'px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer';
-      cardBtn.className = 'px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer';
-    } else {
-      listBtn.className = 'px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer';
-      cardBtn.className = 'px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer';
+    const activeCls = 'px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer';
+    const inactiveCls = 'px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer';
+
+    if (listBtn) listBtn.className = vs.viewMode === 'list' ? activeCls : inactiveCls;
+    if (cardBtn) cardBtn.className = vs.viewMode === 'card' ? activeCls : inactiveCls;
+
+    if (searchWrap) {
+      if (vs.viewMode === 'card') searchWrap.classList.add('hidden');
+      else searchWrap.classList.remove('hidden');
     }
+    if (meaningToggleBtn) {
+      if (vs.viewMode === 'card') meaningToggleBtn.classList.add('hidden');
+      else meaningToggleBtn.classList.remove('hidden');
+    }
+  },
+
+  vocabStudyFlipCard() {
+    const vs = this.state.vocabStudy;
+    if (!vs) return;
+    vs.isCardFlipped = !vs.isCardFlipped;
+    this.renderVocabStudyContent();
+  },
+
+  vocabStudyMarkWord(isKnown) {
+    const vs = this.state.vocabStudy;
+    if (!vs || !vs.flashcardDeck || vs.flashcardDeck.length === 0) return;
+    if (vs.isRoundFinished || vs.isMasteryFinished) return;
+
+    const currentWord = vs.flashcardDeck[vs.cardIndex];
+    if (!currentWord) return;
+
+    if (isKnown) {
+      vs.knownWords.push(currentWord);
+    } else {
+      vs.unknownWords.push(currentWord);
+    }
+
+    vs.isCardFlipped = false;
+
+    if (vs.cardIndex + 1 < vs.flashcardDeck.length) {
+      vs.cardIndex += 1;
+    } else {
+      // 해당 회차의 모든 단어 분류 완료!
+      if (vs.unknownWords.length === 0) {
+        // 모르는 단어 0개 달성 -> 완벽 암기 완료!
+        vs.isMasteryFinished = true;
+      } else {
+        // 모르는 단어가 남음 -> 회차 종료 화면 표시
+        vs.isRoundFinished = true;
+      }
+    }
+
+    this.renderVocabStudyContent();
+    this.renderVocabStudyFooter();
+  },
+
+  vocabStudyStartNextRound() {
+    const vs = this.state.vocabStudy;
+    if (!vs || !vs.unknownWords || vs.unknownWords.length === 0) return;
+
+    vs.flashcardDeck = [...vs.unknownWords];
+    vs.unknownWords = [];
+    vs.knownWords = [];
+    vs.cardIndex = 0;
+    vs.round += 1;
+    vs.isRoundFinished = false;
+    vs.isMasteryFinished = false;
+    vs.isCardFlipped = false;
+
+    this.renderVocabStudyContent();
+    this.renderVocabStudyFooter();
+  },
+
+  vocabStudyRestartMastery() {
+    const vs = this.state.vocabStudy;
+    if (!vs) return;
+
+    const baseWords = (vs.words && vs.words.length > 0) ? vs.words : vs.allWords;
+    vs.flashcardDeck = [...baseWords];
+    vs.unknownWords = [];
+    vs.knownWords = [];
+    vs.cardIndex = 0;
+    vs.round = 1;
+    vs.isRoundFinished = false;
+    vs.isMasteryFinished = false;
+    vs.isCardFlipped = false;
+
+    this.renderVocabStudyContent();
+    this.renderVocabStudyFooter();
   },
 
   filterVocabStudyWords(query) {
@@ -5943,8 +6157,6 @@ const App = {
         return en.includes(q) || ko.includes(q) || baseKo.includes(q) || mockKo.includes(q);
       });
     }
-    this.state.vocabStudy.cardIndex = 0;
-    this.state.vocabStudy.isCardFlipped = false;
     this.renderVocabStudyContent();
   },
 
@@ -5955,29 +6167,6 @@ const App = {
     } else {
       this.state.vocabStudy.revealedIndices.add(index);
     }
-    this.renderVocabStudyContent();
-  },
-
-  vocabStudyNextCard() {
-    const vs = this.state.vocabStudy;
-    if (!vs || vs.words.length === 0) return;
-    vs.cardIndex = (vs.cardIndex + 1) % vs.words.length;
-    vs.isCardFlipped = false;
-    this.renderVocabStudyContent();
-  },
-
-  vocabStudyPrevCard() {
-    const vs = this.state.vocabStudy;
-    if (!vs || vs.words.length === 0) return;
-    vs.cardIndex = (vs.cardIndex - 1 + vs.words.length) % vs.words.length;
-    vs.isCardFlipped = false;
-    this.renderVocabStudyContent();
-  },
-
-  vocabStudyFlipCard() {
-    const vs = this.state.vocabStudy;
-    if (!vs) return;
-    vs.isCardFlipped = !vs.isCardFlipped;
     this.renderVocabStudyContent();
   },
 
@@ -6044,7 +6233,7 @@ const App = {
                     </div>
                   ` : `
                     <!-- 일반 단어 한국어 뜻 (단어만 보기 모드 지원) -->
-                    <div class="pt-1">
+                    <div class="pt-1 space-y-1.5">
                       ${isHidden ? `
                         <div onclick="App.toggleVocabStudyWordReveal(${index})" class="py-2 px-3 rounded-xl bg-slate-100/90 hover:bg-indigo-50 text-slate-400 hover:text-indigo-700 border border-dashed border-slate-300 text-xs font-bold transition flex items-center justify-between cursor-pointer select-none">
                           <span class="flex items-center gap-1.5">
@@ -6056,32 +6245,164 @@ const App = {
                       ` : `
                         <p class="text-base sm:text-lg font-bold text-violet-950 break-words">${this.escapeHtml(word.ko)}</p>
                       `}
+                      ${word.defEn ? `
+                        <div class="p-2.5 rounded-xl bg-teal-50/70 border border-teal-200/80 text-xs space-y-1 mt-1">
+                          <div class="flex items-center gap-1.5">
+                            <span class="px-1.5 py-0.5 rounded bg-teal-600 text-white text-[10px] font-bold">영영풀이</span>
+                          </div>
+                          <p class="text-slate-700 font-medium leading-relaxed">${this.escapeHtml(word.defEn)}</p>
+                        </div>
+                      ` : ''}
                     </div>
                   `}
                 </div>
               </div>`;
           }).join('')}
         </div>`;
-    } else {
-      // ── 뷰 모드 2: 플래시카드 모드 (한 단어씩 크게 넘겨보기) ───────
-      const currentWord = vs.words[vs.cardIndex];
+    } else if (vs.viewMode === 'card') {
+      // ── 뷰 모드 2: 플래시카드 암기학습 (모르는 단어 없을 때까지 반복 루프) ──
+      if (!vs.flashcardDeck || vs.flashcardDeck.length === 0) {
+        this.vocabStudyRestartMastery();
+      }
+
+      // 1) 모든 단어 완벽 마스터 (모르는 단어 0개 달성)
+      if (vs.isMasteryFinished) {
+        container.innerHTML = `
+          <div class="max-w-xl mx-auto py-8 space-y-6 text-center animate-fade-in">
+            <div class="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-tr from-emerald-400 to-teal-500 text-white flex items-center justify-center text-5xl shadow-lg shadow-emerald-200">
+              🎉
+            </div>
+            <div class="space-y-2">
+              <span class="px-3.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                완벽 암기 마스터 달성!
+              </span>
+              <h2 class="text-3xl font-black text-slate-900 tracking-tight">모든 단어를 완벽하게 암기했습니다!</h2>
+              <p class="text-sm font-semibold text-slate-600">
+                총 <strong>${vs.allWords.length}개</strong> 단어 · 모르는 단어 <strong>0개</strong> 완료 (${vs.round}회차 반복 학습)
+              </p>
+            </div>
+            <div class="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-center space-y-2">
+              <p class="text-xs font-bold text-emerald-900">
+                <i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>
+                모르는 단어가 없어질 때까지 반복하여 단어의 기억을 완벽히 마스터했습니다.
+              </p>
+              <p class="text-[11px] text-emerald-700">이제 단어 시험에 응시하거나 다른 단어장을 학습할 준비가 완료되었습니다.</p>
+            </div>
+            <div class="flex items-center justify-center gap-3 pt-2 flex-wrap">
+              <button type="button" onclick="App.vocabStudyRestartMastery()" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-xs cursor-pointer">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>처음부터 다시 학습하기</span>
+              </button>
+              <button type="button" onclick="App.setVocabStudyViewMode('list')" class="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-list"></i>
+                <span>목록으로 돌아가기</span>
+              </button>
+              ${vs.originTestId ? `
+                <button type="button" onclick="App.closeVocabStudyModal()" class="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-emerald-200 shadow-md cursor-pointer">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                  <span>시험 응시하러 가기</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>`;
+        return;
+      }
+
+      // 2) 회차 종료 화면 (모르는 단어가 남아 다음 회차 반복 필요)
+      if (vs.isRoundFinished) {
+        container.innerHTML = `
+          <div class="max-w-xl mx-auto py-8 space-y-6 text-center animate-fade-in">
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center text-4xl shadow-sm">
+              <i class="fa-solid fa-repeat"></i>
+            </div>
+            <div class="space-y-2">
+              <span class="px-3.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
+                ${vs.round}회차 학습 완료
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                모르는 단어 ${vs.unknownWords.length}개가 남았습니다
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600">
+                아는 단어 <strong class="text-emerald-600">${vs.knownWords.length}개</strong>는 통과! 모르는 단어가 0개가 될 때까지 반복 학습합니다.
+              </p>
+            </div>
+
+            <!-- 모르는 단어 미리보기 리스트 -->
+            <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 text-left space-y-2.5">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-question text-rose-500"></i>
+                  ${vs.round + 1}회차에 다시 반복할 단어 (${vs.unknownWords.length}개)
+                </h4>
+                <span class="text-[11px] font-mono text-rose-600">클릭 시 발음 청취</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+                ${vs.unknownWords.map(w => `
+                  <div onclick="App.playDictionaryAudio('${this.escapeHtml(w.en)}')" class="p-2.5 rounded-xl bg-white border border-rose-200/80 hover:border-rose-300 transition cursor-pointer flex items-center justify-between gap-2 shadow-2xs">
+                    <div class="min-w-0">
+                      <p class="font-black text-xs text-slate-900 truncate">${this.escapeHtml(w.en)}</p>
+                      <p class="text-[11px] text-rose-700 font-medium truncate">${this.escapeHtml(w.mockKo || w.ko)}</p>
+                    </div>
+                    <i class="fa-solid fa-volume-high text-xs text-rose-400 hover:text-rose-600"></i>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2 flex-wrap">
+              <button type="button" onclick="App.vocabStudyStartNextRound()" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 shadow-md cursor-pointer">
+                <i class="fa-solid fa-play"></i>
+                <span>${vs.round + 1}회차 시작하기 (모르는 단어 ${vs.unknownWords.length}개 반복)</span>
+                <kbd class="hidden sm:inline px-1.5 py-0.5 rounded bg-black/20 text-white/90 text-[10px] font-mono">Enter</kbd>
+              </button>
+              <button type="button" onclick="App.setVocabStudyViewMode('list')" class="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-list"></i>
+                <span>목록으로 돌아가기</span>
+              </button>
+            </div>
+          </div>`;
+        return;
+      }
+
+      // 3) 학습 진행 중 카드
+      const currentWord = vs.flashcardDeck[vs.cardIndex] || vs.flashcardDeck[0];
       const is9Mo = Boolean(currentWord && currentWord.baseKo && (currentWord.mockKo || currentWord.ko));
-      const totalCards = vs.words.length;
 
       container.innerHTML = `
-        <div class="max-w-xl mx-auto py-4 space-y-5">
-          <!-- 상단 진행도 및 키보드 힌트 -->
-          <div class="flex items-center justify-between text-xs text-slate-500 px-1">
-            <span class="font-bold text-slate-700">단어 <strong>${vs.cardIndex + 1}</strong> / ${totalCards}</span>
-            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-400">
-              <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold text-[10px]">←</kbd>
-              <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold text-[10px]">→</kbd> 넘기기 ·
-              <kbd class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono font-bold text-[10px]">Space</kbd> 뒤집기
-            </span>
+        <div class="max-w-xl mx-auto py-2 space-y-4">
+          <!-- 상단 진행도 및 회차/아는단어/모르는단어 카운터 -->
+          <div class="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+            <div class="flex items-center justify-between gap-2 flex-wrap text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-black text-xs shadow-2xs">
+                  ${vs.round}회차
+                </span>
+                <span class="font-bold text-slate-700">
+                  단어 <strong>${vs.cardIndex + 1}</strong> / ${vs.flashcardDeck.length}
+                </span>
+              </div>
+              <div class="flex items-center gap-3 font-bold">
+                <span class="text-rose-600 flex items-center gap-1">
+                  <i class="fa-solid fa-circle-xmark text-xs"></i>
+                  <span>모르는 단어</span>
+                  <strong class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700 text-xs">${vs.unknownWords.length}</strong>
+                </span>
+                <span class="text-emerald-600 flex items-center gap-1">
+                  <i class="fa-solid fa-circle-check text-xs"></i>
+                  <span>아는 단어</span>
+                  <strong class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 text-xs">${vs.knownWords.length}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- 프로그레스 바 -->
+            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${((vs.cardIndex + 1) / vs.flashcardDeck.length) * 100}%"></div>
+            </div>
           </div>
 
           <!-- 대형 플래시카드 본체 -->
-          <div onclick="App.vocabStudyFlipCard()" class="min-h-[260px] sm:min-h-[300px] p-8 rounded-3xl border-2 ${vs.isCardFlipped ? 'border-indigo-400 bg-gradient-to-b from-indigo-50/50 to-white' : 'border-slate-200 bg-white'} shadow-lg hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-4 group select-none">
+          <div onclick="App.vocabStudyFlipCard()" class="min-h-[190px] sm:min-h-[230px] p-5 sm:p-6 rounded-3xl border-2 ${vs.isCardFlipped ? 'border-indigo-400 bg-gradient-to-b from-indigo-50/50 to-white' : 'border-slate-200 bg-white'} shadow-lg hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-3 group select-none">
             <span class="text-xs font-black text-indigo-500 font-mono bg-indigo-50 px-3 py-1 rounded-full">#${String(vs.cardIndex + 1).padStart(2, '0')}</span>
 
             <!-- 영어 단어 -->
@@ -6091,12 +6412,12 @@ const App = {
             </div>
 
             <!-- 발음 버튼 -->
-            <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(currentWord.en)}'); event.stopPropagation();" class="w-11 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition shadow-md cursor-pointer" title="발음 듣기">
-              <i class="fa-solid fa-volume-high text-base"></i>
+            <button type="button" onclick="App.playDictionaryAudio('${this.escapeHtml(currentWord.en)}'); event.stopPropagation();" class="w-10 h-10 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition shadow-md cursor-pointer" title="발음 듣기">
+              <i class="fa-solid fa-volume-high text-sm"></i>
             </button>
 
             <!-- 한국어 뜻 영역 -->
-            <div class="w-full pt-3 border-t border-slate-100 min-h-[70px] flex items-center justify-center">
+            <div class="w-full pt-2.5 border-t border-slate-100 min-h-[60px] flex items-center justify-center">
               ${vs.isCardFlipped ? `
                 ${is9Mo ? `
                   <div class="space-y-1 text-center animate-fade-in">
@@ -6108,7 +6429,15 @@ const App = {
                     ${currentWord.exampleEn ? `<p class="text-xs text-slate-600 font-medium">${this.escapeHtml(currentWord.exampleEn)}</p>` : ''}
                   </div>
                 ` : `
-                  <p class="text-2xl sm:text-3xl font-black text-indigo-950 animate-fade-in">${this.escapeHtml(currentWord.ko)}</p>
+                  <div class="space-y-2 text-center animate-fade-in">
+                    <p class="text-2xl sm:text-3xl font-black text-indigo-950">${this.escapeHtml(currentWord.ko)}</p>
+                    ${currentWord.defEn ? `
+                      <div class="p-3 rounded-xl bg-teal-50 border border-teal-200 text-xs text-left max-w-md mx-auto space-y-1">
+                        <span class="px-1.5 py-0.5 rounded bg-teal-600 text-white text-[10px] font-bold inline-block">영영풀이</span>
+                        <p class="text-slate-700 font-medium leading-relaxed">${this.escapeHtml(currentWord.defEn)}</p>
+                      </div>
+                    ` : ''}
+                  </div>
                 `}
               ` : `
                 <div class="text-xs font-bold text-slate-400 group-hover:text-indigo-600 transition flex items-center gap-1.5">
@@ -6119,20 +6448,59 @@ const App = {
             </div>
           </div>
 
-          <!-- 네비게이션 컨트롤 -->
-          <div class="flex items-center justify-between gap-3">
-            <button type="button" onclick="App.vocabStudyPrevCard()" class="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs">
-              <i class="fa-solid fa-chevron-left"></i>
-              <span>이전 단어</span>
+          <!-- 아는단어 / 뒤집기 / 모르는단어 액션 버튼 -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-3">
+            <button
+              type="button"
+              onclick="App.vocabStudyMarkWord(false)"
+              class="py-3.5 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 text-rose-700 font-black text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-xs cursor-pointer group"
+            >
+              <i class="fa-solid fa-circle-xmark text-rose-500 text-base group-hover:scale-110 transition-transform"></i>
+              <span>모르는 단어</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-rose-200/80 text-rose-800 text-[10px] font-mono">← / 1</kbd>
             </button>
-            <button type="button" onclick="App.vocabStudyFlipCard()" class="py-3 px-5 rounded-2xl ${vs.isCardFlipped ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 shadow-md'} text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 cursor-pointer">
-              <i class="fa-solid fa-rotate text-xs"></i>
-              <span>${vs.isCardFlipped ? '단어 다시 가리기' : '뜻 확인하기'}</span>
+
+            <button
+              type="button"
+              onclick="App.vocabStudyFlipCard()"
+              class="py-3.5 px-3 rounded-2xl ${vs.isCardFlipped ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 shadow-md'} font-black text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer"
+            >
+              <i class="fa-solid fa-rotate text-sm"></i>
+              <span>${vs.isCardFlipped ? '뜻 가리기' : '뜻 보기'}</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded ${vs.isCardFlipped ? 'bg-slate-300 text-slate-800' : 'bg-indigo-700 text-white/90'} text-[10px] font-mono">Space</kbd>
             </button>
-            <button type="button" onclick="App.vocabStudyNextCard()" class="flex-1 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs">
-              <span>다음 단어</span>
-              <i class="fa-solid fa-chevron-right"></i>
+
+            <button
+              type="button"
+              onclick="App.vocabStudyMarkWord(true)"
+              class="py-3.5 px-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-300 text-emerald-700 font-black text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-xs cursor-pointer group"
+            >
+              <i class="fa-solid fa-circle-check text-emerald-500 text-base group-hover:scale-110 transition-transform"></i>
+              <span>아는 단어</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-emerald-200/80 text-emerald-800 text-[10px] font-mono">→ / 2</kbd>
             </button>
+          </div>
+
+          <!-- 💡 하단 학습 가이드 및 회차별 아는단어/모르는단어 안내 바 -->
+          <div class="p-3.5 rounded-2xl bg-indigo-50/90 border border-indigo-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs shadow-2xs animate-fade-in">
+            <div class="flex items-center gap-2 text-indigo-950 font-bold min-w-0">
+              <i class="fa-solid fa-lightbulb text-indigo-600 text-sm flex-shrink-0"></i>
+              <span>
+                ${vs.round === 1 ? `
+                  <strong>[1회차 암기 가이드]</strong> 뜻을 확인한 뒤 <span class="text-emerald-700 underline font-black">아는 단어</span> 또는 <span class="text-rose-700 underline font-black">모르는 단어</span>를 선택하세요. 모르는 단어는 2회차에 0개가 될 때까지 반복 학습합니다.
+                ` : `
+                  <strong>[${vs.round}회차 반복 가이드]</strong> 이전 회차에서 모른다고 체크한 단어(${vs.flashcardDeck.length}개)를 반복 중입니다. 모르는 단어가 0개가 될 때까지 계속됩니다.
+                `}
+              </span>
+            </div>
+            <div class="flex items-center gap-2 font-black flex-shrink-0 self-end sm:self-center">
+              <span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] border border-rose-200/80">
+                <i class="fa-solid fa-circle-xmark mr-1"></i>모르는 단어: ${vs.unknownWords.length}개
+              </span>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[11px] border border-emerald-200/80">
+                <i class="fa-solid fa-circle-check mr-1"></i>아는 단어: ${vs.knownWords.length}개
+              </span>
+            </div>
           </div>
         </div>`;
     }
@@ -6142,6 +6510,45 @@ const App = {
     const vs = this.state.vocabStudy;
     const footer = document.getElementById('vocabStudyModalFooter');
     if (!footer || !vs) return;
+
+    if (vs.viewMode === 'card') {
+      if (vs.isMasteryFinished || vs.isRoundFinished) {
+        footer.innerHTML = `
+          <div class="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-repeat text-indigo-500"></i>
+            <span>${vs.isMasteryFinished ? '완벽 암기 마스터 완료' : `${vs.round}회차 완료 (다음 ${vs.round + 1}회차 대기)`}</span>
+          </div>
+          <button type="button" onclick="App.closeVocabStudyModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition cursor-pointer shadow-xs">
+            닫기
+          </button>`;
+      } else {
+        footer.innerHTML = `
+          <div class="flex items-center gap-2 text-xs flex-wrap min-w-0">
+            <span class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-black text-xs shadow-2xs flex-shrink-0">${vs.round}회차 학습</span>
+            <span class="text-slate-600 font-bold hidden sm:inline">단어 ${vs.cardIndex + 1} / ${vs.flashcardDeck.length}</span>
+            <span class="text-rose-600 font-black text-xs flex items-center gap-1">
+              <i class="fa-solid fa-circle-xmark"></i>
+              <span>모르는 단어</span>
+              <strong class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">${vs.unknownWords.length}</strong>
+            </span>
+            <span class="text-emerald-600 font-black text-xs flex items-center gap-1">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>아는 단어</span>
+              <strong class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700">${vs.knownWords.length}</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button type="button" onclick="App.setVocabStudyViewMode('list')" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-list text-[11px]"></i>
+              <span class="hidden sm:inline">목록 보기</span>
+            </button>
+            <button type="button" onclick="App.closeVocabStudyModal()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer shadow-xs">
+              닫기
+            </button>
+          </div>`;
+      }
+      return;
+    }
 
     if (vs.originTestId) {
       footer.innerHTML = `
@@ -6462,6 +6869,7 @@ const App = {
     if (dir === 2) return '객관식';
     if (dir === 3) return '스펠링';
     if (dir === 4) return '통합';
+    if (dir === 5) return '영영풀이';
     return '단어 테스트';
   },
 
@@ -6470,6 +6878,7 @@ const App = {
     if (dir === 2) return '객관식';
     if (dir === 3) return '스펠링';
     if (dir === 4) return '통합';
+    if (dir === 5) return '영영';
     return '단어';
   },
 
@@ -6525,7 +6934,16 @@ const App = {
     }
 
     if (!set || set.words.length < 5) { this.toast('단어가 부족합니다. (최소 5개)', 'error'); return; }
-    if (![2, 3, 4].includes(direction)) { this.toast('올바른 테스트 모드가 아닙니다.', 'error'); return; }
+    if (![2, 3, 4, 5].includes(direction)) { this.toast('올바른 테스트 모드가 아닙니다.', 'error'); return; }
+
+    let eligibleWords = set.words;
+    if (direction === 5) {
+      eligibleWords = set.words.filter(w => w.defEn && w.defEn.trim().length > 0);
+      if (eligibleWords.length < 5) {
+        this.toast('영영풀이가 등록된 단어가 부족합니다. (최소 5개 필요)', 'error');
+        return;
+      }
+    }
     
     // 순차 잠금 검사 (객관식 통과 -> 스펠링 통과 -> 통합)
     const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, testId);
@@ -6553,14 +6971,14 @@ const App = {
     }
 
     const startedAt = new Date().toISOString();
-    const testWords = this.selectVocabTestWords(set.words);
+    const testWords = this.selectVocabTestWords(eligibleWords);
     const isMockSpecial = Boolean(
       (scheduledTest && (scheduledTest.isMockSpecial || (scheduledTest.title && (scheduledTest.title.includes('9모') || scheduledTest.title.includes('모의고사')))))
       || set.isMockSpecial
       || (set.book && (set.book.includes('9모') || set.book.includes('모의고사')))
       || (set.title && set.title.includes('9모'))
     );
-    const initialTime = isMockSpecial ? 10 : (direction === 2 ? 7 : (direction === 3 ? 15 : 20));
+    const initialTime = isMockSpecial ? 10 : (direction === 2 ? 7 : (direction === 5 ? 20 : (direction === 3 ? 15 : 20)));
 
     const attemptCount = this.getVocabAttemptCount(studentId, set.id, direction, testId);
     const currentRound = attemptCount + 1;
@@ -6584,9 +7002,9 @@ const App = {
       startedAt,
       isMockSpecial,
       allWords: testWords,
-      sourceWordCount: set.words.length,
+      sourceWordCount: eligibleWords.length,
       direction,
-      questions: this.buildVocabQuestions(testWords, direction, set.words),
+      questions: this.buildVocabQuestions(testWords, direction, direction === 5 ? eligibleWords : set.words),
       currentIndex: 0,
       score: 0,
       currentRound,
@@ -6636,6 +7054,14 @@ const App = {
           answered: null,
           isCorrect: false
         };
+      } else if (direction === 5) {
+        return {
+          word,
+          question: word.defEn,
+          correct: word.en,
+          answered: null,
+          isCorrect: false
+        };
       } else if (direction === 3) {
         return {
           word,
@@ -6669,7 +7095,7 @@ const App = {
           <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)}</span>
           <span class="text-xs text-slate-500 ml-2">문항 ${vt.currentIndex + 1} / ${total}</span>
         </div>
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${dir === 2 ? 'bg-violet-100 text-violet-700' : (dir === 3 ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700')}">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${dir === 2 ? 'bg-violet-100 text-violet-700' : (dir === 3 ? 'bg-blue-100 text-blue-700' : (dir === 5 ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700'))}">
           ${this.getVocabDirectionLabel(dir)}
         </span>
         <span class="px-2.5 py-0.5 rounded-full text-xs font-black ${vt.currentRound > 1 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'}">
@@ -6718,6 +7144,59 @@ const App = {
                 </button>
               `).join('')}
             </div>
+          </div>
+        </div>`;
+    } else if (dir === 5) {
+      // ── 모드 5: 영영풀이 → 영어 단어 (스펠링 주관식) ──────────────
+      contentEl.innerHTML = `
+        <div class="space-y-6 max-w-2xl mx-auto">
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-teal-600 h-2 rounded-full transition-all duration-300" style="width:${progressPct}%"></div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6 sm:p-8 text-center space-y-6 border border-teal-200/80 shadow-md">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-graduation-cap text-teal-600"></i> 영영풀이 (English Definition)
+              </span>
+              <p class="text-xs font-bold text-slate-400">
+                정의를 읽고 알맞은 영어 단어 스펠링을 입력하세요
+              </p>
+            </div>
+
+            <!-- 영영 정의 박스 -->
+            <div class="py-5 px-6 bg-teal-50/60 rounded-2xl border border-teal-100 text-left shadow-inner">
+              <p class="text-base sm:text-lg font-bold text-slate-800 leading-relaxed tracking-normal select-text">
+                ${this.escapeHtml(q.question)}
+              </p>
+            </div>
+
+            <!-- Input Box -->
+            <div class="pt-1">
+              <input
+                type="text"
+                id="vocabSpellingInput"
+                class="w-full p-4 rounded-2xl border-2 border-slate-200 focus:border-teal-600 focus:ring-2 focus:ring-teal-100 text-center text-xl sm:text-2xl font-black text-slate-900 outline-none transition shadow-inner placeholder:text-slate-300 placeholder:font-normal"
+                placeholder="영어 단어 입력"
+                autofocus
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="none"
+                spellcheck="false"
+                lang="en"
+                inputmode="latin"
+                onkeydown="if(event.key==='Enter') App.submitVocabSpellingAnswer(false)"
+              />
+            </div>
+
+            <button
+              type="button"
+              onclick="App.submitVocabSpellingAnswer(false)"
+              class="w-full py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <span>답안 제출 및 다음 문제 (Enter)</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
         </div>`;
     } else if (dir === 3) {
@@ -6828,12 +7307,19 @@ const App = {
         </div>`;
     }
 
-    // 모든 시험(객관식, 스펠링, 통합): 사전식 MP3 자동 1회 재생
-    setTimeout(() => {
-      this.playDictionaryAudio(q.word.en);
-      const inputEl = document.getElementById('vocabSpellingInput');
-      if (inputEl) inputEl.focus();
-    }, 50);
+    // 객관식, 스펠링, 통합: 사전식 MP3 자동 1회 재생 (영영풀이는 정답 단어 음성 유출 방지를 위해 자동 재생 제외)
+    if (dir !== 5) {
+      setTimeout(() => {
+        this.playDictionaryAudio(q.word.en);
+        const inputEl = document.getElementById('vocabSpellingInput');
+        if (inputEl) inputEl.focus();
+      }, 50);
+    } else {
+      setTimeout(() => {
+        const inputEl = document.getElementById('vocabSpellingInput');
+        if (inputEl) inputEl.focus();
+      }, 50);
+    }
 
     // 스펠링/통합 시험인 경우: 대형 발음기호 비동기 주입 (직접 발음기호 우선)
     if (dir === 3 || dir === 4) {
@@ -6862,7 +7348,7 @@ const App = {
     const vt = this.state.vocabTest;
     this.clearVocabQuestionTimer();
     const isMock = Boolean(vt.isMockPart || vt.isMockSpecial || (vt.bookName && (vt.bookName.includes('9모') || vt.bookName.includes('모의고사'))) || (vt.setTitle && vt.setTitle.includes('9모')));
-    const defaultTime = isMock ? 10 : (vt.direction === 2 ? 7 : (vt.direction === 3 ? 15 : 20));
+    const defaultTime = isMock ? 10 : (vt.direction === 2 ? 7 : (vt.direction === 5 ? 20 : (vt.direction === 3 ? 15 : 20)));
     vt.timeRemaining = vt.initialTimeLimit || defaultTime;
     const timer = document.getElementById('vocabTestTimer');
     if (timer) timer.innerHTML = `<i class="fa-regular fa-clock"></i>${vt.timeRemaining}초`;
@@ -6873,7 +7359,7 @@ const App = {
       if (vt.timeRemaining <= 0) {
         if (vt.direction === 2) {
           this.submitVocabAnswer(null, true);
-        } else if (vt.direction === 3) {
+        } else if (vt.direction === 3 || vt.direction === 5) {
           this.submitVocabSpellingAnswer(true);
         } else {
           this.submitVocabComprehensiveAnswer(true);
@@ -6911,7 +7397,9 @@ const App = {
       if (!btn) return;
       btn.disabled = true;
       if (!timedOut && i === choiceIndex) {
-        btn.className = 'vocab-choice-btn w-full p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50 text-sm font-bold text-indigo-900 transition text-left flex items-center gap-3';
+        btn.className = vt.direction === 5
+          ? 'vocab-choice-btn w-full p-4 rounded-xl border-2 border-teal-500 bg-teal-50 text-base font-bold text-teal-900 transition text-left flex items-center gap-3'
+          : 'vocab-choice-btn w-full p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50 text-sm font-bold text-indigo-900 transition text-left flex items-center gap-3';
       }
     });
 
@@ -7029,13 +7517,13 @@ const App = {
     const questionDetails = vt.questions.map((q, idx) => ({
       index: idx,
       word: q.word || { en: q.question, ko: q.correct },
-      question: q.word ? q.word.en : q.question,
+      question: q.word ? (vt.direction === 5 ? q.word.defEn : q.word.en) : q.question,
       correct: q.word ? (vt.direction === 4 ? `${q.word.en} : ${q.word.ko}` : (vt.direction === 2 ? q.word.ko : q.word.en)) : q.correct,
       answered: q.answered || '시간 초과',
       spellingInput: q.spellingInput ?? (vt.direction === 3 ? q.answered : ''),
       meaningInput: q.meaningInput ?? '',
       spellingCorrect: q.spellingCorrect ?? (vt.direction === 3 ? q.isCorrect : null),
-      meaningCorrect: q.meaningCorrect ?? (vt.direction === 2 ? q.isCorrect : null),
+      meaningCorrect: q.meaningCorrect ?? (vt.direction === 2 ? q.isCorrect : (vt.direction === 5 ? q.isCorrect : null)),
       isCorrect: Boolean(q.isCorrect)
     }));
 
@@ -7064,7 +7552,7 @@ const App = {
         retryAvailableAt = null;
       }
     } else {
-      // ── 모드 2 (객관식), 모드 3 (스펠링) ──
+      // ── 모드 2 (객관식), 모드 3 (스펠링), 모드 5 (영영풀이) ──
       correctCount = vt.score;
       score = Math.round((correctCount / total) * 100);
       passed = score >= cutoffScore;
@@ -7078,11 +7566,17 @@ const App = {
           answer: q.spellingInput || '시간 초과 / 미입력',
           correct: q.word ? q.word.en : q.correct
         }))
-      : questionDetails.filter(q => !q.isCorrect).map(q => ({
-          question: q.word ? `${q.word.en} (${q.word.ko})` : q.question,
-          answer: q.answered || '시간 초과',
-          correct: q.word ? (vt.direction === 2 ? q.word.ko : q.word.en) : q.correct
-        }));
+      : (vt.direction === 5
+        ? questionDetails.filter(q => !q.isCorrect).map(q => ({
+            question: q.word ? `${q.word.defEn}` : q.question,
+            answer: q.answered || '시간 초과',
+            correct: q.word ? `${q.word.en} (${q.word.ko})` : q.correct
+          }))
+        : questionDetails.filter(q => !q.isCorrect).map(q => ({
+            question: q.word ? `${q.word.en} (${q.word.ko})` : q.question,
+            answer: q.answered || '시간 초과',
+            correct: q.word ? (vt.direction === 2 ? q.word.ko : q.word.en) : q.correct
+          })));
 
     const completedAt = new Date().toISOString();
     const startedAt = vt.startedAt || completedAt;
@@ -7446,6 +7940,27 @@ const App = {
         test.score = `Part 1 (${test.mockPart1Score || 100}점) 합격 (Part 2 대기)`;
       } else {
         test.status = 'SCHEDULED';
+      }
+      test.retestStatus = 'NONE';
+      await AppData.saveOrUpdateTest(test);
+      return;
+    }
+
+    // 🔥 영영풀이 전용 시험인 경우: Direction 5(영영풀이) 결과만으로 합격/불합격 판정
+    if (test.isEnglishDefTest) {
+      const results = AppData.getVocabTestResults().filter(result => result.testId === testId);
+      const defResult = results.find(r => r.direction === 5);
+      if (defResult) {
+        if (defResult.passed) {
+          test.status = 'PASS';
+          test.score = `영영풀이 ${defResult.score}점 (통과)`;
+        } else {
+          test.status = 'FAIL';
+          test.score = `영영풀이 ${defResult.score}점 (불합격)`;
+        }
+      } else {
+        test.status = 'SCHEDULED';
+        test.score = '';
       }
       test.retestStatus = 'NONE';
       await AppData.saveOrUpdateTest(test);

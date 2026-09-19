@@ -950,6 +950,705 @@ const YBM_ENGLISH2_PASSAGES = [
   }
 ];
 
+// ========================================================
+// 백발백중 공통영어 2 (YBM 박준언) 본문 단어 세트 (1과 & 2과)
+// 영영풀이(defEn) 완비: 백발백중 교재 수록 영영풀이는 그대로 수록, 없으면 빈칸("")
+// ========================================================
+
+const YBM_ENGLISH2_VOCAB_SETS = [
+  {
+    "id": "ybm2_lesson_01",
+    "book": "백발백중 공통영어 2",
+    "title": "Lesson 1. Be Digitally Smart!",
+    "lesson": 1,
+    "studentIds": [],
+    "words": [
+      {
+        "en": "stay on",
+        "ko": "~에 계속 남아 있다",
+        "defEn": "",
+        "ipa": "[stei ɑn]"
+      },
+      {
+        "en": "reliable",
+        "ko": "신뢰할[믿을] 수 있는, 확실한",
+        "defEn": "consistently good in quality or performance; able to be trusted",
+        "ipa": "[riláiəbl]"
+      },
+      {
+        "en": "undamaged",
+        "ko": "손해[손상]를 입지 않은, 흠이 없는",
+        "defEn": "not harmed or broken; in good condition",
+        "ipa": "[ʌ̀ndǽmidʒd]"
+      },
+      {
+        "en": "consistently",
+        "ko": "시종일관하여",
+        "defEn": "",
+        "ipa": "[kənsístəntli]"
+      },
+      {
+        "en": "remind A of B",
+        "ko": "A에게 B를 생각나게 하다",
+        "defEn": "",
+        "ipa": "[rimáind]"
+      },
+      {
+        "en": "distributor",
+        "ko": "분배[배급, 배포]자; 판매자, 배급[유통]업자",
+        "defEn": "a person or organization that supplies goods to stores and other businesses",
+        "ipa": "[distríbjutər]"
+      },
+      {
+        "en": "turn out + to부정사",
+        "ko": "~임이 판명되다[드러나다]",
+        "defEn": "",
+        "ipa": "[təːrn aut]"
+      },
+      {
+        "en": "reduce",
+        "ko": "줄이다, 낮추다; 줄다, 감소하다",
+        "defEn": "to make something smaller or less in size, amount, or price",
+        "ipa": "[ridjúːs]"
+      },
+      {
+        "en": "distort",
+        "ko": "왜곡하다; 일그러뜨리다",
+        "defEn": "to change the shape, appearance, or sound of something so that it is unnatural, or to change facts so that they are not true",
+        "ipa": "[distɔ́ːrt]"
+      },
+      {
+        "en": "credibility",
+        "ko": "신용할 수 있음, 진실[신뢰]성",
+        "defEn": "the quality of being trusted and believed in",
+        "ipa": "[krèdəbíləti]"
+      },
+      {
+        "en": "deliberate",
+        "ko": "고의의, 의도적인; 심사숙고한, 신중한",
+        "defEn": "done consciously and intentionally; on purpose rather than by accident",
+        "ipa": "[dilíbərət]"
+      },
+      {
+        "en": "oppose",
+        "ko": "반대하다; 반항[적대]하다; 대항[대립]시키다",
+        "defEn": "to disagree with something or someone, often by speaking or fighting against them",
+        "ipa": "[əpóuz]"
+      },
+      {
+        "en": "suit",
+        "ko": "어울리다; 적합하다 (또는 덫)",
+        "defEn": "to be right or good for somebody or a situation",
+        "ipa": "[suːt]"
+      },
+      {
+        "en": "analyze",
+        "ko": "비판적으로 검토하다; 분석[분해]하다",
+        "defEn": "to examine the details of something carefully in order to understand or explain it",
+        "ipa": "[ǽnəlàiz]"
+      },
+      {
+        "en": "manipulate",
+        "ko": "(교묘하게) 조종하다; 잘 다루다; 조작하다",
+        "defEn": "to control or influence someone or something, often in an unfair or dishonest way",
+        "ipa": "[mənípjulèit]"
+      },
+      {
+        "en": "prejudice",
+        "ko": "편견, 선입관",
+        "defEn": "an unfair feeling of dislike for a person or group because of race, religion, etc.",
+        "ipa": "[prédʒudis]"
+      },
+      {
+        "en": "be expected + to부정사",
+        "ko": "~할 것으로 기대되다",
+        "defEn": "",
+        "ipa": "[ikspéktid]"
+      },
+      {
+        "en": "be inclined + to부정사",
+        "ko": "~하는 경향이 있다",
+        "defEn": "",
+        "ipa": "[inkláind]"
+      },
+      {
+        "en": "astonished",
+        "ko": "깜짝 놀란",
+        "defEn": "very surprised or amazed",
+        "ipa": "[əstɑ́niʃt]"
+      },
+      {
+        "en": "examine",
+        "ko": "검사[조사]하다; 진찰[검진]하다; 시험하다",
+        "defEn": "to look at or consider a person or thing carefully and in detail",
+        "ipa": "[igzǽmin]"
+      },
+      {
+        "en": "foster",
+        "ko": "촉진[조장, 육성]하다; 기르다, 양육하다",
+        "defEn": "to encourage the development or growth of ideas or feelings",
+        "ipa": "[fɔ́ːstər]"
+      },
+      {
+        "en": "go viral",
+        "ko": "입소문 나다, 퍼져나가다",
+        "defEn": "to become extremely popular in a very short time through the internet",
+        "ipa": "[gou váirəl]"
+      },
+      {
+        "en": "inaccurate",
+        "ko": "정확하지 않은; 확실하지 않은; 정밀하지 않은",
+        "defEn": "not correct, true, or exact",
+        "ipa": "[inǽkjurət]"
+      },
+      {
+        "en": "candidate",
+        "ko": "입후보자, 지망[지원]자; (선출 또는 추천된) 후보자",
+        "defEn": "a person who applies for a job or is nominated for an election",
+        "ipa": "[kǽndidèit]"
+      },
+      {
+        "en": "apparently",
+        "ko": "분명히, 명백하게; 보기에, 외관상",
+        "defEn": "according to what you have heard or read; according to the way something appears",
+        "ipa": "[əpǽrəntli]"
+      },
+      {
+        "en": "not only A but also B",
+        "ko": "A뿐만 아니라 B도",
+        "defEn": "",
+        "ipa": "[nɑt óunli]"
+      },
+      {
+        "en": "objectively",
+        "ko": "객관적으로",
+        "defEn": "in a way that is based on facts rather than feelings or opinions",
+        "ipa": "[əbdʒéktivli]"
+      },
+      {
+        "en": "immediately",
+        "ko": "곧, 즉시; 직접으로; 바로[직접] 접하여",
+        "defEn": "now or without waiting or thinking",
+        "ipa": "[imíːdiətli]"
+      },
+      {
+        "en": "enclosed",
+        "ko": "에워싸인; 동봉된",
+        "defEn": "surrounded by walls, objects, or structures; sent in the same envelope",
+        "ipa": "[inklóuzd]"
+      },
+      {
+        "en": "phenomenon",
+        "ko": "현상, 사건",
+        "defEn": "a fact or situation that is observed to exist or happen",
+        "ipa": "[finɑ́mənɑ̀n]"
+      },
+      {
+        "en": "division",
+        "ko": "분열, 불화; 분할, 분리; 나눗셈; 경계선; 부, 국",
+        "defEn": "the separation of something into parts or groups",
+        "ipa": "[divíʒən]"
+      },
+      {
+        "en": "criticize",
+        "ko": "비난하다; 비평[평론]하다",
+        "defEn": "to express disapproval of someone or something based on perceived faults or mistakes",
+        "ipa": "[krítisàiz]"
+      },
+      {
+        "en": "alternative",
+        "ko": "대체의; 양자택일인; 양자택일; 대안, 대체 수단",
+        "defEn": "available as another possibility or choice",
+        "ipa": "[ɔːltə́ːrnətiv]"
+      },
+      {
+        "en": "provocative",
+        "ko": "자극적인, 도발적인",
+        "defEn": "causing a strong reaction, especially anger, excitement, or shock",
+        "ipa": "[prəvɑ́kətiv]"
+      },
+      {
+        "en": "mislead",
+        "ko": "속이다; 잘못된 방향으로 이끌다[안내하다]",
+        "defEn": "to cause someone to believe something that is not true",
+        "ipa": "[mislíːd]"
+      },
+      {
+        "en": "reputation",
+        "ko": "평판, 풍문; 명성, 영예",
+        "defEn": "the beliefs or opinions that are generally held about someone or something",
+        "ipa": "[rèpjutéiʃən]"
+      },
+      {
+        "en": "reveal",
+        "ko": "드러내다, 밝히다; 나타내다, 보이다",
+        "defEn": "to make known or show something that was previously hidden or secret",
+        "ipa": "[rivíːl]"
+      },
+      {
+        "en": "shelter",
+        "ko": "대피소, 피난처; 피난; 주거; 보호 시설",
+        "defEn": "a place giving temporary protection from bad weather or danger",
+        "ipa": "[ʃéltər]"
+      },
+      {
+        "en": "confuse",
+        "ko": "혼란시키다; 혼동하다; 당황하게[난처하게] 하다",
+        "defEn": "to make someone unable to think clearly or understand something",
+        "ipa": "[kənfjúːz]"
+      },
+      {
+        "en": "proof",
+        "ko": "증거; 견디는; 검사하다; 교정하다",
+        "defEn": "information or facts that show that something is definitely true",
+        "ipa": "[pruːf]"
+      },
+      {
+        "en": "disturb",
+        "ko": "어지럽히다; 방해하다; 불안하게 하다",
+        "defEn": "to interrupt the peace, quiet, or normal state of",
+        "ipa": "[distə́ːrb]"
+      },
+      {
+        "en": "A as well as B",
+        "ko": "B뿐만 아니라 A도",
+        "defEn": "",
+        "ipa": "[æz wel æz]"
+      },
+      {
+        "en": "intention",
+        "ko": "의도, 작정; (pl.) 태도, 의향",
+        "defEn": "an aim or purpose that you plan or want to achieve",
+        "ipa": "[inténʃən]"
+      },
+      {
+        "en": "displaced",
+        "ko": "추방된, 유민[난민]의",
+        "defEn": "forced to leave the place where you live, especially because of war or natural disaster",
+        "ipa": "[displéist]"
+      },
+      {
+        "en": "blindly",
+        "ko": "마구잡이로, 맹목적으로",
+        "defEn": "without thinking about what you are doing or considering the facts",
+        "ipa": "[bláindli]"
+      },
+      {
+        "en": "engage",
+        "ko": "참가하다, 종사하다; 종사[관여]시키다; 사로잡다; 약속시키다; 약혼하다",
+        "defEn": "to participate or become involved in something",
+        "ipa": "[ingéidʒ]"
+      },
+      {
+        "en": "keep in mind that ~",
+        "ko": "~을 명심하다",
+        "defEn": "",
+        "ipa": "[kiːp in maind]"
+      },
+      {
+        "en": "leak out",
+        "ko": "새어나가다",
+        "defEn": "to become known when it should have been kept secret",
+        "ipa": "[liːk aut]"
+      },
+      {
+        "en": "significantly",
+        "ko": "현저하게; 매우 의의 있는[중요한] 것으로",
+        "defEn": "in a sufficiently great or important way as to be worthy of attention",
+        "ipa": "[signífikəntli]"
+      },
+      {
+        "en": "contribute to",
+        "ko": "~에 기여하다",
+        "defEn": "to help cause an event or situation",
+        "ipa": "[kəntríbjuːt tu]"
+      },
+      {
+        "en": "eliminate",
+        "ko": "제거[배제]하다; 탈락시키다",
+        "defEn": "to completely remove or get rid of something",
+        "ipa": "[ilímənèit]"
+      },
+      {
+        "en": "permanent",
+        "ko": "영속하는, 영구적인; 상설의, 항구[내구]적인",
+        "defEn": "lasting or intending to last for a long time or forever",
+        "ipa": "[pə́ːrmənənt]"
+      }
+    ]
+  },
+  {
+    "id": "ybm2_lesson_02",
+    "book": "백발백중 공통영어 2",
+    "title": "Lesson 2. Urgent Call From Earth",
+    "lesson": 2,
+    "studentIds": [],
+    "words": [
+      {
+        "en": "tap",
+        "ko": "수도꼭지; 톡톡 두드리다",
+        "defEn": "a device for controlling the flow of liquid from a pipe",
+        "ipa": "[tæp]"
+      },
+      {
+        "en": "cough",
+        "ko": "기침하다; (엔진 등이) 콜록거리는 소리를 내다",
+        "defEn": "to force air out of your lungs with a sudden sharp noise",
+        "ipa": "[kɔːf]"
+      },
+      {
+        "en": "spit",
+        "ko": "(침·물 등을) 뱉다",
+        "defEn": "to force out the contents of the mouth, especially saliva or water",
+        "ipa": "[spit]"
+      },
+      {
+        "en": "shush",
+        "ko": "조용히 시키다; 조용히 해",
+        "defEn": "to tell someone to be quiet",
+        "ipa": "[ʃuʃ]"
+      },
+      {
+        "en": "anchor",
+        "ko": "뉴스 앵커, 진행자; 닻",
+        "defEn": "a person who presents a news show on television or radio",
+        "ipa": "[ǽŋkər]"
+      },
+      {
+        "en": "crisis",
+        "ko": "위기",
+        "defEn": "a time of intense difficulty, trouble, or danger",
+        "ipa": "[kráisis]"
+      },
+      {
+        "en": "drought",
+        "ko": "가뭄",
+        "defEn": "a long period of time during which there is very little or no rain",
+        "ipa": "[draut]"
+      },
+      {
+        "en": "get tired of",
+        "ko": "~에 질리다, 지치다",
+        "defEn": "to become bored with or annoyed by something",
+        "ipa": "[get táiərd əv]"
+      },
+      {
+        "en": "running water",
+        "ko": "수돗물, 흐르는 물",
+        "defEn": "water that is supplied to a building through pipes and a tap",
+        "ipa": "[rʌ́niŋ wɔ́ːtər]"
+      },
+      {
+        "en": "pull into",
+        "ko": "(차를) 대다, 들어가다",
+        "defEn": "to arrive at a place by vehicle and stop",
+        "ipa": "[pul íntu]"
+      },
+      {
+        "en": "parking lot",
+        "ko": "주차장",
+        "defEn": "an open area where cars and other vehicles can be parked",
+        "ipa": "[pɑ́ːrkiŋ lɑt]"
+      },
+      {
+        "en": "crowd",
+        "ko": "군중, 인파",
+        "defEn": "a large number of people gathered together",
+        "ipa": "[kraud]"
+      },
+      {
+        "en": "after",
+        "ko": "~을 쫓는, 추구하는 (be after)",
+        "defEn": "looking for or trying to find or catch someone or something",
+        "ipa": "[ǽftər]"
+      },
+      {
+        "en": "checkout",
+        "ko": "계산대",
+        "defEn": "the place in a store where you pay for the goods you have bought",
+        "ipa": "[tʃékàut]"
+      },
+      {
+        "en": "essential",
+        "ko": "필수품; 필수적인",
+        "defEn": "something that is necessary or needed; absolutely important",
+        "ipa": "[isénʃəl]"
+      },
+      {
+        "en": "impatience",
+        "ko": "조급함, 성급함, 초조",
+        "defEn": "the state of being unable to wait patiently",
+        "ipa": "[impéiʃəns]"
+      },
+      {
+        "en": "hostility",
+        "ko": "적대감",
+        "defEn": "unfriendly or aggressive behavior or feelings",
+        "ipa": "[hɑstíləti]"
+      },
+      {
+        "en": "thin",
+        "ko": "얇은, 위태로운",
+        "defEn": "having a small distance between opposite sides; slight or weak",
+        "ipa": "[θin]"
+      },
+      {
+        "en": "layer",
+        "ko": "층, 겹",
+        "defEn": "a sheet, quantity, or thickness of material spread over a surface",
+        "ipa": "[léiər]"
+      },
+      {
+        "en": "politeness",
+        "ko": "예의, 공손함",
+        "defEn": "behavior that shows good manners and respect for others",
+        "ipa": "[pəláitnis]"
+      },
+      {
+        "en": "stretch",
+        "ko": "팽팽하게 당기다, 늘이다",
+        "defEn": "to make something longer or wider by pulling it",
+        "ipa": "[stretʃ]"
+      },
+      {
+        "en": "approach",
+        "ko": "다가가다, 접근하다",
+        "defEn": "to come near or nearer to someone or something",
+        "ipa": "[əpróutʃ]"
+      },
+      {
+        "en": "shelf",
+        "ko": "선반 (pl. shelves)",
+        "defEn": "a flat board mounted horizontally to hold objects",
+        "ipa": "[ʃelf]"
+      },
+      {
+        "en": "aisle",
+        "ko": "통로",
+        "defEn": "a passage between shelves or rows of seats",
+        "ipa": "[ail]"
+      },
+      {
+        "en": "unwanted",
+        "ko": "원하지 않는",
+        "defEn": "not wanted or needed",
+        "ipa": "[ʌnwɑ́ntid]"
+      },
+      {
+        "en": "abandon",
+        "ko": "버리다, 포기하다",
+        "defEn": "to leave something or someone behind, especially without intending to return",
+        "ipa": "[əbǽndən]"
+      },
+      {
+        "en": "precious",
+        "ko": "귀중한, 값비싼",
+        "defEn": "of great value; not to be wasted or treated carelessly",
+        "ipa": "[préʃəs]"
+      },
+      {
+        "en": "commodity",
+        "ko": "상품, 물품",
+        "defEn": "a raw material or product that can be bought and sold",
+        "ipa": "[kəmɑ́dəti]"
+      },
+      {
+        "en": "reach for",
+        "ko": "~을 향해 손을 뻗다",
+        "defEn": "to stretch out your hand to get or touch something",
+        "ipa": "[riːtʃ fɔːr]"
+      },
+      {
+        "en": "pull away",
+        "ko": "떼어놓다, 낚아채다; 차를 출발시키다",
+        "defEn": "to move away or move something away from someone",
+        "ipa": "[pul əwéi]"
+      },
+      {
+        "en": "stack",
+        "ko": "쌓다, 더미",
+        "defEn": "to arrange objects neatly in a pile on top of each other",
+        "ipa": "[stæk]"
+      },
+      {
+        "en": "canned goods",
+        "ko": "통조림 식품",
+        "defEn": "food preserved in sealed metal cans",
+        "ipa": "[kænd gudz]"
+      },
+      {
+        "en": "step forward",
+        "ko": "앞으로 나서다",
+        "defEn": "to move forward, or to offer help or information",
+        "ipa": "[step fɔ́ːrwərd]"
+      },
+      {
+        "en": "recognize",
+        "ko": "알아보다, 인식하다",
+        "defEn": "to know someone or something because you have seen or heard them before",
+        "ipa": "[rékəgnàiz]"
+      },
+      {
+        "en": "lean",
+        "ko": "몸을 기울이다, 기대다",
+        "defEn": "to slope or bend your body in a particular direction",
+        "ipa": "[liːn]"
+      },
+      {
+        "en": "point out",
+        "ko": "상기시키다, 지적하다",
+        "defEn": "to draw attention to something or someone",
+        "ipa": "[pɔint aut]"
+      },
+      {
+        "en": "return the favor",
+        "ko": "호의에 보답하다",
+        "defEn": "to do something good or helpful in return for a past favor",
+        "ipa": "[ritə́ːrn ðə féivər]"
+      },
+      {
+        "en": "favor",
+        "ko": "호의, 친절한 행동",
+        "defEn": "an act of kindness beyond what is due or usual",
+        "ipa": "[féivər]"
+      },
+      {
+        "en": "flush",
+        "ko": "(얼굴이) 붉어짐; 붉어지다",
+        "defEn": "to become red in the face, especially from embarrassment or anger; a reddening of the face",
+        "ipa": "[flʌʃ]"
+      },
+      {
+        "en": "frozen",
+        "ko": "냉동의, 얼어붙은",
+        "defEn": "preserved by cold; hardened into ice",
+        "ipa": "[fróuzn]"
+      },
+      {
+        "en": "case",
+        "ko": "상자, 진열장, 용기",
+        "defEn": "a container or display cabinet for holding or protecting things",
+        "ipa": "[keis]"
+      },
+      {
+        "en": "pack",
+        "ko": "가득 채우다 (be packed with)",
+        "defEn": "to fill something completely with things or people",
+        "ipa": "[pæk]"
+      },
+      {
+        "en": "take notice",
+        "ko": "알아차리다, 주목하다",
+        "defEn": "to pay attention to something and become aware of it",
+        "ipa": "[teik nóutis]"
+      },
+      {
+        "en": "ridiculously",
+        "ko": "터무니없이, 우스꽝스럽게",
+        "defEn": "in an extremely silly, unreasonable, or surprising way",
+        "ipa": "[ridíkjuləsli]"
+      },
+      {
+        "en": "grab",
+        "ko": "붙잡다, 움켜쥐다",
+        "defEn": "to grasp or seize suddenly and roughly",
+        "ipa": "[græb]"
+      },
+      {
+        "en": "deserve",
+        "ko": "~을 받을 만하다, 누릴 자격이 있다",
+        "defEn": "to have earned something or be worthy of it through one's actions",
+        "ipa": "[dizə́ːrv]"
+      },
+      {
+        "en": "fade",
+        "ko": "서서히 사라지다, 희미해지다",
+        "defEn": "to slowly disappear or lose brightness, color, or strength",
+        "ipa": "[feid]"
+      },
+      {
+        "en": "firmly",
+        "ko": "꽉, 단단히",
+        "defEn": "in a strong, steady, or solid way",
+        "ipa": "[fə́ːrmli]"
+      },
+      {
+        "en": "prove",
+        "ko": "증명하다",
+        "defEn": "to show that something is true by providing facts or evidence",
+        "ipa": "[pruːv]"
+      },
+      {
+        "en": "bitter",
+        "ko": "씁쓸한, 쓰라린",
+        "defEn": "having a sharp, harsh taste; full of anger or disappointment",
+        "ipa": "[bítər]"
+      },
+      {
+        "en": "shortened",
+        "ko": "축약된, 짧아진",
+        "defEn": "made shorter in length or duration",
+        "ipa": "[ʃɔ́ːrtnd]"
+      },
+      {
+        "en": "disastrous",
+        "ko": "처참한, 파멸적인, 재앙의",
+        "defEn": "causing great damage, harm, or failure",
+        "ipa": "[dizǽstrəs]"
+      },
+      {
+        "en": "supply",
+        "ko": "공급; 공급하다",
+        "defEn": "an amount of something available for use; to provide something",
+        "ipa": "[səplái]"
+      },
+      {
+        "en": "resume",
+        "ko": "재개되다, 다시 시작하다",
+        "defEn": "to begin again or continue after a pause or interruption",
+        "ipa": "[rizúːm]"
+      },
+      {
+        "en": "provided that",
+        "ko": "~라면, ~라는 조건으로",
+        "defEn": "if, or only on the condition that",
+        "ipa": "[prəváidid ðæt]"
+      },
+      {
+        "en": "factor",
+        "ko": "요인, 원인",
+        "defEn": "a fact or situation that influences a result",
+        "ipa": "[fǽktər]"
+      },
+      {
+        "en": "shortage",
+        "ko": "부족",
+        "defEn": "a state in which there is not enough of something that is needed",
+        "ipa": "[ʃɔ́ːrtidʒ]"
+      },
+      {
+        "en": "address",
+        "ko": "(문제를) 다루다, 해결하다",
+        "defEn": "to deal with or give attention to a problem or matter",
+        "ipa": "[ədrés]"
+      },
+      {
+        "en": "agriculture",
+        "ko": "농업",
+        "defEn": "the practice or science of farming and cultivating soil",
+        "ipa": "[ǽgrikʌ̀ltʃər]"
+      },
+      {
+        "en": "reality",
+        "ko": "현실",
+        "defEn": "the state of things as they actually exist, rather than as they are imagined",
+        "ipa": "[riːǽləti]"
+      }
+    ]
+  }
+];
+
 if (typeof window !== "undefined") {
   window.YBM_ENGLISH2_PASSAGES = YBM_ENGLISH2_PASSAGES;
+  window.YBM_ENGLISH2_VOCAB_SETS = YBM_ENGLISH2_VOCAB_SETS;
 }
