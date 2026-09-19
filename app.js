@@ -6480,28 +6480,6 @@ const App = {
               <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-emerald-200/80 text-emerald-800 text-[10px] font-mono">→ / 2</kbd>
             </button>
           </div>
-
-          <!-- 💡 하단 학습 가이드 및 회차별 아는단어/모르는단어 안내 바 -->
-          <div class="p-3.5 rounded-2xl bg-indigo-50/90 border border-indigo-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs shadow-2xs animate-fade-in">
-            <div class="flex items-center gap-2 text-indigo-950 font-bold min-w-0">
-              <i class="fa-solid fa-lightbulb text-indigo-600 text-sm flex-shrink-0"></i>
-              <span>
-                ${vs.round === 1 ? `
-                  <strong>[1회차 암기 가이드]</strong> 뜻을 확인한 뒤 <span class="text-emerald-700 underline font-black">아는 단어</span> 또는 <span class="text-rose-700 underline font-black">모르는 단어</span>를 선택하세요. 모르는 단어는 2회차에 0개가 될 때까지 반복 학습합니다.
-                ` : `
-                  <strong>[${vs.round}회차 반복 가이드]</strong> 이전 회차에서 모른다고 체크한 단어(${vs.flashcardDeck.length}개)를 반복 중입니다. 모르는 단어가 0개가 될 때까지 계속됩니다.
-                `}
-              </span>
-            </div>
-            <div class="flex items-center gap-2 font-black flex-shrink-0 self-end sm:self-center">
-              <span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] border border-rose-200/80">
-                <i class="fa-solid fa-circle-xmark mr-1"></i>모르는 단어: ${vs.unknownWords.length}개
-              </span>
-              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[11px] border border-emerald-200/80">
-                <i class="fa-solid fa-circle-check mr-1"></i>아는 단어: ${vs.knownWords.length}개
-              </span>
-            </div>
-          </div>
         </div>`;
     }
   },
