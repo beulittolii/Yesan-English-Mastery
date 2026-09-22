@@ -152,6 +152,11 @@
           <i class="fa-regular fa-calendar-check text-white"></i>
           <span>학습 캘린더</span>
         </button>
+        <button id="stuTabExamPrep" onclick="AcademicManager.switchStudentTab('examPrep')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-book-bookmark text-amber-500"></i>
+          <span>지필고사 시험범위</span>
+          <span id="stuExamPrepBadgeCount" class="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-full">0</span>
+        </button>
         <button id="stuTabAssessment" onclick="AcademicManager.switchStudentTab('assessment')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-list-check text-emerald-600"></i>
           <span>수행평가 관리</span>
@@ -271,7 +276,74 @@
         </div>
       </div>
 
-      <!-- ================= 2. TAB: 수행평가 관리 ================= -->
+      <!-- ================= 2. TAB: 지필고사 시험범위 & 공부현황 ================= -->
+      <div id="stuContentExamPrep" class="hidden space-y-6">
+        <!-- Top Action & Filter Bar -->
+        <div class="glass-card rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-book-bookmark text-amber-500"></i>
+                <span>지필고사 시험범위 & 공부현황</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">과목별 시험범위(교과서·모의고사·부교재)를 등록하고, <strong class="text-amber-600">1회독(분석) → 2회독(변형) → 3회독(완벽암기)</strong> 공부현황과 진도율을 실시간으로 관리하세요.</p>
+            </div>
+            <button onclick="AcademicManager.openExamScopeModal()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-md shadow-amber-200">
+              <i class="fa-solid fa-plus"></i>
+              <span>새 시험범위 등록</span>
+            </button>
+          </div>
+
+          <!-- Filters: Term & Exam Type & Subject -->
+          <div class="space-y-2.5 pt-3 border-t border-slate-100">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <!-- Term Selector Pills -->
+              <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none" id="stuExamScopeTermPills">
+                <!-- Populated by JS -->
+              </div>
+
+              <!-- Exam Type Selector -->
+              <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                <button onclick="AcademicManager.filterStudentExamScopes('ALL')" id="stuExamTypeFilterALL" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-slate-900 text-white shadow-2xs">전체 시험</button>
+                <button onclick="AcademicManager.filterStudentExamScopes('중간고사')" id="stuExamTypeFilterMid" class="px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">중간고사 (1차)</button>
+                <button onclick="AcademicManager.filterStudentExamScopes('기말고사')" id="stuExamTypeFilterFinal" class="px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">기말고사 (2차)</button>
+              </div>
+            </div>
+
+            <!-- Subject Filter Pills (과목별 모아보기) -->
+            <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1" id="stuExamScopeSubjectPills">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Overall Study Progress Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="stuExamScopeStatsGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Subject Exam Scope Cards Container -->
+        <div id="stuExamScopeCardsContainer" class="space-y-6">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="stuExamScopeEmptyState" class="hidden glass-card rounded-2xl p-12 text-center space-y-4">
+          <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl mx-auto shadow-inner">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <div class="max-w-md mx-auto">
+            <h4 class="font-bold text-slate-800 text-base">등록된 시험범위가 없습니다.</h4>
+            <p class="text-xs text-slate-500 mt-1">교과서 출판사 선택 목차 자동 불러오기, 국어·영어 모의고사 문항 범위 자동 생성기로 지필고사 시험범위를 간편하게 등록해보세요!</p>
+          </div>
+          <button onclick="AcademicManager.openExamScopeModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-md shadow-amber-200">
+            <i class="fa-solid fa-plus"></i>
+            <span>첫 시험범위 등록하기</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= 3. TAB: 수행평가 관리 ================= -->
       <div id="stuContentAssessment" class="hidden space-y-6">
         <!-- Top Action & Filter Bar -->
         <div class="glass-card rounded-2xl p-5 shadow-sm space-y-4">
@@ -568,6 +640,10 @@
           <i class="fa-solid fa-list-check"></i>
           <span>시험 & 성적 관리</span>
         </button>
+        <button id="adminTabBtnExamPrep" onclick="App.switchAdminTab('examprep')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-book-bookmark text-amber-500"></i>
+          <span>지필고사 시험범위</span>
+        </button>
         <button id="adminTabBtnAssessment" onclick="App.switchAdminTab('assessment')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
           <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
           <span>수행평가 관리</span>
@@ -815,6 +891,59 @@
         </div>
         <div id="adminVocabSetsList" class="space-y-4">
           <!-- 날짜별 결과 및 단어 세트 관리 영역은 JS에서 렌더링됩니다. -->
+        </div>
+      </div>
+
+      <!-- ================= Admin Tab: Exam Scope Management ================= -->
+      <div id="adminTabContentExamPrep" class="hidden space-y-6">
+        <!-- Student Selection Pills -->
+        <div class="glass-card rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
+          <div class="flex items-center gap-2 overflow-x-auto" id="adminExamPrepStudentPills">
+            <!-- Populated by JS -->
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold text-xs sm:text-sm hover:bg-amber-700 shadow-md shadow-amber-200 transition flex items-center gap-2 whitespace-nowrap">
+              <i class="fa-solid fa-plus"></i>
+              <span>새 시험범위 등록</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected Student Summary Card -->
+        <div class="glass-card rounded-2xl p-5 border-l-4 border-amber-500 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-book-bookmark text-amber-500"></i>
+                <span id="adminExamPrepSelectedStudentName">학생 선택</span>의 지필고사 시험범위 & 공부현황
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">학생의 과목별 시험범위(교과서·모의고사·부교재)와 1·2·3회독 진행 상태를 실시간으로 확인하고 관리합니다.</p>
+            </div>
+            <div class="flex items-center gap-1.5 overflow-x-auto" id="adminExamScopeTermPills">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+          <!-- Subject Filter Pills (과목별 모아보기) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100" id="adminExamScopeSubjectPills">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Admin Student Scope Cards Container -->
+        <div id="adminExamScopeCardsContainer" class="space-y-6">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="adminExamScopeEmptyState" class="hidden glass-card rounded-2xl p-12 text-center space-y-3">
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-sm">해당 학생의 등록된 지필고사 시험범위가 없습니다.</h4>
+          <p class="text-xs text-slate-400">교과서 출판사별 목차 및 국어·영어 모의고사 범위를 등록해보세요.</p>
+          <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>시험범위 등록하기</span>
+          </button>
         </div>
       </div>
 
@@ -2448,6 +2577,286 @@
     </div>
   </div>
 
+  <!-- 2.5. 지필고사 시험범위 등록 / 수정 모달 -->
+  <div id="academicExamScopeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+      <!-- Modal Header -->
+      <div class="p-6 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-amber-100">
+            <i class="fa-solid fa-book-bookmark"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold" id="examScopeModalTitle">지필고사 시험범위 설정</h3>
+            <p class="text-xs text-amber-100">교과서 출판사 선택 목차 자동 불러오기, 국어·영어 모의고사 범위 생성, 담당 선생님 지정을 한 번에 설정하세요.</p>
+          </div>
+        </div>
+        <button onclick="AcademicManager.closeExamScopeModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body Form -->
+      <form onsubmit="AcademicManager.handleSaveExamScope(event)" class="p-6 space-y-6 overflow-y-auto flex-1 text-xs sm:text-sm">
+        <input type="hidden" id="formExamScopeId" />
+        <input type="hidden" id="formExamScopeStudentId" />
+
+        <!-- 관리자일 때 대상 학생 선택 -->
+        <div id="formExamScopeStudentSelectWrap" class="hidden p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200">
+          <label class="block text-xs font-bold text-amber-900 mb-1">대상 학생 <span class="text-rose-500">*</span></label>
+          <select id="formExamScopeStudentSelect" class="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500"></select>
+        </div>
+
+        <!-- 1. 기본 시험 정보 -->
+        <div class="glass-card rounded-2xl p-4 bg-slate-50 border border-slate-200 space-y-3">
+          <h4 class="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-amber-600"></i>
+            <span>1. 기본 시험 정보</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">학기 <span class="text-rose-500">*</span></label>
+              <select id="formExamScopeTerm" onchange="AcademicManager.onExamScopeTermChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-amber-500" required>
+                <option value="1-1">1학년 1학기</option>
+                <option value="1-2" selected>1학년 2학기</option>
+                <option value="2-1">2학년 1학기</option>
+                <option value="2-2">2학년 2학기</option>
+                <option value="3-1">3학년 1학기</option>
+                <option value="3-2">3학년 2학기</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">시험 구분 <span class="text-rose-500">*</span></label>
+              <select id="formExamScopeExamType" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-amber-500" required>
+                <option value="중간고사">1차 지필평가 (중간고사)</option>
+                <option value="기말고사">2차 지필평가 (기말고사)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">과목 선택 (2022 개정) <span class="text-rose-500">*</span></label>
+              <select id="formExamScopeSubject" onchange="AcademicManager.onExamScopeSubjectChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-amber-300 bg-white font-black text-amber-900 focus:ring-2 focus:ring-amber-500" required>
+                <option value="공통국어2" selected>공통국어2</option>
+                <option value="공통영어2">공통영어2</option>
+                <option value="공통수학2">공통수학2</option>
+                <option value="통합사회2">통합사회2</option>
+                <option value="통합과학2">통합과학2</option>
+                <option value="한국사2">한국사2</option>
+                <option value="기타">기타 과목</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">시험일 (D-Day)</label>
+              <input type="date" id="formExamScopeDate" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-amber-500" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">목표 점수 / 등급 (선택)</label>
+              <input type="text" id="formExamScopeTarget" placeholder="예: 95점 이상 / 전교 1등급" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">전체 시험 메모 (선택)</label>
+              <input type="text" id="formExamScopeMemo" placeholder="예: 서술형 30% 출제, 객관식 배점 주의" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-amber-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 교과서 출판사 선택 & 목차 자동 불러오기 -->
+        <div id="examScopeTextbookSection" class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h4 class="font-extrabold text-indigo-900 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-book-open text-indigo-600"></i>
+              <span>2. 교과서 출판사 선택 & 목차 자동 불러오기</span>
+            </h4>
+            <span class="text-[11px] text-indigo-600 font-semibold">출판사 선택 시 교과서 전체 단원이 아래에 즉시 펼쳐집니다.</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">교과서 출판사 선택</label>
+              <select id="formExamScopePublisher" onchange="AcademicManager.onExamScopePublisherChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-indigo-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                <!-- Populated by JS -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">
+                교과서 담당 쌤 이름 <span class="text-amber-600 text-[11px] font-normal">(선택사항)</span>
+              </label>
+              <div class="relative">
+                <i class="fa-solid fa-chalkboard-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="formExamScopeTextbookTeacher" placeholder="예: 김선생님, 박OO 쌤" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 목차 체크박스 펼침 영역 -->
+          <div id="examScopeUnitListWrap" class="p-3 bg-white rounded-xl border border-indigo-100 space-y-2">
+            <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
+                <i class="fa-solid fa-list-ul text-indigo-500"></i>
+                <span>교과서 단원 목차 선택</span>
+              </span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="AcademicManager.selectAllTextbookUnits(true)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">전체 선택</button>
+                <button type="button" onclick="AcademicManager.selectAllTextbookUnits(false)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition">선택 해제</button>
+              </div>
+            </div>
+            <div id="examScopeUnitCheckboxes" class="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+              <!-- Populated by JS -->
+            </div>
+            <div class="pt-2 flex justify-end">
+              <button type="button" onclick="AcademicManager.addSelectedUnitsToScope()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-plus text-[10px]"></i>
+                <span>선택한 단원을 시험범위로 추가</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 국어·영어 모의고사 범위 생성기 (국어, 영어 선택 시 표시) -->
+        <div id="examScopeMockSection" class="p-4 rounded-2xl bg-sky-50/50 border border-sky-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h4 class="font-extrabold text-sky-900 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-file-circle-check text-sky-600"></i>
+              <span>3. 국어·영어 모의고사 범위 생성기</span>
+            </h4>
+            <span class="text-[11px] text-sky-600 font-semibold">학평 모의고사 및 시작~끝 문항 번호를 지정하면 문항별로 자동 생성됩니다.</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">어느 모의고사</label>
+              <select id="formExamScopeMockSelect" onchange="AcademicManager.onMockPresetChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-sky-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-sky-500">
+                <!-- Populated by JS -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">
+                모의고사 담당 쌤 이름 <span class="text-amber-600 text-[11px] font-normal">(선택사항)</span>
+              </label>
+              <div class="relative">
+                <i class="fa-solid fa-chalkboard-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="formExamScopeMockTeacher" placeholder="예: 이선생님, 정OO 쌤" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 모의고사 직접 입력 (선택 시 노출) -->
+          <div id="formExamScopeMockCustomWrap" class="hidden">
+            <label class="block text-xs font-bold text-slate-700 mb-1">모의고사명 직접 입력</label>
+            <input type="text" id="formExamScopeMockCustom" placeholder="예: 2025년 9월 고1 사설 모의고사" class="w-full py-2 px-3 rounded-xl border border-sky-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
+          </div>
+
+          <!-- 문항 번호 설정 -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center bg-white p-3 rounded-xl border border-sky-100">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">시작 번호</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="formExamScopeMockStart" value="20" min="1" max="45" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-sky-500" />
+                <span class="text-xs font-bold text-slate-500">번 부터</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">끝 번호</label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="formExamScopeMockEnd" value="40" min="1" max="45" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-sky-500" />
+                <span class="text-xs font-bold text-slate-500">번 까지</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">제외할 문항 번호</label>
+              <input type="text" id="formExamScopeMockExclude" placeholder="예: 25, 26, 27, 28" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
+            </div>
+          </div>
+
+          <!-- 제외 프리셋 퀵 버튼 -->
+          <div class="flex items-center gap-2 flex-wrap text-xs">
+            <span class="text-[11px] font-bold text-slate-500">빠른 제외 옵션:</span>
+            <button type="button" onclick="AcademicManager.applyMockExcludeOption('pragmatic')" class="px-2 py-1 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-bold transition">실용문·도표 제외 (25~28번)</button>
+            <button type="button" onclick="AcademicManager.applyMockExcludeOption('listening')" class="px-2 py-1 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-bold transition">듣기 제외 (1~17번)</button>
+            <button type="button" onclick="AcademicManager.applyMockExcludeOption('long2')" class="px-2 py-1 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 text-[11px] font-bold transition">장문2 제외 (43~45번)</button>
+            <button type="button" onclick="AcademicManager.applyMockExcludeOption('clear')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition">제외 초기화</button>
+          </div>
+
+          <div class="flex justify-end pt-1">
+            <button type="button" onclick="AcademicManager.generateMockExamItems()" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+              <span>모의고사 문항 범위 자동 생성 & 추가</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. 부교재 / 프린트 / 직접 추가 -->
+        <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h4 class="font-extrabold text-emerald-900 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-paperclip text-emerald-600"></i>
+              <span>4. 부교재 / 학교 유인물 프린트 / 직접 추가</span>
+            </h4>
+            <span class="text-[11px] text-emerald-600 font-semibold">EBS 부교재나 학교 전용 프린트 범위를 직접 입력하여 추가할 수 있습니다.</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">부교재 / 파트 명칭</label>
+              <input type="text" id="formExamScopeCustomTitle" placeholder="예: 학교 유인물 프린트, EBS 올림포스" class="w-full py-2 px-3 rounded-xl border border-emerald-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">
+                담당 쌤 이름 <span class="text-amber-600 text-[11px] font-normal">(선택사항)</span>
+              </label>
+              <div class="relative">
+                <i class="fa-solid fa-chalkboard-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="formExamScopeCustomTeacher" placeholder="예: 최선생님" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">범위 세부 항목 (한 줄에 하나씩 입력)</label>
+            <textarea id="formExamScopeCustomItems" rows="3" placeholder="예:&#10;프린트 1번: 현대시 핵심 어휘 정리&#10;프린트 2번: 음운 변동 기출 문제&#10;프린트 3번: 서술형 대비 탐구 보고서" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 font-sans"></textarea>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="button" onclick="AcademicManager.addCustomScopeItem()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>부교재/프린트 항목 추가</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. 현재 등록된 시험범위 목록 (실시간 미리보기 & 편집) -->
+        <div class="p-4 rounded-2xl bg-white border-2 border-amber-300 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
+              <h4 class="font-extrabold text-slate-900 text-sm">현재 등록된 시험범위 목록</h4>
+              <span id="examScopeModalItemCountBadge" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-black">총 0개 항목</span>
+            </div>
+            <button type="button" onclick="AcademicManager.clearAllDraftSections()" class="text-xs text-rose-500 hover:text-rose-700 font-bold transition">
+              <i class="fa-solid fa-trash-can mr-1"></i>목록 전체 비우기
+            </button>
+          </div>
+
+          <div id="examScopeDraftItemsList" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Modal Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+          <button type="button" onclick="AcademicManager.closeExamScopeModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition">
+            취소
+          </button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-md shadow-amber-200 flex items-center gap-2">
+            <i class="fa-solid fa-check"></i>
+            <span>시험범위 저장하기</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 3. 내신 성적 등록 / 수정 모달 (한 학기 중간·기말·수행평가 완벽 통합!) -->
   <div id="academicSchoolGradeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
     <div class="bg-white rounded-3xl max-w-5xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
@@ -3413,6 +3822,7 @@
 <script src="wordmaster2000_data.js?v=20260918_0145"></script>
 <script src="mock_vocab_data.js?v=20260918_0145"></script>
 <script src="ybm_english2_data.js?v=20260918_0145"></script>
+<script src="exam_scope_data.js?v=20260923_0001"></script>
 <script src="data.js?v=20260918_0145"></script>
 <script src="app.js?v=20260918_0145"></script>
 
@@ -3429,7 +3839,11 @@
  */
 const AcademicManager = {
   // 현재 탭 상태
-  studentTab: 'schedule', // 'schedule' | 'assessment' | 'schoolGrade' | 'mockExam' | 'targetUniv'
+  studentTab: 'schedule', // 'schedule' | 'examPrep' | 'assessment' | 'schoolGrade' | 'mockExam' | 'targetUniv'
+  studentExamFilter: 'ALL', // 'ALL' | '중간고사' | '기말고사'
+  studentExamTerm: '1-2',
+  adminExamTerm: '1-2',
+  draftScopeSections: [],
   studentAssessFilter: 'ALL', // 'ALL' | '준비 전' | '준비 후' | '응시 후'
   studentMockFilter: 'ALL', // 'ALL' | 'OFFICIAL' | 'EVAL' | 'PRIVATE'
   selectedGradeTerm: '1-2', // 현재 학기: 1학년 2학기
@@ -3445,6 +3859,7 @@ const AcademicManager = {
     schoolGrades: 'yem_academic_school_grades_v3',
     mockExams: 'yem_academic_mock_exams_v3',
     targetUnivs: 'yem_academic_target_univs_v3',
+    examScopes: 'yem_academic_exam_scopes_v3',
     initialized: 'yem_academic_initialized_v3'
   },
 
@@ -3613,9 +4028,13 @@ const AcademicManager = {
     const hasGrades = localStorage.getItem(this.storageKeys.schoolGrades) !== null;
     const hasMocks = localStorage.getItem(this.storageKeys.mockExams) !== null;
     const hasUnivs = localStorage.getItem(this.storageKeys.targetUnivs) !== null;
+    const hasScopes = localStorage.getItem(this.storageKeys.examScopes) !== null;
 
-    if (hasAssess || hasGrades || hasMocks || hasUnivs) {
+    if (hasAssess || hasGrades || hasMocks || hasUnivs || hasScopes) {
       localStorage.setItem(this.storageKeys.initialized, 'true');
+      if (!hasScopes) {
+        localStorage.setItem(this.storageKeys.examScopes, '[]');
+      }
       return;
     }
 
@@ -3625,6 +4044,7 @@ const AcademicManager = {
     localStorage.setItem(this.storageKeys.schoolGrades, '[]');
     localStorage.setItem(this.storageKeys.mockExams, '[]');
     localStorage.setItem(this.storageKeys.targetUnivs, '{}');
+    localStorage.setItem(this.storageKeys.examScopes, '[]');
     localStorage.setItem(this.storageKeys.initialized, 'true');
   },
 
@@ -3765,21 +4185,141 @@ const AcademicManager = {
         { rank: 2, name: '고려대학교', major: '경영대학', type: '학생부교과', targetGrade: '1.3등급', targetMin: '3합 6 이내' },
         { rank: 3, name: '서강대학교', major: '경영학부', type: '논술', targetGrade: '1.5등급', targetMin: '3합 7 이내' }
       ]
-    }
+    },
+    examScopes: [
+      {
+        id: 'scope_sample_11_eng',
+        studentId: 11,
+        term: '1-2',
+        subject: '공통영어2',
+        examType: '중간고사',
+        examDate: '2026-10-15',
+        targetScore: '100점 (1등급)',
+        textbookPublisher: '능률(김성곤)',
+        teacherName: '박영어 선생님',
+        memo: '교과서 5~6과 본문 어법 변형 + 9월 모의고사 빈칸/순서 집중',
+        sections: [
+          {
+            id: 'sec_sample_tb',
+            type: 'textbook',
+            title: '교과서: 능률(김성곤) 공통영어2',
+            teacherName: '박영어 선생님',
+            items: [
+              { id: 'it_tb_5', name: 'Lesson 5. The Power of Creativity', subTitle: '본문 1~4 어법·어휘 및 내용일치', teacherName: '박영어 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_tb_6', name: 'Lesson 6. For the Betterment of All', subTitle: '본문 1~4 서술형 영작 및 빈칸', teacherName: '박영어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' }
+            ]
+          },
+          {
+            id: 'sec_sample_mock',
+            type: 'mock_exam',
+            title: '2026년 9월 고1 학평 모의고사 (20~40번)',
+            teacherName: '이독해 선생님',
+            items: [
+              { id: 'it_mock_20', name: '20번 [주장 파악]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_mock_21', name: '21번 [함축 의미 추론]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_mock_29', name: '29번 [어법 정확성]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
+              { id: 'it_mock_31', name: '31번 [빈칸 추론]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
+              { id: 'it_mock_33', name: '33번 [빈칸 추론]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' },
+              { id: 'it_mock_36', name: '36번 [글의 순서 배열]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
+            ]
+          },
+          {
+            id: 'sec_sample_print',
+            type: 'custom',
+            title: '학교 부교재 / 외부 심화 지문 프린트',
+            teacherName: '박영어 선생님',
+            items: [
+              { id: 'it_pr_1', name: '수능특강 Light 변형 구문 프린트 1~10번', subTitle: '어법 어휘 빈칸 대비', teacherName: '박영어 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
+              { id: 'it_pr_2', name: '서술형 영작 대비 핵심 문장 20선', subTitle: '조건 영작 암기', teacherName: '박영어 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'scope_sample_11_kor',
+        studentId: 11,
+        term: '1-2',
+        subject: '공통국어2',
+        examType: '중간고사',
+        examDate: '2026-10-16',
+        targetScore: '98점 (1등급)',
+        textbookPublisher: '미래엔(신유식)',
+        teacherName: '김국어 선생님',
+        memo: '고전시가 관동별곡 현대어 풀이 완벽 암기 + 9월 모의고사 문학',
+        sections: [
+          {
+            id: 'sec_sample_kor_tb',
+            type: 'textbook',
+            title: '교과서: 미래엔(신유식) 공통국어2',
+            teacherName: '김국어 선생님',
+            items: [
+              { id: 'it_kor_tb_1', name: '5단원 (1) 관동별곡 - 정철', subTitle: '화자의 정서 변화 및 여정/시어 풀이', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_kor_tb_2', name: '5단원 (2) 진달래꽃 - 김소월', subTitle: '전통적 한의 정서와 반어법', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_kor_tb_3', name: '6단원 (1) 국어의 음운 변동', subTitle: '교체·탈락·첨가·축약 사례 암기', teacherName: '최문법 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
+            ]
+          },
+          {
+            id: 'sec_sample_kor_mock',
+            type: 'mock_exam',
+            title: '2026년 9월 고1 학평 모의고사 국어 (문학·독서)',
+            teacherName: '김국어 선생님',
+            items: [
+              { id: 'it_kor_mock_22', name: '22~26번 [현대시/수필 복합]', subTitle: '2026년 9월 고1 학평', teacherName: '김국어 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
+              { id: 'it_kor_mock_30', name: '30~34번 [독서 과학·기술 지문]', subTitle: '2026년 9월 고1 학평', teacherName: '최문법 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'scope_sample_11_math',
+        studentId: 11,
+        term: '1-2',
+        subject: '공통수학2',
+        examType: '중간고사',
+        examDate: '2026-10-14',
+        targetScore: '96점 (1등급)',
+        textbookPublisher: '신사고(고성은)',
+        teacherName: '이수학 선생님',
+        memo: '도형의 이동 대칭성 활용 문제 + 집합과 명제 증명 서술형',
+        sections: [
+          {
+            id: 'sec_sample_math_tb',
+            type: 'textbook',
+            title: '교과서: 신사고 공통수학2',
+            teacherName: '이수학 선생님',
+            items: [
+              { id: 'it_math_tb_1', name: 'III. 도형의 방정식 - 3. 도형의 이동', subTitle: '평행이동과 대칭이동 대단원 종합문제', teacherName: '이수학 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_math_tb_2', name: 'IV. 집합과 명제 - 1. 집합의 연산', subTitle: '부분집합의 개수 및 드모르간 법칙', teacherName: '이수학 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_math_tb_3', name: 'IV. 집합과 명제 - 2. 명제와 절대부등식', subTitle: '귀류법, 산술기하평균 증명', teacherName: '이수학 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
+            ]
+          },
+          {
+            id: 'sec_sample_math_pr',
+            type: 'custom',
+            title: '수학 기출 심화 프린트 (1등급 킬러 문항)',
+            teacherName: '이수학 선생님',
+            items: [
+              { id: 'it_math_pr_1', name: '학평 기출 21번/30번 변형 모음 15문항', subTitle: '도형의 이동 최단거리/대칭', teacherName: '이수학 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
+            ]
+          }
+        ]
+      }
+    ]
   },
 
   // 수동 샘플 데이터 적용 (선생님이 명시적으로 불러올 때만 동작)
   async loadSampleAcademicData() {
-    if (!confirm('학업관리 샘플 데이터(수행평가, 내신, 모의고사, 목표대학)를 불러와 적용하시겠습니까?\n\n현재 로컬 및 클라우드 데이터가 샘플 데이터로 대체됩니다.')) {
+    if (!confirm('학업관리 샘플 데이터(수행평가, 내신, 모의고사, 목표대학, 지필고사 시험범위)를 불러와 적용하시겠습니까?\n\n현재 로컬 및 클라우드 데이터가 샘플 데이터로 대체됩니다.')) {
       return;
     }
     this.saveAssessments(JSON.parse(JSON.stringify(this.sampleData.assessments)));
     this.saveSchoolGrades(JSON.parse(JSON.stringify(this.sampleData.schoolGrades)));
     this.saveMockExams(JSON.parse(JSON.stringify(this.sampleData.mockExams)));
     this.saveTargetUnivs(JSON.parse(JSON.stringify(this.sampleData.targetUnivs)));
+    this.saveExamScopes(JSON.parse(JSON.stringify(this.sampleData.examScopes)));
     localStorage.setItem(this.storageKeys.initialized, 'true');
     this.refreshAcademicViews();
-    this.notify('샘플 학업관리 데이터가 적용되었습니다.', 'success');
+    this.notify('샘플 학업관리 데이터(지필고사 시험범위 포함)가 적용되었습니다.', 'success');
   },
 
   // ----------------------------------------------------
@@ -3996,6 +4536,30 @@ const AcademicManager = {
     }
   },
 
+  getExamScopes() {
+    try {
+      const list = JSON.parse(localStorage.getItem(this.storageKeys.examScopes) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      return [];
+    }
+  },
+  saveExamScopes(data) {
+    try {
+      localStorage.setItem(this.storageKeys.examScopes, JSON.stringify(data));
+      this.syncCloud('academicExamScopes', data);
+    } catch (e) {
+      console.warn('시험범위 저장 실패:', e);
+    }
+  },
+  deleteExamScope(id) {
+    if (!confirm('이 시험범위를 삭제하시겠습니까? 등록된 모든 세부 문항과 공부현황이 함께 삭제됩니다.')) return;
+    const list = this.getExamScopes().filter(s => s.id !== id);
+    this.saveExamScopes(list);
+    this.refreshAcademicViews();
+    this.notify('지필고사 시험범위가 삭제되었습니다.', 'info');
+  },
+
   // Firestore 비동기 안전 백업
   async syncCloud(collectionName, data) {
     if (!window.firebaseDB || !window.firebaseFns) return;
@@ -4031,6 +4595,7 @@ const AcademicManager = {
       const schoolGrades = sanitize(this.getSchoolGrades());
       const mockExams = sanitize(this.getMockExams());
       const targetUnivs = sanitize(this.getTargetUnivs());
+      const examScopes = sanitize(this.getExamScopes());
 
       const now = new Date().toISOString();
 
@@ -4038,18 +4603,20 @@ const AcademicManager = {
         setDoc(doc(db, 'academicData', 'academicAssessments'), { items: assessments, updatedAt: now, count: assessments.length }),
         setDoc(doc(db, 'academicData', 'academicSchoolGrades'), { items: schoolGrades, updatedAt: now }),
         setDoc(doc(db, 'academicData', 'academicMockExams'), { items: mockExams, updatedAt: now }),
-        setDoc(doc(db, 'academicData', 'academicTargetUnivs'), { items: targetUnivs, updatedAt: now })
+        setDoc(doc(db, 'academicData', 'academicTargetUnivs'), { items: targetUnivs, updatedAt: now }),
+        setDoc(doc(db, 'academicData', 'academicExamScopes'), { items: examScopes, updatedAt: now })
       ]);
 
       console.log('✅ 로컬 학업관리 데이터 클라우드 업로드 완료:', {
         assessments: assessments.length,
         schoolGrades: schoolGrades.length,
         mockExams: mockExams.length,
-        targetUnivs: Object.keys(targetUnivs).length
+        targetUnivs: Object.keys(targetUnivs).length,
+        examScopes: examScopes.length
       });
 
       if (showToast) {
-        this.notify(`☁️ 클라우드 동기화 완료! (수행평가 ${assessments.length}건, 내신 ${schoolGrades.length}건)`, 'success');
+        this.notify(`☁️ 클라우드 동기화 완료! (시험범위 ${examScopes.length}건, 수행평가 ${assessments.length}건)`, 'success');
       }
       return true;
     } catch (err) {
@@ -4107,11 +4674,20 @@ const AcademicManager = {
         }
       }
 
+      // 5. 지필고사 시험범위
+      const scopeDoc = await getDoc(doc(db, 'academicData', 'academicExamScopes'));
+      if (scopeDoc.exists()) {
+        const data = scopeDoc.data();
+        if (Array.isArray(data?.items)) {
+          localStorage.setItem(this.storageKeys.examScopes, JSON.stringify(data.items));
+        }
+      }
+
       localStorage.setItem(this.storageKeys.initialized, 'true');
       this.refreshAcademicViews();
 
       if (showToast) {
-        this.notify(`🔄 클라우드에서 최신 데이터(수행평가 ${pulledCount}건)를 불러왔습니다.`, 'success');
+        this.notify(`🔄 클라우드에서 최신 데이터(수행평가 ${pulledCount}건 등)를 불러왔습니다.`, 'success');
       }
       return true;
     } catch (err) {
@@ -4125,7 +4701,7 @@ const AcademicManager = {
 
   // 학업관리 데이터 완전히 비우기 (로컬 + 클라우드 모두 초기화)
   async clearAllAcademicData() {
-    if (!confirm('수행평가, 내신 성적, 모의고사, 목표대학의 모든 데이터를 완전히 삭제(비우기)하시겠습니까?\n\n이 작업은 클라우드와 로컬 모두에 적용되며 되돌릴 수 없습니다.')) {
+    if (!confirm('수행평가, 내신 성적, 모의고사, 목표대학, 시험범위의 모든 데이터를 완전히 삭제(비우기)하시겠습니까?\n\n이 작업은 클라우드와 로컬 모두에 적용되며 되돌릴 수 없습니다.')) {
       return;
     }
 
@@ -4134,6 +4710,7 @@ const AcademicManager = {
       localStorage.setItem(this.storageKeys.schoolGrades, '[]');
       localStorage.setItem(this.storageKeys.mockExams, '[]');
       localStorage.setItem(this.storageKeys.targetUnivs, '{}');
+      localStorage.setItem(this.storageKeys.examScopes, '[]');
       localStorage.setItem(this.storageKeys.initialized, 'true');
 
       if (window.firebaseDB && window.firebaseFns) {
@@ -4145,7 +4722,8 @@ const AcademicManager = {
           setDoc(doc(db, 'academicData', 'academicAssessments'), { items: [], updatedAt: now, count: 0 }),
           setDoc(doc(db, 'academicData', 'academicSchoolGrades'), { items: [], updatedAt: now }),
           setDoc(doc(db, 'academicData', 'academicMockExams'), { items: [], updatedAt: now }),
-          setDoc(doc(db, 'academicData', 'academicTargetUnivs'), { items: {}, updatedAt: now })
+          setDoc(doc(db, 'academicData', 'academicTargetUnivs'), { items: {}, updatedAt: now }),
+          setDoc(doc(db, 'academicData', 'academicExamScopes'), { items: [], updatedAt: now })
         ]);
       }
 
@@ -4257,6 +4835,24 @@ const AcademicManager = {
         }
       }, (err) => {});
     } catch (e) {}
+
+    // 5. 지필고사 시험범위 실시간 동기화 (academicExamScopes)
+    try {
+      const scopeRef = doc(db, 'academicData', 'academicExamScopes');
+      onSnapshot(scopeRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data.items)) {
+            const localRaw = localStorage.getItem(this.storageKeys.examScopes) || '[]';
+            const remoteRaw = JSON.stringify(data.items);
+            if (localRaw !== remoteRaw) {
+              localStorage.setItem(this.storageKeys.examScopes, remoteRaw);
+              this.refreshAcademicViews();
+            }
+          }
+        }
+      }, (err) => {});
+    } catch (e) {}
   },
 
   refreshAcademicViews() {
@@ -4269,6 +4865,7 @@ const AcademicManager = {
       this.enhanceStudentDashboard();
     }
     // 학생 화면 탭 리렌더링
+    if (this.studentTab === 'examPrep') this.renderStudentExamScopes();
     this.renderStudentAssessments();
     if (this.studentTab === 'schoolGrade') this.renderStudentSchoolGrades();
     if (this.studentTab === 'mockExam') this.renderStudentMockExams();
@@ -4276,6 +4873,7 @@ const AcademicManager = {
 
     // 관리자 화면 탭 리렌더링
     const adminTab = this.currentAdminTab || String(App?.state?.adminTab || '').toLowerCase();
+    if (adminTab === 'examprep') this.renderAdminExamScopesTab();
     if (adminTab === 'assessment') this.renderAdminAssessmentsTab();
     if (adminTab === 'schoolgrade') this.renderAdminSchoolGradeTab();
     if (adminTab === 'mockexam') this.renderAdminMockExamTab();
@@ -4456,7 +5054,7 @@ const AcademicManager = {
       App.renderAdminDashboard = () => {
         origRenderAdminDashboard();
         const lower = this.currentAdminTab || String(App.state?.adminTab || '').toLowerCase();
-        const academicTabs = ['assessment', 'schoolgrade', 'mockexam', 'targetuniv'];
+        const academicTabs = ['examprep', 'assessment', 'schoolgrade', 'mockexam', 'targetuniv'];
         if (academicTabs.includes(lower)) {
           this.handleAdminTabSwitch(lower);
         }
@@ -4480,10 +5078,11 @@ const AcademicManager = {
   // ----------------------------------------------------
   switchStudentTab(tabName) {
     this.studentTab = tabName;
-    const tabs = ['schedule', 'assessment', 'schoolGrade', 'mockExam', 'targetUniv'];
+    const tabs = ['schedule', 'examPrep', 'assessment', 'schoolGrade', 'mockExam', 'targetUniv'];
 
     const iconColors = {
       schedule: { active: 'text-white', inactive: 'text-indigo-600' },
+      examPrep: { active: 'text-amber-200', inactive: 'text-amber-500' },
       assessment: { active: 'text-emerald-300', inactive: 'text-emerald-600' },
       schoolGrade: { active: 'text-violet-200', inactive: 'text-violet-600' },
       mockExam: { active: 'text-sky-300', inactive: 'text-blue-600' },
@@ -4527,6 +5126,14 @@ const AcademicManager = {
         : 'px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full';
     }
 
+    const examBadge = document.getElementById('stuExamPrepBadgeCount');
+    if (examBadge) {
+      examBadge.className = (tabName === 'examPrep')
+        ? 'px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-black rounded-full'
+        : 'px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-full';
+    }
+
+    if (tabName === 'examPrep') this.renderStudentExamScopes();
     if (tabName === 'assessment') this.renderStudentAssessments();
     if (tabName === 'schoolGrade') this.renderStudentSchoolGrades();
     if (tabName === 'mockExam') this.renderStudentMockExams();
@@ -4643,6 +5250,452 @@ const AcademicManager = {
     if (this.studentTab !== 'schedule') {
       this.switchStudentTab(this.studentTab);
     }
+  },
+
+  // ----------------------------------------------------
+  // 학생: 지필고사 시험범위 & 공부현황 관리
+  // ----------------------------------------------------
+  filterStudentExamScopes(type) {
+    this.studentExamFilter = type;
+    const btnAll = document.getElementById('stuExamTypeFilterALL');
+    const btnMid = document.getElementById('stuExamTypeFilterMid');
+    const btnFinal = document.getElementById('stuExamTypeFilterFinal');
+    if (btnAll) btnAll.className = type === 'ALL' ? 'px-3 py-1 rounded-lg text-xs font-bold transition bg-slate-900 text-white shadow-2xs' : 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    if (btnMid) btnMid.className = type === '중간고사' ? 'px-3 py-1 rounded-lg text-xs font-bold transition bg-slate-900 text-white shadow-2xs' : 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    if (btnFinal) btnFinal.className = type === '기말고사' ? 'px-3 py-1 rounded-lg text-xs font-bold transition bg-slate-900 text-white shadow-2xs' : 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    this.renderStudentExamScopes();
+  },
+
+  selectStudentExamScopeTerm(term) {
+    this.studentExamTerm = term;
+    this.renderStudentExamScopes();
+  },
+
+  toggleScopeItemPass(scopeId, sectionId, itemId, passNum) {
+    const scopes = this.getExamScopes();
+    const scope = scopes.find(s => s.id === scopeId);
+    if (!scope) return;
+    const section = (scope.sections || []).find(sec => sec.id === sectionId);
+    if (!section) return;
+    const item = (section.items || []).find(it => it.id === itemId);
+    if (!item) return;
+
+    if (!item.passes) item.passes = { pass1: false, pass2: false, pass3: false };
+    const pKey = `pass${passNum}`;
+    item.passes[pKey] = !item.passes[pKey];
+
+    // 연쇄 완성 로직 (3회독 체크 시 1,2회독 자동 충족 / 1회독 해제 시 2,3회독 해제)
+    if (passNum === 3 && item.passes.pass3) {
+      item.passes.pass1 = true;
+      item.passes.pass2 = true;
+    } else if (passNum === 2 && item.passes.pass2) {
+      item.passes.pass1 = true;
+    } else if (passNum === 1 && !item.passes.pass1) {
+      item.passes.pass2 = false;
+      item.passes.pass3 = false;
+    } else if (passNum === 2 && !item.passes.pass2) {
+      item.passes.pass3 = false;
+    }
+
+    if (item.passes.pass3) item.status = 'mastered';
+    else if (item.passes.pass2) item.status = 'pass2';
+    else if (item.passes.pass1) item.status = 'pass1';
+    else item.status = 'not_started';
+
+    this.saveExamScopes(scopes);
+    this.refreshAcademicViews();
+  },
+
+  renderStudentExamScopes() {
+    const studentId = Number(App.state.selectedStudentId);
+    const container = document.getElementById('stuExamScopeCardsContainer');
+    const emptyState = document.getElementById('stuExamScopeEmptyState');
+    if (!container) return;
+
+    if (!this.studentExamSubjectFilter) this.studentExamSubjectFilter = 'ALL';
+
+    const allStudentScopes = this.getExamScopes().filter(s => Number(s.studentId) === studentId);
+
+    // 1. 학기 필터 Pills 렌더링
+    const termPills = document.getElementById('stuExamScopeTermPills');
+    if (termPills) {
+      const terms = [
+        { id: 'ALL', label: '전체 학기' },
+        { id: '1-1', label: '1-1' },
+        { id: '1-2', label: '1-2 (현재)' },
+        { id: '2-1', label: '2-1' },
+        { id: '2-2', label: '2-2' },
+        { id: '3-1', label: '3-1' },
+        { id: '3-2', label: '3-2' }
+      ];
+      termPills.innerHTML = terms.map(t => {
+        const isActive = this.studentExamTerm === t.id;
+        return `
+          <button type="button" onclick="AcademicManager.selectStudentExamScopeTerm('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            isActive ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }">
+            ${t.label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // 2. 과목 필터 Pills 렌더링 (과목별 모아보기)
+    const subjectPills = document.getElementById('stuExamScopeSubjectPills');
+    if (subjectPills) {
+      const presentSubjects = Array.from(new Set(allStudentScopes.filter(s => {
+        if (this.studentExamTerm !== 'ALL' && s.term !== this.studentExamTerm) return false;
+        if (this.studentExamFilter !== 'ALL' && s.examType !== this.studentExamFilter) return false;
+        return true;
+      }).map(s => s.subject)));
+
+      const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
+      if (presentSubjects.length > 0) {
+        presentSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
+      } else {
+        // 기본 2022 개정 과목 힌트
+        ['공통국어2', '공통영어2', '공통수학2', '대수', '미적분I'].forEach(sub => subjectOptions.push({ id: sub, label: sub }));
+      }
+
+      subjectPills.innerHTML = subjectOptions.map(sOpt => {
+        const isActive = this.studentExamSubjectFilter === sOpt.id;
+        return `
+          <button type="button" onclick="AcademicManager.filterStudentExamScopeSubject('${sOpt.id}')" class="px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            isActive ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }">
+            ${sOpt.label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // 3. 필터링된 시험범위 목록 (학기 + 시험구분 + 과목)
+    let list = allStudentScopes;
+    if (this.studentExamTerm !== 'ALL') {
+      list = list.filter(s => s.term === this.studentExamTerm);
+    }
+    if (this.studentExamFilter !== 'ALL') {
+      list = list.filter(s => s.examType === this.studentExamFilter);
+    }
+    if (this.studentExamSubjectFilter !== 'ALL') {
+      list = list.filter(s => {
+        if (s.subject === this.studentExamSubjectFilter) return true;
+        if (this.studentExamSubjectFilter === '국어' && s.subject.includes('국어')) return true;
+        if (this.studentExamSubjectFilter === '영어' && s.subject.includes('영어')) return true;
+        if (this.studentExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적'))) return true;
+        return false;
+      });
+    }
+
+    // 뱃지 카운트 갱신
+    const badgeCount = document.getElementById('stuExamPrepBadgeCount');
+    if (badgeCount) badgeCount.textContent = list.length;
+
+    // 4. 통계 계산 (총 문항, 1회독, 2회독, 3회독 마스터, D-Day)
+    let totalItems = 0;
+    let pass1Count = 0;
+    let pass2Count = 0;
+    let pass3Count = 0;
+    let nearestDDay = null;
+    let nearestExamSubject = '';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    list.forEach(scope => {
+      if (scope.examDate) {
+        const d = new Date(scope.examDate);
+        d.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        if (nearestDDay === null || (diffDays >= 0 && (nearestDDay < 0 || diffDays < nearestDDay))) {
+          nearestDDay = diffDays;
+          nearestExamSubject = `${scope.subject} (${scope.examType})`;
+        }
+      }
+      (scope.sections || []).forEach(sec => {
+        (sec.items || []).forEach(it => {
+          totalItems++;
+          if (it.passes?.pass1) pass1Count++;
+          if (it.passes?.pass2) pass2Count++;
+          if (it.passes?.pass3) pass3Count++;
+        });
+      });
+    });
+
+    const pass1Pct = totalItems > 0 ? Math.round((pass1Count / totalItems) * 100) : 0;
+    const pass2Pct = totalItems > 0 ? Math.round((pass2Count / totalItems) * 100) : 0;
+    const pass3Pct = totalItems > 0 ? Math.round((pass3Count / totalItems) * 100) : 0;
+    const compositeProgress = totalItems > 0 ? Math.round(((pass1Count * 0.3) + (pass2Count * 0.3) + (pass3Count * 0.4)) / totalItems * 100) : 0;
+
+    // 통계 그리드 렌더링
+    const statsGrid = document.getElementById('stuExamScopeStatsGrid');
+    if (statsGrid) {
+      let dDayText = '-';
+      let dDaySub = '시험일 미설정';
+      if (nearestDDay !== null) {
+        if (nearestDDay > 0) {
+          dDayText = `D-${nearestDDay}`;
+          dDaySub = nearestExamSubject;
+        } else if (nearestDDay === 0) {
+          dDayText = 'D-DAY';
+          dDaySub = `${nearestExamSubject} 오늘 시험!`;
+        } else {
+          dDayText = `D+${Math.abs(nearestDDay)}`;
+          dDaySub = `${nearestExamSubject} 종료`;
+        }
+      }
+
+      statsGrid.innerHTML = `
+        <!-- D-Day 카드 -->
+        <div class="glass-card rounded-2xl p-4 border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md shadow-amber-200 flex-shrink-0">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[11px] font-bold text-amber-900 block truncate">다가오는 지필고사</span>
+            <div class="text-xl sm:text-2xl font-black text-amber-600 tracking-tight leading-tight">${dDayText}</div>
+            <span class="text-[10px] text-amber-800 font-semibold block truncate mt-0.5">${this.escapeHtml(dDaySub)}</span>
+          </div>
+        </div>
+
+        <!-- 총 시험범위 문항 수 -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-200 flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-200 flex-shrink-0">
+            <i class="fa-solid fa-list-ol"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[11px] font-bold text-slate-500 block truncate">등록된 전체 범위</span>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">${totalItems}<span class="text-xs font-bold text-slate-500 ml-1">개 문항/단원</span></div>
+            <span class="text-[10px] text-indigo-600 font-bold block truncate mt-0.5">${list.length}개 과목 시험범위</span>
+          </div>
+        </div>
+
+        <!-- 1·2·3회독 종합 진도율 -->
+        <div class="glass-card rounded-2xl p-4 border border-emerald-200 flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-200 flex-shrink-0">
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-emerald-900">종합 회독 진행률</span>
+              <span class="text-xs font-black text-emerald-600">${compositeProgress}%</span>
+            </div>
+            <div class="w-full bg-emerald-100 rounded-full h-2 mt-1.5 overflow-hidden">
+              <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: ${compositeProgress}%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-semibold">
+              <span>1회독 ${pass1Pct}%</span>
+              <span>2회독 ${pass2Pct}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 완벽 마스터 (3회독) -->
+        <div class="glass-card rounded-2xl p-4 border border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-rose-500 text-white flex items-center justify-center text-xl shadow-md shadow-rose-200 flex-shrink-0">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[11px] font-bold text-rose-900 block truncate">완벽 마스터 (3회독)</span>
+            <div class="text-xl sm:text-2xl font-black text-rose-600 tracking-tight leading-tight">${pass3Count} <span class="text-xs font-bold text-slate-500">/ ${totalItems}</span></div>
+            <span class="text-[10px] text-rose-700 font-bold block truncate mt-0.5">${pass3Pct}% 마스터 완료</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // 5. 목록 렌더링 또는 Empty State
+    if (list.length === 0) {
+      container.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    container.innerHTML = list.map(scope => {
+      const color = this.getSubjectTheme(scope.subject);
+      const sections = scope.sections || [];
+
+      // 과목별 통계
+      let subTotal = 0;
+      let subPass1 = 0;
+      let subPass2 = 0;
+      let subPass3 = 0;
+      sections.forEach(sec => {
+        (sec.items || []).forEach(it => {
+          subTotal++;
+          if (it.passes?.pass1) subPass1++;
+          if (it.passes?.pass2) subPass2++;
+          if (it.passes?.pass3) subPass3++;
+        });
+      });
+      const subPct = subTotal > 0 ? Math.round(((subPass1 * 0.3) + (subPass2 * 0.3) + (subPass3 * 0.4)) / subTotal * 100) : 0;
+
+      // D-Day 계산
+      let dDayBadge = '';
+      if (scope.examDate) {
+        const d = new Date(scope.examDate);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        if (diff > 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-extrabold text-xs shadow-3xs"><i class="fa-regular fa-clock mr-1"></i>D-${diff} (${scope.examDate})</span>`;
+        else if (diff === 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-3xs animate-bounce">D-DAY (오늘)</span>`;
+        else dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500 font-bold text-xs">${scope.examDate}</span>`;
+      }
+
+      return `
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4 hover:shadow-md transition-shadow duration-200">
+          <!-- 과목 헤더 바 -->
+          <div class="flex items-start sm:items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
+            <div class="flex items-center space-x-3 min-w-0">
+              <div class="w-11 h-11 rounded-2xl ${color.bg} ${color.text} border ${color.border} flex items-center justify-center text-lg flex-shrink-0 shadow-2xs">
+                <i class="fa-solid ${color.icon}"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">${this.escapeHtml(scope.subject)}</h4>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">${scope.term} 학기</span>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800">${scope.examType}</span>
+                  ${scope.targetScore ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/70"><i class="fa-solid fa-bullseye text-[10px] mr-1 text-rose-500"></i>목표: ${this.escapeHtml(scope.targetScore)}</span>` : ''}
+                </div>
+                ${scope.memo ? `<p class="text-xs text-slate-500 mt-0.5 font-medium truncate">${this.escapeHtml(scope.memo)}</p>` : ''}
+              </div>
+            </div>
+
+            <!-- 우측 액션 및 D-Day -->
+            <div class="flex items-center gap-2 flex-wrap">
+              ${dDayBadge}
+              <button type="button" onclick="AcademicManager.openExamScopeModal('${scope.id}')" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
+                <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
+                <span>범위 수정</span>
+              </button>
+              <button type="button" onclick="AcademicManager.deleteExamScope('${scope.id}')" class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
+                <i class="fa-solid fa-trash-can text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 과목 진도율 프로그레스 바 -->
+          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/70 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-[200px]">
+              <span class="text-xs font-extrabold text-slate-700 whitespace-nowrap">과목 달성률</span>
+              <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-gradient-to-r from-amber-500 to-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: ${subPct}%"></div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 whitespace-nowrap">${subPct}%</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-bold text-slate-500 flex-shrink-0">
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>1회독: ${subPass1}/${subTotal}</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>2회독: ${subPass2}/${subTotal}</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>3회독: ${subPass3}/${subTotal}</span>
+            </div>
+          </div>
+
+          <!-- 섹션 목록 (교과서 / 모의고사 / 부교재) -->
+          <div class="space-y-3 pt-1">
+            ${sections.length === 0 ? `
+              <div class="p-6 text-center text-xs text-slate-400">등록된 범위 세부 항목이 없습니다. [범위 수정]에서 단원이나 모의고사 범위를 추가해보세요.</div>
+            ` : sections.map(sec => {
+              const secItems = sec.items || [];
+              const secDone = secItems.filter(it => it.passes?.pass3).length;
+
+              let typeIcon = 'fa-book-open';
+              let typeClass = 'text-indigo-600 bg-indigo-50 border-indigo-200';
+              if (sec.type === 'mock_exam') {
+                typeIcon = 'fa-file-circle-check';
+                typeClass = 'text-sky-600 bg-sky-50 border-sky-200';
+              } else if (sec.type === 'custom') {
+                typeIcon = 'fa-paperclip';
+                typeClass = 'text-emerald-600 bg-emerald-50 border-emerald-200';
+              }
+
+              return `
+                <div class="rounded-2xl border border-slate-200/90 overflow-hidden bg-white shadow-2xs">
+                  <!-- 섹션 헤더 -->
+                  <div class="p-3 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="w-7 h-7 rounded-lg ${typeClass} border flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid ${typeIcon}"></i>
+                      </span>
+                      <span class="font-bold text-xs sm:text-sm text-slate-800 truncate">${this.escapeHtml(sec.title)}</span>
+                      ${sec.teacherName ? `
+                        <span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-black flex items-center gap-1 border border-amber-200/80 shadow-3xs flex-shrink-0">
+                          <i class="fa-solid fa-chalkboard-user text-[10px] text-amber-600"></i>
+                          <span>담당: ${this.escapeHtml(sec.teacherName)}</span>
+                        </span>
+                      ` : ''}
+                    </div>
+                    <span class="text-xs font-bold text-slate-500">완료 ${secDone} / ${secItems.length}</span>
+                  </div>
+
+                  <!-- 아이템 목록 (회독 체크 버튼) -->
+                  <div class="divide-y divide-slate-100">
+                    ${secItems.map(it => {
+                      const p1 = it.passes?.pass1;
+                      const p2 = it.passes?.pass2;
+                      const p3 = it.passes?.pass3;
+
+                      let statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">미시작</span>`;
+                      if (p3) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-black text-[10px] shadow-3xs"><i class="fa-solid fa-crown text-[9px] mr-1 text-amber-600"></i>마스터</span>`;
+                      else if (p2) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">2회독 완료</span>`;
+                      else if (p1) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">1회독 완료</span>`;
+
+                      const itemTeacherBadge = (it.teacherName && it.teacherName !== sec.teacherName)
+                        ? `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">[${this.escapeHtml(it.teacherName)}]</span>`
+                        : '';
+
+                      return `
+                        <div class="p-3 sm:py-2.5 sm:px-4 flex items-center justify-between flex-wrap gap-2 hover:bg-slate-50/60 transition-colors">
+                          <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="w-2 h-2 rounded-full ${p3 ? 'bg-amber-500' : (p2 ? 'bg-blue-500' : (p1 ? 'bg-emerald-500' : 'bg-slate-300'))} flex-shrink-0"></span>
+                            <div class="min-w-0">
+                              <div class="text-xs sm:text-sm font-bold text-slate-800 truncate flex items-center gap-1.5">
+                                <span>${this.escapeHtml(it.name)}</span>
+                                ${itemTeacherBadge}
+                              </div>
+                              ${it.subTitle ? `<p class="text-[11px] text-slate-400 truncate">${this.escapeHtml(it.subTitle)}</p>` : ''}
+                            </div>
+                          </div>
+
+                          <!-- 1·2·3회독 원클릭 버튼 및 상태 뱃지 -->
+                          <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <!-- 1회독 버튼 -->
+                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                              p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }">
+                              <i class="fa-solid fa-check text-[10px]"></i>
+                              <span>1회독</span>
+                            </button>
+
+                            <!-- 2회독 버튼 -->
+                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                              p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }">
+                              <i class="fa-solid fa-check-double text-[10px]"></i>
+                              <span>2회독</span>
+                            </button>
+
+                            <!-- 3회독 버튼 -->
+                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
+                              p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }">
+                              <i class="fa-solid fa-crown text-[10px]"></i>
+                              <span>3회독</span>
+                            </button>
+
+                            ${statusBadge}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
   },
 
   // ----------------------------------------------------
@@ -5359,6 +6412,515 @@ const AcademicManager = {
         </div>
       `;
     }).join('');
+  },
+
+  // ----------------------------------------------------
+  // 모달: 지필고사 시험범위 등록 & 편집 (교과서 목차 / 모의고사 생성기 / 부교재)
+  // ----------------------------------------------------
+  openExamScopeModal(id = null, isAdmin = false) {
+    const modal = document.getElementById('academicExamScopeModal');
+    if (!modal) return;
+
+    const currentStudentId = isAdmin
+      ? (App.state.adminSelectedStudentId || (typeof AppData !== 'undefined' && AppData.getStudents()[0] ? AppData.getStudents()[0].id : 1))
+      : (App.state.selectedStudentId || (typeof AppData !== 'undefined' && AppData.getStudents()[0] ? AppData.getStudents()[0].id : 1));
+
+    document.getElementById('formExamScopeId').value = id || '';
+    document.getElementById('formExamScopeStudentId').value = currentStudentId;
+
+    // 관리자 대상 학생 선택 셀렉트박스
+    const selectWrap = document.getElementById('formExamScopeStudentSelectWrap');
+    const select = document.getElementById('formExamScopeStudentSelect');
+    if (isAdmin && selectWrap && select && typeof AppData !== 'undefined') {
+      selectWrap.classList.remove('hidden');
+      const students = AppData.getStudents();
+      select.innerHTML = students.map(s => `
+        <option value="${s.id}" ${s.id === currentStudentId ? 'selected' : ''}>${this.escapeHtml(s.name)} (ID: ${s.id})</option>
+      `).join('');
+    } else if (selectWrap) {
+      selectWrap.classList.add('hidden');
+    }
+
+    this.draftScopeSections = [];
+
+    if (id) {
+      const existing = this.getExamScopes().find(s => s.id === id);
+      if (existing) {
+        document.getElementById('examScopeModalTitle').textContent = '지필고사 시험범위 수정';
+        const term = existing.term || '1-2';
+        document.getElementById('formExamScopeTerm').value = term;
+        this.onExamScopeTermChange(term);
+
+        document.getElementById('formExamScopeExamType').value = existing.examType || '중간고사';
+        if (existing.subject) {
+          document.getElementById('formExamScopeSubject').value = existing.subject;
+        }
+        document.getElementById('formExamScopeDate').value = existing.examDate || '';
+        document.getElementById('formExamScopeTarget').value = existing.targetScore || '';
+        document.getElementById('formExamScopeMemo').value = existing.memo || '';
+        this.draftScopeSections = JSON.parse(JSON.stringify(existing.sections || []));
+      }
+    } else {
+      document.getElementById('examScopeModalTitle').textContent = '새 지필고사 시험범위 등록';
+      const activeTerm = (isAdmin ? this.adminExamScopeTerm : this.studentExamTerm);
+      const defaultTerm = (!activeTerm || activeTerm === 'ALL') ? '1-2' : activeTerm;
+      document.getElementById('formExamScopeTerm').value = defaultTerm;
+      this.onExamScopeTermChange(defaultTerm);
+
+      document.getElementById('formExamScopeExamType').value = '중간고사';
+      document.getElementById('formExamScopeDate').value = '';
+      document.getElementById('formExamScopeTarget').value = '';
+      document.getElementById('formExamScopeMemo').value = '';
+    }
+
+    // 과목 변경 이벤트 발생시켜 출판사 및 모의고사 옵션 갱신
+    const currentSubject = document.getElementById('formExamScopeSubject').value || '공통국어2';
+    this.onExamScopeSubjectChange(currentSubject);
+
+    this.updateExamScopeModalPreview();
+
+    modal.classList.remove('hidden');
+    const content = modal.querySelector('.modal-content');
+    if (content) {
+      content.classList.remove('opacity-0', 'scale-95');
+      content.classList.add('opacity-100', 'scale-100');
+    }
+  },
+
+  closeExamScopeModal() {
+    const modal = document.getElementById('academicExamScopeModal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  onExamScopeTermChange(term) {
+    const subjectSelect = document.getElementById('formExamScopeSubject');
+    if (!subjectSelect) return;
+
+    let options = [];
+    if (term === '1-1') {
+      options = [
+        { value: '공통국어1', label: '공통국어1' },
+        { value: '공통영어1', label: '공통영어1' },
+        { value: '공통수학1', label: '공통수학1' },
+        { value: '통합사회1', label: '통합사회1' },
+        { value: '통합과학1', label: '통합과학1' },
+        { value: '한국사1', label: '한국사1' },
+        { value: '기타', label: '기타 과목' }
+      ];
+    } else if (term === '1-2') {
+      options = [
+        { value: '공통국어2', label: '공통국어2' },
+        { value: '공통영어2', label: '공통영어2' },
+        { value: '공통수학2', label: '공통수학2' },
+        { value: '통합사회2', label: '통합사회2' },
+        { value: '통합과학2', label: '통합과학2' },
+        { value: '한국사2', label: '한국사2' },
+        { value: '기타', label: '기타 과목' }
+      ];
+    } else if (term === '2-1') {
+      options = [
+        { value: '대수', label: '대수 (2022 개정 / 구 수1)' },
+        { value: '미적분I', label: '미적분I (2022 개정 / 구 수2)' },
+        { value: '확률과 통계', label: '확률과 통계' },
+        { value: '문학', label: '문학' },
+        { value: '독서와 작문', label: '독서와 작문' },
+        { value: '영어I', label: '영어I' },
+        { value: '영어II', label: '영어II' },
+        { value: '기타', label: '기타 과목' }
+      ];
+    } else if (term === '2-2') {
+      options = [
+        { value: '미적분I', label: '미적분I (2022 개정 / 구 수2)' },
+        { value: '대수', label: '대수 (2022 개정 / 구 수1)' },
+        { value: '확률과 통계', label: '확률과 통계' },
+        { value: '기하', label: '기하' },
+        { value: '독서와 작문', label: '독서와 작문' },
+        { value: '문학', label: '문학' },
+        { value: '영어II', label: '영어II' },
+        { value: '기타', label: '기타 과목' }
+      ];
+    } else {
+      options = [
+        { value: '미적분II', label: '미적분II' },
+        { value: '확률과 통계', label: '확률과 통계' },
+        { value: '기하', label: '기하' },
+        { value: '수능특강 국어', label: '수능특강 국어' },
+        { value: '수능특강 영어', label: '수능특강 영어' },
+        { value: '기타', label: '기타 과목' }
+      ];
+    }
+
+    const prevVal = subjectSelect.value;
+    subjectSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+
+    const exists = options.some(o => o.value === prevVal);
+    if (exists) {
+      subjectSelect.value = prevVal;
+    } else {
+      subjectSelect.value = options[0].value;
+    }
+
+    this.onExamScopeSubjectChange(subjectSelect.value);
+  },
+
+  onExamScopeSubjectChange(subject) {
+    const term = document.getElementById('formExamScopeTerm')?.value || '1-2';
+    const pubSelect = document.getElementById('formExamScopePublisher');
+
+    // 1. 교과서 출판사 목록 갱신 (getExamTextbookPublishers 헬퍼 활용)
+    if (pubSelect && typeof EXAM_TEXTBOOK_DB !== 'undefined') {
+      const publishers = typeof getExamTextbookPublishers === 'function'
+        ? getExamTextbookPublishers(subject, term)
+        : (EXAM_TEXTBOOK_DB[subject]?.publishers || []);
+
+      if (publishers.length > 0) {
+        pubSelect.innerHTML = publishers.map((p, idx) => `
+          <option value="${p.id}" ${idx === 0 ? 'selected' : ''}>${this.escapeHtml(p.name)} (${p.grade})</option>
+        `).join('');
+        this.onExamScopePublisherChange(publishers[0].id);
+      } else {
+        pubSelect.innerHTML = `<option value="">선택 가능한 교과서 없음 (직접 추가 이용)</option>`;
+        const unitContainer = document.getElementById('examScopeUnitCheckboxes');
+        if (unitContainer) unitContainer.innerHTML = `<p class="text-xs text-slate-400 p-2">등록된 교과서 목차가 없습니다. 아래 '부교재/직접 추가' 영역을 이용해주세요.</p>`;
+      }
+    }
+
+    // 2. 모의고사 영역 노출 제어 (국어, 영어 계열일 때 모의고사 섹션 노출)
+    const mockSection = document.getElementById('examScopeMockSection');
+    const mockSelect = document.getElementById('formExamScopeMockSelect');
+    if (mockSection) {
+      const isKorOrEng = subject.includes('영어') || subject.includes('국어') || subject === '문학' || subject.includes('독서');
+      if (isKorOrEng) {
+        mockSection.classList.remove('hidden');
+        if (mockSelect && typeof MOCK_EXAM_PRESETS !== 'undefined') {
+          mockSelect.innerHTML = MOCK_EXAM_PRESETS.map((m, idx) => `
+            <option value="${m.id}" ${idx === 2 ? 'selected' : ''}>${m.label}</option>
+          `).join('') + `<option value="__custom__">+ 모의고사 직접 입력...</option>`;
+          this.onMockPresetChange(mockSelect.value);
+        }
+      } else {
+        mockSection.classList.add('hidden');
+      }
+    }
+  },
+
+  onExamScopePublisherChange(publisherId) {
+    const subject = document.getElementById('formExamScopeSubject')?.value || '공통국어2';
+    const term = document.getElementById('formExamScopeTerm')?.value || '1-2';
+    const unitContainer = document.getElementById('examScopeUnitCheckboxes');
+    if (!unitContainer || typeof EXAM_TEXTBOOK_DB === 'undefined') return;
+
+    const publishers = typeof getExamTextbookPublishers === 'function'
+      ? getExamTextbookPublishers(subject, term)
+      : (EXAM_TEXTBOOK_DB[subject]?.publishers || []);
+
+    const pub = publishers.find(p => p.id === publisherId);
+    if (!pub || !Array.isArray(pub.units) || pub.units.length === 0) {
+      unitContainer.innerHTML = `<p class="text-xs text-slate-400 p-2">선택한 출판사의 단원 정보가 없습니다.</p>`;
+      return;
+    }
+
+    unitContainer.innerHTML = pub.units.map(u => `
+      <label class="flex items-start gap-2 p-2 rounded-xl hover:bg-indigo-50/70 transition cursor-pointer border border-transparent hover:border-indigo-100">
+        <input type="checkbox" data-unit-id="${u.id}" data-unit-title="${this.escapeHtml(u.title)}" data-unit-sub="${this.escapeHtml(u.sub || '')}" class="unit-checkbox mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+        <div class="min-w-0">
+          <span class="text-xs font-bold text-slate-900 block truncate">${this.escapeHtml(u.title)}</span>
+          ${u.sub ? `<span class="text-[11px] text-slate-500 block truncate">${this.escapeHtml(u.sub)}</span>` : ''}
+        </div>
+      </label>
+    `).join('');
+  },
+
+  selectAllTextbookUnits(selectAll = true) {
+    const checkboxes = document.querySelectorAll('#examScopeUnitCheckboxes .unit-checkbox');
+    checkboxes.forEach(cb => { cb.checked = selectAll; });
+  },
+
+  addSelectedUnitsToScope() {
+    const checkboxes = Array.from(document.querySelectorAll('#examScopeUnitCheckboxes .unit-checkbox:checked'));
+    if (checkboxes.length === 0) {
+      this.notify('추가할 교과서 단원을 하나 이상 체크해주세요.', 'warning');
+      return;
+    }
+
+    const subject = document.getElementById('formExamScopeSubject')?.value || '영어';
+    const pubSelect = document.getElementById('formExamScopePublisher');
+    const pubName = pubSelect?.options[pubSelect.selectedIndex]?.text.split('(')[0].trim() || '교과서';
+    const teacherName = document.getElementById('formExamScopeTextbookTeacher')?.value.trim() || '';
+
+    const newSection = {
+      id: 'sec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'textbook',
+      title: `교과서: ${pubName}`,
+      teacherName: teacherName,
+      items: checkboxes.map((cb, idx) => ({
+        id: 'it_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 4),
+        name: cb.dataset.unitTitle,
+        subTitle: cb.dataset.unitSub || '',
+        teacherName: teacherName,
+        passes: { pass1: false, pass2: false, pass3: false },
+        status: 'not_started'
+      }))
+    };
+
+    this.draftScopeSections.push(newSection);
+    this.updateExamScopeModalPreview();
+    this.selectAllTextbookUnits(false);
+    this.notify(`교과서 ${newSection.items.length}개 단원이 시험범위 목록에 추가되었습니다.`, 'success');
+  },
+
+  onMockPresetChange(presetId) {
+    const customWrap = document.getElementById('formExamScopeMockCustomWrap');
+    if (customWrap) {
+      if (presetId === '__custom__') {
+        customWrap.classList.remove('hidden');
+        document.getElementById('formExamScopeMockCustom')?.focus();
+      } else {
+        customWrap.classList.add('hidden');
+      }
+    }
+  },
+
+  applyMockExcludeOption(optionType) {
+    const input = document.getElementById('formExamScopeMockExclude');
+    if (!input) return;
+    if (optionType === 'pragmatic') {
+      input.value = '25, 26, 27, 28';
+    } else if (optionType === 'listening') {
+      input.value = '1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17';
+    } else if (optionType === 'long2') {
+      input.value = '43, 44, 45';
+    } else if (optionType === 'clear') {
+      input.value = '';
+    }
+  },
+
+  generateMockExamItems() {
+    const subject = document.getElementById('formExamScopeSubject')?.value || '영어';
+    const mockSelect = document.getElementById('formExamScopeMockSelect');
+    let mockTitle = '';
+
+    if (mockSelect.value === '__custom__') {
+      mockTitle = document.getElementById('formExamScopeMockCustom')?.value.trim();
+      if (!mockTitle) {
+        this.notify('모의고사명을 직접 입력해주세요.', 'warning');
+        return;
+      }
+    } else {
+      mockTitle = mockSelect.options[mockSelect.selectedIndex]?.text || '모의고사';
+    }
+
+    const startNo = parseInt(document.getElementById('formExamScopeMockStart')?.value || '20', 10);
+    const endNo = parseInt(document.getElementById('formExamScopeMockEnd')?.value || '40', 10);
+    const teacherName = document.getElementById('formExamScopeMockTeacher')?.value.trim() || '';
+
+    if (isNaN(startNo) || isNaN(endNo) || startNo > endNo) {
+      this.notify('유효한 문항 시작/끝 번호를 입력해주세요.', 'warning');
+      return;
+    }
+
+    const excludeRaw = document.getElementById('formExamScopeMockExclude')?.value || '';
+    const excludeSet = new Set(
+      excludeRaw.split(/[, ]+/).map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n))
+    );
+
+    const items = [];
+    for (let num = startNo; num <= endNo; num++) {
+      if (excludeSet.has(num)) continue;
+
+      let typeLabel = '문항';
+      if (subject === '영어' && typeof ENGLISH_MOCK_QUESTION_TYPES !== 'undefined') {
+        typeLabel = ENGLISH_MOCK_QUESTION_TYPES[num] || '독해 문항';
+      } else if (subject === '국어' && typeof KOREAN_MOCK_QUESTION_TYPES !== 'undefined') {
+        typeLabel = KOREAN_MOCK_QUESTION_TYPES[num] || '국어 문항';
+      }
+
+      items.push({
+        id: 'it_' + Date.now() + '_' + num + '_' + Math.random().toString(36).substr(2, 4),
+        name: `[${mockTitle}] ${num}번 (${typeLabel})`,
+        subTitle: `${num}번 지문`,
+        teacherName: teacherName,
+        passes: { pass1: false, pass2: false, pass3: false },
+        status: 'not_started'
+      });
+    }
+
+    if (items.length === 0) {
+      this.notify('제외 문항을 뺀 생성 가능한 문항이 없습니다.', 'warning');
+      return;
+    }
+
+    const newSection = {
+      id: 'sec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'mock_exam',
+      title: `모의고사: ${mockTitle} (${startNo}~${endNo}번)`,
+      teacherName: teacherName,
+      items: items
+    };
+
+    this.draftScopeSections.push(newSection);
+    this.updateExamScopeModalPreview();
+    this.notify(`모의고사 ${items.length}개 문항이 시험범위 목록에 추가되었습니다.`, 'success');
+  },
+
+  addCustomScopeItem() {
+    const title = document.getElementById('formExamScopeCustomTitle')?.value.trim() || '부교재 / 프린트';
+    const teacherName = document.getElementById('formExamScopeCustomTeacher')?.value.trim() || '';
+    const itemsRaw = document.getElementById('formExamScopeCustomItems')?.value.trim() || '';
+
+    if (!itemsRaw) {
+      this.notify('추가할 범위 항목을 입력해주세요.', 'warning');
+      return;
+    }
+
+    const lines = itemsRaw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) {
+      this.notify('추가할 범위 항목을 한 줄 이상 입력해주세요.', 'warning');
+      return;
+    }
+
+    const newSection = {
+      id: 'sec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      type: 'custom',
+      title: title,
+      teacherName: teacherName,
+      items: lines.map((line, idx) => ({
+        id: 'it_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 4),
+        name: line,
+        subTitle: '',
+        teacherName: teacherName,
+        passes: { pass1: false, pass2: false, pass3: false },
+        status: 'not_started'
+      }))
+    };
+
+    this.draftScopeSections.push(newSection);
+    document.getElementById('formExamScopeCustomItems').value = '';
+    this.updateExamScopeModalPreview();
+    this.notify(`부교재/프린트 ${newSection.items.length}개 항목이 시험범위에 추가되었습니다.`, 'success');
+  },
+
+  removeDraftScopeSection(sectionId) {
+    this.draftScopeSections = this.draftScopeSections.filter(s => s.id !== sectionId);
+    this.updateExamScopeModalPreview();
+  },
+
+  removeDraftScopeItem(sectionId, itemId) {
+    const sec = this.draftScopeSections.find(s => s.id === sectionId);
+    if (!sec) return;
+    sec.items = (sec.items || []).filter(i => i.id !== itemId);
+    if (sec.items.length === 0) {
+      this.draftScopeSections = this.draftScopeSections.filter(s => s.id !== sectionId);
+    }
+    this.updateExamScopeModalPreview();
+  },
+
+  clearAllDraftSections() {
+    if (this.draftScopeSections.length === 0) return;
+    if (!confirm('등록 대기 중인 모든 시험범위 항목을 비우시겠습니까?')) return;
+    this.draftScopeSections = [];
+    this.updateExamScopeModalPreview();
+  },
+
+  updateExamScopeModalPreview() {
+    const container = document.getElementById('examScopeDraftItemsList');
+    const badge = document.getElementById('examScopeModalItemCountBadge');
+    if (!container) return;
+
+    let totalCount = 0;
+    this.draftScopeSections.forEach(s => {
+      totalCount += (s.items || []).length;
+    });
+
+    if (badge) badge.textContent = `총 ${totalCount}개 항목`;
+
+    if (this.draftScopeSections.length === 0) {
+      container.innerHTML = `
+        <div class="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+          <i class="fa-solid fa-list-check text-2xl mb-1 text-slate-300 block"></i>
+          <span>아직 추가된 시험범위 항목이 없습니다. 위에서 교과서 단원을 선택하거나 모의고사 범위를 생성해보세요.</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = this.draftScopeSections.map(sec => `
+      <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-xs sm:text-sm text-slate-900">${this.escapeHtml(sec.title)}</span>
+            ${sec.teacherName ? `
+              <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[11px] font-black flex items-center gap-1 border border-amber-200">
+                <i class="fa-solid fa-chalkboard-user text-[10px] text-amber-600"></i>
+                <span>담당: ${this.escapeHtml(sec.teacherName)}</span>
+              </span>
+            ` : ''}
+            <span class="text-xs text-slate-500 font-semibold">(${(sec.items || []).length}개 문항/단원)</span>
+          </div>
+          <button type="button" onclick="AcademicManager.removeDraftScopeSection('${sec.id}')" class="text-rose-500 hover:text-rose-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+            <span>파트 삭제</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+          ${(sec.items || []).map(it => `
+            <div class="p-2 rounded-lg bg-white border border-slate-200/80 flex items-center justify-between gap-1.5 text-xs">
+              <span class="font-medium text-slate-800 truncate">${this.escapeHtml(it.name)}</span>
+              <button type="button" onclick="AcademicManager.removeDraftScopeItem('${sec.id}', '${it.id}')" class="text-slate-400 hover:text-rose-600 p-0.5 flex-shrink-0 transition cursor-pointer" title="항목 삭제">
+                <i class="fa-solid fa-xmark text-[11px]"></i>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  },
+
+  handleSaveExamScope(event) {
+    if (event) event.preventDefault();
+
+    if (this.draftScopeSections.length === 0) {
+      this.notify('시험범위에 최소 1개 이상의 파트(단원 또는 문항)를 추가해주세요.', 'warning');
+      return;
+    }
+
+    const id = document.getElementById('formExamScopeId')?.value || '';
+    const studentId = parseInt(document.getElementById('formExamScopeStudentId')?.value || App.state.selectedStudentId || '1', 10);
+    const term = document.getElementById('formExamScopeTerm')?.value || '1-2';
+    const examType = document.getElementById('formExamScopeExamType')?.value || '중간고사';
+    const subject = document.getElementById('formExamScopeSubject')?.value || '영어';
+    const examDate = document.getElementById('formExamScopeDate')?.value || '';
+    const targetScore = document.getElementById('formExamScopeTarget')?.value.trim() || '';
+    const memo = document.getElementById('formExamScopeMemo')?.value.trim() || '';
+
+    const scopes = this.getExamScopes();
+    const scopeId = id || ('scope_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4));
+
+    const scopeData = {
+      id: scopeId,
+      studentId: studentId,
+      term: term,
+      examType: examType,
+      subject: subject,
+      examDate: examDate,
+      targetScore: targetScore,
+      memo: memo,
+      sections: this.draftScopeSections,
+      updatedAt: new Date().toISOString()
+    };
+
+    const existingIdx = scopes.findIndex(s => s.id === scopeId);
+    if (existingIdx >= 0) {
+      scopes[existingIdx] = scopeData;
+    } else {
+      scopes.push(scopeData);
+    }
+
+    this.saveExamScopes(scopes);
+    this.closeExamScopeModal();
+    this.refreshAcademicViews();
+    this.notify(`[${subject}] 지필고사 시험범위(${this.draftScopeSections.reduce((acc, s) => acc + (s.items || []).length, 0)}개 문항)가 안전하게 저장되었습니다.`, 'success');
   },
 
   openAssessmentModal(id = null, isAdmin = false) {
@@ -7777,7 +9339,8 @@ const AcademicManager = {
       overview: 'Overview',
       students: 'Students',
       vocab: 'Vocab',
-      backup: 'Backup'
+      backup: 'Backup',
+      examprep: 'ExamPrep'
     };
 
     Object.entries(tabMap).forEach(([t, suffix]) => {
@@ -7797,7 +9360,8 @@ const AcademicManager = {
       }
     });
 
-    if (lower === 'assessment') this.renderAdminAssessmentsTab();
+    if (lower === 'examprep') this.renderAdminExamScopesTab();
+    else if (lower === 'assessment') this.renderAdminAssessmentsTab();
     else if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
     else if (lower === 'mockexam') this.renderAdminMockExamTab();
     else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
@@ -7805,10 +9369,297 @@ const AcademicManager = {
 
   onAdminStudentChange(studentId) {
     const lower = this.currentAdminTab || String(App?.state?.adminTab || '').toLowerCase();
-    if (lower === 'assessment') this.renderAdminAssessmentsTab();
+    if (lower === 'examprep') this.renderAdminExamScopesTab();
+    else if (lower === 'assessment') this.renderAdminAssessmentsTab();
     else if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
     else if (lower === 'mockexam') this.renderAdminMockExamTab();
     else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
+  },
+
+  selectAdminExamScopeTerm(term) {
+    this.adminExamScopeTerm = term;
+    this.renderAdminExamScopesTab();
+  },
+
+  filterAdminExamScopeSubject(subject) {
+    this.adminExamSubjectFilter = subject;
+    this.renderAdminExamScopesTab();
+  },
+
+  renderAdminExamScopesTab() {
+    const studentId = this.getAdminSelectedStudentId();
+    const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
+    const nameEl = document.getElementById('adminExamPrepSelectedStudentName');
+    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
+
+    this.renderAdminPills('adminExamPrepStudentPills');
+
+    if (!this.adminExamScopeTerm) this.adminExamScopeTerm = '1-2';
+    if (!this.adminExamSubjectFilter) this.adminExamSubjectFilter = 'ALL';
+
+    const allScopes = this.getExamScopes().filter(s => Number(s.studentId) === studentId);
+
+    // 1. 학기 필터 Pills 렌더링
+    const termPills = document.getElementById('adminExamScopeTermPills');
+    if (termPills) {
+      const terms = [
+        { id: 'ALL', label: '전체 학기' },
+        { id: '1-1', label: '1-1' },
+        { id: '1-2', label: '1-2' },
+        { id: '2-1', label: '2-1' },
+        { id: '2-2', label: '2-2' },
+        { id: '3-1', label: '3-1' },
+        { id: '3-2', label: '3-2' }
+      ];
+      termPills.innerHTML = terms.map(t => {
+        const isActive = this.adminExamScopeTerm === t.id;
+        return `
+          <button type="button" onclick="AcademicManager.selectAdminExamScopeTerm('${t.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            isActive ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }">
+            ${t.label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // 2. 과목 필터 Pills 렌더링 (관리자용)
+    const subjectPills = document.getElementById('adminExamScopeSubjectPills');
+    if (subjectPills) {
+      const presentSubjects = Array.from(new Set(allScopes.filter(s => {
+        if (this.adminExamScopeTerm !== 'ALL' && s.term !== this.adminExamScopeTerm) return false;
+        return true;
+      }).map(s => s.subject)));
+
+      const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
+      if (presentSubjects.length > 0) {
+        presentSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
+      } else {
+        ['공통국어2', '공통영어2', '공통수학2', '대수', '미적분I'].forEach(sub => subjectOptions.push({ id: sub, label: sub }));
+      }
+
+      subjectPills.innerHTML = subjectOptions.map(sOpt => {
+        const isActive = this.adminExamSubjectFilter === sOpt.id;
+        return `
+          <button type="button" onclick="AcademicManager.filterAdminExamScopeSubject('${sOpt.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            isActive ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }">
+            ${sOpt.label}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // 3. 시험범위 데이터 가져오기 (학기 + 과목 필터링)
+    let list = allScopes;
+    if (this.adminExamScopeTerm !== 'ALL') {
+      list = list.filter(s => s.term === this.adminExamScopeTerm);
+    }
+    if (this.adminExamSubjectFilter !== 'ALL') {
+      list = list.filter(s => {
+        if (s.subject === this.adminExamSubjectFilter) return true;
+        if (this.adminExamSubjectFilter === '국어' && s.subject.includes('국어')) return true;
+        if (this.adminExamSubjectFilter === '영어' && s.subject.includes('영어')) return true;
+        if (this.adminExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적'))) return true;
+        return false;
+      });
+    }
+
+    const container = document.getElementById('adminExamScopeCardsContainer');
+    const emptyState = document.getElementById('adminExamScopeEmptyState');
+    if (!container) return;
+
+    if (list.length === 0) {
+      container.innerHTML = '';
+      container.classList.add('hidden');
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    container.innerHTML = list.map(scope => {
+      const color = this.getSubjectTheme(scope.subject);
+      const sections = scope.sections || [];
+
+      // 과목별 통계
+      let subTotal = 0;
+      let subPass1 = 0;
+      let subPass2 = 0;
+      let subPass3 = 0;
+      sections.forEach(sec => {
+        (sec.items || []).forEach(it => {
+          subTotal++;
+          if (it.passes?.pass1) subPass1++;
+          if (it.passes?.pass2) subPass2++;
+          if (it.passes?.pass3) subPass3++;
+        });
+      });
+      const subPct = subTotal > 0 ? Math.round(((subPass1 * 0.3) + (subPass2 * 0.3) + (subPass3 * 0.4)) / subTotal * 100) : 0;
+
+      // D-Day 계산
+      let dDayBadge = '';
+      if (scope.examDate) {
+        const d = new Date(scope.examDate);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+        if (diff > 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-extrabold text-xs shadow-3xs"><i class="fa-regular fa-clock mr-1"></i>D-${diff} (${scope.examDate})</span>`;
+        else if (diff === 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-3xs">D-DAY</span>`;
+        else dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500 font-bold text-xs">${scope.examDate}</span>`;
+      }
+
+      return `
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4">
+          <!-- 헤더 바 -->
+          <div class="flex items-start sm:items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
+            <div class="flex items-center space-x-3 min-w-0">
+              <div class="w-11 h-11 rounded-2xl ${color.bg} ${color.text} border ${color.border} flex items-center justify-center text-lg flex-shrink-0 shadow-2xs">
+                <i class="fa-solid ${color.icon}"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">${this.escapeHtml(scope.subject)}</h4>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">${scope.term} 학기</span>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800">${scope.examType}</span>
+                  ${scope.teacherName ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/70"><i class="fa-solid fa-chalkboard-user text-[10px] mr-1 text-amber-600"></i>${this.escapeHtml(scope.teacherName)}</span>` : ''}
+                  ${scope.targetScore ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/70"><i class="fa-solid fa-bullseye text-[10px] mr-1 text-rose-500"></i>목표: ${this.escapeHtml(scope.targetScore)}</span>` : ''}
+                </div>
+                ${scope.memo ? `<p class="text-xs text-slate-500 mt-0.5 font-medium truncate">${this.escapeHtml(scope.memo)}</p>` : ''}
+              </div>
+            </div>
+
+            <!-- 우측 액션 및 D-Day -->
+            <div class="flex items-center gap-2 flex-wrap">
+              ${dDayBadge}
+              <button type="button" onclick="AcademicManager.openExamScopeModal('${scope.id}', true)" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
+                <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
+                <span>범위 수정</span>
+              </button>
+              <button type="button" onclick="AcademicManager.deleteExamScope('${scope.id}')" class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
+                <i class="fa-solid fa-trash-can text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 진도율 바 -->
+          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/70 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-[200px]">
+              <span class="text-xs font-extrabold text-slate-700 whitespace-nowrap">과목 달성률</span>
+              <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-gradient-to-r from-amber-500 to-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: ${subPct}%"></div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 whitespace-nowrap">${subPct}%</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-bold text-slate-500 flex-shrink-0">
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>1회독: ${subPass1}/${subTotal}</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>2회독: ${subPass2}/${subTotal}</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>3회독: ${subPass3}/${subTotal}</span>
+            </div>
+          </div>
+
+          <!-- 섹션 목록 (교과서 / 모의고사 / 부교재) -->
+          <div class="space-y-3 pt-1">
+            ${sections.length === 0 ? `
+              <div class="p-6 text-center text-xs text-slate-400">등록된 범위 세부 항목이 없습니다. [범위 수정]에서 단원이나 모의고사 범위를 추가해보세요.</div>
+            ` : sections.map(sec => {
+              const secItems = sec.items || [];
+              const secDone = secItems.filter(it => it.passes?.pass3).length;
+
+              let typeIcon = 'fa-book-open';
+              let typeClass = 'text-indigo-600 bg-indigo-50 border-indigo-200';
+              if (sec.type === 'mock_exam') {
+                typeIcon = 'fa-file-circle-check';
+                typeClass = 'text-sky-600 bg-sky-50 border-sky-200';
+              } else if (sec.type === 'custom') {
+                typeIcon = 'fa-paperclip';
+                typeClass = 'text-emerald-600 bg-emerald-50 border-emerald-200';
+              }
+
+              return `
+                <div class="rounded-2xl border border-slate-200/90 overflow-hidden bg-white shadow-2xs">
+                  <div class="p-3 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="w-7 h-7 rounded-lg ${typeClass} border flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid ${typeIcon}"></i>
+                      </span>
+                      <span class="font-bold text-xs sm:text-sm text-slate-800 truncate">${this.escapeHtml(sec.title)}</span>
+                      ${sec.teacherName ? `
+                        <span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-black flex items-center gap-1 border border-amber-200/80 shadow-3xs flex-shrink-0">
+                          <i class="fa-solid fa-chalkboard-user text-[10px] text-amber-600"></i>
+                          <span>담당: ${this.escapeHtml(sec.teacherName)}</span>
+                        </span>
+                      ` : ''}
+                    </div>
+                    <span class="text-xs font-bold text-slate-500">완료 ${secDone} / ${secItems.length}</span>
+                  </div>
+
+                  <div class="divide-y divide-slate-100">
+                    ${secItems.map(it => {
+                      const p1 = it.passes?.pass1;
+                      const p2 = it.passes?.pass2;
+                      const p3 = it.passes?.pass3;
+
+                      let statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">미시작</span>`;
+                      if (p3) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-black text-[10px] shadow-3xs"><i class="fa-solid fa-crown text-[9px] mr-1 text-amber-600"></i>마스터</span>`;
+                      else if (p2) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">2회독 완료</span>`;
+                      else if (p1) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">1회독 완료</span>`;
+
+                      const itemTeacherBadge = (it.teacherName && it.teacherName !== sec.teacherName)
+                        ? `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">[${this.escapeHtml(it.teacherName)}]</span>`
+                        : '';
+
+                      return `
+                        <div class="p-3 sm:py-2.5 sm:px-4 flex items-center justify-between flex-wrap gap-2 hover:bg-slate-50/60 transition-colors">
+                          <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="w-2 h-2 rounded-full ${p3 ? 'bg-amber-500' : (p2 ? 'bg-blue-500' : (p1 ? 'bg-emerald-500' : 'bg-slate-300'))} flex-shrink-0"></span>
+                            <div class="min-w-0">
+                              <div class="text-xs sm:text-sm font-bold text-slate-800 truncate flex items-center gap-1.5">
+                                <span>${this.escapeHtml(it.name)}</span>
+                                ${itemTeacherBadge}
+                              </div>
+                              ${it.subTitle ? `<p class="text-[11px] text-slate-400 truncate">${this.escapeHtml(it.subTitle)}</p>` : ''}
+                            </div>
+                          </div>
+
+                          <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                              p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }">
+                              <i class="fa-solid fa-check text-[10px]"></i>
+                              <span>1회독</span>
+                            </button>
+
+                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                              p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }">
+                              <i class="fa-solid fa-check-double text-[10px]"></i>
+                              <span>2회독</span>
+                            </button>
+
+                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
+                              p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }">
+                              <i class="fa-solid fa-crown text-[10px]"></i>
+                              <span>3회독</span>
+                            </button>
+
+                            ${statusBadge}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
   },
 
   renderAdminAssessmentsTab() {
