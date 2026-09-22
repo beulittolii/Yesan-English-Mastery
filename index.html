@@ -4226,6 +4226,7 @@ const AcademicManager = {
               { id: 'it_kor_mock_30', name: '30~34번 [독서 과학·기술 지문]', subTitle: '2026년 9월 고1 학평', teacherName: '최문법 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
             ]
           }
+        ]
       },
       {
         id: 'scope_sample_11_math',
@@ -4852,7 +4853,7 @@ const AcademicManager = {
         // 현재 대시보드 학생의 해당 일자 학교 수행평가 일정 조회 (단일 일정 + 다회차 차시별 일정 완벽 대응)
         const currentStudentId = Number(App.state.selectedStudentId);
         if (currentStudentId) {
-          const allAssessments = this.getAssessments().filter(a => a.studentId === currentStudentId);
+          const allAssessments = this.getAssessments().filter(a => Number(a.studentId) === currentStudentId);
           const dayItems = [];
 
           allAssessments.forEach(item => {
@@ -5198,7 +5199,7 @@ const AcademicManager = {
     }
 
     // 2. 수행평가 진행 중 개수 뱃지 갱신
-    const assessments = this.getAssessments().filter(a => a.studentId === Number(studentId));
+    const assessments = this.getAssessments().filter(a => Number(a.studentId) === Number(studentId));
     const activeCount = assessments.filter(a => a.status !== '응시 후').length;
     const badgeCount = document.getElementById('stuAssessmentBadgeCount');
     if (badgeCount) badgeCount.textContent = activeCount;
@@ -5668,7 +5669,7 @@ const AcademicManager = {
     const container = document.getElementById('stuAssessmentListContent');
     if (!container) return;
 
-    let list = this.getAssessments().filter(a => a.studentId === studentId);
+    let list = this.getAssessments().filter(a => Number(a.studentId) === studentId);
 
     // 카운트 갱신
     const countALL = list.length;
@@ -5961,7 +5962,7 @@ const AcademicManager = {
     const clean = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
     const targetSub = clean(subjectName);
 
-    const list = this.getAssessments().filter(a => a.studentId === stuId);
+    const list = this.getAssessments().filter(a => Number(a.studentId) === stuId);
 
     // 1차: 학기 + 과목명 정확 일치 + linkType 일치
     let match = list.find(a => (a.term || '1-2') === targetTerm && clean(a.subject) === targetSub && a.linkType === linkType);
@@ -6057,7 +6058,7 @@ const AcademicManager = {
 
   getStudentConfiguredSubjects(studentId, targetTerm = null) {
     const id = Number(studentId);
-    const grades = this.getSchoolGrades().filter(g => g.studentId === id);
+    const grades = this.getSchoolGrades().filter(g => Number(g.studentId) === id);
     const term = targetTerm || (App.state.isAdminLoggedIn ? this.adminSelectedGradeTerm : this.selectedGradeTerm) || '1-2';
     const currentGrade = grades.find(g => g.term === term);
 
@@ -7500,7 +7501,7 @@ const AcademicManager = {
     if (!studentId || !subject || !linkType || linkType === 'none' || studentScore == null || studentScore === '') return;
 
     const allGrades = this.getSchoolGrades();
-    const studentGrades = allGrades.filter(g => g.studentId === studentId);
+    const studentGrades = allGrades.filter(g => Number(g.studentId) === Number(studentId));
     if (studentGrades.length === 0) return;
 
     const cleanSub = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
@@ -7629,7 +7630,7 @@ const AcademicManager = {
 
   renderStudentSchoolGrades() {
     const studentId = Number(App.state.selectedStudentId);
-    const allGrades = this.getSchoolGrades().filter(g => g.studentId === studentId);
+    const allGrades = this.getSchoolGrades().filter(g => Number(g.studentId) === studentId);
 
     // 학기 탭 렌더링
     const terms = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2'];
@@ -8065,7 +8066,7 @@ const AcademicManager = {
       record = this.getSchoolGrades().find(g => g.id === id);
     } else {
       const term = isAdmin ? this.adminSelectedGradeTerm : this.selectedGradeTerm;
-      record = this.getSchoolGrades().find(g => g.studentId === currentStudentId && g.term === term);
+      record = this.getSchoolGrades().find(g => Number(g.studentId) === Number(currentStudentId) && g.term === term);
     }
 
     if (record) {
@@ -8464,7 +8465,7 @@ const AcademicManager = {
 
   onGradeTermChange(term) {
     const studentId = Number(document.getElementById('formSchoolGradeStudentId').value);
-    const existing = this.getSchoolGrades().find(g => g.studentId === studentId && g.term === term);
+    const existing = this.getSchoolGrades().find(g => Number(g.studentId) === studentId && g.term === term);
     const relContainer = document.getElementById('formSchoolGradeRelativeRows');
     const absContainer = document.getElementById('formSchoolGradeAbsoluteRows');
     const genContainer = document.getElementById('formSchoolGradeGeneralRows');
@@ -8648,7 +8649,7 @@ const AcademicManager = {
     }
 
     const list = this.getSchoolGrades();
-    const existingIdx = list.findIndex(g => g.studentId === studentId && g.term === term);
+    const existingIdx = list.findIndex(g => Number(g.studentId) === studentId && g.term === term);
 
     const record = {
       id: existingIdx >= 0 ? list[existingIdx].id : 'grade_' + Date.now(),
@@ -8684,7 +8685,7 @@ const AcademicManager = {
 
   renderStudentMockExams() {
     const studentId = Number(App.state.selectedStudentId);
-    let list = this.getMockExams().filter(m => m.studentId === studentId);
+    let list = this.getMockExams().filter(m => Number(m.studentId) === studentId);
 
     // 필터 버튼 스타일
     const map = {
@@ -8728,7 +8729,7 @@ const AcademicManager = {
       }
     }
 
-    const totalMockCount = this.getMockExams().filter(m => m.studentId === studentId).length;
+    const totalMockCount = this.getMockExams().filter(m => Number(m.studentId) === studentId).length;
 
     const summaryGrid = document.getElementById('stuMockSummaryGrid');
     if (summaryGrid) {
