@@ -5384,7 +5384,9 @@ const AcademicManager = {
       }).map(s => s.subject)));
 
       const configured = this.getStudentConfiguredSubjects(studentId, this.studentExamTerm !== 'ALL' ? this.studentExamTerm : null);
-      const configuredSubs = Array.isArray(configured) ? configured : (configured.all || []);
+      const configuredSubs = (configured.relative && configured.relative.length > 0)
+        ? configured.relative
+        : (Array.isArray(configured) ? configured : (configured.all || []));
       const combinedSubjects = Array.from(new Set([...presentSubjects, ...configuredSubs]));
 
       const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
@@ -6631,9 +6633,11 @@ const AcademicManager = {
     };
     const termLabel = termNames[term] || term;
 
-    // 1. 내신 관리에서 설정한 과목들 가져오기
+    // 1. 내신 관리에서 설정한 지필평가 과목 (상대평가 과목만 추출: 절대평가/교양 제외)
     const configured = this.getStudentConfiguredSubjects(stuId, term);
-    const configuredList = Array.isArray(configured) ? configured : (configured.all || []);
+    const examSubjects = (configured.relative && configured.relative.length > 0)
+      ? configured.relative
+      : (Array.isArray(configured) ? configured : (configured.all || []));
 
     // 2. 2022 개정 기본 과목 목록 (fallback 및 보조 선택용)
     let defaultOptions = [];
@@ -6650,16 +6654,16 @@ const AcademicManager = {
     }
 
     let html = '';
-    const hasConfigured = configuredList.length > 0;
+    const hasConfigured = examSubjects.length > 0;
 
     if (hasConfigured) {
-      html += `<optgroup label="📊 [${termLabel}] 내신 관리 설정 과목">`;
-      configuredList.forEach(sub => {
+      html += `<optgroup label="📊 [${termLabel}] 내신 지필평가 과목 (상대평가)">`;
+      examSubjects.forEach(sub => {
         html += `<option value="${this.escapeHtml(sub)}">${this.escapeHtml(sub)}</option>`;
       });
       html += `</optgroup>`;
 
-      const additional = defaultOptions.filter(d => !configuredList.includes(d));
+      const additional = defaultOptions.filter(d => !examSubjects.includes(d));
       if (additional.length > 0) {
         html += `<optgroup label="📚 2022 개정 기본 과목 / 기타">`;
         additional.forEach(sub => {
@@ -6668,7 +6672,7 @@ const AcademicManager = {
         html += `</optgroup>`;
       }
     } else {
-      html += `<optgroup label="📚 [${termLabel}] 기본 과목 (내신 관리에서 과목 설정 가능)">`;
+      html += `<optgroup label="📚 [${termLabel}] 기본 지필평가 과목">`;
       defaultOptions.forEach(sub => {
         html += `<option value="${this.escapeHtml(sub)}">${this.escapeHtml(sub)}</option>`;
       });
@@ -6677,7 +6681,7 @@ const AcademicManager = {
 
     // 수정 모달 등에서 기존 선택된 과목이 드롭다운에 없는 경우 보존용 옵션 추가
     const targetSub = selectedSubject || subjectSelect.value;
-    if (targetSub && !configuredList.includes(targetSub) && !defaultOptions.includes(targetSub)) {
+    if (targetSub && !examSubjects.includes(targetSub) && !defaultOptions.includes(targetSub)) {
       html += `<optgroup label="기존 등록 과목">`;
       html += `<option value="${this.escapeHtml(targetSub)}">${this.escapeHtml(targetSub)}</option>`;
       html += `</optgroup>`;
@@ -6689,7 +6693,7 @@ const AcademicManager = {
     const notice = document.getElementById('formExamScopeSubjectNotice');
     if (notice) {
       if (hasConfigured) {
-        notice.textContent = `[${termLabel}] 내신 과목 연동 (${configuredList.length}과목)`;
+        notice.textContent = `[${termLabel}] 지필평가 과목 연동 (${examSubjects.length}과목)`;
         notice.className = 'text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200';
       } else {
         notice.textContent = `[${termLabel}] 기본 표준 과목`;
@@ -6698,11 +6702,11 @@ const AcademicManager = {
     }
 
     // 선택값 복원 또는 첫 번째 옵션 선택
-    const allAvailable = [...configuredList, ...defaultOptions, targetSub].filter(Boolean);
+    const allAvailable = [...examSubjects, ...defaultOptions, targetSub].filter(Boolean);
     if (targetSub && allAvailable.includes(targetSub)) {
       subjectSelect.value = targetSub;
-    } else if (configuredList.length > 0) {
-      subjectSelect.value = configuredList[0];
+    } else if (examSubjects.length > 0) {
+      subjectSelect.value = examSubjects[0];
     } else if (defaultOptions.length > 0) {
       subjectSelect.value = defaultOptions[0];
     }
@@ -9645,7 +9649,9 @@ const AcademicManager = {
       }).map(s => s.subject)));
 
       const configured = this.getStudentConfiguredSubjects(studentId, this.adminExamScopeTerm !== 'ALL' ? this.adminExamScopeTerm : null);
-      const configuredSubs = Array.isArray(configured) ? configured : (configured.all || []);
+      const configuredSubs = (configured.relative && configured.relative.length > 0)
+        ? configured.relative
+        : (Array.isArray(configured) ? configured : (configured.all || []));
       const combinedSubjects = Array.from(new Set([...presentSubjects, ...configuredSubs]));
 
       const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
