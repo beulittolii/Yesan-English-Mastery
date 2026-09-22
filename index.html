@@ -4013,9 +4013,9 @@ const AcademicManager = {
   // ----------------------------------------------------
   init() {
     this.seedDefaultDataIfEmpty();
-    // 송규인 학생(11)의 영어 시험범위 삭제 반영
+    // 기존 샘플 데이터 중 송규인 학생의 샘플 영어 시험범위(scope_sample_11_eng)만 안전하게 정리
     const rawScopes = this.getExamScopes();
-    const filteredScopes = rawScopes.filter(s => s.id !== 'scope_sample_11_eng' && !(Number(s.studentId) === 11 && (s.subject === '공통영어2' || s.subject === '영어')));
+    const filteredScopes = rawScopes.filter(s => s.id !== 'scope_sample_11_eng');
     if (rawScopes.length !== filteredScopes.length) {
       this.saveExamScopes(filteredScopes);
     }
@@ -4850,9 +4850,34 @@ const AcademicManager = {
       App.buildCalendarCell = (dayNum, dateStr, isOtherMonth, studentTests, todayStr) => {
         let cellHtml = origBuildCalendarCell(dayNum, dateStr, isOtherMonth, studentTests, todayStr);
         
-        // 현재 대시보드 학생의 해당 일자 학교 수행평가 일정 조회 (단일 일정 + 다회차 차시별 일정 완벽 대응)
+        // 현재 대시보드 학생의 해당 일자 지필고사 및 학교 수행평가 일정 조회
         const currentStudentId = Number(App.state.selectedStudentId);
         if (currentStudentId) {
+          // 1. 지필고사 시험범위 일정 뱃지 생성
+          const dayScopes = this.getExamScopes().filter(s => Number(s.studentId) === currentStudentId && s.examDate === dateStr);
+          let examBadgesHtml = '';
+          if (dayScopes.length > 0) {
+            examBadgesHtml = dayScopes.map(scope => {
+              const memoText = scope.memo ? ` | ${this.escapeHtml(scope.memo)}` : '';
+              const targetText = scope.targetScore ? ` | 목표: ${this.escapeHtml(scope.targetScore)}` : '';
+              return `
+                <div onclick="AcademicManager.viewExamScopeFromCalendar('${scope.id}'); event.stopPropagation();" 
+                     class="test-event-pill px-1.5 py-[3px] rounded-md mb-1 text-[10px] flex flex-col justify-center shadow-xs bg-amber-600 hover:bg-amber-700 text-white border border-amber-400/80 cursor-pointer transition" 
+                     title="[지필고사] ${this.escapeHtml(scope.subject)} (${this.escapeHtml(scope.examType)})${targetText}${memoText}">
+                  <div class="flex items-center justify-between gap-1 w-full min-w-0">
+                    <div class="flex items-center gap-1 min-w-0 truncate">
+                      <i class="fa-solid fa-book-bookmark text-[8.5px] text-amber-200 flex-shrink-0"></i>
+                      <span class="bg-amber-800/90 px-1 py-[1.5px] rounded text-[8.5px] font-black text-amber-100 flex-shrink-0 leading-none">지필</span>
+                      <span class="font-bold text-[9.5px] text-white truncate leading-none min-w-0">${this.escapeHtml(scope.subject)}</span>
+                    </div>
+                    <span class="text-[8.5px] px-1.5 py-[1.5px] rounded-full font-bold flex-shrink-0 shadow-2xs leading-none bg-amber-100 text-amber-900">${this.escapeHtml(scope.examType)}</span>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+
+          // 2. 학교 수행평가 일정 조회
           const allAssessments = this.getAssessments().filter(a => Number(a.studentId) === currentStudentId);
           const dayItems = [];
 
@@ -4880,6 +4905,7 @@ const AcademicManager = {
             }
           });
 
+          let assessBadgesHtml = '';
           if (dayItems.length > 0) {
             // 교시 오름차순(1교시 -> 2교시 -> 3교시 ...) 순으로 정렬
             const getPeriodOrder = (p) => {
@@ -4908,7 +4934,7 @@ const AcademicManager = {
               return (a.item.subject || '').localeCompare(b.item.subject || '');
             });
 
-            const assessBadgesHtml = dayItems.map(({ item, period, sessionTitle, memo }) => {
+            assessBadgesHtml = dayItems.map(({ item, period, sessionTitle, memo }) => {
               const periodLabel = period || '3교시';
               const isDone = item.status === '응시 후';
               const isReady = item.status === '준비 후';
@@ -4969,14 +4995,15 @@ const AcademicManager = {
                 </div>
               `;
             }).join('');
+          }
 
-            // testsHtml 컨테이너 상단에 수행평가 일정 주입 (2줄 텍스트 수용 위해 max-h 여유 확보)
-            if (cellHtml.includes('<div class="space-y-1 overflow-y-auto max-h-[80px]">')) {
-              cellHtml = cellHtml.replace(
-                '<div class="space-y-1 overflow-y-auto max-h-[80px]">',
-                '<div class="space-y-1 overflow-y-auto max-h-[88px]">' + assessBadgesHtml
-              );
-            }
+          // testsHtml 컨테이너 상단에 지필고사 + 수행평가 일정 주입
+          const combinedBadges = examBadgesHtml + assessBadgesHtml;
+          if (combinedBadges && cellHtml.includes('<div class="space-y-1 overflow-y-auto max-h-[80px]">')) {
+            cellHtml = cellHtml.replace(
+              '<div class="space-y-1 overflow-y-auto max-h-[80px]">',
+              '<div class="space-y-1 overflow-y-auto max-h-[88px]">' + combinedBadges
+            );
           }
         }
         return cellHtml;
@@ -5198,7 +5225,11 @@ const AcademicManager = {
       banner.insertAdjacentHTML('beforeend', univSectionHtml);
     }
 
-    // 2. 수행평가 진행 중 개수 뱃지 갱신
+    // 2. 지필고사 및 수행평가 진행 중 개수 뱃지 갱신
+    const studentScopes = this.getExamScopes().filter(s => Number(s.studentId) === Number(studentId));
+    const examBadgeCount = document.getElementById('stuExamPrepBadgeCount');
+    if (examBadgeCount) examBadgeCount.textContent = studentScopes.length;
+
     const assessments = this.getAssessments().filter(a => Number(a.studentId) === Number(studentId));
     const activeCount = assessments.filter(a => a.status !== '응시 후').length;
     const badgeCount = document.getElementById('stuAssessmentBadgeCount');
@@ -5213,6 +5244,38 @@ const AcademicManager = {
   // ----------------------------------------------------
   // 학생: 지필고사 시험범위 & 공부현황 관리
   // ----------------------------------------------------
+  resetStudentExamScopeFilters() {
+    this.studentExamTerm = 'ALL';
+    this.studentExamFilter = 'ALL';
+    this.studentExamSubjectFilter = 'ALL';
+    const btnAll = document.getElementById('stuExamTypeFilterALL');
+    const btnMid = document.getElementById('stuExamTypeFilterMid');
+    const btnFinal = document.getElementById('stuExamTypeFilterFinal');
+    if (btnAll) btnAll.className = 'px-3 py-1 rounded-lg text-xs font-bold transition bg-slate-900 text-white shadow-2xs';
+    if (btnMid) btnMid.className = 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    if (btnFinal) btnFinal.className = 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900';
+    this.renderStudentExamScopes();
+  },
+
+  viewExamScopeFromCalendar(scopeId) {
+    this.switchStudentTab('examPrep');
+    const scope = this.getExamScopes().find(s => s.id === scopeId);
+    if (scope) {
+      this.studentExamTerm = scope.term || 'ALL';
+      this.studentExamFilter = 'ALL';
+      this.studentExamSubjectFilter = 'ALL';
+      this.renderStudentExamScopes();
+      setTimeout(() => {
+        const el = document.getElementById(`scope_card_${scopeId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-amber-500', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-4', 'ring-amber-500', 'ring-offset-2'), 2500);
+        }
+      }, 150);
+    }
+  },
+
   filterStudentExamScopes(type) {
     this.studentExamFilter = type;
     const btnAll = document.getElementById('stuExamTypeFilterALL');
@@ -5274,7 +5337,7 @@ const AcademicManager = {
 
     const allStudentScopes = this.getExamScopes().filter(s => Number(s.studentId) === studentId);
 
-    // 1. 학기 필터 Pills 렌더링
+    // 1. 학기 필터 Pills 렌더링 (각 학기별 등록된 시험 개수 표시)
     const termPills = document.getElementById('stuExamScopeTermPills');
     if (termPills) {
       const terms = [
@@ -5288,11 +5351,13 @@ const AcademicManager = {
       ];
       termPills.innerHTML = terms.map(t => {
         const isActive = this.studentExamTerm === t.id;
+        const count = t.id === 'ALL' ? allStudentScopes.length : allStudentScopes.filter(s => s.term === t.id).length;
+        const badge = count > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${isActive ? 'bg-white/30 text-white' : 'bg-amber-100 text-amber-800'}">${count}</span>` : '';
         return `
-          <button type="button" onclick="AcademicManager.selectStudentExamScopeTerm('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+          <button type="button" onclick="AcademicManager.selectStudentExamScopeTerm('${t.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center ${
             isActive ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }">
-            ${t.label}
+            <span>${t.label}</span>${badge}
           </button>
         `;
       }).join('');
@@ -5465,7 +5530,50 @@ const AcademicManager = {
     // 5. 목록 렌더링 또는 Empty State
     if (list.length === 0) {
       container.innerHTML = '';
-      if (emptyState) emptyState.classList.remove('hidden');
+      if (emptyState) {
+        emptyState.classList.remove('hidden');
+        if (allStudentScopes.length > 0) {
+          // 다른 학기/과목에 시험범위가 존재하는 경우 친절한 안내와 전체보기 버튼 제공
+          emptyState.innerHTML = `
+            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl mx-auto shadow-inner">
+              <i class="fa-solid fa-filter-circle-xmark"></i>
+            </div>
+            <div class="max-w-md mx-auto">
+              <h4 class="font-bold text-slate-800 text-base">선택한 필터 조건에 해당하는 시험범위가 없습니다.</h4>
+              <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                현재 필터: <strong class="text-amber-600">${this.studentExamTerm === 'ALL' ? '전체 학기' : this.studentExamTerm + ' 학기'}</strong> / 
+                <strong>${this.studentExamFilter === 'ALL' ? '전체 시험' : this.studentExamFilter}</strong> / 
+                <strong>${this.studentExamSubjectFilter === 'ALL' ? '전체 과목' : this.studentExamSubjectFilter}</strong><br/>
+                (다른 학기 또는 과목에 등록된 지필고사 시험범위가 총 <strong class="text-indigo-600">${allStudentScopes.length}개</strong> 있습니다.)
+              </p>
+            </div>
+            <div class="flex items-center justify-center gap-2 flex-wrap pt-2">
+              <button onclick="AcademicManager.resetStudentExamScopeFilters()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-md">
+                <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                <span>전체 시험범위 모아보기 (${allStudentScopes.length}개)</span>
+              </button>
+              <button onclick="AcademicManager.openExamScopeModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-md shadow-amber-200">
+                <i class="fa-solid fa-plus text-[11px]"></i>
+                <span>새 시험범위 등록</span>
+              </button>
+            </div>
+          `;
+        } else {
+          emptyState.innerHTML = `
+            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl mx-auto shadow-inner">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div class="max-w-md mx-auto">
+              <h4 class="font-bold text-slate-800 text-base">등록된 시험범위가 없습니다.</h4>
+              <p class="text-xs text-slate-500 mt-1">교과서 출판사 선택 목차 자동 불러오기, 국어·영어 모의고사 문항 범위 자동 생성기로 지필고사 시험범위를 간편하게 등록해보세요!</p>
+            </div>
+            <button onclick="AcademicManager.openExamScopeModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-md shadow-amber-200">
+              <i class="fa-solid fa-plus"></i>
+              <span>첫 시험범위 등록하기</span>
+            </button>
+          `;
+        }
+      }
       return;
     }
 
@@ -5502,7 +5610,7 @@ const AcademicManager = {
       }
 
       return `
-        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4 hover:shadow-md transition-shadow duration-200">
+        <div id="scope_card_${scope.id}" class="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4 hover:shadow-md transition-all duration-200">
           <!-- 과목 헤더 바 -->
           <div class="flex items-start sm:items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
             <div class="flex items-center space-x-3 min-w-0">
@@ -6395,6 +6503,9 @@ const AcademicManager = {
       select.innerHTML = students.map(s => `
         <option value="${s.id}" ${s.id === currentStudentId ? 'selected' : ''}>${this.escapeHtml(s.name)} (ID: ${s.id})</option>
       `).join('');
+      select.onchange = (e) => {
+        document.getElementById('formExamScopeStudentId').value = e.target.value;
+      };
     } else if (selectWrap) {
       selectWrap.classList.add('hidden');
     }
@@ -6405,6 +6516,10 @@ const AcademicManager = {
       const existing = this.getExamScopes().find(s => s.id === id);
       if (existing) {
         document.getElementById('examScopeModalTitle').textContent = '지필고사 시험범위 수정';
+        if (existing.studentId) {
+          document.getElementById('formExamScopeStudentId').value = existing.studentId;
+          if (select) select.value = existing.studentId;
+        }
         const term = existing.term || '1-2';
         document.getElementById('formExamScopeTerm').value = term;
         this.onExamScopeTermChange(term);
@@ -6844,10 +6959,18 @@ const AcademicManager = {
     }
 
     const id = document.getElementById('formExamScopeId')?.value || '';
-    const studentId = parseInt(document.getElementById('formExamScopeStudentId')?.value || App.state.selectedStudentId || '1', 10);
+    
+    // 대상 학생 ID 안전 취득 (관리자 모달 셀렉트박스가 열려있으면 해당 값 최우선)
+    let studentId = parseInt(document.getElementById('formExamScopeStudentId')?.value || App.state.selectedStudentId || '1', 10);
+    const selectWrap = document.getElementById('formExamScopeStudentSelectWrap');
+    const select = document.getElementById('formExamScopeStudentSelect');
+    if (selectWrap && !selectWrap.classList.contains('hidden') && select && select.value) {
+      studentId = parseInt(select.value, 10);
+    }
+
     const term = document.getElementById('formExamScopeTerm')?.value || '1-2';
     const examType = document.getElementById('formExamScopeExamType')?.value || '중간고사';
-    const subject = document.getElementById('formExamScopeSubject')?.value || '영어';
+    const subject = document.getElementById('formExamScopeSubject')?.value || '공통국어2';
     const examDate = document.getElementById('formExamScopeDate')?.value || '';
     const targetScore = document.getElementById('formExamScopeTarget')?.value.trim() || '';
     const memo = document.getElementById('formExamScopeMemo')?.value.trim() || '';
@@ -6877,7 +7000,37 @@ const AcademicManager = {
 
     this.saveExamScopes(scopes);
     this.closeExamScopeModal();
+
+    // ★ 방금 등록/수정한 시험범위가 필터 때문에 가려지지 않도록 학기 및 필터 자동 동기화
+    this.studentExamTerm = term;
+    this.studentExamFilter = 'ALL';
+    this.studentExamSubjectFilter = 'ALL';
+    this.adminExamScopeTerm = term;
+    this.adminExamSubjectFilter = 'ALL';
+
+    // 관리자 모드인 경우 대상 학생 동기화 및 탭 갱신
+    if (App.state.isAdminLoggedIn) {
+      if (App.state) App.state.adminSelectedStudentId = studentId;
+      if (this.currentAdminTab === 'examprep' || App.state.adminTab === 'examprep') {
+        this.renderAdminExamScopesTab();
+      }
+    } else {
+      // 학생 모드인 경우 지필고사 시험범위 탭으로 전환하여 방금 등록한 범위를 즉시 보여줌
+      this.switchStudentTab('examPrep');
+    }
+
     this.refreshAcademicViews();
+
+    // 등록된 시험범위 카드로 부드럽게 스크롤 & 강조 테두리 효과
+    setTimeout(() => {
+      const cardEl = document.getElementById(`scope_card_${scopeId}`);
+      if (cardEl) {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        cardEl.classList.add('ring-4', 'ring-amber-500', 'ring-offset-2');
+        setTimeout(() => cardEl.classList.remove('ring-4', 'ring-amber-500', 'ring-offset-2'), 2500);
+      }
+    }, 150);
+
     this.notify(`[${subject}] 지필고사 시험범위(${this.draftScopeSections.reduce((acc, s) => acc + (s.items || []).length, 0)}개 문항)가 안전하게 저장되었습니다.`, 'success');
   },
 
@@ -9334,6 +9487,12 @@ const AcademicManager = {
     else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
   },
 
+  resetAdminExamScopeFilters() {
+    this.adminExamScopeTerm = 'ALL';
+    this.adminExamSubjectFilter = 'ALL';
+    this.renderAdminExamScopesTab();
+  },
+
   selectAdminExamScopeTerm(term) {
     this.adminExamScopeTerm = term;
     this.renderAdminExamScopesTab();
@@ -9357,7 +9516,7 @@ const AcademicManager = {
 
     const allScopes = this.getExamScopes().filter(s => Number(s.studentId) === studentId);
 
-    // 1. 학기 필터 Pills 렌더링
+    // 1. 학기 필터 Pills 렌더링 (각 학기별 등록된 시험 개수 표시)
     const termPills = document.getElementById('adminExamScopeTermPills');
     if (termPills) {
       const terms = [
@@ -9371,11 +9530,13 @@ const AcademicManager = {
       ];
       termPills.innerHTML = terms.map(t => {
         const isActive = this.adminExamScopeTerm === t.id;
+        const count = t.id === 'ALL' ? allScopes.length : allScopes.filter(s => s.term === t.id).length;
+        const badge = count > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${isActive ? 'bg-white/30 text-white' : 'bg-amber-100 text-amber-800'}">${count}</span>` : '';
         return `
-          <button type="button" onclick="AcademicManager.selectAdminExamScopeTerm('${t.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+          <button type="button" onclick="AcademicManager.selectAdminExamScopeTerm('${t.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center ${
             isActive ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }">
-            ${t.label}
+            <span>${t.label}</span>${badge}
           </button>
         `;
       }).join('');
@@ -9430,7 +9591,44 @@ const AcademicManager = {
     if (list.length === 0) {
       container.innerHTML = '';
       container.classList.add('hidden');
-      if (emptyState) emptyState.classList.remove('hidden');
+      if (emptyState) {
+        emptyState.classList.remove('hidden');
+        if (allScopes.length > 0) {
+          emptyState.innerHTML = `
+            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto shadow-inner">
+              <i class="fa-solid fa-filter-circle-xmark"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">선택한 필터 조건에 해당하는 시험범위가 없습니다.</h4>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              현재 필터: <strong class="text-amber-600">${this.adminExamScopeTerm === 'ALL' ? '전체 학기' : this.adminExamScopeTerm + ' 학기'}</strong> / 
+              <strong>${this.adminExamSubjectFilter === 'ALL' ? '전체 과목' : this.adminExamSubjectFilter}</strong><br/>
+              (해당 학생의 다른 학기/과목에 등록된 시험범위가 총 <strong class="text-indigo-600">${allScopes.length}개</strong> 있습니다.)
+            </p>
+            <div class="flex items-center justify-center gap-2 flex-wrap pt-2">
+              <button onclick="AcademicManager.resetAdminExamScopeFilters()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                <span>전체 시험범위 모아보기 (${allScopes.length}개)</span>
+              </button>
+              <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-plus text-[10px]"></i>
+                <span>새 시험범위 등록</span>
+              </button>
+            </div>
+          `;
+        } else {
+          emptyState.innerHTML = `
+            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">해당 학생의 등록된 지필고사 시험범위가 없습니다.</h4>
+            <p class="text-xs text-slate-400">교과서 출판사별 목차 및 국어·영어 모의고사 범위를 등록해보세요.</p>
+            <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>시험범위 등록하기</span>
+            </button>
+          `;
+        }
+      }
       return;
     }
 
