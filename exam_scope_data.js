@@ -28,6 +28,25 @@ const EXAM_TEXTBOOK_DB = {
         ]
       },
       {
+        id: 'visang_park_ym_1',
+        name: '비상 (박영민)',
+        grade: '고1 1학기 (공통국어1)',
+        units: [
+          { id: 'u1_1', title: '1단원. 네 가지 빛깔로 만나는 문학 - (1) 서정 갈래 (산속에서 - 나희덕)', sub: '서정 갈래의 특성과 심상' },
+          { id: 'u1_2', title: '1단원. 네 가지 빛깔로 만나는 문학 - (2) 서사 갈래 (관내분실 - 김초엽)', sub: '서사 갈래의 인물, 사건, 배경' },
+          { id: 'u1_3', title: '1단원. 네 가지 빛깔로 만나는 문학 - (3) 극 갈래 (결혼 - 이강백)', sub: '극 갈래의 대사와 행동, 무대 지시문' },
+          { id: 'u1_4', title: '1단원. 네 가지 빛깔로 만나는 문학 - (4) 교술 갈래 (화단 - 이태준)', sub: '교술 갈래의 경험과 성찰' },
+          { id: 'u2_1', title: '2단원. 품격을 높이는 언어생활 - (1) 음운의 변동', sub: '교체, 탈락, 첨가, 축약의 원리와 표준 발음' },
+          { id: 'u2_2', title: '2단원. 품격을 높이는 언어생활 - (2) 공동체와 의사소통', sub: '배려하는 말하기와 대화의 원리' },
+          { id: 'u3_1', title: '3단원. 소통으로 엮는 삶 - (1) 문학으로 소통하기 (길 - 윤동주)', sub: '화자의 자아 성찰과 삶의 지향' },
+          { id: 'u3_2', title: '3단원. 소통으로 엮는 삶 - (2) 독서, 삶의 길 찾기', sub: '자신의 삶과 연계한 주제 통합적 독서' },
+          { id: 'u4_1', title: '4단원. 세상을 밝히는 논증의 기술 - (1) 비판적 읽기와 주체적 수용', sub: '논증의 타당성, 공정성, 신뢰성 평가' },
+          { id: 'u4_2', title: '4단원. 세상을 밝히는 논증의 기술 - (2) 토론으로 해결 방안 탐색하기', sub: '찬반 토론의 절차와 필수 쟁점' },
+          { id: 'u5_1', title: '5단원. 생각을 담는 말과 글 - (1) 언어 실천 양상과 문법 요소', sub: '높임, 시간, 피동, 사동, 인용 표현' },
+          { id: 'u5_2', title: '5단원. 생각을 담는 말과 글 - (2) 사회적 쟁점에 대한 글 쓰기', sub: '타당한 근거와 논설문 작성' }
+        ]
+      },
+      {
         id: 'visang_park_1',
         name: '비상 (박안수)',
         grade: '고1 1학기 (공통국어1)',
@@ -82,6 +101,25 @@ const EXAM_TEXTBOOK_DB = {
           { id: 'u6_1', title: '6단원. 한국 문학의 흐름 - (1) 제망매가 (월명사) / 가시리', sub: '고대 가요 및 향가, 고려 가요의 정서' },
           { id: 'u6_2', title: '6단원. 한국 문학의 흐름 - (2) 시조 세 수 / 속미인곡 (정철)', sub: '조선 시대 시조 및 가사 문학의 갈래적 특성' },
           { id: 'u6_3', title: '6단원. 한국 문학의 흐름 - (3) 허생전 (박지원)', sub: '조선 후기 실학사상과 양반 사회 비판' }
+        ]
+      },
+      {
+        id: 'visang_park_ym_2',
+        name: '비상 (박영민)',
+        grade: '고1 2학기 (공통국어2)',
+        units: [
+          { id: 'u1_1', title: '1단원. 나, 너, 우리가 만나는 길 - (1) 문학의 해석과 생활화 (한 그리움이 다른 그리움에게 / 나의 꿈)', sub: '다양한 관점에서의 문학 작품 수용과 내면화' },
+          { id: 'u1_2', title: '1단원. 나, 너, 우리가 만나는 길 - (2) 사회적 대화로서의 글 읽기 (창의적인 사람들의 뇌에서는 무슨 일이 벌어질까)', sub: '필자와 독자의 상호 작용과 사회적 담론' },
+          { id: 'u2_1', title: '2단원. 미래로 이어지는 국어의 발자취 - (1) 국어의 어제와 오늘 (세종어제훈민정음)', sub: '훈민정음 창제 원리와 중세 국어의 음운·문법적 특징' },
+          { id: 'u2_2', title: '2단원. 미래로 이어지는 국어의 발자취 - (2) 한글 맞춤법과 국어 생활', sub: '한글 맞춤법의 기본 원리와 표준어 규정 적용' },
+          { id: 'u3_1', title: '3단원. 세상과 지혜롭게 소통하는 힘 - (1) 매체 언어의 특성과 주체적 수용', sub: '복합 양식성과 매체 정보의 비판적 판별' },
+          { id: 'u3_2', title: '3단원. 세상과 지혜롭게 소통하는 힘 - (2) 보고하는 글 함께 쓰기', sub: '조사 보고서 작성과 협력적 글쓰기' },
+          { id: 'u4_1', title: '4단원. 삶 속에 흐르는 문학 - (1) 사랑, 그 속에 담긴 아픔 (서경별곡 / 제망매가 / 진달래꽃)', sub: '한국 문학의 전통적 서정과 이별의 한' },
+          { id: 'u4_2', title: '4단원. 삶 속에 흐르는 문학 - (2) 자연, 그 속의 여유로움 (강호사시가 / 상춘곡)', sub: '사대부의 자연관과 강호가도' },
+          { id: 'u4_3', title: '4단원. 삶 속에 흐르는 문학 - (3) 웃음, 그 속에 담긴 현실 (봄·봄 - 김유정 / 흥보전)', sub: '해학과 풍자를 통한 현실 비판' },
+          { id: 'u5_1', title: '5단원. 서로 다른 시선, 함께 찾아가는 삶 - (1) 주제 통합적 읽기 (윤리적 소비와 합리적 소비)', sub: '동일 화제에 대한 다양한 관점 비교 독해' },
+          { id: 'u5_2', title: '5단원. 서로 다른 시선, 함께 찾아가는 삶 - (2) 협상을 통한 문제 해결', sub: '갈등 조정과 상생의 협상 전략' },
+          { id: 'u5_3', title: '5단원. 서로 다른 시선, 함께 찾아가는 삶 - (3) 논증하는 글 쓰기', sub: '논리적 오류 극복과 설득적 글쓰기' }
         ]
       },
       {
@@ -144,25 +182,59 @@ const EXAM_TEXTBOOK_DB = {
   '공통영어1': {
     publishers: [
       {
-        id: 'ne_kim_1',
-        name: '능률 (김성곤)',
-        grade: '고1 1학기 (공통영어1)',
-        units: [
-          { id: 'u1', title: 'Lesson 1. What Makes You Special', sub: '자신만의 개성과 잠재력 발견하기' },
-          { id: 'u2', title: 'Lesson 2. The Art of Communication', sub: '비언어적 소통과 효과적인 대화의 기술' },
-          { id: 'u3', title: 'Lesson 3. Living Together in Harmony', sub: '자연과 인간의 조화로운 공존' },
-          { id: 'u4', title: 'Lesson 4. Space: The Final Frontier', sub: '우주 탐사의 역사와 인류의 미래' }
-        ]
-      },
-      {
         id: 'ybm_park_1',
         name: 'YBM (박준언)',
         grade: '고1 1학기 (공통영어1)',
         units: [
-          { id: 'u1', title: 'Lesson 1. Be Digitally Smart!', sub: '디지털 세상에서 똑똑하고 비판적으로 정보 판별하기' },
-          { id: 'u2', title: 'Lesson 2. Step into the World of AI', sub: '인공지능의 발전과 미래 사회의 변화' },
-          { id: 'u3', title: 'Lesson 3. Eco-Innovators for Our Planet', sub: '지구를 지키는 친환경 아이디어와 혁신가들' },
-          { id: 'u4', title: 'Lesson 4. The Science of Small Choices', sub: '일상 속 사소한 선택이 만드는 놀라운 과학적 변화' }
+          { id: 'u1', title: 'Lesson 1. Enrich Your Life', sub: 'The Magic of Morning Pages (습관 형성 및 삶의 풍요)' },
+          { id: 'u2', title: 'Lesson 2. Explore Wildlife Wonders', sub: 'The Mind of an Octopus (문어의 지능과 생태계의 경이)' },
+          { id: 'u3', title: 'Lesson 3. Embrace Diversity, Broaden Your Horizons', sub: 'English or Englishes? (세계 영어와 다양성의 포용)' },
+          { id: 'u4', title: 'Lesson 4. When Art Meets Technology', sub: 'Artificial Intelligence and the Arts (인공지능과 예술의 만남)' }
+        ]
+      },
+      {
+        id: 'ne_min_1',
+        name: 'NE능률 (민병천)',
+        grade: '고1 1학기 (공통영어1)',
+        units: [
+          { id: 'u1', title: 'Lesson 1. Getting to Know Yourself', sub: '자아 탐색과 진정한 자신의 모습 발견하기' },
+          { id: 'u2', title: 'Lesson 2. Caring Hearts', sub: '타인을 향한 따뜻한 배려와 나눔의 가치' },
+          { id: 'u3', title: 'Lesson 3. How Our Body Works', sub: '신체와 뇌의 신비로운 작동 원리' },
+          { id: 'u4', title: 'Lesson 4. The Future Ahead of Us', sub: '미래 사회의 변화와 우리가 마주할 새로운 세계' },
+          { id: 'u_sp', title: 'Special Lesson. Ready to Be Wicked', sub: '영미 단편 문학 작품 감상과 비판적 읽기' }
+        ]
+      },
+      {
+        id: 'ne_kim_1',
+        name: '능률 (김성곤)',
+        grade: '고1 1학기 (공통영어1)',
+        units: [
+          { id: 'u1', title: 'Lesson 1. The Part You Play', sub: '자신만의 개성과 잠재력 발견하기' },
+          { id: 'u2', title: 'Lesson 2. The Power of Creativity', sub: '틀을 깨는 창의성과 일상 속 발명' },
+          { id: 'u3', title: 'Lesson 3. Sound Life', sub: '음악과 소리가 주는 감동과 치유' },
+          { id: 'u4', title: 'Lesson 4. Toward a Better World', sub: '공동체를 위한 나눔과 지속 가능한 사회' }
+        ]
+      },
+      {
+        id: 'visang_hong_1',
+        name: '비상 (홍민표)',
+        grade: '고1 1학기 (공통영어1)',
+        units: [
+          { id: 'u1', title: 'Unit 1. My Life', sub: '꿈을 향한 열정과 고교 생활 첫걸음' },
+          { id: 'u2', title: 'Unit 2. Tasty Journeys', sub: '음식과 문화의 다채로운 여행' },
+          { id: 'u3', title: 'Unit 3. Nature Connections', sub: '자연에서 배우는 생체 모방과 공존' },
+          { id: 'u4', title: 'Unit 4. A Sunshine Break', sub: '휴식과 힐링, 새로운 활력 충전' }
+        ]
+      },
+      {
+        id: 'ybm_kim_1',
+        name: 'YBM (김은형)',
+        grade: '고1 1학기 (공통영어1)',
+        units: [
+          { id: 'u1', title: 'Lesson 1. Believe That You Can Do Better', sub: '성장 마인드셋과 자기 효능감' },
+          { id: 'u2', title: 'Lesson 2. Art and the City', sub: '도시를 바꾸는 공공 예술의 힘' },
+          { id: 'u3', title: 'Lesson 3. Living Green: A Guide to Sustainable Choices', sub: '친환경 라이프스타일 실천 가이드' },
+          { id: 'u4', title: 'Lesson 4. Be Smart in the Digital World', sub: '디지털 세상 속 지혜로운 미디어 리터러시' }
         ]
       },
       {
@@ -175,17 +247,6 @@ const EXAM_TEXTBOOK_DB = {
           { id: 'u3', title: 'Lesson 3. The Power of Together', sub: '집단 지성과 협력의 놀라운 힘' },
           { id: 'u4', title: 'Lesson 4. Science in Everyday Wonders', sub: '일상 속 숨겨진 신비로운 과학 원리' }
         ]
-      },
-      {
-        id: 'visang_hong_1',
-        name: '비상 (홍민표)',
-        grade: '고1 1학기 (공통영어1)',
-        units: [
-          { id: 'u1', title: 'Lesson 1. Start with a Dream', sub: '꿈을 향한 열정과 첫걸음' },
-          { id: 'u2', title: 'Lesson 2. Nature\'s Amazing Solutions', sub: '자연에서 배우는 생체 모방 과학' },
-          { id: 'u3', title: 'Lesson 3. The Colors of Culture', sub: '세계의 축제와 전통문화의 매력' },
-          { id: 'u4', title: 'Lesson 4. Ethics in Science & Tech', sub: '과학 기술의 진보와 인간성' }
-        ]
       }
     ]
   },
@@ -193,34 +254,37 @@ const EXAM_TEXTBOOK_DB = {
   '공통영어2': {
     publishers: [
       {
-        id: 'ne_kim_2',
-        name: '능률 (김성곤)',
-        grade: '고1 2학기 (공통영어2)',
-        units: [
-          { id: 'u5', title: 'Lesson 5. The Power of Creativity', sub: '틀을 깨는 창의성과 일상 속 발명' },
-          { id: 'u6', title: 'Lesson 6. For the Betterment of All', sub: '공동체를 위한 나눔과 사회적 기업' },
-          { id: 'u_special', title: 'Special Lesson. The Gift of the Magi', sub: '오 헨리의 영미 명작 단편소설' }
-        ]
-      },
-      {
         id: 'ybm_park_2',
         name: 'YBM (박준언)',
         grade: '고1 2학기 (공통영어2)',
         units: [
-          { id: 'u5', title: 'Lesson 5. Voices of History, Lessons for Tomorrow', sub: '역사 속 인물들의 외침과 내일을 위한 교훈' },
-          { id: 'u6', title: 'Lesson 6. Across Borders, Connecting Cultures', sub: '국경을 넘어 세계 문화와 소통하기' },
-          { id: 'u_special1', title: 'Special Lesson 1. Words That Changed the World', sub: '세상을 바꾼 명연설문 독해' },
-          { id: 'u_special2', title: 'Special Lesson 2. Literature for the Soul', sub: '마음을 울리는 영미 단편 문학 읽기' }
+          { id: 'u1', title: 'Lesson 1. Be Digitally Smart!', sub: 'Warning: Fake News Alert! (가짜 뉴스 판별과 디지털 시민의식)' },
+          { id: 'u2', title: 'Lesson 2. Urgent Call From Earth', sub: 'Dry (지구 온난화와 환경 위기 극복)' },
+          { id: 'u3', title: 'Lesson 3. Rise Above Challenges', sub: 'Resilience: The Power to Overcome (회복 탄력성과 극복의 힘)' },
+          { id: 'u4', title: 'Lesson 4. Creative Ideas for a Better World', sub: 'Science for All (적정 기술과 세상을 바꾸는 아이디어)' }
         ]
       },
       {
-        id: 'ybm_han_2',
-        name: 'YBM (한상호)',
+        id: 'ne_min_2',
+        name: 'NE능률 (민병천)',
         grade: '고1 2학기 (공통영어2)',
         units: [
-          { id: 'u5', title: 'Lesson 5. Culture Through the Lens', sub: '예술과 건축을 통해 바라본 다양한 문화' },
-          { id: 'u6', title: 'Lesson 6. Towards a Sustainable Future', sub: '지속 가능한 지구와 환경 보호 실천' },
-          { id: 'u_special', title: 'Special Lesson. A World of Opportunities', sub: '글로벌 진로 탐색과 진정한 도전' }
+          { id: 'u1', title: 'Lesson 1. Bonding with Others', sub: '진정한 관계 맺기와 소통의 기쁨' },
+          { id: 'u2', title: 'Lesson 2. What Keeps Us Moving Forward', sub: '동기 부여와 목표를 향한 끈기' },
+          { id: 'u3', title: 'Lesson 3. Knowing Ourselves, Knowing Others', sub: '다문화 이해와 상호 존중' },
+          { id: 'u4', title: 'Lesson 4. Toward Sustainability', sub: '지속 가능한 생태계와 녹색 실천' },
+          { id: 'u_sp', title: 'Special Lesson. One-of-a-Kind Self', sub: '단 하나뿐인 특별한 나를 위한 성찰' }
+        ]
+      },
+      {
+        id: 'ne_kim_2',
+        name: '능률 (김성곤)',
+        grade: '고1 2학기 (공통영어2)',
+        units: [
+          { id: 'u5', title: 'Lesson 5. What Matters Most', sub: '톨스토이의 세 가지 질문 (진정 소중한 것)' },
+          { id: 'u6', title: 'Lesson 6. Beyond the Limits', sub: '한계를 뛰어넘는 용기와 인류의 도전' },
+          { id: 'u7', title: 'Lesson 7. Finding Out the Wonders', sub: '경이로운 자연 현상과 과학적 탐구' },
+          { id: 'u8', title: 'Lesson 8. It\'s Up to You!', sub: '스스로 만들어가는 미래와 삶의 선택' }
         ]
       },
       {
@@ -228,8 +292,21 @@ const EXAM_TEXTBOOK_DB = {
         name: '비상 (홍민표)',
         grade: '고1 2학기 (공통영어2)',
         units: [
-          { id: 'u5', title: 'Lesson 5. Heroes Without Capes', sub: '우리 곁의 숨은 영웅과 봉사' },
-          { id: 'u6', title: 'Lesson 6. Global Citizen Mindset', sub: '세계 시민으로서의 책임과 연대' }
+          { id: 'u1', title: 'Unit 1. The Road Ahead', sub: '미래를 향한 도전과 진로 탐색' },
+          { id: 'u2', title: 'Unit 2. My Culture, Your Culture', sub: '세계 시민으로서의 문화 다양성 수용' },
+          { id: 'u3', title: 'Unit 3. The Gift of Art', sub: '예술이 선사하는 영감과 사회적 가치' },
+          { id: 'u4', title: 'Unit 4. New Challenges', sub: '새로운 기술과 인류가 마주할 도전' }
+        ]
+      },
+      {
+        id: 'ybm_kim_2',
+        name: 'YBM (김은형)',
+        grade: '고1 2학기 (공통영어2)',
+        units: [
+          { id: 'u1', title: 'Lesson 1. Make Your World a Better Place', sub: '지역사회 봉사와 작은 변화의 시작' },
+          { id: 'u2', title: 'Lesson 2. From Tradition to Trend', sub: '전통문화의 현대적 재해석과 한류' },
+          { id: 'u3', title: 'Lesson 3. Beyond Barriers', sub: '장애와 편견을 뛰어넘는 화합' },
+          { id: 'u4', title: 'Lesson 4. The Essence of Being Human', sub: '인간성의 본질과 철학적 사유' }
         ]
       },
       {
