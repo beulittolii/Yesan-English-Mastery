@@ -4013,6 +4013,12 @@ const AcademicManager = {
   // ----------------------------------------------------
   init() {
     this.seedDefaultDataIfEmpty();
+    // 송규인 학생(11)의 영어 시험범위 삭제 반영
+    const rawScopes = this.getExamScopes();
+    const filteredScopes = rawScopes.filter(s => s.id !== 'scope_sample_11_eng' && !(Number(s.studentId) === 11 && (s.subject === '공통영어2' || s.subject === '영어')));
+    if (rawScopes.length !== filteredScopes.length) {
+      this.saveExamScopes(filteredScopes);
+    }
     this.hookIntoApp();
     this.initCloudSync();
     console.log('✅ YEM 학업관리 플랫폼 엔진 초기화 완료 (수행평가·내신·모의고사·목표대학 클라우드 실시간 동기화 가동)');
@@ -4188,54 +4194,6 @@ const AcademicManager = {
     },
     examScopes: [
       {
-        id: 'scope_sample_11_eng',
-        studentId: 11,
-        term: '1-2',
-        subject: '공통영어2',
-        examType: '중간고사',
-        examDate: '2026-10-15',
-        targetScore: '100점 (1등급)',
-        textbookPublisher: '능률(김성곤)',
-        teacherName: '박영어 선생님',
-        memo: '교과서 5~6과 본문 어법 변형 + 9월 모의고사 빈칸/순서 집중',
-        sections: [
-          {
-            id: 'sec_sample_tb',
-            type: 'textbook',
-            title: '교과서: 능률(김성곤) 공통영어2',
-            teacherName: '박영어 선생님',
-            items: [
-              { id: 'it_tb_5', name: 'Lesson 5. The Power of Creativity', subTitle: '본문 1~4 어법·어휘 및 내용일치', teacherName: '박영어 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
-              { id: 'it_tb_6', name: 'Lesson 6. For the Betterment of All', subTitle: '본문 1~4 서술형 영작 및 빈칸', teacherName: '박영어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' }
-            ]
-          },
-          {
-            id: 'sec_sample_mock',
-            type: 'mock_exam',
-            title: '2026년 9월 고1 학평 모의고사 (20~40번)',
-            teacherName: '이독해 선생님',
-            items: [
-              { id: 'it_mock_20', name: '20번 [주장 파악]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
-              { id: 'it_mock_21', name: '21번 [함축 의미 추론]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
-              { id: 'it_mock_29', name: '29번 [어법 정확성]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
-              { id: 'it_mock_31', name: '31번 [빈칸 추론]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
-              { id: 'it_mock_33', name: '33번 [빈칸 추론]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' },
-              { id: 'it_mock_36', name: '36번 [글의 순서 배열]', subTitle: '2026년 9월 고1 학평', teacherName: '이독해 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
-            ]
-          },
-          {
-            id: 'sec_sample_print',
-            type: 'custom',
-            title: '학교 부교재 / 외부 심화 지문 프린트',
-            teacherName: '박영어 선생님',
-            items: [
-              { id: 'it_pr_1', name: '수능특강 Light 변형 구문 프린트 1~10번', subTitle: '어법 어휘 빈칸 대비', teacherName: '박영어 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
-              { id: 'it_pr_2', name: '서술형 영작 대비 핵심 문장 20선', subTitle: '조건 영작 암기', teacherName: '박영어 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
-            ]
-          }
-        ]
-      },
-      {
         id: 'scope_sample_11_kor',
         studentId: 11,
         term: '1-2',
@@ -4268,7 +4226,6 @@ const AcademicManager = {
               { id: 'it_kor_mock_30', name: '30~34번 [독서 과학·기술 지문]', subTitle: '2026년 9월 고1 학평', teacherName: '최문법 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
             ]
           }
-        ]
       },
       {
         id: 'scope_sample_11_math',
