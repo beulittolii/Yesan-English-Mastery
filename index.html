@@ -4015,10 +4015,19 @@ const AcademicManager = {
     this.seedDefaultDataIfEmpty();
     // 기존 샘플 데이터 중 송규인 학생의 샘플 영어 시험범위(scope_sample_11_eng)만 안전하게 정리
     const rawScopes = this.getExamScopes();
-    const filteredScopes = rawScopes.filter(s => s.id !== 'scope_sample_11_eng');
-    if (rawScopes.length !== filteredScopes.length) {
+    let filteredScopes = rawScopes.filter(s => s.id !== 'scope_sample_11_eng');
+    
+    // 만약 등록된 지필고사 시험범위가 아예 없거나, 송규인(ID 11) 학생의 시험범위가 없는 경우
+    // 사용자(송규인)가 지필고사 시험범위 창에 진입했을 때 즉시 확인할 수 있도록 비상(박영민) 국어 및 신사고 수학 기본 범위를 자동 세팅!
+    const hasGyuinScopes = filteredScopes.some(s => Number(s.studentId) === 11);
+    if (!hasGyuinScopes && Array.isArray(this.sampleData.examScopes)) {
+      const defaultScopes = JSON.parse(JSON.stringify(this.sampleData.examScopes));
+      filteredScopes = [...filteredScopes, ...defaultScopes];
+      this.saveExamScopes(filteredScopes);
+    } else if (rawScopes.length !== filteredScopes.length) {
       this.saveExamScopes(filteredScopes);
     }
+
     this.hookIntoApp();
     this.initCloudSync();
     console.log('✅ YEM 학업관리 플랫폼 엔진 초기화 완료 (수행평가·내신·모의고사·목표대학 클라우드 실시간 동기화 가동)');
@@ -4039,18 +4048,17 @@ const AcademicManager = {
     if (hasAssess || hasGrades || hasMocks || hasUnivs || hasScopes) {
       localStorage.setItem(this.storageKeys.initialized, 'true');
       if (!hasScopes) {
-        localStorage.setItem(this.storageKeys.examScopes, '[]');
+        localStorage.setItem(this.storageKeys.examScopes, JSON.stringify(this.sampleData.examScopes));
       }
       return;
     }
 
-    // 2. 새 브라우저/첫 방문 시: 로컬스토리지에 빈 데이터 상태([])로 안전하게 초기화
-    // ⚠️ 절대로 this.save*()를 호출하지 않음 (클라우드 Firebase로 샘플 역전파 원천 차단!)
+    // 2. 새 브라우저/첫 방문 시: 로컬스토리지에 기본 데이터 상태로 안전하게 초기화
     localStorage.setItem(this.storageKeys.assessments, '[]');
     localStorage.setItem(this.storageKeys.schoolGrades, '[]');
     localStorage.setItem(this.storageKeys.mockExams, '[]');
     localStorage.setItem(this.storageKeys.targetUnivs, '{}');
-    localStorage.setItem(this.storageKeys.examScopes, '[]');
+    localStorage.setItem(this.storageKeys.examScopes, JSON.stringify(this.sampleData.examScopes));
     localStorage.setItem(this.storageKeys.initialized, 'true');
   },
 
@@ -4201,29 +4209,30 @@ const AcademicManager = {
         examType: '중간고사',
         examDate: '2026-10-16',
         targetScore: '98점 (1등급)',
-        textbookPublisher: '미래엔(신유식)',
+        textbookPublisher: '비상(박영민)',
         teacherName: '김국어 선생님',
-        memo: '고전시가 관동별곡 현대어 풀이 완벽 암기 + 9월 모의고사 문학',
+        memo: '비상 박영민 1·2·4단원 본문 분석 및 9월 모의고사 문학·독서 연계',
         sections: [
           {
             id: 'sec_sample_kor_tb',
             type: 'textbook',
-            title: '교과서: 미래엔(신유식) 공통국어2',
+            title: '교과서: 비상 (박영민)',
             teacherName: '김국어 선생님',
             items: [
-              { id: 'it_kor_tb_1', name: '5단원 (1) 관동별곡 - 정철', subTitle: '화자의 정서 변화 및 여정/시어 풀이', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
-              { id: 'it_kor_tb_2', name: '5단원 (2) 진달래꽃 - 김소월', subTitle: '전통적 한의 정서와 반어법', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
-              { id: 'it_kor_tb_3', name: '6단원 (1) 국어의 음운 변동', subTitle: '교체·탈락·첨가·축약 사례 암기', teacherName: '최문법 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
+              { id: 'it_kor_tb_1', name: '1단원. 나, 너, 우리가 만나는 길 - (1) 문학의 해석과 생활화', subTitle: '한 그리움이 다른 그리움에게 / 나의 꿈', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_kor_tb_2', name: '2단원. 미래로 이어지는 국어의 발자취 - (1) 국어의 어제와 오늘', subTitle: '세종어제훈민정음 창제 원리와 중세 국어 특징', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_kor_tb_3', name: '4단원. 삶 속에 흐르는 문학 - (1) 사랑, 그 속에 담긴 아픔', subTitle: '서경별곡 / 제망매가 / 진달래꽃 (전통적 서정)', teacherName: '최문법 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
             ]
           },
           {
             id: 'sec_sample_kor_mock',
             type: 'mock_exam',
-            title: '2026년 9월 고1 학평 모의고사 국어 (문학·독서)',
+            title: '모의고사: 2026년 9월 고1 학력평가 (22~34번)',
             teacherName: '김국어 선생님',
             items: [
-              { id: 'it_kor_mock_22', name: '22~26번 [현대시/수필 복합]', subTitle: '2026년 9월 고1 학평', teacherName: '김국어 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
-              { id: 'it_kor_mock_30', name: '30~34번 [독서 과학·기술 지문]', subTitle: '2026년 9월 고1 학평', teacherName: '최문법 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
+              { id: 'it_kor_mock_22', name: '[2026년 9월 고1 학력평가] 22번 (문학 (현대소설 인물/갈등))', subTitle: '22번 지문', teacherName: '김국어 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
+              { id: 'it_kor_mock_23', name: '[2026년 9월 고1 학력평가] 23번 (문학 (현대시 감상))', subTitle: '23번 지문', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_kor_mock_30', name: '[2026년 9월 고1 학력평가] 30번 (독서 (과학/기술 지문))', subTitle: '30번 지문', teacherName: '최문법 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
             ]
           }
         ]
@@ -5559,6 +5568,18 @@ const AcademicManager = {
             </div>
           `;
         } else {
+          // 다른 학생에게 등록된 시험범위가 있는지 확인
+          const totalExistingScopes = this.getExamScopes();
+          let gyuinScopeBtn = '';
+          if (studentId !== 11 && totalExistingScopes.some(s => Number(s.studentId) === 11)) {
+            gyuinScopeBtn = `
+              <button onclick="App.selectStudent(11); AcademicManager.switchStudentTab('examPrep');" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-user-graduate text-[11px]"></i>
+                <span>송규인 학생 시험범위 보기</span>
+              </button>
+            `;
+          }
+
           emptyState.innerHTML = `
             <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl mx-auto shadow-inner">
               <i class="fa-solid fa-book-open"></i>
@@ -5567,10 +5588,17 @@ const AcademicManager = {
               <h4 class="font-bold text-slate-800 text-base">등록된 시험범위가 없습니다.</h4>
               <p class="text-xs text-slate-500 mt-1">교과서 출판사 선택 목차 자동 불러오기, 국어·영어 모의고사 문항 범위 자동 생성기로 지필고사 시험범위를 간편하게 등록해보세요!</p>
             </div>
-            <button onclick="AcademicManager.openExamScopeModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-md shadow-amber-200">
-              <i class="fa-solid fa-plus"></i>
-              <span>첫 시험범위 등록하기</span>
-            </button>
+            <div class="flex items-center justify-center gap-2 flex-wrap pt-1">
+              ${gyuinScopeBtn}
+              <button onclick="AcademicManager.loadGyuinSampleExamScopes()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-cloud-arrow-down text-[11px]"></i>
+                <span>기본 시험범위(비상 국어·신사고 수학) 불러오기</span>
+              </button>
+              <button onclick="AcademicManager.openExamScopeModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-2 shadow-md shadow-amber-200 cursor-pointer">
+                <i class="fa-solid fa-plus text-[11px]"></i>
+                <span>새 시험범위 등록하기</span>
+              </button>
+            </div>
           `;
         }
       }
@@ -6487,9 +6515,10 @@ const AcademicManager = {
     const modal = document.getElementById('academicExamScopeModal');
     if (!modal) return;
 
-    const currentStudentId = isAdmin
-      ? (App.state.adminSelectedStudentId || (typeof AppData !== 'undefined' && AppData.getStudents()[0] ? AppData.getStudents()[0].id : 1))
-      : (App.state.selectedStudentId || (typeof AppData !== 'undefined' && AppData.getStudents()[0] ? AppData.getStudents()[0].id : 1));
+    const isAdminMode = Boolean(isAdmin || App?.state?.isAdminLoggedIn);
+    const currentStudentId = isAdminMode
+      ? Number(App?.state?.adminSelectedStudentId || App?.state?.selectedStudentId || 11)
+      : Number(App?.state?.selectedStudentId || 11);
 
     document.getElementById('formExamScopeId').value = id || '';
     document.getElementById('formExamScopeStudentId').value = currentStudentId;
@@ -6497,7 +6526,7 @@ const AcademicManager = {
     // 관리자 대상 학생 선택 셀렉트박스
     const selectWrap = document.getElementById('formExamScopeStudentSelectWrap');
     const select = document.getElementById('formExamScopeStudentSelect');
-    if (isAdmin && selectWrap && select && typeof AppData !== 'undefined') {
+    if (isAdminMode && selectWrap && select && typeof AppData !== 'undefined') {
       selectWrap.classList.remove('hidden');
       const students = AppData.getStudents();
       select.innerHTML = students.map(s => `
@@ -6709,11 +6738,11 @@ const AcademicManager = {
     checkboxes.forEach(cb => { cb.checked = selectAll; });
   },
 
-  addSelectedUnitsToScope() {
+  addSelectedUnitsToScope(silent = false) {
     const checkboxes = Array.from(document.querySelectorAll('#examScopeUnitCheckboxes .unit-checkbox:checked'));
     if (checkboxes.length === 0) {
-      this.notify('추가할 교과서 단원을 하나 이상 체크해주세요.', 'warning');
-      return;
+      if (!silent) this.notify('추가할 교과서 단원을 하나 이상 체크해주세요.', 'warning');
+      return false;
     }
 
     const subject = document.getElementById('formExamScopeSubject')?.value || '영어';
@@ -6739,7 +6768,8 @@ const AcademicManager = {
     this.draftScopeSections.push(newSection);
     this.updateExamScopeModalPreview();
     this.selectAllTextbookUnits(false);
-    this.notify(`교과서 ${newSection.items.length}개 단원이 시험범위 목록에 추가되었습니다.`, 'success');
+    if (!silent) this.notify(`교과서 ${newSection.items.length}개 단원이 시험범위 목록에 추가되었습니다.`, 'success');
+    return true;
   },
 
   onMockPresetChange(presetId) {
@@ -6836,20 +6866,20 @@ const AcademicManager = {
     this.notify(`모의고사 ${items.length}개 문항이 시험범위 목록에 추가되었습니다.`, 'success');
   },
 
-  addCustomScopeItem() {
+  addCustomScopeItem(silent = false) {
     const title = document.getElementById('formExamScopeCustomTitle')?.value.trim() || '부교재 / 프린트';
     const teacherName = document.getElementById('formExamScopeCustomTeacher')?.value.trim() || '';
     const itemsRaw = document.getElementById('formExamScopeCustomItems')?.value.trim() || '';
 
     if (!itemsRaw) {
-      this.notify('추가할 범위 항목을 입력해주세요.', 'warning');
-      return;
+      if (!silent) this.notify('추가할 범위 항목을 입력해주세요.', 'warning');
+      return false;
     }
 
     const lines = itemsRaw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) {
-      this.notify('추가할 범위 항목을 한 줄 이상 입력해주세요.', 'warning');
-      return;
+      if (!silent) this.notify('추가할 범위 항목을 한 줄 이상 입력해주세요.', 'warning');
+      return false;
     }
 
     const newSection = {
@@ -6870,7 +6900,8 @@ const AcademicManager = {
     this.draftScopeSections.push(newSection);
     document.getElementById('formExamScopeCustomItems').value = '';
     this.updateExamScopeModalPreview();
-    this.notify(`부교재/프린트 ${newSection.items.length}개 항목이 시험범위에 추가되었습니다.`, 'success');
+    if (!silent) this.notify(`부교재/프린트 ${newSection.items.length}개 항목이 시험범위에 추가되었습니다.`, 'success');
+    return true;
   },
 
   removeDraftScopeSection(sectionId) {
@@ -6953,15 +6984,27 @@ const AcademicManager = {
   handleSaveExamScope(event) {
     if (event) event.preventDefault();
 
+    // ★ 1. 사용자가 단원 체크박스를 체크했으나 중간 '추가' 버튼을 누르지 않은 채 바로 저장을 누른 경우 자동 추가!
+    const checkedBoxes = document.querySelectorAll('#examScopeUnitCheckboxes .unit-checkbox:checked');
+    if (checkedBoxes.length > 0) {
+      this.addSelectedUnitsToScope(true);
+    }
+
+    // ★ 2. 부교재/프린트 직접 입력란에 내용이 적혀있는 경우 자동 추가!
+    const customItemsText = document.getElementById('formExamScopeCustomItems')?.value?.trim();
+    if (customItemsText) {
+      this.addCustomScopeItem(true);
+    }
+
     if (this.draftScopeSections.length === 0) {
-      this.notify('시험범위에 최소 1개 이상의 파트(단원 또는 문항)를 추가해주세요.', 'warning');
+      this.notify('시험범위에 최소 1개 이상의 교과서 단원이나 모의고사/부교재 항목을 추가해주세요.', 'warning');
       return;
     }
 
     const id = document.getElementById('formExamScopeId')?.value || '';
     
     // 대상 학생 ID 안전 취득 (관리자 모달 셀렉트박스가 열려있으면 해당 값 최우선)
-    let studentId = parseInt(document.getElementById('formExamScopeStudentId')?.value || App.state.selectedStudentId || '1', 10);
+    let studentId = parseInt(document.getElementById('formExamScopeStudentId')?.value || App.state.selectedStudentId || '11', 10);
     const selectWrap = document.getElementById('formExamScopeStudentSelectWrap');
     const select = document.getElementById('formExamScopeStudentSelect');
     if (selectWrap && !selectWrap.classList.contains('hidden') && select && select.value) {
@@ -7008,15 +7051,21 @@ const AcademicManager = {
     this.adminExamScopeTerm = term;
     this.adminExamSubjectFilter = 'ALL';
 
-    // 관리자 모드인 경우 대상 학생 동기화 및 탭 갱신
+    // 화면 뷰 동기화: 학생 대시보드 화면이면 지필고사 탭으로 전환
+    const isStudentViewActive = !document.getElementById('studentDashboardView')?.classList.contains('hidden');
+    if (isStudentViewActive) {
+      if (App.state) App.state.selectedStudentId = studentId;
+      this.switchStudentTab('examPrep');
+    }
+
+    // 관리자 화면이 활성화되어 있거나 관리자 로그인 상태인 경우
     if (App.state.isAdminLoggedIn) {
       if (App.state) App.state.adminSelectedStudentId = studentId;
-      if (this.currentAdminTab === 'examprep' || App.state.adminTab === 'examprep') {
+      const isAdminViewActive = !document.getElementById('adminDashboardView')?.classList.contains('hidden');
+      if (isAdminViewActive) {
+        if (typeof App.switchAdminTab === 'function') App.switchAdminTab('examprep');
         this.renderAdminExamScopesTab();
       }
-    } else {
-      // 학생 모드인 경우 지필고사 시험범위 탭으로 전환하여 방금 등록한 범위를 즉시 보여줌
-      this.switchStudentTab('examPrep');
     }
 
     this.refreshAcademicViews();
@@ -9616,16 +9665,44 @@ const AcademicManager = {
             </div>
           `;
         } else {
+          // 다른 학생에게 등록된 시험범위가 있는지 확인
+          const totalExistingScopes = this.getExamScopes();
+          const otherStudentWithScopes = totalExistingScopes.find(sc => Number(sc.studentId) !== studentId);
+          let otherStudentHintHtml = '';
+          if (otherStudentWithScopes && typeof AppData !== 'undefined') {
+            const otherSt = AppData.getStudentById(otherStudentWithScopes.studentId);
+            const otherCount = totalExistingScopes.filter(sc => Number(sc.studentId) === otherStudentWithScopes.studentId).length;
+            if (otherSt) {
+              otherStudentHintHtml = `
+                <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl max-w-md mx-auto text-xs text-indigo-900 flex items-center justify-between gap-3">
+                  <div class="text-left">
+                    <strong class="font-bold text-indigo-950">${otherSt.name} 학생</strong>에게 등록된 시험범위가 <strong>${otherCount}개</strong> 있습니다.
+                  </div>
+                  <button type="button" onclick="AcademicManager.selectAdminStudent(${otherSt.id})" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs whitespace-nowrap shadow-xs cursor-pointer">
+                    ${otherSt.name} 시험범위 보기
+                  </button>
+                </div>
+              `;
+            }
+          }
+
           emptyState.innerHTML = `
             <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto">
               <i class="fa-solid fa-book-open"></i>
             </div>
-            <h4 class="font-bold text-slate-800 text-sm">해당 학생의 등록된 지필고사 시험범위가 없습니다.</h4>
+            <h4 class="font-bold text-slate-800 text-sm">${student ? student.name + ' 학생' : '해당 학생'}의 등록된 지필고사 시험범위가 없습니다.</h4>
             <p class="text-xs text-slate-400">교과서 출판사별 목차 및 국어·영어 모의고사 범위를 등록해보세요.</p>
-            <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>시험범위 등록하기</span>
-            </button>
+            ${otherStudentHintHtml}
+            <div class="flex items-center justify-center gap-2 flex-wrap pt-2">
+              <button onclick="AcademicManager.loadGyuinSampleExamScopes()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-cloud-arrow-down text-[10px]"></i>
+                <span>기본 시험범위(비상 국어·신사고 수학) 불러오기</span>
+              </button>
+              <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-plus text-[10px]"></i>
+                <span>새 시험범위 등록</span>
+              </button>
+            </div>
           `;
         }
       }
@@ -10330,6 +10407,34 @@ const AcademicManager = {
     }).join('');
   },
 
+  loadGyuinSampleExamScopes() {
+    const scopes = this.getExamScopes();
+    const defaultScopes = JSON.parse(JSON.stringify(this.sampleData.examScopes));
+    
+    // 송규인(11) 학생의 국어/수학 기본 범위를 안전하게 병합
+    defaultScopes.forEach(dScope => {
+      const idx = scopes.findIndex(s => s.id === dScope.id);
+      if (idx >= 0) {
+        scopes[idx] = dScope;
+      } else {
+        scopes.push(dScope);
+      }
+    });
+
+    this.saveExamScopes(scopes);
+    this.studentExamTerm = '1-2';
+    this.studentExamFilter = 'ALL';
+    this.studentExamSubjectFilter = 'ALL';
+    this.adminExamScopeTerm = '1-2';
+    this.adminExamSubjectFilter = 'ALL';
+    if (typeof App !== 'undefined' && App.state) {
+      App.state.selectedStudentId = 11;
+      App.state.adminSelectedStudentId = 11;
+    }
+    this.refreshAcademicViews();
+    this.notify('송규인 학생의 기본 지필고사 시험범위(비상 박영민 국어, 신사고 수학)가 성공적으로 적용되었습니다!', 'success');
+  },
+
   renderAdminPills(containerId) {
     const container = document.getElementById(containerId);
     if (!container || typeof AppData === 'undefined') return;
@@ -10342,11 +10447,21 @@ const AcademicManager = {
       return;
     }
 
+    const isExamPrep = (containerId === 'adminExamPrepStudentPills');
+    const allScopes = isExamPrep ? this.getExamScopes() : [];
+
     container.innerHTML = students.map(s => {
       const isSel = (s.id === currentId);
+      let countBadge = '';
+      if (isExamPrep) {
+        const sCount = allScopes.filter(sc => Number(sc.studentId) === s.id).length;
+        if (sCount > 0) {
+          countBadge = `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${isSel ? 'bg-white/30 text-white' : 'bg-amber-100 text-amber-800'}">${sCount}</span>`;
+        }
+      }
       return `
         <button type="button" onclick="AcademicManager.selectAdminStudent(${s.id})" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${isSel ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
-          <span>${this.escapeHtml(s.name)}</span>
+          <span>${this.escapeHtml(s.name)}</span>${countBadge}
         </button>
       `;
     }).join('');
