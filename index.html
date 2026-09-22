@@ -2633,15 +2633,12 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">과목 선택 (2022 개정) <span class="text-rose-500">*</span></label>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-bold text-slate-700">과목 선택 <span class="text-rose-500">*</span></label>
+                <span id="formExamScopeSubjectNotice" class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">[내신 과목 연동]</span>
+              </div>
               <select id="formExamScopeSubject" onchange="AcademicManager.onExamScopeSubjectChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-amber-300 bg-white font-black text-amber-900 focus:ring-2 focus:ring-amber-500" required>
-                <option value="공통국어2" selected>공통국어2</option>
-                <option value="공통영어2">공통영어2</option>
-                <option value="공통수학2">공통수학2</option>
-                <option value="통합사회2">통합사회2</option>
-                <option value="통합과학2">통합과학2</option>
-                <option value="한국사2">한국사2</option>
-                <option value="기타">기타 과목</option>
+                <!-- JS(AcademicManager.onExamScopeTermChange)에서 내신 관리 설정 과목을 기반으로 자동 생성 -->
               </select>
             </div>
             <div>
@@ -5386,9 +5383,13 @@ const AcademicManager = {
         return true;
       }).map(s => s.subject)));
 
+      const configured = this.getStudentConfiguredSubjects(studentId, this.studentExamTerm !== 'ALL' ? this.studentExamTerm : null);
+      const configuredSubs = Array.isArray(configured) ? configured : (configured.all || []);
+      const combinedSubjects = Array.from(new Set([...presentSubjects, ...configuredSubs]));
+
       const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
-      if (presentSubjects.length > 0) {
-        presentSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
+      if (combinedSubjects.length > 0) {
+        combinedSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
       } else {
         // 기본 2022 개정 과목 힌트
         ['공통국어2', '공통영어2', '공통수학2', '대수', '미적분I'].forEach(sub => subjectOptions.push({ id: sub, label: sub }));
@@ -5417,9 +5418,10 @@ const AcademicManager = {
     if (this.studentExamSubjectFilter !== 'ALL') {
       list = list.filter(s => {
         if (s.subject === this.studentExamSubjectFilter) return true;
-        if (this.studentExamSubjectFilter === '국어' && s.subject.includes('국어')) return true;
-        if (this.studentExamSubjectFilter === '영어' && s.subject.includes('영어')) return true;
-        if (this.studentExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적'))) return true;
+        const cleanFilter = (this.studentExamSubjectFilter || '').replace(/\s+/g, '');
+        const cleanScope = (s.subject || '').replace(/\s+/g, '');
+        if (cleanFilter && cleanScope && (cleanScope.includes(cleanFilter) || cleanFilter.includes(cleanScope))) return true;
+        if (this.studentExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적') || s.subject.includes('기하') || s.subject.includes('확률'))) return true;
         return false;
       });
     }
@@ -6207,8 +6209,14 @@ const AcademicManager = {
     const absList = [];
     const genList = [];
 
-    if (currentGrade && Array.isArray(currentGrade.subjects) && currentGrade.subjects.length > 0) {
-      currentGrade.subjects.forEach(s => {
+    let targetGrade = currentGrade;
+    if (!targetGrade && grades.length > 0) {
+      // 해당 학기 성적표가 등록되지 않은 경우 학생의 가장 최근 등록된 학기 성적표 과목 구성을 기본 참고
+      targetGrade = grades[grades.length - 1];
+    }
+
+    if (targetGrade && Array.isArray(targetGrade.subjects) && targetGrade.subjects.length > 0) {
+      targetGrade.subjects.forEach(s => {
         const name = (s && s.name) ? s.name.trim() : '';
         if (!name) return;
         if (s.evalType === 'general') {
@@ -6224,8 +6232,18 @@ const AcademicManager = {
         }
       });
     } else {
-      // 해당 학기 성적표가 등록되지 않은 경우: 1학년 2학기 기본 필수 과목 제공
-      relList.push('국어', '수학', '영어', '한국사', '통합사회', '통합과학');
+      // 등록된 성적표가 전혀 없는 경우: 학기별 기본 필수 과목 제공
+      if (term === '1-1') {
+        relList.push('공통국어1', '공통수학1', '공통영어1', '한국사1', '통합사회1', '통합과학1');
+      } else if (term === '1-2') {
+        relList.push('공통국어2', '공통수학2', '공통영어2', '한국사2', '통합사회2', '통합과학2');
+      } else if (term === '2-1') {
+        relList.push('대수', '미적분I', '확률과 통계', '문학', '독서와 작문', '영어I');
+      } else if (term === '2-2') {
+        relList.push('미적분I', '대수', '확률과 통계', '기하', '독서와 작문', '문학', '영어II');
+      } else {
+        relList.push('국어', '수학', '영어', '한국사', '통합사회', '통합과학');
+      }
       absList.push('진로와 직업');
       genList.push('철학');
     }
@@ -6539,6 +6557,8 @@ const AcademicManager = {
       `).join('');
       select.onchange = (e) => {
         document.getElementById('formExamScopeStudentId').value = e.target.value;
+        const currentTerm = document.getElementById('formExamScopeTerm')?.value || '1-2';
+        this.onExamScopeTermChange(currentTerm, Number(e.target.value));
       };
     } else if (selectWrap) {
       selectWrap.classList.add('hidden');
@@ -6556,7 +6576,7 @@ const AcademicManager = {
         }
         const term = existing.term || '1-2';
         document.getElementById('formExamScopeTerm').value = term;
-        this.onExamScopeTermChange(term);
+        this.onExamScopeTermChange(term, existing.studentId || currentStudentId, existing.subject);
 
         document.getElementById('formExamScopeExamType').value = existing.examType || '중간고사';
         if (existing.subject) {
@@ -6572,7 +6592,7 @@ const AcademicManager = {
       const activeTerm = (isAdmin ? this.adminExamScopeTerm : this.studentExamTerm);
       const defaultTerm = (!activeTerm || activeTerm === 'ALL') ? '1-2' : activeTerm;
       document.getElementById('formExamScopeTerm').value = defaultTerm;
-      this.onExamScopeTermChange(defaultTerm);
+      this.onExamScopeTermChange(defaultTerm, currentStudentId);
 
       document.getElementById('formExamScopeExamType').value = '중간고사';
       document.getElementById('formExamScopeDate').value = '';
@@ -6599,72 +6619,92 @@ const AcademicManager = {
     if (modal) modal.classList.add('hidden');
   },
 
-  onExamScopeTermChange(term) {
+  onExamScopeTermChange(term, studentId = null, selectedSubject = null) {
     const subjectSelect = document.getElementById('formExamScopeSubject');
     if (!subjectSelect) return;
 
-    let options = [];
+    const stuId = Number(studentId || document.getElementById('formExamScopeStudentId')?.value || App?.state?.selectedStudentId || 11);
+    const termNames = {
+      '1-1': '1학년 1학기', '1-2': '1학년 2학기',
+      '2-1': '2학년 1학기', '2-2': '2학년 2학기',
+      '3-1': '3학년 1학기', '3-2': '3학년 2학기'
+    };
+    const termLabel = termNames[term] || term;
+
+    // 1. 내신 관리에서 설정한 과목들 가져오기
+    const configured = this.getStudentConfiguredSubjects(stuId, term);
+    const configuredList = Array.isArray(configured) ? configured : (configured.all || []);
+
+    // 2. 2022 개정 기본 과목 목록 (fallback 및 보조 선택용)
+    let defaultOptions = [];
     if (term === '1-1') {
-      options = [
-        { value: '공통국어1', label: '공통국어1' },
-        { value: '공통영어1', label: '공통영어1' },
-        { value: '공통수학1', label: '공통수학1' },
-        { value: '통합사회1', label: '통합사회1' },
-        { value: '통합과학1', label: '통합과학1' },
-        { value: '한국사1', label: '한국사1' },
-        { value: '기타', label: '기타 과목' }
-      ];
+      defaultOptions = ['공통국어1', '공통영어1', '공통수학1', '통합사회1', '통합과학1', '한국사1', '기타'];
     } else if (term === '1-2') {
-      options = [
-        { value: '공통국어2', label: '공통국어2' },
-        { value: '공통영어2', label: '공통영어2' },
-        { value: '공통수학2', label: '공통수학2' },
-        { value: '통합사회2', label: '통합사회2' },
-        { value: '통합과학2', label: '통합과학2' },
-        { value: '한국사2', label: '한국사2' },
-        { value: '기타', label: '기타 과목' }
-      ];
+      defaultOptions = ['공통국어2', '공통영어2', '공통수학2', '통합사회2', '통합과학2', '한국사2', '기타'];
     } else if (term === '2-1') {
-      options = [
-        { value: '대수', label: '대수 (2022 개정 / 구 수1)' },
-        { value: '미적분I', label: '미적분I (2022 개정 / 구 수2)' },
-        { value: '확률과 통계', label: '확률과 통계' },
-        { value: '문학', label: '문학' },
-        { value: '독서와 작문', label: '독서와 작문' },
-        { value: '영어I', label: '영어I' },
-        { value: '영어II', label: '영어II' },
-        { value: '기타', label: '기타 과목' }
-      ];
+      defaultOptions = ['대수', '미적분I', '확률과 통계', '문학', '독서와 작문', '영어I', '영어II', '기타'];
     } else if (term === '2-2') {
-      options = [
-        { value: '미적분I', label: '미적분I (2022 개정 / 구 수2)' },
-        { value: '대수', label: '대수 (2022 개정 / 구 수1)' },
-        { value: '확률과 통계', label: '확률과 통계' },
-        { value: '기하', label: '기하' },
-        { value: '독서와 작문', label: '독서와 작문' },
-        { value: '문학', label: '문학' },
-        { value: '영어II', label: '영어II' },
-        { value: '기타', label: '기타 과목' }
-      ];
+      defaultOptions = ['미적분I', '대수', '확률과 통계', '기하', '독서와 작문', '문학', '영어II', '기타'];
     } else {
-      options = [
-        { value: '미적분II', label: '미적분II' },
-        { value: '확률과 통계', label: '확률과 통계' },
-        { value: '기하', label: '기하' },
-        { value: '수능특강 국어', label: '수능특강 국어' },
-        { value: '수능특강 영어', label: '수능특강 영어' },
-        { value: '기타', label: '기타 과목' }
-      ];
+      defaultOptions = ['미적분II', '확률과 통계', '기하', '수능특강 국어', '수능특강 영어', '기타'];
     }
 
-    const prevVal = subjectSelect.value;
-    subjectSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+    let html = '';
+    const hasConfigured = configuredList.length > 0;
 
-    const exists = options.some(o => o.value === prevVal);
-    if (exists) {
-      subjectSelect.value = prevVal;
+    if (hasConfigured) {
+      html += `<optgroup label="📊 [${termLabel}] 내신 관리 설정 과목">`;
+      configuredList.forEach(sub => {
+        html += `<option value="${this.escapeHtml(sub)}">${this.escapeHtml(sub)}</option>`;
+      });
+      html += `</optgroup>`;
+
+      const additional = defaultOptions.filter(d => !configuredList.includes(d));
+      if (additional.length > 0) {
+        html += `<optgroup label="📚 2022 개정 기본 과목 / 기타">`;
+        additional.forEach(sub => {
+          html += `<option value="${this.escapeHtml(sub)}">${this.escapeHtml(sub)}</option>`;
+        });
+        html += `</optgroup>`;
+      }
     } else {
-      subjectSelect.value = options[0].value;
+      html += `<optgroup label="📚 [${termLabel}] 기본 과목 (내신 관리에서 과목 설정 가능)">`;
+      defaultOptions.forEach(sub => {
+        html += `<option value="${this.escapeHtml(sub)}">${this.escapeHtml(sub)}</option>`;
+      });
+      html += `</optgroup>`;
+    }
+
+    // 수정 모달 등에서 기존 선택된 과목이 드롭다운에 없는 경우 보존용 옵션 추가
+    const targetSub = selectedSubject || subjectSelect.value;
+    if (targetSub && !configuredList.includes(targetSub) && !defaultOptions.includes(targetSub)) {
+      html += `<optgroup label="기존 등록 과목">`;
+      html += `<option value="${this.escapeHtml(targetSub)}">${this.escapeHtml(targetSub)}</option>`;
+      html += `</optgroup>`;
+    }
+
+    subjectSelect.innerHTML = html;
+
+    // 안내 뱃지 갱신
+    const notice = document.getElementById('formExamScopeSubjectNotice');
+    if (notice) {
+      if (hasConfigured) {
+        notice.textContent = `[${termLabel}] 내신 과목 연동 (${configuredList.length}과목)`;
+        notice.className = 'text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200';
+      } else {
+        notice.textContent = `[${termLabel}] 기본 표준 과목`;
+        notice.className = 'text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200';
+      }
+    }
+
+    // 선택값 복원 또는 첫 번째 옵션 선택
+    const allAvailable = [...configuredList, ...defaultOptions, targetSub].filter(Boolean);
+    if (targetSub && allAvailable.includes(targetSub)) {
+      subjectSelect.value = targetSub;
+    } else if (configuredList.length > 0) {
+      subjectSelect.value = configuredList[0];
+    } else if (defaultOptions.length > 0) {
+      subjectSelect.value = defaultOptions[0];
     }
 
     this.onExamScopeSubjectChange(subjectSelect.value);
@@ -9604,9 +9644,13 @@ const AcademicManager = {
         return true;
       }).map(s => s.subject)));
 
+      const configured = this.getStudentConfiguredSubjects(studentId, this.adminExamScopeTerm !== 'ALL' ? this.adminExamScopeTerm : null);
+      const configuredSubs = Array.isArray(configured) ? configured : (configured.all || []);
+      const combinedSubjects = Array.from(new Set([...presentSubjects, ...configuredSubs]));
+
       const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
-      if (presentSubjects.length > 0) {
-        presentSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
+      if (combinedSubjects.length > 0) {
+        combinedSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
       } else {
         ['공통국어2', '공통영어2', '공통수학2', '대수', '미적분I'].forEach(sub => subjectOptions.push({ id: sub, label: sub }));
       }
@@ -9631,9 +9675,10 @@ const AcademicManager = {
     if (this.adminExamSubjectFilter !== 'ALL') {
       list = list.filter(s => {
         if (s.subject === this.adminExamSubjectFilter) return true;
-        if (this.adminExamSubjectFilter === '국어' && s.subject.includes('국어')) return true;
-        if (this.adminExamSubjectFilter === '영어' && s.subject.includes('영어')) return true;
-        if (this.adminExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적'))) return true;
+        const cleanFilter = (this.adminExamSubjectFilter || '').replace(/\s+/g, '');
+        const cleanScope = (s.subject || '').replace(/\s+/g, '');
+        if (cleanFilter && cleanScope && (cleanScope.includes(cleanFilter) || cleanFilter.includes(cleanScope))) return true;
+        if (this.adminExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적') || s.subject.includes('기하') || s.subject.includes('확률'))) return true;
         return false;
       });
     }
