@@ -7541,7 +7541,6 @@ const AcademicManager = {
       updatedAt: new Date().toISOString()
     };
 
-    const existingIdx = scopes.findIndex(s => s.id === scopeId);
     if (existingIdx >= 0) {
       scopes[existingIdx] = scopeData;
     } else {
