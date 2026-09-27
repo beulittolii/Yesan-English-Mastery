@@ -2642,8 +2642,18 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">시험일 (D-Day)</label>
-              <input type="date" id="formExamScopeDate" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-amber-500" />
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-bold text-slate-700">시험일 (D-Day 설정) 📅</label>
+                <span id="formExamScopeDDayLiveBadge" class="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded">미설정</span>
+              </div>
+              <input type="date" id="formExamScopeDate" onchange="AcademicManager.onExamScopeDateChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-amber-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-amber-500" />
+              <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+                <button type="button" onclick="AcademicManager.setFormExamScopeDatePreset('today')" class="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">오늘</button>
+                <button type="button" onclick="AcademicManager.setFormExamScopeDatePreset(7)" class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100/70 hover:bg-amber-200 text-amber-900 font-bold transition">+7일</button>
+                <button type="button" onclick="AcademicManager.setFormExamScopeDatePreset(14)" class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100/70 hover:bg-amber-200 text-amber-900 font-bold transition">+14일</button>
+                <button type="button" onclick="AcademicManager.setFormExamScopeDatePreset(30)" class="px-1.5 py-0.5 rounded text-[10px] bg-indigo-100/70 hover:bg-indigo-200 text-indigo-900 font-bold transition">+30일</button>
+                <button type="button" onclick="AcademicManager.setFormExamScopeDatePreset('clear')" class="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 font-bold transition">초기화</button>
+              </div>
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -2655,6 +2665,24 @@
               <label class="block text-xs font-bold text-slate-700 mb-1">전체 시험 메모 (선택)</label>
               <input type="text" id="formExamScopeMemo" placeholder="예: 서술형 30% 출제, 객관식 배점 주의" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-amber-500" />
             </div>
+          </div>
+          <!-- 한 범위 회독을 한개로 묶기 체크박스 -->
+          <div class="pt-2 border-t border-slate-200/80">
+            <label class="flex items-center gap-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-300 hover:bg-amber-100/70 transition cursor-pointer select-none">
+              <input type="checkbox" id="formExamScopeBundlePasses" class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-amber-300 cursor-pointer" />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group text-amber-600"></i>
+                    <span>한 범위 회독을 한개로 묶기</span>
+                  </span>
+                  <span class="px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 text-[10px] font-black">추천 옵션</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-0.5 font-medium leading-relaxed">
+                  체크 시 세부 문항이나 단원마다 따로 누르지 않고, 전체 범위를 <strong>1개의 묶음으로 1·2·3회독을 일괄 관리</strong>합니다.
+                </p>
+              </div>
+            </label>
           </div>
         </div>
 
@@ -2851,6 +2879,74 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 2.6. 지필고사 시험일 빠른 설정 & D-Day 모달 -->
+  <div id="academicExamDateModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col animate-scale-up">
+      <!-- Modal Header -->
+      <div class="p-5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-amber-100">
+            <i class="fa-regular fa-calendar-check text-base"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold">지필고사 시험일 설정</h3>
+            <p class="text-[11px] text-amber-100" id="quickExamDateSubjectLabel">과목 시험일 및 D-Day를 설정하세요</p>
+          </div>
+        </div>
+        <button type="button" onclick="AcademicManager.closeExamDateModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 text-xs sm:text-sm">
+        <input type="hidden" id="quickExamDateScopeId" />
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">대상 시험범위 과목</label>
+          <select id="quickExamDateScopeSelect" onchange="AcademicManager.onQuickExamDateScopeSelect(this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-amber-500"></select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-slate-700">시험일 선택 📅</label>
+            <span id="quickExamDateDDayBadge" class="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">미설정</span>
+          </div>
+          <input type="date" id="quickExamDateInput" onchange="AcademicManager.onQuickExamDateInputChange(this.value)" class="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-white font-black text-slate-900 text-sm sm:text-base focus:ring-2 focus:ring-amber-500 shadow-inner" />
+        </div>
+
+        <!-- 퀵 날짜 프리셋 -->
+        <div>
+          <span class="text-[11px] font-bold text-slate-500 block mb-1.5">빠른 날짜 선택:</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" onclick="AcademicManager.setQuickExamDatePreset('today')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">오늘</button>
+            <button type="button" onclick="AcademicManager.setQuickExamDatePreset(7)" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition">+7일</button>
+            <button type="button" onclick="AcademicManager.setQuickExamDatePreset(14)" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition">+14일 (2주)</button>
+            <button type="button" onclick="AcademicManager.setQuickExamDatePreset(30)" class="px-2.5 py-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-900 text-xs font-bold transition">+30일 (한 달)</button>
+            <button type="button" onclick="AcademicManager.setQuickExamDatePreset('clear')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition">날짜 삭제</button>
+          </div>
+        </div>
+
+        <!-- 전체 과목 일괄 적용 옵션 -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="quickExamDateApplyAll" class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300" />
+            <span class="text-xs font-bold text-slate-700">현재 학기 전체 시험과목에 동일 시험일 일괄 적용</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+        <button type="button" onclick="AcademicManager.closeExamDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition">취소</button>
+        <button type="button" onclick="AcademicManager.saveQuickExamDate()" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-md shadow-amber-200 flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-check"></i>
+          <span>시험일 저장</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -5338,6 +5434,255 @@ const AcademicManager = {
     this.refreshAcademicViews();
   },
 
+  // 한 범위 회독 묶음 원클릭 체크 토글
+  toggleScopeBundlePass(scopeId, passNum) {
+    const scopes = this.getExamScopes();
+    const scope = scopes.find(s => s.id === scopeId);
+    if (!scope) return;
+
+    if (!scope.bundlePassState) {
+      const allItems = (scope.sections || []).flatMap(s => s.items || []);
+      scope.bundlePassState = {
+        pass1: allItems.length > 0 && allItems.every(i => i.passes?.pass1),
+        pass2: allItems.length > 0 && allItems.every(i => i.passes?.pass2),
+        pass3: allItems.length > 0 && allItems.every(i => i.passes?.pass3)
+      };
+    }
+
+    const pKey = `pass${passNum}`;
+    scope.bundlePassState[pKey] = !scope.bundlePassState[pKey];
+
+    // 연쇄 완성 로직 (3회독 체크 시 1,2회독 자동 완료 / 1회독 해제 시 2,3회독 자동 해제)
+    if (passNum === 3 && scope.bundlePassState.pass3) {
+      scope.bundlePassState.pass1 = true;
+      scope.bundlePassState.pass2 = true;
+    } else if (passNum === 2 && scope.bundlePassState.pass2) {
+      scope.bundlePassState.pass1 = true;
+    } else if (passNum === 1 && !scope.bundlePassState.pass1) {
+      scope.bundlePassState.pass2 = false;
+      scope.bundlePassState.pass3 = false;
+    } else if (passNum === 2 && !scope.bundlePassState.pass2) {
+      scope.bundlePassState.pass3 = false;
+    }
+
+    // 전체 하위 문항 passes 일괄 동기화 (진도율 및 통계 일관성 보장)
+    (scope.sections || []).forEach(sec => {
+      (sec.items || []).forEach(it => {
+        if (!it.passes) it.passes = { pass1: false, pass2: false, pass3: false };
+        it.passes.pass1 = scope.bundlePassState.pass1;
+        it.passes.pass2 = scope.bundlePassState.pass2;
+        it.passes.pass3 = scope.bundlePassState.pass3;
+        if (it.passes.pass3) it.status = 'mastered';
+        else if (it.passes.pass2) it.status = 'pass2';
+        else if (it.passes.pass1) it.status = 'pass1';
+        else it.status = 'not_started';
+      });
+    });
+
+    this.saveExamScopes(scopes);
+    this.refreshAcademicViews();
+    const passLabel = passNum === 3 ? '3회독 (마스터 완료 👑)' : `${passNum}회독`;
+    this.notify(`[${scope.subject}] 한 범위 ${passLabel} ${scope.bundlePassState[pKey] ? '완료되었습니다.' : '해제되었습니다.'}`, 'info');
+  },
+
+  // 한 범위 묶음 모드 ON / OFF 전환
+  toggleScopeBundleMode(scopeId) {
+    const scopes = this.getExamScopes();
+    const scope = scopes.find(s => s.id === scopeId);
+    if (!scope) return;
+
+    scope.bundlePasses = !scope.bundlePasses;
+    this.saveExamScopes(scopes);
+    this.refreshAcademicViews();
+    this.notify(`[${scope.subject}] ${scope.bundlePasses ? '한 범위 묶음 회독 모드가 적용되었습니다.' : '문항별 개별 회독 모드로 전환되었습니다.'}`, 'info');
+  },
+
+  // ----------------------------------------------------
+  // 모달 & 퀵 시험일 설정 (D-Day 연동)
+  // ----------------------------------------------------
+  onExamScopeDateChange(dateStr) {
+    const badge = document.getElementById('formExamScopeDDayLiveBadge');
+    if (!badge) return;
+    if (!dateStr) {
+      badge.textContent = '미설정';
+      badge.className = 'text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded';
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    if (diff > 0) {
+      badge.textContent = `D-${diff} (${diff}일 남음)`;
+      badge.className = 'text-[10px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-300';
+    } else if (diff === 0) {
+      badge.textContent = 'D-DAY (오늘 시험!)';
+      badge.className = 'text-[10px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded border border-rose-300 animate-pulse';
+    } else {
+      badge.textContent = `D+${Math.abs(diff)} (시험 종료)`;
+      badge.className = 'text-[10px] font-bold text-slate-600 bg-slate-200 px-1.5 py-0.2 rounded';
+    }
+  },
+
+  setFormExamScopeDatePreset(preset) {
+    const input = document.getElementById('formExamScopeDate');
+    if (!input) return;
+    if (preset === 'clear') {
+      input.value = '';
+    } else if (preset === 'today') {
+      input.value = this.getTodayDateString();
+    } else if (typeof preset === 'number') {
+      const d = new Date();
+      d.setDate(d.getDate() + preset);
+      input.value = d.toISOString().split('T')[0];
+    }
+    this.onExamScopeDateChange(input.value);
+  },
+
+  openExamDateModal(scopeId = null) {
+    const modal = document.getElementById('academicExamDateModal');
+    if (!modal) return;
+
+    const studentId = Number(App.state.isAdminLoggedIn ? (App.state.adminSelectedStudentId || 11) : (App.state.selectedStudentId || 11));
+    const term = App.state.isAdminLoggedIn ? (this.adminExamScopeTerm || '1-2') : (this.studentExamTerm || '1-2');
+    
+    const allScopes = this.getExamScopes().filter(s => Number(s.studentId) === studentId);
+    let candidateScopes = (term && term !== 'ALL') ? allScopes.filter(s => s.term === term) : allScopes;
+    if (candidateScopes.length === 0) candidateScopes = allScopes;
+
+    if (candidateScopes.length === 0) {
+      this.notify('먼저 시험범위를 등록해야 시험일을 설정할 수 있습니다.', 'warning');
+      this.openExamScopeModal();
+      return;
+    }
+
+    const targetScope = scopeId ? (candidateScopes.find(s => s.id === scopeId) || allScopes.find(s => s.id === scopeId)) : candidateScopes[0];
+    const currentScopeId = targetScope ? targetScope.id : candidateScopes[0].id;
+
+    document.getElementById('quickExamDateScopeId').value = currentScopeId;
+    const select = document.getElementById('quickExamDateScopeSelect');
+    if (select) {
+      select.innerHTML = candidateScopes.map(s => `
+        <option value="${s.id}" ${s.id === currentScopeId ? 'selected' : ''}>[${s.term} ${s.examType}] ${this.escapeHtml(s.subject)} ${s.examDate ? `(${s.examDate})` : '(시험일 미설정)'}</option>
+      `).join('');
+    }
+
+    const targetDate = (targetScope ? targetScope.examDate : '') || '';
+    const input = document.getElementById('quickExamDateInput');
+    if (input) input.value = targetDate;
+    this.onQuickExamDateInputChange(targetDate);
+
+    const subLabel = document.getElementById('quickExamDateSubjectLabel');
+    if (subLabel && targetScope) {
+      subLabel.textContent = `[${targetScope.term}] ${targetScope.subject} (${targetScope.examType}) 시험일 설정`;
+    }
+
+    modal.classList.remove('hidden');
+    const content = modal.querySelector('.modal-content');
+    if (content) {
+      content.classList.remove('opacity-0', 'scale-95');
+      content.classList.add('opacity-100', 'scale-100');
+    }
+  },
+
+  closeExamDateModal() {
+    const modal = document.getElementById('academicExamDateModal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  onQuickExamDateScopeSelect(scopeId) {
+    document.getElementById('quickExamDateScopeId').value = scopeId;
+    const scope = this.getExamScopes().find(s => s.id === scopeId);
+    const dateVal = scope ? (scope.examDate || '') : '';
+    const input = document.getElementById('quickExamDateInput');
+    if (input) input.value = dateVal;
+    this.onQuickExamDateInputChange(dateVal);
+
+    const subLabel = document.getElementById('quickExamDateSubjectLabel');
+    if (subLabel && scope) {
+      subLabel.textContent = `[${scope.term}] ${scope.subject} (${scope.examType}) 시험일 설정`;
+    }
+  },
+
+  onQuickExamDateInputChange(dateStr) {
+    const badge = document.getElementById('quickExamDateDDayBadge');
+    if (!badge) return;
+    if (!dateStr) {
+      badge.textContent = '미설정';
+      badge.className = 'text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full';
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    if (diff > 0) {
+      badge.textContent = `D-${diff} (${diff}일 남음)`;
+      badge.className = 'text-[11px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300';
+    } else if (diff === 0) {
+      badge.textContent = 'D-DAY (오늘)';
+      badge.className = 'text-[11px] font-black text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full border border-rose-300 animate-pulse';
+    } else {
+      badge.textContent = `D+${Math.abs(diff)} (종료)`;
+      badge.className = 'text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full';
+    }
+  },
+
+  setQuickExamDatePreset(preset) {
+    const input = document.getElementById('quickExamDateInput');
+    if (!input) return;
+    if (preset === 'clear') {
+      input.value = '';
+    } else if (preset === 'today') {
+      input.value = this.getTodayDateString();
+    } else if (typeof preset === 'number') {
+      const d = new Date();
+      d.setDate(d.getDate() + preset);
+      input.value = d.toISOString().split('T')[0];
+    }
+    this.onQuickExamDateInputChange(input.value);
+  },
+
+  saveQuickExamDate() {
+    const scopeId = document.getElementById('quickExamDateScopeId')?.value;
+    const newDate = document.getElementById('quickExamDateInput')?.value || '';
+    const applyAll = Boolean(document.getElementById('quickExamDateApplyAll')?.checked);
+
+    if (!scopeId) {
+      this.notify('대상 시험범위를 찾을 수 없습니다.', 'warning');
+      return;
+    }
+
+    const scopes = this.getExamScopes();
+    const targetScope = scopes.find(s => s.id === scopeId);
+    if (!targetScope) {
+      this.notify('해당 시험범위 정보를 찾을 수 없습니다.', 'warning');
+      return;
+    }
+
+    if (applyAll) {
+      let count = 0;
+      scopes.forEach(s => {
+        if (Number(s.studentId) === Number(targetScope.studentId) && s.term === targetScope.term) {
+          s.examDate = newDate;
+          s.updatedAt = new Date().toISOString();
+          count++;
+        }
+      });
+      this.notify(`[${targetScope.term}] 총 ${count}개 시험과목의 시험일이 ${newDate || '미설정'}으로 일괄 저장되었습니다.`, 'success');
+    } else {
+      targetScope.examDate = newDate;
+      targetScope.updatedAt = new Date().toISOString();
+      this.notify(`[${targetScope.subject}] 지필고사 시험일이 ${newDate ? newDate + '로' : '삭제'} 저장되었습니다.`, 'success');
+    }
+
+    this.saveExamScopes(scopes);
+    this.closeExamDateModal();
+    this.refreshAcademicViews();
+  },
+
   renderStudentExamScopes() {
     const studentId = Number(App.state.selectedStudentId);
     const container = document.getElementById('stuExamScopeCardsContainer');
@@ -5487,13 +5832,16 @@ const AcademicManager = {
       }
 
       statsGrid.innerHTML = `
-        <!-- D-Day 카드 -->
-        <div class="glass-card rounded-2xl p-4 border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 flex items-center gap-3.5">
-          <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md shadow-amber-200 flex-shrink-0">
+        <!-- D-Day 카드 (클릭 시 시험일 설정) -->
+        <div onclick="AcademicManager.openExamDateModal(null)" class="glass-card rounded-2xl p-4 border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 flex items-center gap-3.5 cursor-pointer hover:shadow-md hover:border-amber-300 transition group" title="클릭하여 지필고사 시험일 설정">
+          <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md shadow-amber-200 flex-shrink-0 group-hover:scale-105 transition-transform">
             <i class="fa-solid fa-hourglass-half"></i>
           </div>
-          <div class="min-w-0">
-            <span class="text-[11px] font-bold text-amber-900 block truncate">다가오는 지필고사</span>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-amber-900 block truncate">다가오는 지필고사</span>
+              <span class="text-[10px] text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded font-bold group-hover:bg-amber-200 transition">시험일 설정 <i class="fa-solid fa-pen text-[9px] ml-0.5"></i></span>
+            </div>
             <div class="text-xl sm:text-2xl font-black text-amber-600 tracking-tight leading-tight">${dDayText}</div>
             <span class="text-[10px] text-amber-800 font-semibold block truncate mt-0.5">${this.escapeHtml(dDaySub)}</span>
           </div>
@@ -5635,19 +5983,47 @@ const AcademicManager = {
       });
       const subPct = subTotal > 0 ? Math.round(((subPass1 * 0.3) + (subPass2 * 0.3) + (subPass3 * 0.4)) / subTotal * 100) : 0;
 
-      // D-Day 계산
+      // D-Day 계산 & 원클릭 설정 뱃지
       let dDayBadge = '';
       if (scope.examDate) {
         const d = new Date(scope.examDate);
         d.setHours(0, 0, 0, 0);
         const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-        if (diff > 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-extrabold text-xs shadow-3xs"><i class="fa-regular fa-clock mr-1"></i>D-${diff} (${scope.examDate})</span>`;
-        else if (diff === 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-3xs animate-bounce">D-DAY (오늘)</span>`;
-        else dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500 font-bold text-xs">${scope.examDate}</span>`;
+        let badgeStyle = diff > 0 ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : (diff === 0 ? 'bg-rose-600 text-white animate-bounce' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 border-slate-200');
+        let text = diff > 0 ? `D-${diff} (${scope.examDate})` : (diff === 0 ? `D-DAY (${scope.examDate})` : `${scope.examDate} (종료)`);
+        dDayBadge = `
+          <button type="button" onclick="AcademicManager.openExamDateModal('${scope.id}')" title="클릭하여 시험일 변경" class="px-2.5 py-1.5 rounded-xl ${badgeStyle} border font-extrabold text-xs shadow-3xs cursor-pointer flex items-center gap-1 group transition">
+            <i class="fa-regular fa-clock text-[11px] mr-0.5"></i>
+            <span>${text}</span>
+            <i class="fa-solid fa-pen text-[9px] opacity-60 group-hover:opacity-100 ml-0.5"></i>
+          </button>
+        `;
+      } else {
+        dDayBadge = `
+          <button type="button" onclick="AcademicManager.openExamDateModal('${scope.id}')" title="지필고사 시험일 설정하기" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-dashed border-amber-300 font-bold text-xs transition flex items-center gap-1 shadow-3xs cursor-pointer">
+            <i class="fa-regular fa-calendar-plus text-amber-600"></i>
+            <span>시험일 설정</span>
+          </button>
+        `;
       }
 
+      // 한 범위 회독 묶음 상태 계산
+      const bundleState = scope.bundlePassState || {
+        pass1: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass1)),
+        pass2: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass2)),
+        pass3: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass3))
+      };
+      const bp1 = bundleState.pass1;
+      const bp2 = bundleState.pass2;
+      const bp3 = bundleState.pass3;
+
+      let bundleStatusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">미시작</span>`;
+      if (bp3) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-black text-xs shadow-3xs border border-amber-300"><i class="fa-solid fa-crown text-[10px] mr-1 text-amber-600"></i>마스터 완료</span>`;
+      else if (bp2) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold text-xs border border-blue-200">2회독 완료</span>`;
+      else if (bp1) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200">1회독 완료</span>`;
+
       return `
-        <div id="scope_card_${scope.id}" class="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4 hover:shadow-md transition-all duration-200">
+        <div id="scope_card_${scope.id}" class="glass-card rounded-3xl p-5 sm:p-6 border ${scope.bundlePasses ? 'border-amber-300/80 bg-gradient-to-b from-white via-amber-50/15 to-white' : 'border-slate-200/90'} shadow-sm space-y-4 hover:shadow-md transition-all duration-200">
           <!-- 과목 헤더 바 -->
           <div class="flex items-start sm:items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
             <div class="flex items-center space-x-3 min-w-0">
@@ -5659,6 +6035,12 @@ const AcademicManager = {
                   <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">${this.escapeHtml(scope.subject)}</h4>
                   <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">${scope.term} 학기</span>
                   <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800">${scope.examType}</span>
+                  ${scope.bundlePasses ? `
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-3xs">
+                      <i class="fa-solid fa-layer-group text-[10px] text-amber-600"></i>
+                      <span>한 범위 묶음</span>
+                    </span>
+                  ` : ''}
                   ${scope.targetScore ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/70"><i class="fa-solid fa-bullseye text-[10px] mr-1 text-rose-500"></i>목표: ${this.escapeHtml(scope.targetScore)}</span>` : ''}
                 </div>
                 ${scope.memo ? `<p class="text-xs text-slate-500 mt-0.5 font-medium truncate">${this.escapeHtml(scope.memo)}</p>` : ''}
@@ -5668,6 +6050,10 @@ const AcademicManager = {
             <!-- 우측 액션 및 D-Day -->
             <div class="flex items-center gap-2 flex-wrap">
               ${dDayBadge}
+              <button type="button" onclick="AcademicManager.toggleScopeBundleMode('${scope.id}')" title="회독 관리 방식 변경 (한 범위 묶음 ↔ 문항별 개별)" class="px-2.5 py-1.5 rounded-xl ${scope.bundlePasses ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200' : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'} font-bold text-xs transition flex items-center gap-1 shadow-3xs cursor-pointer">
+                <i class="fa-solid fa-layer-group text-[10px] ${scope.bundlePasses ? 'text-amber-700' : 'text-slate-400'}"></i>
+                <span>${scope.bundlePasses ? '묶음 회독' : '개별 회독'}</span>
+              </button>
               <button type="button" onclick="AcademicManager.openExamScopeModal('${scope.id}')" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
                 <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
                 <span>범위 수정</span>
@@ -5693,6 +6079,46 @@ const AcademicManager = {
               <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>3회독: ${subPass3}/${subTotal}</span>
             </div>
           </div>
+
+          <!-- 한 범위 회독 묶음 바 (bundlePasses 활성화 시 선명하게 노출) -->
+          ${scope.bundlePasses ? `
+            <div class="p-3.5 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 rounded-2xl border border-amber-300 shadow-2xs flex items-center justify-between flex-wrap gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+                  <i class="fa-solid fa-layer-group"></i>
+                </span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs sm:text-sm font-black text-slate-900">한 범위 통합 회독 관리</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900">묶음 모드</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 truncate mt-0.5">이 시험범위 전체를 한 묶음으로 1·2·3회독 진행합니다.</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 1)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  bp1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }">
+                  <i class="fa-solid fa-check text-[11px]"></i>
+                  <span>1회독</span>
+                </button>
+                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 2)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  bp2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }">
+                  <i class="fa-solid fa-check-double text-[11px]"></i>
+                  <span>2회독</span>
+                </button>
+                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 3)" class="px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
+                  bp3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }">
+                  <i class="fa-solid fa-crown text-[11px]"></i>
+                  <span>3회독 마스터</span>
+                </button>
+                ${bundleStatusBadge}
+              </div>
+            </div>
+          ` : ''}
 
           <!-- 섹션 목록 (교과서 / 모의고사 / 부교재) -->
           <div class="space-y-3 pt-1">
@@ -5761,33 +6187,36 @@ const AcademicManager = {
                           </div>
 
                           <!-- 1·2·3회독 원클릭 버튼 및 상태 뱃지 -->
-                          <div class="flex items-center gap-1.5 flex-shrink-0">
-                            <!-- 1회독 버튼 -->
-                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                              p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }">
-                              <i class="fa-solid fa-check text-[10px]"></i>
-                              <span>1회독</span>
-                            </button>
+                          ${scope.bundlePasses ? `
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                              ${statusBadge}
+                            </div>
+                          ` : `
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }">
+                                <i class="fa-solid fa-check text-[10px]"></i>
+                                <span>1회독</span>
+                              </button>
 
-                            <!-- 2회독 버튼 -->
-                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                              p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }">
-                              <i class="fa-solid fa-check-double text-[10px]"></i>
-                              <span>2회독</span>
-                            </button>
+                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }">
+                                <i class="fa-solid fa-check-double text-[10px]"></i>
+                                <span>2회독</span>
+                              </button>
 
-                            <!-- 3회독 버튼 -->
-                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
-                              p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }">
-                              <i class="fa-solid fa-crown text-[10px]"></i>
-                              <span>3회독</span>
-                            </button>
+                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
+                                p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }">
+                                <i class="fa-solid fa-crown text-[10px]"></i>
+                                <span>3회독</span>
+                              </button>
 
-                            ${statusBadge}
-                          </div>
+                              ${statusBadge}
+                            </div>
+                          `}
                         </div>
                       `;
                     }).join('')}
@@ -6585,6 +7014,9 @@ const AcademicManager = {
           document.getElementById('formExamScopeSubject').value = existing.subject;
         }
         document.getElementById('formExamScopeDate').value = existing.examDate || '';
+        this.onExamScopeDateChange(existing.examDate || '');
+        const bundleCheckbox = document.getElementById('formExamScopeBundlePasses');
+        if (bundleCheckbox) bundleCheckbox.checked = Boolean(existing.bundlePasses);
         document.getElementById('formExamScopeTarget').value = existing.targetScore || '';
         document.getElementById('formExamScopeMemo').value = existing.memo || '';
         this.draftScopeSections = JSON.parse(JSON.stringify(existing.sections || []));
@@ -6598,6 +7030,9 @@ const AcademicManager = {
 
       document.getElementById('formExamScopeExamType').value = '중간고사';
       document.getElementById('formExamScopeDate').value = '';
+      this.onExamScopeDateChange('');
+      const bundleCheckbox = document.getElementById('formExamScopeBundlePasses');
+      if (bundleCheckbox) bundleCheckbox.checked = false;
       document.getElementById('formExamScopeTarget').value = '';
       document.getElementById('formExamScopeMemo').value = '';
     }
@@ -7069,6 +7504,27 @@ const AcademicManager = {
 
     const scopes = this.getExamScopes();
     const scopeId = id || ('scope_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4));
+    const bundlePasses = Boolean(document.getElementById('formExamScopeBundlePasses')?.checked);
+
+    const existingIdx = scopes.findIndex(s => s.id === scopeId);
+    const existing = existingIdx >= 0 ? scopes[existingIdx] : null;
+    const bundlePassState = existing?.bundlePassState || { pass1: false, pass2: false, pass3: false };
+
+    // 한 범위 묶음 모드 활성화 시 하위 문항 passes 동기화
+    if (bundlePasses) {
+      this.draftScopeSections.forEach(sec => {
+        (sec.items || []).forEach(it => {
+          if (!it.passes) it.passes = { pass1: false, pass2: false, pass3: false };
+          it.passes.pass1 = bundlePassState.pass1;
+          it.passes.pass2 = bundlePassState.pass2;
+          it.passes.pass3 = bundlePassState.pass3;
+          if (it.passes.pass3) it.status = 'mastered';
+          else if (it.passes.pass2) it.status = 'pass2';
+          else if (it.passes.pass1) it.status = 'pass1';
+          else it.status = 'not_started';
+        });
+      });
+    }
 
     const scopeData = {
       id: scopeId,
@@ -7079,6 +7535,8 @@ const AcademicManager = {
       examDate: examDate,
       targetScore: targetScore,
       memo: memo,
+      bundlePasses: bundlePasses,
+      bundlePassState: bundlePassState,
       sections: this.draftScopeSections,
       updatedAt: new Date().toISOString()
     };
@@ -9790,19 +10248,47 @@ const AcademicManager = {
       });
       const subPct = subTotal > 0 ? Math.round(((subPass1 * 0.3) + (subPass2 * 0.3) + (subPass3 * 0.4)) / subTotal * 100) : 0;
 
-      // D-Day 계산
+      // D-Day 계산 & 원클릭 설정 뱃지
       let dDayBadge = '';
       if (scope.examDate) {
         const d = new Date(scope.examDate);
         d.setHours(0, 0, 0, 0);
         const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-        if (diff > 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-extrabold text-xs shadow-3xs"><i class="fa-regular fa-clock mr-1"></i>D-${diff} (${scope.examDate})</span>`;
-        else if (diff === 0) dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-3xs">D-DAY</span>`;
-        else dDayBadge = `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500 font-bold text-xs">${scope.examDate}</span>`;
+        let badgeStyle = diff > 0 ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : (diff === 0 ? 'bg-rose-600 text-white animate-bounce' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 border-slate-200');
+        let text = diff > 0 ? `D-${diff} (${scope.examDate})` : (diff === 0 ? `D-DAY (${scope.examDate})` : `${scope.examDate} (종료)`);
+        dDayBadge = `
+          <button type="button" onclick="AcademicManager.openExamDateModal('${scope.id}')" title="클릭하여 시험일 변경" class="px-2.5 py-1.5 rounded-xl ${badgeStyle} border font-extrabold text-xs shadow-3xs cursor-pointer flex items-center gap-1 group transition">
+            <i class="fa-regular fa-clock text-[11px] mr-0.5"></i>
+            <span>${text}</span>
+            <i class="fa-solid fa-pen text-[9px] opacity-60 group-hover:opacity-100 ml-0.5"></i>
+          </button>
+        `;
+      } else {
+        dDayBadge = `
+          <button type="button" onclick="AcademicManager.openExamDateModal('${scope.id}')" title="지필고사 시험일 설정하기" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-dashed border-amber-300 font-bold text-xs transition flex items-center gap-1 shadow-3xs cursor-pointer">
+            <i class="fa-regular fa-calendar-plus text-amber-600"></i>
+            <span>시험일 설정</span>
+          </button>
+        `;
       }
 
+      // 한 범위 회독 묶음 상태 계산
+      const bundleState = scope.bundlePassState || {
+        pass1: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass1)),
+        pass2: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass2)),
+        pass3: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass3))
+      };
+      const bp1 = bundleState.pass1;
+      const bp2 = bundleState.pass2;
+      const bp3 = bundleState.pass3;
+
+      let bundleStatusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">미시작</span>`;
+      if (bp3) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-black text-xs shadow-3xs border border-amber-300"><i class="fa-solid fa-crown text-[10px] mr-1 text-amber-600"></i>마스터 완료</span>`;
+      else if (bp2) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold text-xs border border-blue-200">2회독 완료</span>`;
+      else if (bp1) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200">1회독 완료</span>`;
+
       return `
-        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border ${scope.bundlePasses ? 'border-amber-300/80 bg-gradient-to-b from-white via-amber-50/15 to-white' : 'border-slate-200/90'} shadow-sm space-y-4">
           <!-- 헤더 바 -->
           <div class="flex items-start sm:items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
             <div class="flex items-center space-x-3 min-w-0">
@@ -9814,6 +10300,12 @@ const AcademicManager = {
                   <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">${this.escapeHtml(scope.subject)}</h4>
                   <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">${scope.term} 학기</span>
                   <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800">${scope.examType}</span>
+                  ${scope.bundlePasses ? `
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-3xs">
+                      <i class="fa-solid fa-layer-group text-[10px] text-amber-600"></i>
+                      <span>한 범위 묶음</span>
+                    </span>
+                  ` : ''}
                   ${scope.teacherName ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/70"><i class="fa-solid fa-chalkboard-user text-[10px] mr-1 text-amber-600"></i>${this.escapeHtml(scope.teacherName)}</span>` : ''}
                   ${scope.targetScore ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/70"><i class="fa-solid fa-bullseye text-[10px] mr-1 text-rose-500"></i>목표: ${this.escapeHtml(scope.targetScore)}</span>` : ''}
                 </div>
@@ -9824,6 +10316,10 @@ const AcademicManager = {
             <!-- 우측 액션 및 D-Day -->
             <div class="flex items-center gap-2 flex-wrap">
               ${dDayBadge}
+              <button type="button" onclick="AcademicManager.toggleScopeBundleMode('${scope.id}')" title="회독 관리 방식 변경 (한 범위 묶음 ↔ 문항별 개별)" class="px-2.5 py-1.5 rounded-xl ${scope.bundlePasses ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200' : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'} font-bold text-xs transition flex items-center gap-1 shadow-3xs cursor-pointer">
+                <i class="fa-solid fa-layer-group text-[10px] ${scope.bundlePasses ? 'text-amber-700' : 'text-slate-400'}"></i>
+                <span>${scope.bundlePasses ? '묶음 회독' : '개별 회독'}</span>
+              </button>
               <button type="button" onclick="AcademicManager.openExamScopeModal('${scope.id}', true)" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
                 <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
                 <span>범위 수정</span>
@@ -9849,6 +10345,46 @@ const AcademicManager = {
               <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>3회독: ${subPass3}/${subTotal}</span>
             </div>
           </div>
+
+          <!-- 한 범위 회독 묶음 바 (bundlePasses 활성화 시 선명하게 노출) -->
+          ${scope.bundlePasses ? `
+            <div class="p-3.5 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 rounded-2xl border border-amber-300 shadow-2xs flex items-center justify-between flex-wrap gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-xs flex-shrink-0">
+                  <i class="fa-solid fa-layer-group"></i>
+                </span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs sm:text-sm font-black text-slate-900">한 범위 통합 회독 관리</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900">묶음 모드</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 truncate mt-0.5">이 시험범위 전체를 한 묶음으로 1·2·3회독 진행합니다.</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 1)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  bp1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }">
+                  <i class="fa-solid fa-check text-[11px]"></i>
+                  <span>1회독</span>
+                </button>
+                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 2)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  bp2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }">
+                  <i class="fa-solid fa-check-double text-[11px]"></i>
+                  <span>2회독</span>
+                </button>
+                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 3)" class="px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
+                  bp3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }">
+                  <i class="fa-solid fa-crown text-[11px]"></i>
+                  <span>3회독 마스터</span>
+                </button>
+                ${bundleStatusBadge}
+              </div>
+            </div>
+          ` : ''}
 
           <!-- 섹션 목록 (교과서 / 모의고사 / 부교재) -->
           <div class="space-y-3 pt-1">
@@ -9914,30 +10450,37 @@ const AcademicManager = {
                             </div>
                           </div>
 
-                          <div class="flex items-center gap-1.5 flex-shrink-0">
-                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                              p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }">
-                              <i class="fa-solid fa-check text-[10px]"></i>
-                              <span>1회독</span>
-                            </button>
+                          <!-- 1·2·3회독 원클릭 버튼 및 상태 뱃지 -->
+                          ${scope.bundlePasses ? `
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                              ${statusBadge}
+                            </div>
+                          ` : `
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }">
+                                <i class="fa-solid fa-check text-[10px]"></i>
+                                <span>1회독</span>
+                              </button>
 
-                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                              p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }">
-                              <i class="fa-solid fa-check-double text-[10px]"></i>
-                              <span>2회독</span>
-                            </button>
+                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }">
+                                <i class="fa-solid fa-check-double text-[10px]"></i>
+                                <span>2회독</span>
+                              </button>
 
-                            <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
-                              p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }">
-                              <i class="fa-solid fa-crown text-[10px]"></i>
-                              <span>3회독</span>
-                            </button>
+                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
+                                p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }">
+                                <i class="fa-solid fa-crown text-[10px]"></i>
+                                <span>3회독</span>
+                              </button>
 
-                            ${statusBadge}
-                          </div>
+                              ${statusBadge}
+                            </div>
+                          `}
                         </div>
                       `;
                     }).join('')}
