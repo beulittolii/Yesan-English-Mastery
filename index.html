@@ -91,8 +91,11 @@
         </div>
       </div>
 
-      <!-- 홈 버튼은 로그인 화면을 단순하게 유지하기 위해 제거 -->
-      <div id="headerNavActions"></div>
+      <!-- Cloud Sync Badge & Header Actions -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div id="cloudSyncStatusBadge" class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all duration-300"></div>
+        <div id="headerNavActions"></div>
+      </div>
     </div>
   </header>
 
@@ -136,6 +139,9 @@
     <!-- 2. STUDENT DASHBOARD VIEW (학생별 캘린더 & 일정 대시보드) -->
     <!-- ========================================== -->
     <section id="studentDashboardView" class="hidden space-y-6">
+      <!-- Cloud Sync & Data Loading Status Notice -->
+      <div id="dataSyncNoticeBanner" class="hidden"></div>
+
       <!-- Student Banner -->
       <div class="glass-card rounded-2xl p-6 relative overflow-hidden" id="studentBanner">
         <!-- Rendered by JS -->
@@ -197,7 +203,11 @@
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 불합격 및 마감</span>
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> 시험 예정</span>
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span> 수행평가</span>
-            <button onclick="AcademicManager.openAssessmentModal()" class="ml-auto px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs shadow-emerald-200">
+            <button onclick="App.openTextMemorizeStudyModal()" class="ml-auto px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer" title="교과서 본문 미리 외우기 (플래시카드·가리기·어순배열)">
+              <i class="fa-solid fa-book-open-reader text-indigo-600 text-[11px]"></i>
+              <span>본문 암기학습</span>
+            </button>
+            <button onclick="AcademicManager.openAssessmentModal()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs shadow-emerald-200">
               <i class="fa-solid fa-plus text-[10px]"></i>
               <span>학교 수행평가 추가</span>
             </button>
@@ -218,7 +228,11 @@
               </button>
             </div>
 
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 flex-wrap">
+              <button onclick="App.openTextMemorizeStudyModal()" class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer" title="교과서 본문 미리 외우기 (플래시카드·가리기·어순배열)">
+                <i class="fa-solid fa-book-open-reader text-indigo-600 text-[11px]"></i>
+                <span>본문 암기학습</span>
+              </button>
               <button onclick="AcademicManager.openAssessmentModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1 shadow-2xs">
                 <i class="fa-solid fa-plus text-[10px]"></i>
                 <span>수행평가 등록</span>
@@ -611,6 +625,9 @@
     <!-- 3. ADMIN DASHBOARD VIEW (관리자 설정 패널) -->
     <!-- ========================================== -->
     <section id="adminDashboardView" class="hidden space-y-6">
+      <!-- Cloud Sync & Data Loading Status Notice -->
+      <div id="adminDataSyncNoticeBanner" class="hidden"></div>
+
       <!-- Admin Top Banner -->
       <div class="bg-gradient-to-r from-slate-900 to-indigo-900 text-white rounded-2xl p-6 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-center space-x-3">
@@ -1662,7 +1679,7 @@
                 <i class="fa-solid fa-list-check text-emerald-600"></i>
                 문제 출제 목록 <span id="formPracticeQuestionCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 font-black">0문항</span>
               </h4>
-              <p class="text-[11px] text-emerald-700 mt-0.5">객관식(5지선다), 주관식(단답형), 서술형(영작) 문제를 자유롭게 출제하세요.</p>
+              <p class="text-[11px] text-emerald-700 mt-0.5">객관식(5지선다), 모두 고르기(복수정답), 주관식(단답형), 서술형(영작) 문제를 자유롭게 출제하세요.</p>
             </div>
             <button type="button" onclick="App.addPracticeQuestionRow()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-emerald-200">
               <i class="fa-solid fa-plus"></i> 새 문제 추가
@@ -2136,6 +2153,111 @@
         </button>
       </div>
       <div class="p-5 space-y-4 overflow-y-auto flex-1" id="tmScheduleBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 본문 암기학습 (미리 외우기) 모달 ===== -->
+  <div id="textMemorizeStudyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
+      <!-- Header -->
+      <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg border border-indigo-400/30 flex-shrink-0">
+            <i class="fa-solid fa-book-open-reader"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30" id="tmStudyBadge">본문 암기학습</span>
+              <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30" id="tmStudyCountBadge">총 0문장</span>
+            </div>
+            <h3 class="text-base sm:text-lg font-black text-white truncate mt-0.5" id="tmStudyTitle">본문 암기학습</h3>
+          </div>
+        </div>
+        <button type="button" onclick="App.closeTextMemorizeStudyModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition flex-shrink-0">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Controls Toolbar -->
+      <div class="p-3 sm:p-4 bg-slate-50 border-b border-slate-200 space-y-2.5 flex-shrink-0">
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <!-- 문단 선택 & 검색 필터 -->
+          <div class="flex items-center gap-2 flex-1 min-w-[220px]">
+            <select
+              id="tmStudyPassageSelect"
+              onchange="App.onTmStudyPassageChange(this.value)"
+              class="py-1.5 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 transition max-w-[200px] truncate"
+            >
+              <!-- JS Populated -->
+            </select>
+            <div class="relative flex-1 min-w-[140px] max-w-xs">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input
+                type="text"
+                id="tmStudySearchInput"
+                oninput="App.filterTmStudySentences(this.value)"
+                placeholder="문장 또는 우리말 검색..."
+                class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+              />
+            </div>
+          </div>
+
+          <!-- 4대 뷰 모드 토글 (플래시카드 / 통독 가리기 / 어순 배열 / 영작 연습) -->
+          <div class="inline-flex rounded-xl bg-slate-200/80 p-0.5 text-xs font-bold flex-wrap">
+            <button
+              type="button"
+              id="tmStudyModeCardBtn"
+              onclick="App.setTmStudyViewMode('card')"
+              class="px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-clone text-[11px]"></i>
+              <span>플래시카드</span>
+            </button>
+            <button
+              type="button"
+              id="tmStudyModeMaskBtn"
+              onclick="App.setTmStudyViewMode('mask')"
+              class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-eye-slash text-[11px]"></i>
+              <span>본문 가리기</span>
+            </button>
+            <button
+              type="button"
+              id="tmStudyModeScrambleBtn"
+              onclick="App.setTmStudyViewMode('scramble')"
+              class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-puzzle-piece text-[11px]"></i>
+              <span>어순 배열</span>
+            </button>
+            <button
+              type="button"
+              id="tmStudyModePracticeBtn"
+              onclick="App.setTmStudyViewMode('practice')"
+              class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-pen-clip text-[11px]"></i>
+              <span>영작 연습</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 하위 모드별 서브 툴바 (동적 주입 또는 표시) -->
+        <div id="tmStudySubToolbar" class="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-slate-200/60">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4" id="tmStudyModalBody">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 flex-shrink-0" id="tmStudyModalFooter">
         <!-- Populated by JS -->
       </div>
     </div>
@@ -3916,8 +4038,9 @@
 <script src="mock_vocab_data.js?v=20260918_0145"></script>
 <script src="ybm_english2_data.js?v=20260918_0145"></script>
 <script src="exam_scope_data.js?v=20260923_0001"></script>
-<script src="data.js?v=20260918_0145"></script>
-<script src="app.js?v=20260918_0145"></script>
+<script src="mock_202509_practice_data.js?v=20260929_03"></script>
+<script src="data.js?v=20260929_03"></script>
+<script src="app.js?v=20260929_03"></script>
 
 <!-- ========================================== -->
 <!-- YEM ACADEMIC MANAGEMENT PLATFORM JAVASCRIPT -->

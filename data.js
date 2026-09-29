@@ -302,7 +302,7 @@ function generateDefaultTests() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  return [
+  const allTests = [
 
     // ======================================================
     // 학생 1: 김단하
@@ -864,7 +864,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d36_37_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 36~37',
-      date: '2026-09-29',
+      date: '2026-10-12',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)',
@@ -887,7 +887,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d38_39_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 38~39',
-      date: '2026-09-30',
+      date: '2026-10-13',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)',
@@ -910,7 +910,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d40_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 40',
-      date: '2026-10-01',
+      date: '2026-10-14',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 40 (총 40단어)',
@@ -930,6 +930,39 @@ function generateDefaultTests() {
       isMockSpecial: false
     }
   ];
+
+  // 2025년 9월 고1 학평 (29~40번) 유형별 실전 문제풀이 테스트 (Day 1 ~ Day 11: 9/29 ~ 10/9) 기본 데이터 추가
+  if (typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202509_PRACTICE_TEST_PLANS)) {
+    const studentList = typeof DEFAULT_STUDENTS !== 'undefined' ? DEFAULT_STUDENTS : [];
+    studentList.forEach(student => {
+      MOCK_202509_PRACTICE_TEST_PLANS.forEach(plan => {
+        const questions = typeof getMock202509QuestionsByPlanId === 'function' ? getMock202509QuestionsByPlanId(plan.planId) : [];
+        allTests.push({
+          id: `${plan.planId}_student_${student.id}`,
+          studentId: Number(student.id),
+          title: plan.title,
+          date: plan.date,
+          time: plan.time || '00:00',
+          endTime: plan.endTime || '23:59',
+          scope: plan.scope,
+          cutoff: plan.cutoff || '80점 이상',
+          cutoffScore: plan.cutoffScore || 80,
+          practiceCutoff: plan.practiceCutoff || 80,
+          score: '',
+          status: 'SCHEDULED',
+          retestStatus: 'NONE',
+          retestDate: '',
+          teacherNote: plan.teacherNote || '',
+          type: 'PRACTICE',
+          questions: questions,
+          practiceResult: null,
+          allowLate: true
+        });
+      });
+    });
+  }
+
+  return allTests;
 }
 
 
@@ -981,13 +1014,54 @@ function getDefaultVocabSets() {
 
 
 // ========================================================
-// Firebase 데이터 캐시 (기본 데이터로 즉시 초기화하여 오프라인/지연 시에도 100% 동작 보장)
+// 로컬 캐시 및 Firebase 데이터 스토어 (초고속 즉시 로딩 & 오프라인 완벽 보장)
 // ========================================================
 
+const LOCAL_CACHE_KEYS = {
+  tests: 'yem_cache_tests_v3',
+  students: 'yem_cache_students_v3',
+  vocabSets: 'yem_cache_vocab_sets_v3'
+};
+
+function getLocalCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setLocalCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {}
+}
+
+const cachedTests = getLocalCache(LOCAL_CACHE_KEYS.tests);
+const cachedStudents = getLocalCache(LOCAL_CACHE_KEYS.students);
+const cachedVocabSets = getLocalCache(LOCAL_CACHE_KEYS.vocabSets);
+
 const FirebaseStore = {
-  students: [...DEFAULT_STUDENTS],
-  tests: generateDefaultTests(),
-  vocabSets: getDefaultVocabSets(),
+  students: Array.isArray(cachedStudents) && cachedStudents.length > 0 ? cachedStudents : [...DEFAULT_STUDENTS],
+  tests: (() => {
+    const base = generateDefaultTests();
+    if (Array.isArray(cachedTests) && cachedTests.length > 0) {
+      const baseMap = new Map();
+      base.forEach(t => baseMap.set(String(t.id), t));
+      cachedTests.forEach(t => {
+        const existing = baseMap.get(String(t.id));
+        baseMap.set(String(t.id), existing ? {
+          ...existing,
+          ...t,
+          questions: (t.questions && t.questions.length > 0) ? t.questions : existing.questions
+        } : t);
+      });
+      return Array.from(baseMap.values());
+    }
+    return base;
+  })(),
+  vocabSets: Array.isArray(cachedVocabSets) && cachedVocabSets.length > 0 ? cachedVocabSets : getDefaultVocabSets(),
   vocabTestResults: [],
   textMemorizeResults: [],
   studentsLoaded: false,
@@ -1466,6 +1540,24 @@ const AppData = {
       }));
       if (sort) items.sort(sort);
 
+      // tests 컬렉션 보호: Firestore에서 가져올 때 기본 시험 및 11일간 9모 실전 시험이 누락되지 않도록 자동 병합
+      if (cacheKey === 'tests') {
+        const defTests = generateDefaultTests();
+        const existingMap = new Map(items.map(t => [String(t.id), t]));
+        defTests.forEach(defTest => {
+          if (!existingMap.has(String(defTest.id))) {
+            items.push(defTest);
+          } else {
+            // Firestore에 저장된 시험이라도 questions가 누락되어 있다면 기본 데이터에서 즉시 복원
+            const cloudItem = existingMap.get(String(defTest.id));
+            if (defTest.questions && defTest.questions.length > 0 && (!cloudItem.questions || cloudItem.questions.length === 0)) {
+              cloudItem.questions = defTest.questions;
+            }
+          }
+        });
+        setLocalCache(LOCAL_CACHE_KEYS.tests, items);
+      }
+
       // vocabSets 컬렉션 보호: Firestore에서 빈 배열이 오거나 워드마스터/9모가 누락된 경우 기본 세트를 자동 병합하여 절대 소실되지 않도록 함
       if (cacheKey === 'vocabSets') {
         const defSets = getDefaultVocabSets();
@@ -1485,10 +1577,16 @@ const AppData = {
             });
           }
         });
+        setLocalCache(LOCAL_CACHE_KEYS.vocabSets, items);
       }
 
       FirebaseStore[cacheKey] = items;
-      if (cacheKey === 'tests') FirebaseStore.testsLoaded = true;
+      if (cacheKey === 'tests') {
+        FirebaseStore.testsLoaded = true;
+        if (typeof App !== 'undefined' && typeof App.updateSyncStatus === 'function') {
+          App.updateSyncStatus('synced', '최신 데이터 동기화 완료');
+        }
+      }
       this.refreshCloudScreens();
     }, error => {
       console.error(`Firestore ${collectionName} 실시간 동기화 실패:`, error);
@@ -1521,21 +1619,44 @@ const AppData = {
     await this.waitForFirebase();
 
     const [tests, vocabSets, vocabTestResults] = await Promise.all([
-      this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })),
+      this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })).catch(e => {
+        console.warn('tests 로드 실패 (로컬 유지):', e);
+        return [];
+      }),
       this.loadCollection('vocabSets', set => ({
         ...set,
         book: set.book || '기본 단어장',
         studentIds: (set.studentIds || []).map(Number)
-      })),
+      })).catch(e => {
+        console.warn('vocabSets 로드 실패 (로컬 유지):', e);
+        return [];
+      }),
       this.loadCollection('vocabTestResults', result => ({
         ...result,
         studentId: Number(result.studentId),
         direction: Number(result.direction)
-      }))
+      })).catch(e => {
+        console.warn('vocabTestResults 로드 실패:', e);
+        return [];
+      })
     ]);
 
-    FirebaseStore.tests = tests;
+    // 1. Tests 병합: 기본 시험 및 11일간 9모 실전 시험이 절대 증발하지 않도록 Firestore 기록과 안전 병합
+    const defTests = generateDefaultTests();
+    const testMap = new Map();
+    defTests.forEach(t => testMap.set(String(t.id), t));
+    tests.forEach(t => {
+      const base = testMap.get(String(t.id));
+      testMap.set(String(t.id), base ? {
+        ...base,
+        ...t,
+        questions: (t.questions && t.questions.length > 0) ? t.questions : base.questions
+      } : t);
+    });
+    FirebaseStore.tests = Array.from(testMap.values());
     FirebaseStore.testsLoaded = true;
+    setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests);
+
     FirebaseStore.vocabSets = vocabSets;
     FirebaseStore.vocabTestResults = vocabTestResults;
 
@@ -1724,11 +1845,94 @@ const AppData = {
 
       if (practiceModified) {
         FirebaseStore.tests = currentTests;
-        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Practice tests sync notice:', e));
-        console.log('9/4(금) YBM(박준언) 1과 실전 문제풀이 테스트가 전체 학생에게 성공적으로 일괄 등록되었습니다.');
+        setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
       }
     } catch (err) {
       console.warn('9/4 문제풀이 테스트 일괄 등록 동기화 안내:', err);
+    }
+
+    // 2025년 9월 고1 학평 (29~40번) 유형별 실전 문제풀이 테스트 (Day 1 ~ Day 11: 9/29 ~ 10/9) 전체 학생 대상 일괄 등록 및 동기화
+    try {
+      if (typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202509_PRACTICE_TEST_PLANS)) {
+        const students = this.getStudents();
+        let currentTests = this.getTests();
+        let mockPracticeModified = false;
+
+        students.forEach(student => {
+          MOCK_202509_PRACTICE_TEST_PLANS.forEach(plan => {
+            const testId = `${plan.planId}_student_${student.id}`;
+            const questions = typeof getMock202509QuestionsByPlanId === 'function' ? getMock202509QuestionsByPlanId(plan.planId) : [];
+            const existingTest = currentTests.find(t => 
+              t.id === testId || 
+              (Number(t.studentId) === Number(student.id) && t.date === plan.date && t.title && (t.title.includes('Day ' + plan.dayNum) || t.title.includes(plan.title) || t.title.includes('[9모 기출]')))
+            );
+
+            const testConfig = {
+              id: testId,
+              studentId: Number(student.id),
+              title: plan.title,
+              date: plan.date,
+              time: plan.time || '00:00',
+              endTime: plan.endTime || '23:59',
+              scope: plan.scope,
+              cutoff: plan.cutoff || '80점 이상',
+              cutoffScore: plan.cutoffScore || 80,
+              practiceCutoff: plan.practiceCutoff || 80,
+              score: existingTest?.score || '',
+              status: existingTest?.status || 'SCHEDULED',
+              retestStatus: existingTest?.retestStatus || 'NONE',
+              retestDate: existingTest?.retestDate || '',
+              teacherNote: plan.teacherNote || '',
+              type: 'PRACTICE',
+              questions: questions,
+              practiceResult: existingTest?.practiceResult || null,
+              allowLate: true
+            };
+
+            if (!existingTest) {
+              currentTests.push(testConfig);
+              mockPracticeModified = true;
+            } else {
+              existingTest.id = testId;
+              existingTest.title = testConfig.title;
+              existingTest.date = testConfig.date;
+              existingTest.time = testConfig.time;
+              existingTest.endTime = testConfig.endTime;
+              existingTest.scope = testConfig.scope;
+              existingTest.type = 'PRACTICE';
+              delete existingTest.vocabSetId;
+              delete existingTest.vocabSetIds;
+              existingTest.cutoff = testConfig.cutoff;
+              existingTest.cutoffScore = testConfig.cutoffScore;
+              existingTest.practiceCutoff = testConfig.practiceCutoff;
+              existingTest.teacherNote = testConfig.teacherNote;
+              existingTest.allowLate = true;
+              // 순수 어법 & 독해 & 서술형 최신 118문항으로 갱신 (단어 문제 완벽 배제)
+              if (existingTest.status !== 'SUBMITTED' || !existingTest.questions || existingTest.questions.length === 0) {
+                existingTest.questions = testConfig.questions;
+              }
+              mockPracticeModified = true;
+            }
+
+            // 동일 학생, 동일 날짜에 생성된 중복/구형 9모 테스트 정리
+            currentTests = currentTests.filter(t => {
+              if (Number(t.studentId) === Number(student.id) && t.date === plan.date && t.id !== testId && t.title && t.title.includes('[9모 기출]')) {
+                mockPracticeModified = true;
+                return false;
+              }
+              return true;
+            });
+          });
+        });
+
+        if (mockPracticeModified) {
+          FirebaseStore.tests = currentTests;
+          setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
+          console.log('2025년 9월 학평(29~40번) 유형별 11일 실전 문제풀이 테스트(순수 어법·독해)가 로컬/캐시에 성공적으로 반영되었습니다.');
+        }
+      }
+    } catch (err) {
+      console.warn('2025년 9월 학평 실전 문제풀이 테스트 일괄 등록 동기화 안내:', err);
     }
 
     // 송규인(id: 11) 학생에게 워드마스터 2000 단어 세트 권한 부여
@@ -1773,13 +1977,14 @@ const AppData = {
         { id: 'vocab_wm2000_d32_33_student_11', date: '2026-09-26', setIds: ['wm2000_day_32', 'wm2000_day_33'], title: '[워드마스터 수능 2000] Day 32~33', scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)' },
         // 9/27(일) 제외
         { id: 'vocab_wm2000_d34_35_student_11', date: '2026-09-28', setIds: ['wm2000_day_34', 'wm2000_day_35'], title: '[워드마스터 수능 2000] Day 34~35', scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)' },
-        { id: 'vocab_wm2000_d36_37_student_11', date: '2026-09-29', setIds: ['wm2000_day_36', 'wm2000_day_37'], title: '[워드마스터 수능 2000] Day 36~37', scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)' },
-        { id: 'vocab_wm2000_d38_39_student_11', date: '2026-09-30', setIds: ['wm2000_day_38', 'wm2000_day_39'], title: '[워드마스터 수능 2000] Day 38~39', scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)' },
-        { id: 'vocab_wm2000_d40_student_11', date: '2026-10-01', setIds: ['wm2000_day_40'], title: '[워드마스터 수능 2000] Day 40', scope: '[워드마스터 수능 2000] Day 40 (총 40단어)' }
+        // 9/29 ~ 10/9 기간은 9모 기출 실전 문제풀이에 전념하도록 단어 시험은 10/12 이후로 일정 조정
+        { id: 'vocab_wm2000_d36_37_student_11', date: '2026-10-12', setIds: ['wm2000_day_36', 'wm2000_day_37'], title: '[워드마스터 수능 2000] Day 36~37', scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)' },
+        { id: 'vocab_wm2000_d38_39_student_11', date: '2026-10-13', setIds: ['wm2000_day_38', 'wm2000_day_39'], title: '[워드마스터 수능 2000] Day 38~39', scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)' },
+        { id: 'vocab_wm2000_d40_student_11', date: '2026-10-14', setIds: ['wm2000_day_40'], title: '[워드마스터 수능 2000] Day 40', scope: '[워드마스터 수능 2000] Day 40 (총 40단어)' }
       ];
 
       gyuinVocabSchedules.forEach(scheduleItem => {
-        const existingTest = currentTests.find(t => t.studentId === gyuinStudentId && (t.id === scheduleItem.id || (t.type === 'VOCAB' && t.date === scheduleItem.date && t.title === scheduleItem.title)));
+        const existingTest = currentTests.find(t => t.id === scheduleItem.id || (t.studentId === gyuinStudentId && t.type === 'VOCAB' && t.title === scheduleItem.title));
         const vocabTestConfig = {
           id: scheduleItem.id,
           studentId: gyuinStudentId,
@@ -1809,6 +2014,10 @@ const AppData = {
           gyuinModified = true;
         } else {
           let itemUpdated = false;
+          if (existingTest.date !== vocabTestConfig.date) {
+            existingTest.date = vocabTestConfig.date;
+            itemUpdated = true;
+          }
           if (existingTest.vocabSetId !== vocabTestConfig.vocabSetId || JSON.stringify(existingTest.vocabSetIds) !== JSON.stringify(vocabTestConfig.vocabSetIds)) {
             existingTest.vocabSetId = vocabTestConfig.vocabSetId;
             existingTest.vocabSetIds = vocabTestConfig.vocabSetIds;
@@ -1831,8 +2040,7 @@ const AppData = {
 
       if (gyuinModified) {
         FirebaseStore.tests = currentTests;
-        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Gyuin tests sync notice:', e));
-        console.log('송규인 학생 워드마스터 2000 단어테스트 (Day 12~40) 일정이 성공적으로 일괄 등록되었습니다.');
+        setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
       }
     } catch (err) {
       console.warn('송규인 학생 단어테스트 일괄 등록 동기화 안내:', err);
@@ -1845,7 +2053,15 @@ const AppData = {
       const testsList = FirebaseStore.tests || [];
 
       testsList.forEach(t => {
-        const isVocab = t.type === 'VOCAB' || (t.id && String(t.id).startsWith('vocab_')) || (t.title && (t.title.includes('워드마스터') || t.title.includes('Day') || t.title.includes('9모')));
+        // 문제풀이 시험(PRACTICE)이나 본문 암기(TEXT_MEMORIZE)는 절대로 단어 시험으로 변환하지 않음
+        if (t.type === 'PRACTICE' || t.type === 'TEXT_MEMORIZE' || (t.id && String(t.id).startsWith('mock2509_')) || (t.title && t.title.includes('문제풀이'))) {
+          t.type = 'PRACTICE';
+          delete t.vocabSetId;
+          delete t.vocabSetIds;
+          return;
+        }
+
+        const isVocab = t.type === 'VOCAB' || (t.id && String(t.id).startsWith('vocab_')) || (t.title && (t.title.includes('워드마스터') || (t.title.includes('단어') && !t.title.includes('문제풀이'))));
         if (isVocab) {
           const currentSetIds = Array.isArray(t.vocabSetIds) && t.vocabSetIds.length > 0 ? t.vocabSetIds : (t.vocabSetId ? [t.vocabSetId] : []);
           const hasValidMatching = currentSetIds.length > 0 && currentSetIds.every(id => allVocabSets.some(s => s.id === id));
@@ -1859,7 +2075,7 @@ const AppData = {
               t.vocabSetId = extractedSetIds[0];
               t.type = 'VOCAB';
               testsRelinked = true;
-            } else if (t.isMockSpecial || textToSearch.includes('9모') || textToSearch.includes('다의어')) {
+            } else if (t.isMockSpecial || (textToSearch.includes('9모') && textToSearch.includes('단어')) || textToSearch.includes('다의어')) {
               t.vocabSetIds = ['mock2026_g1_sep_9mo'];
               t.vocabSetId = 'mock2026_g1_sep_9mo';
               t.type = 'VOCAB';
@@ -1870,8 +2086,7 @@ const AppData = {
       });
 
       if (testsRelinked) {
-        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Auto-relink tests sync notice:', e));
-        console.log('단어 시험 일정과 단어 세트 간의 자동 재연동이 성공적으로 완료되었습니다.');
+        setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests);
       }
     } catch (relinkErr) {
       console.warn('단어 시험 일정 자동 재연동 점검 안내:', relinkErr);
@@ -1886,8 +2101,14 @@ const AppData = {
     }
 
     // 이미 삭제된 단어 테스트에 남아 있는 고아 결과를 한 번 정리합니다.
-    // testId가 없는 구형 데이터는 건드리지 않습니다.
     await this.cleanupOrphanVocabTestResults();
+
+    // 최신 상태 로컬 캐시 갱신 및 화면 즉시 새로고침
+    setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests);
+    this.refreshCloudScreens();
+
+    // 백그라운드 선별 동기화: Firestore에 미등록된 시험만 조용히 비동기 저장 (UI 대기 0초!)
+    this.syncMissingTestsToCloudInBackground(FirebaseStore.tests);
   },
 
   startCloudListeners() {
@@ -1912,17 +2133,99 @@ const AppData = {
 
 
   // ======================================================
-  // 시험 목록 가져오기
+  // 백그라운드 선별 클라우드 동기화 (기존 저장 문서 제외, 미등록 신규 시험만 비동기 저장)
+  // ======================================================
+
+  async syncMissingTestsToCloudInBackground(tests) {
+    if (!this.isFirebaseReady()) return;
+    try {
+      const { collection, doc, getDocs, setDoc } = window.firebaseFns;
+      const db = window.firebaseDB;
+      const existingSnapshot = await getDocs(collection(db, 'tests'));
+      const existingIds = new Set(existingSnapshot.docs.map(d => d.id));
+
+      const missing = tests.filter(t => !existingIds.has(String(t.id)));
+      if (missing.length === 0) {
+        return;
+      }
+
+      console.log(`☁️ 클라우드 미등록 시험 ${missing.length}건을 백그라운드에서 동기화합니다...`);
+      for (let i = 0; i < missing.length; i += 5) {
+        const chunk = missing.slice(i, i + 5);
+        await Promise.all(chunk.map(t => {
+          const cleanItem = JSON.parse(JSON.stringify(t, (k, v) => v === undefined ? null : v));
+          return setDoc(doc(collection(db, 'tests'), String(t.id)), cleanItem).catch(e => console.warn(`시험 ${t.id} 저장 알림:`, e));
+        }));
+      }
+      console.log(`✅ 클라우드 미등록 시험 ${missing.length}건 백그라운드 동기화 완료!`);
+    } catch (e) {
+      console.warn('백그라운드 시험 동기화 알림:', e);
+    }
+  },
+
+
+  // ======================================================
+  // 시험 목록 가져오기 (11일간 9모 실전 시험 및 기본 시험 100% 가용 보장)
   // ======================================================
 
   getTests() {
-    if (FirebaseStore.testsLoaded && Array.isArray(FirebaseStore.tests)) {
-      return FirebaseStore.tests;
+    let current = Array.isArray(FirebaseStore.tests) && FirebaseStore.tests.length > 0
+      ? FirebaseStore.tests
+      : generateDefaultTests();
+
+    // 혹시라도 기본 시험이나 11일 모의고사 실전 시험이 누락되어 있다면 자동 보충 보장
+    const defTests = generateDefaultTests();
+    const existingIds = new Set(current.map(t => String(t.id)));
+    let added = false;
+    defTests.forEach(dt => {
+      if (!existingIds.has(String(dt.id))) {
+        current.push(dt);
+        added = true;
+      }
+    });
+
+    // 9모 실전 시험 118문항 데이터 및 단어 제외 무결성 동기화
+    if (typeof getMock202509QuestionsByPlanId === 'function' && typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined') {
+      current.forEach(t => {
+        if (t.id && String(t.id).startsWith('mock2509_')) {
+          t.type = 'PRACTICE';
+          delete t.vocabSetId;
+          delete t.vocabSetIds;
+          const planIdMatch = String(t.id).match(/^(mock2509_d\d+)/);
+          if (planIdMatch) {
+            const plan = MOCK_202509_PRACTICE_TEST_PLANS.find(p => p.planId === planIdMatch[1]);
+            if (plan) {
+              if (t.title !== plan.title) t.title = plan.title;
+              if (t.scope !== plan.scope) t.scope = plan.scope;
+              t.time = '00:00';
+              t.endTime = '23:59';
+              if (t.status !== 'SUBMITTED') {
+                const latestQs = getMock202509QuestionsByPlanId(plan.planId);
+                if (latestQs && latestQs.length > 0) {
+                  if (!t.questions || t.questions.length !== latestQs.length || (t.questions[0] && latestQs[0] && t.questions[0].id !== latestQs[0].id)) {
+                    t.questions = latestQs;
+                  }
+                }
+              }
+            }
+          }
+        }
+        // 문제풀이 시험은 시작 시간 제한 없이 당일 하루종일(00:00~23:59) 응시 가능
+        if (t.type === 'PRACTICE' || (t.time === '18:00' && !t.extendedEndTime)) {
+          t.time = '00:00';
+          t.endTime = '23:59';
+        }
+        // 송규인 학생 9/29~10/1 단어 시험 일정 10/12 이후로 동기화
+        if (t.id === 'vocab_wm2000_d36_37_student_11' && t.date === '2026-09-29') t.date = '2026-10-12';
+        if (t.id === 'vocab_wm2000_d38_39_student_11' && t.date === '2026-09-30') t.date = '2026-10-13';
+        if (t.id === 'vocab_wm2000_d40_student_11' && t.date === '2026-10-01') t.date = '2026-10-14';
+      });
     }
-    if (Array.isArray(FirebaseStore.tests) && FirebaseStore.tests.length > 0) {
-      return FirebaseStore.tests;
+
+    if (added) {
+      FirebaseStore.tests = current;
     }
-    return generateDefaultTests();
+    return current;
   },
 
 
@@ -1938,26 +2241,21 @@ const AppData = {
 
 
   // ======================================================
-  // 특정 학생의 시험 목록
+  // 특정 학생의 시험 목록 (타입 불일치 방지 및 100% 매핑 보장)
   // ======================================================
 
   getTestsByStudentId(studentId) {
-
-    const tests =
-      this.getTests();
-
+    const tests = this.getTests();
+    const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
     return tests
-
-      .filter(
-        t => t.studentId === Number(studentId)
-      )
-
-      .sort(
-        (a, b) =>
-          new Date(b.date) -
-          new Date(a.date)
-      );
-
+      .filter(t => Number(t.studentId) === Number(studentId))
+      .sort((a, b) => {
+        const dateDiff = new Date(b.date) - new Date(a.date);
+        if (dateDiff !== 0) return dateDiff;
+        const ordA = typeOrder[a.type] || 5;
+        const ordB = typeOrder[b.type] || 5;
+        return ordA - ordB;
+      });
   },
 
 

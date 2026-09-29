@@ -30,6 +30,98 @@ const App = {
     }
   },
 
+  // 클라우드 동기화 상태 및 데이터 로딩 안내 배너 표시
+  updateSyncStatus(status, text) {
+    const badge = document.getElementById('cloudSyncStatusBadge');
+    const notice = document.getElementById('dataSyncNoticeBanner');
+    const adminNotice = document.getElementById('adminDataSyncNoticeBanner');
+
+    let badgeHtml = '';
+    let noticeHtml = '';
+
+    if (status === 'syncing') {
+      badgeHtml = `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-semibold shadow-xs animate-pulse">
+          <i class="fa-solid fa-cloud-arrow-down fa-spin text-indigo-500"></i>
+          <span>${text || '데이터 동기화 중...'}</span>
+        </span>
+      `;
+      noticeHtml = `
+        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50/95 to-blue-50/95 border border-indigo-200 text-indigo-900 flex items-center justify-between text-xs sm:text-sm font-medium shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+              <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+            </div>
+            <div>
+              <span class="font-extrabold text-indigo-950">${text || '클라우드에서 최신 학습 데이터를 불러오는 중입니다.'}</span>
+              <span class="text-indigo-700 text-xs block sm:inline sm:ml-2">데이터는 안전하게 보관되어 있으며, 잠시 후 최신 상태로 자동 동기화됩니다.</span>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 border border-indigo-200 hidden sm:inline-block">로딩 중</span>
+        </div>
+      `;
+    } else if (status === 'synced') {
+      badgeHtml = `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold shadow-xs">
+          <i class="fa-solid fa-cloud-check text-emerald-500"></i>
+          <span>${text || '동기화 완료'}</span>
+        </span>
+      `;
+      noticeHtml = `
+        <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between text-xs sm:text-sm font-medium shadow-xs transition-opacity duration-500">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-emerald-600"></i>
+            <span class="font-bold">모든 시험 및 학습 데이터가 성공적으로 동기화되었습니다.</span>
+          </div>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-block">완료</span>
+        </div>
+      `;
+    } else if (status === 'offline') {
+      badgeHtml = `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold shadow-xs">
+          <i class="fa-solid fa-shield-halved text-amber-500"></i>
+          <span>${text || '로컬 안전 모드 (저장됨)'}</span>
+        </span>
+      `;
+      noticeHtml = `
+        <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between text-xs sm:text-sm font-medium shadow-xs">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-amber-600"></i>
+            <span><strong>로컬 캐시 모드:</strong> 클라우드 지연 시에도 저장된 시험 데이터로 정상 이용하실 수 있습니다.</span>
+          </div>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 hidden sm:inline-block">로컬 모드</span>
+        </div>
+      `;
+    }
+
+    if (badge) {
+      badge.innerHTML = badgeHtml;
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
+      if (status === 'synced') {
+        setTimeout(() => {
+          badge.classList.add('hidden');
+          badge.classList.remove('flex');
+        }, 3000);
+      }
+    }
+
+    [notice, adminNotice].forEach(el => {
+      if (!el) return;
+      if (noticeHtml) {
+        el.innerHTML = noticeHtml;
+        el.classList.remove('hidden');
+        if (status === 'synced') {
+          setTimeout(() => {
+            el.classList.add('hidden');
+          }, 2500);
+        }
+      } else {
+        el.classList.add('hidden');
+      }
+    });
+  },
+
   saveSession(sessionData) {
     try {
       localStorage.setItem('yem_auth_session', JSON.stringify(sessionData));
@@ -175,6 +267,56 @@ const App = {
                 this.vocabStudyFlipCard();
                 return;
               }
+            }
+          }
+        }
+      }
+
+      // 본문 암기학습 모달 키보드 단축키
+      const tmStudyModal = document.getElementById('textMemorizeStudyModal');
+      if (tmStudyModal && !tmStudyModal.classList.contains('hidden')) {
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        const tmStudy = this.state.textMemorizeStudy;
+        if (tmStudy) {
+          if (tmStudy.viewMode === 'card' && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+            if (tmStudy.isMasteryFinished) {
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                this.setTmStudyViewMode('mask');
+                return;
+              }
+            } else if (tmStudy.isRoundFinished) {
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                this.tmStudyStartNextRound();
+                return;
+              }
+            } else {
+              if (e.key === 'ArrowLeft' || e.key === '1') {
+                e.preventDefault();
+                this.tmStudyMarkSentence(false);
+                return;
+              } else if (e.key === 'ArrowRight' || e.key === '2') {
+                e.preventDefault();
+                this.tmStudyMarkSentence(true);
+                return;
+              } else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                this.tmStudyFlipCard();
+                return;
+              }
+            }
+          } else if (tmStudy.viewMode === 'scramble' && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+            if (e.key === 'Backspace') {
+              e.preventDefault();
+              if (tmStudy.scramblePlacedWords && tmStudy.scramblePlacedWords.length > 0) {
+                this.tmStudyScrambleRemoveWord(tmStudy.scramblePlacedWords.length - 1);
+              }
+              return;
+            } else if (e.key === 'Enter' && tmStudy.scrambleIsCorrect) {
+              e.preventDefault();
+              this.tmStudyScrambleNext();
+              return;
             }
           }
         }
@@ -549,9 +691,16 @@ const App = {
     const retestNeeded = tests.filter(t => t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS')).length;
     const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
 
+    const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
     const upcomingTests = tests
       .filter(t => t.date >= todayStr && t.status === 'SCHEDULED')
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      .sort((a, b) => {
+        const dateDiff = new Date(a.date) - new Date(b.date);
+        if (dateDiff !== 0) return dateDiff;
+        const ordA = typeOrder[a.type] || 5;
+        const ordB = typeOrder[b.type] || 5;
+        return ordA - ordB;
+      });
     const nextTest = upcomingTests[0];
     const nextDDay = nextTest ? this.calculateDDay(nextTest.date) : '-';
 
@@ -915,7 +1064,7 @@ const App = {
                 ${badge.icon} ${badge.tag}
               </span>
               <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                <i class="fa-regular fa-calendar"></i> ${test.date} ${test.time ? `(${test.time})` : ''}
+                <i class="fa-regular fa-calendar"></i> ${test.date} ${(test.time && test.time !== '00:00' && test.time !== '18:00') ? `(${test.time})` : '(하루종일)'}
               </span>
               <span class="text-xs font-bold px-2 py-0.5 rounded ${dDayBadge.class}">${dDayBadge.text}</span>
             </div>
@@ -996,7 +1145,7 @@ const App = {
           </div>
           <div>
             <div class="text-xs text-slate-500 font-medium">시험 일정</div>
-            <div class="text-sm font-bold text-slate-900">${test.date} ${test.time ? `(${test.time})` : ''}</div>
+            <div class="text-sm font-bold text-slate-900">${test.date} ${(test.time && test.time !== '00:00' && test.time !== '18:00') ? `(${test.time})` : '(하루종일)'}</div>
           </div>
         </div>
         <span class="px-3 py-1 rounded-full text-xs ${dDayBadge.class}">${dDayBadge.text}</span>
@@ -1163,7 +1312,8 @@ const App = {
                   : (test.allowLate
                       ? { class: 'bg-amber-100 text-amber-800 border border-amber-200', label: '지각 응시 허용됨' }
                       : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' }))));
-    const baseTimeStr = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : (test.endTime ? `~ ${test.endTime}까지` : '23:59까지');
+    const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
+    const baseTimeStr = isAllDay ? '하루종일 응시 가능 (00:00 ~ 23:59)' : (test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : '하루종일');
     const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
 
     const bookName = (primaryBook || '').trim();
@@ -1929,14 +2079,27 @@ const App = {
       };
     }
 
-    // 4. 시험 시작 전 여부 체크 (단어 시험 외 문제풀이 시험 등은 시작 시간 전 절대 응시 불가)
-    if (now < startDateTime) {
-      const timeStr = test.time ? `${test.time}` : '시험 당일';
+    // 4. 문제풀이 시험(PRACTICE) 및 하루종일 시험은 당일 00:00부터 23:59까지 자유롭게 응시 가능
+    const isAllDayExam = test.type === 'PRACTICE' || test.time === '00:00' || test.time === '18:00';
+    const dayStartDateTime = new Date(`${testDate}T00:00:00`);
+    if (isAllDayExam && now >= dayStartDateTime && now <= endDateTime) {
+      return {
+        status: 'IN_PROGRESS',
+        label: '응시 가능 (하루종일)',
+        canStart: true,
+        message: ''
+      };
+    }
+
+    // 5. 시험 시작 전 여부 체크 (지정 날짜 이전인 경우)
+    const effectiveStartDateTime = isAllDayExam ? dayStartDateTime : startDateTime;
+    if (now < effectiveStartDateTime) {
+      const timeStr = isAllDayExam ? '시험 당일' : (test.time ? `${test.time}` : '시험 당일');
       return {
         status: 'NOT_STARTED',
         label: `시작 전 (${timeStr}부터 가능)`,
         canStart: false,
-        message: `시험 시작 시간이 아닙니다. ${test.date} ${test.time || ''}부터 응시할 수 있습니다.`
+        message: `시험 시작 시간이 아닙니다. ${test.date} ${timeStr}부터 응시할 수 있습니다.`
       };
     }
 
@@ -1969,8 +2132,8 @@ const App = {
     const questions = test.questions || [];
     const timeStatus = this.getTestTimeStatus(test);
     const result = test.practiceResult;
-    const isCompleted = test.status === 'PASS' || result?.passed;
-    const timeDisplay = test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : '시간 미지정';
+    const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
+    const timeDisplay = isAllDay ? '하루종일 응시 가능 (00:00 ~ 23:59)' : (test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : '하루종일');
     const isAdmin = this.state.isAdminLoggedIn;
 
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 문제풀이 시험` : '문제풀이 시험';
@@ -2123,10 +2286,18 @@ const App = {
           <div class="mt-2 space-y-2 pt-2 border-t border-slate-200 max-h-48 overflow-y-auto pr-1">
             ${questions.map((q, idx) => {
               const qType = q.type || 'CHOICE';
-              const typeLabel = qType === 'SHORT' ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mr-1">주관식</span>' : (qType === 'ESSAY' ? '<span class="text-[10px] font-bold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded mr-1">서술형</span>' : '');
-              const answerText = (qType === 'SHORT' || qType === 'ESSAY')
-                ? `정답/모범답안: ${this.escapeHtml(q.answer || '')}`
-                : `정답: ${q.answer}번 (${this.renderRichText(q.choices?.[q.answer - 1] || '')})`;
+              const typeLabel = qType === 'SHORT' ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mr-1">주관식</span>' : (qType === 'ESSAY' ? '<span class="text-[10px] font-bold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded mr-1">서술형</span>' : (qType === 'MULTI_CHOICE' ? '<span class="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded mr-1">모두고르기</span>' : ''));
+              const choiceLabels = ['①', '②', '③', '④', '⑤'];
+              let answerText = '';
+              if (qType === 'SHORT' || qType === 'ESSAY') {
+                answerText = `정답/모범답안: ${this.escapeHtml(q.answer || '')}`;
+              } else if (qType === 'MULTI_CHOICE') {
+                const ansArr = Array.isArray(q.answer) ? q.answer : [q.answer];
+                const labels = ansArr.map(n => choiceLabels[n - 1] || `${n}번`).join(', ');
+                answerText = `정답(복수): ${labels}`;
+              } else {
+                answerText = `정답: ${q.answer}번 (${this.renderRichText(q.choices?.[q.answer - 1] || '')})`;
+              }
               return `
                 <div class="p-2.5 rounded-lg bg-white border border-slate-200 text-[11px] leading-snug">
                   <div>${typeLabel}<span class="font-black text-slate-800">${idx + 1}번.</span> <div class="mt-1">${this.renderRichText(q.question)}</div></div>
@@ -2240,7 +2411,7 @@ const App = {
     const choices = q.choices || ['', '', '', '', ''];
     const currentAnswer = pt.answers[index] != null ? pt.answers[index] : '';
     const choiceLabels = ['①', '②', '③', '④', '⑤'];
-    const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && String(pt.answers[k]).trim() !== '').length;
+    const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && (Array.isArray(pt.answers[k]) ? pt.answers[k].length > 0 : String(pt.answers[k]).trim() !== '')).length;
 
     document.getElementById('practiceTestTopInfo').innerHTML = `
       <div class="flex items-center justify-between gap-4 flex-wrap w-full">
@@ -2256,7 +2427,7 @@ const App = {
         ${pt.questions.map((_, i) => {
           const isCurrent = i === index;
           const ans = pt.answers[i];
-          const isAnswered = ans != null && String(ans).trim() !== '';
+          const isAnswered = ans != null && (Array.isArray(ans) ? ans.length > 0 : String(ans).trim() !== '');
           const btnClass = isCurrent
             ? 'bg-slate-900 text-white border-slate-900 font-black ring-2 ring-slate-400'
             : isAnswered
@@ -2270,11 +2441,13 @@ const App = {
     // 문항 유형 뱃지
     const typeBadge = qType === 'CHOICE'
       ? '<span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">5지선다</span>'
-      : (qType === 'SHORT'
-        ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">주관식 단답형</span>'
-        : '<span class="text-[10px] font-black text-violet-700 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">서술형 영작</span>');
+      : (qType === 'MULTI_CHOICE'
+        ? '<span class="text-[10px] font-black text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded border border-teal-200">모두 고르기 (복수 선택)</span>'
+        : (qType === 'SHORT'
+          ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">주관식 단답형</span>'
+          : '<span class="text-[10px] font-black text-violet-700 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">서술형 영작</span>'));
 
-    // 답안 작성 컨트롤 (객관식 / 단답형 / 서술형)
+    // 답안 작성 컨트롤 (객관식 / 모두 고르기 / 단답형 / 서술형)
     let answerControlHtml = '';
     if (qType === 'CHOICE') {
       answerControlHtml = `
@@ -2286,6 +2459,28 @@ const App = {
               <button type="button" onclick="App.selectPracticeChoice(${choiceNum})" class="w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${isSelected ? 'bg-indigo-50 border-indigo-600 text-indigo-950 font-bold shadow-xs' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
                 <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}">
                   ${choiceLabels[cIdx]}
+                </span>
+                <span class="flex-1 font-clean text-sm sm:text-[15px] leading-relaxed text-slate-900">${this.renderRichText(choice)}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else if (qType === 'MULTI_CHOICE') {
+      const selectedAnswers = Array.isArray(currentAnswer) ? currentAnswer : (currentAnswer ? [Number(currentAnswer)] : []);
+      answerControlHtml = `
+        <div class="space-y-2.5 pt-2">
+          <div class="p-2.5 rounded-xl bg-teal-50/80 border border-teal-200 flex items-center justify-between text-xs text-teal-900 font-bold mb-1">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-square-check text-teal-600"></i>정답을 모두 선택하세요 (복수 선택 가능)</span>
+            <span class="text-teal-700 font-black">${selectedAnswers.length}개 선택됨</span>
+          </div>
+          ${choices.map((choice, cIdx) => {
+            const choiceNum = cIdx + 1;
+            const isSelected = selectedAnswers.includes(choiceNum);
+            return `
+              <button type="button" onclick="App.togglePracticeStudentChoice(${choiceNum})" class="w-full text-left p-3.5 rounded-xl border transition flex items-center space-x-3 ${isSelected ? 'bg-teal-50 border-teal-600 text-teal-950 font-bold shadow-xs ring-2 ring-teal-200' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">
+                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${isSelected ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600'}">
+                  ${isSelected ? '<i class="fa-solid fa-check text-xs"></i>' : choiceLabels[cIdx]}
                 </span>
                 <span class="flex-1 font-clean text-sm sm:text-[15px] leading-relaxed text-slate-900">${this.renderRichText(choice)}</span>
               </button>
@@ -2415,6 +2610,26 @@ const App = {
     this.renderPracticeQuestion(pt.currentIndex);
   },
 
+  togglePracticeStudentChoice(choiceNum) {
+    const pt = this.state.practiceTest;
+    if (!pt) return;
+    let curr = pt.answers[pt.currentIndex];
+    if (!Array.isArray(curr)) {
+      curr = curr != null && curr !== '' ? [Number(curr)] : [];
+    } else {
+      curr = [...curr];
+    }
+    const idx = curr.indexOf(choiceNum);
+    if (idx > -1) {
+      curr.splice(idx, 1);
+    } else {
+      curr.push(choiceNum);
+      curr.sort((a, b) => a - b);
+    }
+    pt.answers[pt.currentIndex] = curr.length > 0 ? curr : null;
+    this.renderPracticeQuestion(pt.currentIndex);
+  },
+
   updatePracticeTextAnswer(value) {
     const pt = this.state.practiceTest;
     if (!pt) return;
@@ -2512,7 +2727,7 @@ const App = {
     if (!pt) return;
 
     const total = pt.questions.length;
-    const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && String(pt.answers[k]).trim() !== '').length;
+    const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && (Array.isArray(pt.answers[k]) ? pt.answers[k].length > 0 : String(pt.answers[k]).trim() !== '')).length;
     const unAnsweredCount = total - answeredCount;
 
     if (unAnsweredCount > 0) {
@@ -2525,7 +2740,7 @@ const App = {
       }
     }
 
-    // 채점 진행 (객관식, 주관식 단답형, 서술형 영작 지원)
+    // 채점 진행 (객관식, 모두 고르기, 주관식 단답형, 서술형 영작 지원)
     let correctCount = 0;
     const reviewItems = pt.questions.map((q, idx) => {
       const studentAnswer = pt.answers[idx] != null ? pt.answers[idx] : null;
@@ -2534,6 +2749,10 @@ const App = {
 
       if (qType === 'CHOICE') {
         isCorrect = Number(studentAnswer) === Number(q.answer);
+      } else if (qType === 'MULTI_CHOICE') {
+        const sArr = Array.isArray(studentAnswer) ? studentAnswer.map(Number).sort((a, b) => a - b) : (studentAnswer ? [Number(studentAnswer)] : []);
+        const cArr = Array.isArray(q.answer) ? q.answer.map(Number).sort((a, b) => a - b) : [Number(q.answer)];
+        isCorrect = sArr.length === cArr.length && sArr.every((val, i) => val === cArr[i]);
       } else if (qType === 'SHORT') {
         isCorrect = this.checkShortAnswer(studentAnswer, q.answer, q.acceptableAnswers);
       } else if (qType === 'ESSAY') {
@@ -2548,8 +2767,8 @@ const App = {
         question: q.question,
         passage: q.passage || '',
         choices: q.choices || [],
-        studentAnswer: studentAnswer,
-        correctAnswer: (qType === 'SHORT' || qType === 'ESSAY') ? q.answer : Number(q.answer),
+        studentAnswer: qType === 'MULTI_CHOICE' ? (Array.isArray(studentAnswer) ? studentAnswer.map(Number).sort((a, b) => a - b) : (studentAnswer ? [Number(studentAnswer)] : [])) : studentAnswer,
+        correctAnswer: (qType === 'SHORT' || qType === 'ESSAY') ? q.answer : (qType === 'MULTI_CHOICE' ? (Array.isArray(q.answer) ? q.answer.map(Number).sort((a, b) => a - b) : [Number(q.answer)]) : Number(q.answer)),
         acceptableAnswers: q.acceptableAnswers || [],
         keywords: q.keywords || [],
         isCorrect,
@@ -2649,6 +2868,7 @@ const App = {
             ${reviewItems.map((item, idx) => {
               const qType = item.type || 'CHOICE';
               const isChoice = qType === 'CHOICE';
+              const isMultiChoice = qType === 'MULTI_CHOICE';
 
               let answerDisplayHtml = '';
               if (isChoice) {
@@ -2668,6 +2888,35 @@ const App = {
                           <span class="flex-1 font-clean text-xs sm:text-sm leading-relaxed">${this.renderRichText(ch)}</span>
                           ${isCorrectChoice ? '<span class="text-[10px] font-black text-emerald-700">★ 정답</span>' : ''}
                           ${isStudentChoice && !item.isCorrect ? '<span class="text-[10px] font-black text-rose-600">내 오답</span>' : ''}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `;
+              } else if (isMultiChoice) {
+                const studentAnsArr = Array.isArray(item.studentAnswer) ? item.studentAnswer.map(Number) : (item.studentAnswer != null && item.studentAnswer !== '' ? [Number(item.studentAnswer)] : []);
+                const correctAnsArr = Array.isArray(item.correctAnswer) ? item.correctAnswer.map(Number) : [Number(item.correctAnswer)];
+                answerDisplayHtml = `
+                  <div class="space-y-1 text-xs">
+                    ${(item.choices || []).map((ch, cIdx) => {
+                      const cNum = cIdx + 1;
+                      const isCorrectChoice = correctAnsArr.includes(cNum);
+                      const isStudentChoice = studentAnsArr.includes(cNum);
+                      let choiceStyle = 'bg-white text-slate-700 border-slate-200';
+                      if (isCorrectChoice && isStudentChoice) {
+                        choiceStyle = 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
+                      } else if (isCorrectChoice && !isStudentChoice) {
+                        choiceStyle = 'bg-teal-50 text-teal-900 border-teal-300 font-bold';
+                      } else if (!isCorrectChoice && isStudentChoice) {
+                        choiceStyle = 'bg-rose-100 text-rose-900 border-rose-300 line-through';
+                      }
+
+                      return `
+                        <div class="p-2 rounded-lg border flex items-center gap-2 ${choiceStyle}">
+                          <span class="font-bold flex-shrink-0">${choiceLabels[cIdx]}</span>
+                          <span class="flex-1 font-clean text-xs sm:text-sm leading-relaxed">${this.renderRichText(ch)}</span>
+                          ${isCorrectChoice ? '<span class="text-[10px] font-black text-teal-700">★ 정답</span>' : ''}
+                          ${isStudentChoice ? (isCorrectChoice ? '<span class="text-[10px] font-black text-emerald-700">내 선택(정답)</span>' : '<span class="text-[10px] font-black text-rose-600">내 선택(오답)</span>') : ''}
                         </div>
                       `;
                     }).join('')}
@@ -2710,12 +2959,12 @@ const App = {
                     <div class="flex items-center gap-2">
                       <span class="w-6 h-6 rounded-full ${item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'} text-xs font-black flex items-center justify-center">${idx + 1}</span>
                       <span class="font-bold text-xs ${item.isCorrect ? 'text-emerald-900' : 'text-rose-900'}">${item.isCorrect ? '정답' : '오답'}</span>
-                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${qType === 'SHORT' ? 'bg-indigo-100 text-indigo-800' : (qType === 'ESSAY' ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700')}">
-                        ${qType === 'SHORT' ? '주관식 단답형' : (qType === 'ESSAY' ? '서술형 영작' : '5지선다')}
+                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${qType === 'SHORT' ? 'bg-indigo-100 text-indigo-800' : (qType === 'ESSAY' ? 'bg-violet-100 text-violet-800' : (qType === 'MULTI_CHOICE' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'))}">
+                        ${qType === 'SHORT' ? '주관식 단답형' : (qType === 'ESSAY' ? '서술형 영작' : (qType === 'MULTI_CHOICE' ? '모두 고르기 (복수정답)' : '5지선다'))}
                       </span>
                     </div>
                     <span class="text-xs font-bold ${item.isCorrect ? 'text-emerald-700' : 'text-rose-600'}">
-                      ${isChoice ? (item.studentAnswer ? `선택: ${choiceLabels[item.studentAnswer - 1]} (${item.studentAnswer}번) · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)` : `미응답 · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)`) : (item.isCorrect ? '채점 결과: PASS' : '채점 결과: FAIL')}
+                      ${isChoice ? (item.studentAnswer ? `선택: ${choiceLabels[item.studentAnswer - 1]} (${item.studentAnswer}번) · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)` : `미응답 · 정답: ${choiceLabels[item.correctAnswer - 1]} (${item.correctAnswer}번)`) : (isMultiChoice ? `선택: ${(Array.isArray(item.studentAnswer) && item.studentAnswer.length > 0) ? item.studentAnswer.map(n => choiceLabels[n - 1] || `${n}번`).join(', ') : '미응답'} · 정답: ${(Array.isArray(item.correctAnswer) ? item.correctAnswer : [item.correctAnswer]).map(n => choiceLabels[n - 1] || `${n}번`).join(', ')}` : (item.isCorrect ? '채점 결과: PASS' : '채점 결과: FAIL'))}
                     </span>
                   </div>
 
@@ -2952,8 +3201,8 @@ const App = {
     }
 
     tbody.innerHTML = tests.map(test => {
-      const timeStatus = this.getTestTimeStatus(test);
-      const timeStr = test.time ? (test.endTime ? `${test.time}~${test.endTime}` : `${test.time}`) : (test.endTime ? `~${test.endTime}` : '');
+      const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
+      const timeStr = isAllDay ? '하루종일' : (test.time ? (test.endTime ? `${test.time}~${test.endTime}` : `${test.time}`) : (test.endTime ? `~${test.endTime}` : ''));
 
       return `
         <tr class="hover:bg-slate-50/80 transition">
@@ -3116,9 +3365,16 @@ const App = {
       const pendingRetests = tests.filter(t => t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS')).length;
       const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
 
+      const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
       const upcoming = tests
         .filter(t => t.date >= todayStr && t.status === 'SCHEDULED')
-        .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+        .sort((a, b) => {
+          const dateDiff = new Date(a.date) - new Date(b.date);
+          if (dateDiff !== 0) return dateDiff;
+          const ordA = typeOrder[a.type] || 5;
+          const ordB = typeOrder[b.type] || 5;
+          return ordA - ordB;
+        })[0];
 
       return `
         <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
@@ -3908,13 +4164,40 @@ const App = {
       if (!Array.isArray(q.choices) || q.choices.length !== 5) {
         q.choices = ['', '', '', '', ''];
       }
-      if (typeof q.answer !== 'number' || q.answer < 1 || q.answer > 5) {
+      if (Array.isArray(q.answer)) {
+        q.answer = q.answer[0] || 1;
+      } else if (typeof q.answer !== 'number' || q.answer < 1 || q.answer > 5) {
         q.answer = 1;
       }
+    } else if (newType === 'MULTI_CHOICE') {
+      if (!Array.isArray(q.choices) || q.choices.length !== 5) {
+        q.choices = ['', '', '', '', ''];
+      }
+      if (!Array.isArray(q.answer)) {
+        q.answer = typeof q.answer === 'number' ? [q.answer] : [1];
+      }
     } else {
-      if (typeof q.answer === 'number') {
+      if (typeof q.answer === 'number' || Array.isArray(q.answer)) {
         q.answer = '';
       }
+    }
+    this.renderPracticeQuestionsForm();
+  },
+
+  togglePracticeChoiceAnswer(qIndex, choiceNum) {
+    const q = this.state.editingPracticeQuestions[qIndex];
+    if (!q) return;
+    if (!Array.isArray(q.answer)) {
+      q.answer = typeof q.answer === 'number' ? [q.answer] : [];
+    } else {
+      q.answer = [...q.answer];
+    }
+    const idx = q.answer.indexOf(choiceNum);
+    if (idx > -1) {
+      q.answer.splice(idx, 1);
+    } else {
+      q.answer.push(choiceNum);
+      q.answer.sort((a, b) => a - b);
     }
     this.renderPracticeQuestionsForm();
   },
@@ -4213,10 +4496,13 @@ const App = {
               <span class="text-xs font-bold text-slate-800">문제 ${qIndex + 1}</span>
             </div>
 
-            <!-- 문제 유형 선택 (5지선다 / 단답형 / 서술형) -->
+            <!-- 문제 유형 선택 (5지선다 / 모두고르기 / 단답형 / 서술형) -->
             <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
               <button type="button" onclick="App.updatePracticeQuestionType(${qIndex}, 'CHOICE')" class="px-2.5 py-1 rounded-md font-bold transition ${qType === 'CHOICE' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
                 <i class="fa-solid fa-list-ol mr-1"></i>5지선다
+              </button>
+              <button type="button" onclick="App.updatePracticeQuestionType(${qIndex}, 'MULTI_CHOICE')" class="px-2.5 py-1 rounded-md font-bold transition ${qType === 'MULTI_CHOICE' ? 'bg-white text-teal-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
+                <i class="fa-solid fa-square-check mr-1"></i>모두고르기
               </button>
               <button type="button" onclick="App.updatePracticeQuestionType(${qIndex}, 'SHORT')" class="px-2.5 py-1 rounded-md font-bold transition ${qType === 'SHORT' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}">
                 <i class="fa-solid fa-i-cursor mr-1"></i>주관식(단답)
@@ -4275,6 +4561,30 @@ const App = {
                 }).join('')}
               </div>
             </div>
+          ` : (qType === 'MULTI_CHOICE' ? `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-[11px] font-bold text-teal-900">모두 고르기 보기 입력 & 정답 다중 체크 <span class="text-rose-500">*</span></label>
+                <span class="text-[10px] text-teal-700 font-semibold">정답에 해당하는 번호의 체크박스를 모두 선택하세요</span>
+              </div>
+              <div class="space-y-1.5">
+                ${choices.map((choice, cIndex) => {
+                  const choiceNum = cIndex + 1;
+                  const ansArr = Array.isArray(q.answer) ? q.answer : [q.answer];
+                  const isCorrect = ansArr.includes(choiceNum);
+                  const choiceLabels = ['①', '②', '③', '④', '⑤'];
+                  return `
+                    <div class="flex items-center gap-2 p-1.5 rounded-lg border transition ${isCorrect ? 'border-teal-500 bg-teal-50/60' : 'border-slate-200 bg-white'}">
+                      <label class="flex items-center gap-1.5 cursor-pointer flex-shrink-0 px-1">
+                        <input type="checkbox" name="practiceAnswer_${qIndex}_${choiceNum}" value="${choiceNum}" ${isCorrect ? 'checked' : ''} onchange="App.togglePracticeChoiceAnswer(${qIndex}, ${choiceNum})" class="text-teal-600 focus:ring-teal-500 w-3.5 h-3.5 rounded cursor-pointer" />
+                        <span class="text-xs font-bold ${isCorrect ? 'text-teal-800' : 'text-slate-600'}">${choiceLabels[cIndex]} 정답</span>
+                      </label>
+                      <input type="text" placeholder="${choiceNum}번 보기 입력 (서식 지원: **굵게**, __밑줄__)" value="${this.escapeHtml(choice || '')}" oninput="App.updatePracticeChoice(${qIndex}, ${cIndex}, this.value)" class="flex-1 py-1.5 px-2.5 rounded-md border border-slate-200 focus:ring-1 focus:ring-teal-500 text-xs bg-white" />
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
           ` : (qType === 'SHORT' ? `
             <div class="space-y-1.5 p-3 rounded-xl bg-indigo-50/60 border border-indigo-200">
               <div class="flex items-center justify-between">
@@ -4321,7 +4631,7 @@ const App = {
                 />
               </div>
             </div>
-          `)}
+          `))}
 
           <!-- 해설 / 오답노트 코멘트 -->
           <div>
@@ -4488,6 +4798,15 @@ const App = {
           }
           if (!q.answer || q.answer < 1 || q.answer > 5) {
             this.toast(`${i + 1}번 문제의 정답 번호를 선택해주세요.`, 'error');
+            return;
+          }
+        } else if (qType === 'MULTI_CHOICE') {
+          if (!Array.isArray(q.choices) || q.choices.some(c => !String(c).trim())) {
+            this.toast(`${i + 1}번 문제의 1~5번 보기를 모두 입력해주세요.`, 'error');
+            return;
+          }
+          if (!Array.isArray(q.answer) || q.answer.length === 0) {
+            this.toast(`${i + 1}번 문제의 정답(복수 선택)을 최소 1개 이상 선택해주세요.`, 'error');
             return;
           }
         } else if (qType === 'SHORT') {
@@ -8538,6 +8857,9 @@ const App = {
               <i class="fa-solid fa-pen-to-square"></i> 전체 수정
             </button>
           </div>
+          <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition flex items-center justify-center gap-1.5 border border-indigo-200 cursor-pointer shadow-2xs">
+            <i class="fa-solid fa-book-open-reader text-indigo-600"></i> 본문 암기학습 미리보기 (학생 모드)
+          </button>
         </div>
       `;
     } else {
@@ -8553,39 +8875,59 @@ const App = {
               <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
                 <i class="fa-solid fa-circle-check mr-1"></i>축하합니다! 본문암기 테스트를 통과했습니다.
               </div>
-            ` : (test.allowRetest ? `
-              <!-- 재시험 허용 시 즉시 재시험 응시하기 버튼 노출 -->
-              <button onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm">
-                <i class="fa-solid fa-rotate-right"></i> 본문암기 재시험 응시하기
+              <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                <i class="fa-solid fa-book-open"></i> 본문 복습 및 다시 외우기
               </button>
+            ` : (test.allowRetest ? `
+              <!-- 재시험 허용 시 본문 암기학습 & 재시험 응시 버튼 -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="py-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs sm:text-sm border border-indigo-200 transition flex items-center justify-center gap-2 cursor-pointer">
+                  <i class="fa-solid fa-book-open-reader"></i> 본문 다시 외우기
+                </button>
+                <button type="button" onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+                  <i class="fa-solid fa-rotate-right"></i> 본문암기 재시험 응시
+                </button>
+              </div>
             ` : `
               <div class="p-3.5 rounded-xl border bg-slate-50 border-slate-200 text-slate-600 text-xs text-center font-medium leading-relaxed">
                 <i class="fa-solid fa-lock text-slate-400 mr-1"></i>불합격 처리되었습니다.<br>빽빽이 검사 후 다시 시도해주세요.
               </div>
+              <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                <i class="fa-solid fa-book-open-reader"></i> 불합격 본문 집중 암기하기
+              </button>
             `)}
           </div>
         `;
       } else if (isPassed) {
         actionButtonHtml = `
-          <div class="pt-2">
+          <div class="space-y-2 pt-2">
             <div class="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
               <i class="fa-solid fa-circle-check"></i> 본문암기 테스트 완료
             </div>
+            <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+              <i class="fa-solid fa-book-open"></i> 본문 복습 및 다시 외우기
+            </button>
           </div>
         `;
       } else if (timeStatus.status === 'NOT_STARTED') {
         actionButtonHtml = `
           <div class="space-y-2 pt-2">
-            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
-              <i class="fa-solid fa-lock"></i> ${timeStatus.label}
+            <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-200 flex items-center justify-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-graduation-cap"></i> 시험 전 본문 미리 외우기 (암기학습)
             </button>
-            <p class="text-[11px] text-center text-slate-400">시험 시작 시간 이후에 응시 버튼이 활성화됩니다.</p>
+            <button disabled class="w-full py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+              <i class="fa-solid fa-lock"></i> 시험 응시: ${timeStatus.label}
+            </button>
+            <p class="text-[11px] text-center text-slate-400">시험 시작 시간 전까지 본문 암기학습으로 미리 완벽하게 외워두세요!</p>
           </div>
         `;
       } else if (timeStatus.status === 'EXPIRED') {
         actionButtonHtml = `
           <div class="space-y-2 pt-2">
-            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+            <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-200 flex items-center justify-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-book-open-reader"></i> 본문 자유 암기학습
+            </button>
+            <button disabled class="w-full py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
               <i class="fa-solid fa-clock"></i> 응시 시간이 종료되었습니다
             </button>
             <p class="text-[11px] text-center text-slate-400">지정된 시험 종료 시각(${test.endTime || test.date})이 지났습니다.</p>
@@ -8593,8 +8935,11 @@ const App = {
         `;
       } else {
         actionButtonHtml = `
-          <div class="pt-2">
-            <button onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
+          <div class="space-y-2 pt-2">
+            <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-300 font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+              <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 본문 미리 외우기 (암기학습)
+            </button>
+            <button type="button" onclick="App.closeTextMemorizeScheduleModal(); App.startTextMemorizeExam('${test.id}', ${test.studentId})" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 cursor-pointer">
               <i class="fa-solid fa-play"></i> 본문암기 테스트 시작하기 (${totalSentences}문장)
             </button>
           </div>
@@ -8631,6 +8976,26 @@ const App = {
         </p>
       </div>
 
+      <!-- 본문 미리 외우기 (암기학습) 배너 카드 -->
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border border-indigo-200 shadow-2xs flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center text-lg shadow-xs flex-shrink-0">
+            <i class="fa-solid fa-book-open-reader"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <h4 class="text-sm font-black text-slate-900 truncate">본문 미리 외우기</h4>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-200 text-indigo-800">총 ${totalSentences}문장</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">플래시카드 · 가리기 · 어순배열로 미리 암기하세요</p>
+          </div>
+        </div>
+        <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs flex-shrink-0 cursor-pointer">
+          <i class="fa-solid fa-graduation-cap text-[11px]"></i>
+          <span>암기학습 시작</span>
+        </button>
+      </div>
+
       <!-- 문단 목록 -->
       <div class="space-y-2">
         <h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -8638,12 +9003,17 @@ const App = {
         </h4>
         <div class="max-h-48 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
           ${matchedPassages.length > 0 ? matchedPassages.map((p, idx) => `
-            <div class="p-3 text-xs flex items-center justify-between hover:bg-slate-50 transition">
+            <div class="p-3 text-xs flex items-center justify-between hover:bg-slate-50 transition gap-2">
               <div>
                 <span class="font-bold text-indigo-900">${this.escapeHtml(p.lessonTitle)}</span>
                 <p class="text-slate-600 font-medium mt-0.5">${this.escapeHtml(p.partTitle)}</p>
               </div>
-              <span class="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md whitespace-nowrap">${p.sentences.length}문장</span>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <span class="text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md whitespace-nowrap">${p.sentences.length}문장</span>
+                <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}', '${p.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 transition cursor-pointer" title="이 문단 집중 암기">
+                  <i class="fa-solid fa-book-open text-[10px] mr-1"></i>외우기
+                </button>
+              </div>
             </div>
           `).join('') : '<div class="p-3 text-xs text-slate-400 text-center">선택된 본문 범위가 없습니다.</div>'}
         </div>
@@ -9149,9 +9519,15 @@ const App = {
 
     if (footerElem) {
       footerElem.innerHTML = `
-        <button onclick="App.closeTextMemorizeResult()" class="w-full py-3 rounded-2xl ${result.passed ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-800 hover:bg-slate-700 text-white'} font-bold text-sm transition shadow-sm">
-          확인 및 닫기
-        </button>
+        <div class="flex items-center gap-2 w-full">
+          <button type="button" onclick="App.closeTextMemorizeResult(); App.openTextMemorizeStudyModal('${testId}')" class="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-book-open"></i>
+            <span>본문 다시 외우기</span>
+          </button>
+          <button type="button" onclick="App.closeTextMemorizeResult()" class="px-5 py-3 rounded-2xl ${result.passed ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-800 hover:bg-slate-700'} text-white font-bold text-xs sm:text-sm transition shadow-sm cursor-pointer">
+            확인 및 닫기
+          </button>
+        </div>
       `;
     }
 
@@ -9232,40 +9608,1528 @@ const App = {
     } else {
       this.showLanding();
     }
+  },
+
+  // ========================================================
+  // 본문 암기학습 (미리 외우기) 엔진
+  // 1) 플래시카드 암기 (모르는 문장 0개까지 반복 루프)
+  // 2) 본문 통독 & 가리기 (전체보기 / 영어 가리기 / 해석 가리기 / 빈칸 가리기)
+  // 3) 어순 배열 퍼즐 (단어 칩 순서 맞추기)
+  // 4) 영작 자가 연습 (한글 보고 직접 타이핑 & 실시간 힌트/정답 확인)
+  // ========================================================
+
+  speakSentence(text) {
+    if (!text || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/["“”'‘’]/g, '').trim();
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.88;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Sentence TTS Error:', e);
+    }
+  },
+
+  openTextMemorizeStudyModal(testId = null, focusPassageId = null) {
+    const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+    if (allPassages.length === 0) {
+      this.toast('본문 데이터가 없습니다.', 'error');
+      return;
+    }
+
+    let targetPassages = [];
+    let test = null;
+    let bookName = 'YBM(박준언) 공통영어 2';
+    let title = '교과서 본문 암기학습';
+
+    if (testId) {
+      test = AppData.getTests().find(t => t.id === testId);
+      if (test) {
+        bookName = test.passageBook || bookName;
+        title = test.title ? `${test.title} · 암기학습` : title;
+        let passageIds = test.passageIds || [];
+        if (Array.isArray(passageIds) && passageIds.length > 0) {
+          targetPassages = allPassages.filter(p => passageIds.includes(p.id));
+        }
+      }
+    }
+
+    if (targetPassages.length === 0) {
+      targetPassages = allPassages;
+    }
+
+    // 모든 문장 데이터 플랫화
+    const allSentences = [];
+    let sGlobalIdx = 0;
+    targetPassages.forEach(p => {
+      if (Array.isArray(p.sentences)) {
+        p.sentences.forEach((s, sIdx) => {
+          allSentences.push({
+            id: `tm_sent_${p.id}_${sIdx}`,
+            globalIndex: sGlobalIdx++,
+            passageId: p.id,
+            lesson: p.lesson,
+            lessonTitle: p.lessonTitle,
+            partTitle: p.partTitle,
+            en: s.en,
+            ko: s.ko,
+            wordCount: s.en.trim().split(/\s+/).filter(Boolean).length
+          });
+        });
+      }
+    });
+
+    if (allSentences.length === 0) {
+      this.toast('학습할 본문 문장이 없습니다.', 'error');
+      return;
+    }
+
+    // 기존 열려있던 시험 모달 기억 및 숨김 처리
+    const schedModal = document.getElementById('textMemorizeScheduleModal');
+    if (schedModal && !schedModal.classList.contains('hidden')) {
+      this._textMemorizeStudyOriginTestId = testId;
+      this.hideModal('textMemorizeScheduleModal');
+    } else {
+      this._textMemorizeStudyOriginTestId = testId || null;
+    }
+
+    const initialPassageId = focusPassageId && targetPassages.some(p => p.id === focusPassageId)
+      ? focusPassageId
+      : 'ALL';
+
+    const filteredSentences = initialPassageId === 'ALL'
+      ? [...allSentences]
+      : allSentences.filter(s => s.passageId === initialPassageId);
+
+    this.state.textMemorizeStudy = {
+      originTestId: this._textMemorizeStudyOriginTestId,
+      testId,
+      test,
+      bookName,
+      title,
+      targetPassages,
+      allSentences,
+      filteredSentences,
+      selectedPassageId: initialPassageId,
+      searchQuery: '',
+      viewMode: 'card', // 'card' | 'mask' | 'scramble' | 'practice'
+
+      // Mode 1: Flashcard
+      flashcardDeck: [...filteredSentences],
+      cardIndex: 0,
+      round: 1,
+      unknownSentences: [],
+      knownSentences: [],
+      isCardFlipped: false,
+      isRoundFinished: false,
+      isMasteryFinished: false,
+      cardDirection: 'ko_to_en', // 'ko_to_en' | 'en_to_ko'
+      showCardHint: false,
+
+      // Mode 2: Masking View
+      maskMode: 'hide_en', // 'show_all' | 'hide_en' | 'hide_ko' | 'cloze'
+      revealedEnSet: new Set(),
+      revealedKoSet: new Set(),
+      revealedClozeSet: new Set(),
+
+      // Mode 3: Scramble Puzzle
+      scrambleIndex: 0,
+      scrambleAvailableWords: [],
+      scramblePlacedWords: [],
+      scrambleTokens: [],
+      scrambleIsCorrect: false,
+      scrambleMasteredSet: new Set(),
+
+      // Mode 4: Practice Typing
+      practiceIndex: 0,
+      practiceUserAnswer: '',
+      practiceShowHint: false,
+      practiceChecked: false,
+      practiceResult: null,
+      practiceMasteredSet: new Set()
+    };
+
+    // Header UI
+    const titleEl = document.getElementById('tmStudyTitle');
+    const badgeEl = document.getElementById('tmStudyBadge');
+    const countBadgeEl = document.getElementById('tmStudyCountBadge');
+    const searchInput = document.getElementById('tmStudySearchInput');
+    const passageSelect = document.getElementById('tmStudyPassageSelect');
+
+    if (titleEl) titleEl.innerText = title;
+    if (badgeEl) badgeEl.innerText = bookName;
+    if (countBadgeEl) countBadgeEl.innerText = `총 ${filteredSentences.length}문장`;
+    if (searchInput) searchInput.value = '';
+
+    // 문단 선택 Select 박스 채우기
+    if (passageSelect) {
+      passageSelect.innerHTML = `
+        <option value="ALL">전체 문단 (총 ${allSentences.length}문장)</option>
+        ${targetPassages.map(p => `
+          <option value="${p.id}" ${p.id === initialPassageId ? 'selected' : ''}>
+            ${this.escapeHtml(p.partTitle)} (${p.sentences ? p.sentences.length : 0}문장)
+          </option>
+        `).join('')}
+      `;
+    }
+
+    // 모드별 초기화
+    this.initTmStudyScramble(0);
+    this.initTmStudyPractice(0);
+
+    this.updateTmStudyModeButtons();
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+
+    this.showModal('textMemorizeStudyModal');
+  },
+
+  closeTextMemorizeStudyModal() {
+    this.hideModal('textMemorizeStudyModal');
+    const originTestId = this._textMemorizeStudyOriginTestId;
+    this._textMemorizeStudyOriginTestId = null;
+
+    if (originTestId) {
+      setTimeout(() => {
+        this.openTextMemorizeScheduleModal(originTestId);
+      }, 200);
+    }
+  },
+
+  onTmStudyPassageChange(passageId) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.selectedPassageId = passageId;
+    this.applyTmStudyFilter();
+  },
+
+  filterTmStudySentences(query) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.searchQuery = (query || '').trim().toLowerCase();
+    this.applyTmStudyFilter();
+  },
+
+  applyTmStudyFilter() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+
+    let list = ts.selectedPassageId === 'ALL'
+      ? [...ts.allSentences]
+      : ts.allSentences.filter(s => s.passageId === ts.selectedPassageId);
+
+    if (ts.searchQuery) {
+      list = list.filter(s =>
+        s.en.toLowerCase().includes(ts.searchQuery) ||
+        s.ko.toLowerCase().includes(ts.searchQuery)
+      );
+    }
+
+    ts.filteredSentences = list;
+
+    // 카운트 배지 갱신
+    const countBadgeEl = document.getElementById('tmStudyCountBadge');
+    if (countBadgeEl) countBadgeEl.innerText = `총 ${list.length}문장`;
+
+    // 플래시카드 덱 갱신
+    ts.flashcardDeck = [...list];
+    ts.cardIndex = 0;
+    ts.round = 1;
+    ts.unknownSentences = [];
+    ts.knownSentences = [];
+    ts.isRoundFinished = false;
+    ts.isMasteryFinished = false;
+    ts.isCardFlipped = false;
+
+    // 어순배열 / 영작 초기화
+    ts.scrambleIndex = 0;
+    this.initTmStudyScramble(0);
+    ts.practiceIndex = 0;
+    this.initTmStudyPractice(0);
+
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  setTmStudyViewMode(mode) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.viewMode = mode;
+
+    if (mode === 'card') {
+      if (!ts.flashcardDeck || ts.flashcardDeck.length === 0) {
+        this.tmStudyRestartMastery();
+      }
+    } else if (mode === 'scramble') {
+      this.initTmStudyScramble(ts.scrambleIndex || 0);
+    } else if (mode === 'practice') {
+      this.initTmStudyPractice(ts.practiceIndex || 0);
+    }
+
+    this.updateTmStudyModeButtons();
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  updateTmStudyModeButtons() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+
+    const modes = ['card', 'mask', 'scramble', 'practice'];
+    const activeCls = 'px-2.5 py-1 rounded-lg transition bg-white text-indigo-700 shadow-xs flex items-center gap-1 cursor-pointer';
+    const inactiveCls = 'px-2.5 py-1 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer';
+
+    modes.forEach(m => {
+      const btn = document.getElementById(`tmStudyMode${m.charAt(0).toUpperCase() + m.slice(1)}Btn`);
+      if (btn) {
+        btn.className = (ts.viewMode === m) ? activeCls : inactiveCls;
+      }
+    });
+
+    const searchWrap = document.getElementById('tmStudySearchInput')?.parentElement;
+    if (searchWrap) {
+      if (ts.viewMode === 'mask') searchWrap.classList.remove('hidden');
+      else searchWrap.classList.add('hidden');
+    }
+  },
+
+  renderTmStudySubToolbar() {
+    const ts = this.state.textMemorizeStudy;
+    const sub = document.getElementById('tmStudySubToolbar');
+    if (!sub || !ts) return;
+
+    if (ts.viewMode === 'card') {
+      const isKoToEn = ts.cardDirection === 'ko_to_en';
+      sub.innerHTML = `
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <button type="button" onclick="App.toggleTmStudyCardDirection()" class="px-3 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate text-indigo-600"></i>
+            <span>${isKoToEn ? '한글 보고 ➔ 영어 맞히기' : '영어 보고 ➔ 한글 해석 맞히기'}</span>
+          </button>
+          <button type="button" onclick="App.toggleTmStudyCardHint()" class="px-3 py-1 rounded-xl ${ts.showCardHint ? 'bg-amber-100 border border-amber-300 text-amber-800' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'} font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs">
+            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+            <span>${ts.showCardHint ? '힌트 켜짐' : '단어 힌트'}</span>
+          </button>
+        </div>
+        <div class="text-[11px] font-medium text-slate-400 hidden sm:flex items-center gap-2">
+          <span><kbd class="px-1 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px]">Space</kbd> 뒤집기</span>
+          <span><kbd class="px-1 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px]">1</kbd> 모르는 문장</span>
+          <span><kbd class="px-1 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px]">2</kbd> 외운 문장</span>
+        </div>
+      `;
+    } else if (ts.viewMode === 'mask') {
+      const maskModes = [
+        { id: 'show_all', label: '전체 보기', icon: 'fa-eye' },
+        { id: 'hide_en', label: '영어 가리기 (해석 연상)', icon: 'fa-eye-slash' },
+        { id: 'hide_ko', label: '해석 가리기 (직독직해)', icon: 'fa-language' },
+        { id: 'cloze', label: '핵심 빈칸 가리기', icon: 'fa-highlighter' }
+      ];
+      sub.innerHTML = `
+        <div class="flex items-center gap-1.5 flex-wrap">
+          ${maskModes.map(m => `
+            <button
+              type="button"
+              onclick="App.setTmStudyMaskMode('${m.id}')"
+              class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${ts.maskMode === m.id ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'}"
+            >
+              <i class="fa-solid ${m.icon} text-[10px]"></i>
+              <span>${m.label}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="App.revealAllTmStudyMasked()" class="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition cursor-pointer">
+            <i class="fa-solid fa-wand-magic-sparkles text-[10px] mr-1"></i>모두 펼치기 / 가리기
+          </button>
+        </div>
+      `;
+    } else if (ts.viewMode === 'scramble') {
+      const curIdx = ts.scrambleIndex || 0;
+      const total = ts.filteredSentences.length;
+      sub.innerHTML = `
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <span class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 font-extrabold text-xs">
+            문장 ${curIdx + 1} / ${total}
+          </span>
+          <span class="text-xs font-bold text-slate-600">
+            마스터한 문장: <strong class="text-emerald-600">${ts.scrambleMasteredSet.size}개</strong>
+          </span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="App.tmStudyScrambleReset()" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-rotate-left text-[10px]"></i>
+            <span>초기화</span>
+          </button>
+          <button type="button" onclick="App.tmStudyScrambleHint()" class="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-lightbulb text-[10px] text-amber-500"></i>
+            <span>다음 1단어 힌트</span>
+          </button>
+        </div>
+      `;
+    } else if (ts.viewMode === 'practice') {
+      const curIdx = ts.practiceIndex || 0;
+      const total = ts.filteredSentences.length;
+      sub.innerHTML = `
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <span class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 font-extrabold text-xs">
+            문장 ${curIdx + 1} / ${total}
+          </span>
+          <span class="text-xs font-bold text-slate-600">
+            영작 마스터: <strong class="text-emerald-600">${ts.practiceMasteredSet.size}개</strong>
+          </span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="App.tmStudyPracticeToggleHint()" class="px-2.5 py-1 rounded-lg ${ts.practiceShowHint ? 'bg-amber-100 border border-amber-300 text-amber-800' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'} text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-lightbulb text-[10px] text-amber-500"></i>
+            <span>${ts.practiceShowHint ? '첫글자 힌트 켜짐' : '첫글자 힌트'}</span>
+          </button>
+          <button type="button" onclick="App.tmStudyPracticeReset()" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold transition cursor-pointer">
+            <span>다시 쓰기</span>
+          </button>
+        </div>
+      `;
+    }
+  },
+
+  renderTmStudyContent() {
+    const ts = this.state.textMemorizeStudy;
+    const container = document.getElementById('tmStudyModalBody');
+    if (!container || !ts) return;
+
+    if (ts.filteredSentences.length === 0) {
+      container.innerHTML = `
+        <div class="py-12 text-center text-slate-400 space-y-2">
+          <i class="fa-solid fa-book-open text-4xl text-slate-300"></i>
+          <p class="text-sm font-semibold">선택한 범위에 해당하는 문장이 없습니다.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // ── 뷰 모드 1: 플래시카드 암기학습 (무한 회차 루프) ──
+    if (ts.viewMode === 'card') {
+      if (!ts.flashcardDeck || ts.flashcardDeck.length === 0) {
+        this.tmStudyRestartMastery();
+      }
+
+      // 완벽 마스터 달성 (모르는 문장 0개)
+      if (ts.isMasteryFinished) {
+        container.innerHTML = `
+          <div class="max-w-xl mx-auto py-8 space-y-6 text-center animate-fade-in">
+            <div class="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-tr from-emerald-400 to-teal-500 text-white flex items-center justify-center text-5xl shadow-lg shadow-emerald-200">
+              🎉
+            </div>
+            <div class="space-y-2">
+              <span class="px-3.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                본문 완벽 암기 마스터 달성!
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">모든 문장을 완벽하게 암기했습니다!</h2>
+              <p class="text-xs sm:text-sm font-semibold text-slate-600">
+                총 <strong>${ts.filteredSentences.length}개</strong> 문장 · 모르는 문장 <strong>0개</strong> 완료 (${ts.round}회차 반복 학습)
+              </p>
+            </div>
+            <div class="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-center space-y-1.5">
+              <p class="text-xs font-bold text-emerald-900">
+                <i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>
+                모르는 문장이 없어질 때까지 완벽하게 숙달했습니다.
+              </p>
+              <p class="text-[11px] text-emerald-700">이제 본문암기 시험을 치르거나, 가리기 모드와 어순 배열로 최종 점검해보세요!</p>
+            </div>
+            <div class="flex items-center justify-center gap-3 pt-2 flex-wrap">
+              <button type="button" onclick="App.tmStudyRestartMastery()" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-xs cursor-pointer">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>처음부터 다시 학습하기</span>
+              </button>
+              <button type="button" onclick="App.setTmStudyViewMode('mask')" class="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-eye-slash"></i>
+                <span>본문 가리기 모드로 점검</span>
+              </button>
+              ${ts.originTestId ? `
+                <button type="button" onclick="App.closeTextMemorizeStudyModal(); App.startTextMemorizeExam('${ts.originTestId}', ${ts.test?.studentId || App.state.selectedStudentId})" class="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black transition flex items-center gap-2 shadow-emerald-200 shadow-md cursor-pointer">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span>본문암기 시험 응시하기</span>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 회차 종료 화면 (모르는 문장이 남아 다음 회차 진행)
+      if (ts.isRoundFinished) {
+        container.innerHTML = `
+          <div class="max-w-xl mx-auto py-8 space-y-6 text-center animate-fade-in">
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center text-4xl shadow-sm">
+              <i class="fa-solid fa-repeat"></i>
+            </div>
+            <div class="space-y-2">
+              <span class="px-3.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
+                ${ts.round}회차 학습 완료
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                모르는 문장 ${ts.unknownSentences.length}개가 남았습니다
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600">
+                외운 문장 <strong class="text-emerald-600">${ts.knownSentences.length}개</strong>는 통과! 모르는 문장이 0개가 될 때까지 반복 학습합니다.
+              </p>
+            </div>
+
+            <!-- 모르는 문장 미리보기 리스트 -->
+            <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 text-left space-y-2.5">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-question text-rose-500"></i>
+                  ${ts.round + 1}회차에 다시 반복할 문장 (${ts.unknownSentences.length}개)
+                </h4>
+                <span class="text-[11px] font-mono text-rose-600">스피커 클릭 시 발음</span>
+              </div>
+              <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                ${ts.unknownSentences.map((s, idx) => `
+                  <div class="p-2.5 rounded-xl bg-white border border-rose-200/80 hover:border-rose-300 transition flex items-start justify-between gap-2 shadow-2xs">
+                    <div class="min-w-0 space-y-1">
+                      <p class="font-bold text-xs sm:text-sm text-slate-900 leading-snug">${this.escapeHtml(s.en)}</p>
+                      <p class="text-[11px] text-rose-700 font-medium leading-snug">${this.escapeHtml(s.ko)}</p>
+                    </div>
+                    <button type="button" onclick="App.speakSentence('${this.escapeHtml(s.en)}')" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 transition">
+                      <i class="fa-solid fa-volume-high text-xs"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2 flex-wrap">
+              <button type="button" onclick="App.tmStudyStartNextRound()" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 shadow-md cursor-pointer">
+                <i class="fa-solid fa-play"></i>
+                <span>${ts.round + 1}회차 시작하기 (모르는 문장 ${ts.unknownSentences.length}개 반복)</span>
+                <kbd class="hidden sm:inline px-1.5 py-0.5 rounded bg-black/20 text-white/90 text-[10px] font-mono">Enter</kbd>
+              </button>
+              <button type="button" onclick="App.setTmStudyViewMode('mask')" class="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-eye-slash"></i>
+                <span>본문 가리기 모드로 점검</span>
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 학습 진행 중 카드
+      const currentSentence = ts.flashcardDeck[ts.cardIndex] || ts.flashcardDeck[0];
+      const isKoToEn = ts.cardDirection === 'ko_to_en';
+
+      // 힌트 계산: 첫 단어 2개
+      const words = currentSentence.en.trim().split(/\s+/);
+      const hintText = words.slice(0, Math.min(2, words.length)).join(' ') + ' ...';
+
+      container.innerHTML = `
+        <div class="max-w-xl mx-auto py-2 space-y-4">
+          <!-- 상단 진행도 및 카운터 -->
+          <div class="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+            <div class="flex items-center justify-between gap-2 flex-wrap text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-black text-xs shadow-2xs">
+                  ${ts.round}회차
+                </span>
+                <span class="font-bold text-slate-700">
+                  문장 <strong>${ts.cardIndex + 1}</strong> / ${ts.flashcardDeck.length}
+                </span>
+                <span class="text-[11px] font-semibold text-slate-400">(${this.escapeHtml(currentSentence.partTitle)})</span>
+              </div>
+              <div class="flex items-center gap-3 font-bold">
+                <span class="text-rose-600 flex items-center gap-1">
+                  <i class="fa-solid fa-circle-xmark text-xs"></i>
+                  <span>모르는 문장</span>
+                  <strong class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700 text-xs">${ts.unknownSentences.length}</strong>
+                </span>
+                <span class="text-emerald-600 flex items-center gap-1">
+                  <i class="fa-solid fa-circle-check text-xs"></i>
+                  <span>외운 문장</span>
+                  <strong class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 text-xs">${ts.knownSentences.length}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- 프로그레스 바 -->
+            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${((ts.cardIndex + 1) / ts.flashcardDeck.length) * 100}%"></div>
+            </div>
+          </div>
+
+          <!-- 대형 플래시카드 본체 -->
+          <div onclick="App.tmStudyFlipCard()" class="min-h-[220px] sm:min-h-[260px] p-5 sm:p-7 rounded-3xl border-2 ${ts.isCardFlipped ? 'border-indigo-400 bg-gradient-to-b from-indigo-50/50 to-white' : 'border-slate-200 bg-white'} shadow-lg hover:shadow-xl transition-all cursor-pointer flex flex-col items-center justify-between text-center space-y-3 group select-none">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-black text-indigo-500 font-mono bg-indigo-50 px-3 py-1 rounded-full">#${String(ts.cardIndex + 1).padStart(2, '0')}</span>
+              <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">${currentSentence.wordCount}단어</span>
+            </div>
+
+            <!-- 메인 텍스트 영역 (앞면/뒷면) -->
+            <div class="space-y-3 my-auto w-full">
+              ${isKoToEn ? `
+                <!-- 한글 보고 영어 연상 모드 -->
+                ${ts.isCardFlipped ? `
+                  <div class="space-y-2 animate-fade-in">
+                    <h3 class="text-lg sm:text-2xl font-black text-slate-900 leading-relaxed tracking-tight text-left sm:text-center">${this.escapeHtml(currentSentence.en)}</h3>
+                    <p class="text-xs sm:text-sm font-semibold text-slate-500 pt-2 border-t border-slate-100 text-left sm:text-center">${this.escapeHtml(currentSentence.ko)}</p>
+                  </div>
+                ` : `
+                  <div class="space-y-2">
+                    <h3 class="text-base sm:text-xl font-black text-indigo-950 leading-relaxed text-left sm:text-center">${this.escapeHtml(currentSentence.ko)}</h3>
+                    ${ts.showCardHint ? `
+                      <div class="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-mono font-bold inline-block">
+                        💡 힌트: ${this.escapeHtml(hintText)}
+                      </div>
+                    ` : ''}
+                  </div>
+                `}
+              ` : `
+                <!-- 영어 보고 한글 연상 모드 -->
+                ${ts.isCardFlipped ? `
+                  <div class="space-y-2 animate-fade-in">
+                    <h3 class="text-base sm:text-xl font-black text-indigo-950 leading-relaxed text-left sm:text-center">${this.escapeHtml(currentSentence.ko)}</h3>
+                    <p class="text-xs sm:text-sm font-bold text-slate-600 pt-2 border-t border-slate-100 text-left sm:text-center">${this.escapeHtml(currentSentence.en)}</p>
+                  </div>
+                ` : `
+                  <div class="space-y-2">
+                    <h3 class="text-lg sm:text-2xl font-black text-slate-900 leading-relaxed tracking-tight text-left sm:text-center">${this.escapeHtml(currentSentence.en)}</h3>
+                  </div>
+                `}
+              `}
+            </div>
+
+            <!-- 하단 안내 & 발음 버튼 -->
+            <div class="w-full pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <button type="button" onclick="App.speakSentence('${this.escapeHtml(currentSentence.en)}'); event.stopPropagation();" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                <i class="fa-solid fa-volume-high text-indigo-600"></i>
+                <span>발음 듣기</span>
+              </button>
+              <div class="text-[11px] font-bold text-slate-400 group-hover:text-indigo-600 transition flex items-center gap-1">
+                <i class="fa-solid fa-hand-pointer text-xs animate-bounce"></i>
+                <span>${ts.isCardFlipped ? '카드를 클릭하면 가려집니다' : '카드를 클릭하거나 Space를 누르면 뒤집힙니다'}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 아는문장 / 뒤집기 / 모르는문장 액션 버튼 -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-3">
+            <button
+              type="button"
+              onclick="App.tmStudyMarkSentence(false)"
+              class="py-3.5 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 text-rose-700 font-black text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-xs cursor-pointer group"
+            >
+              <i class="fa-solid fa-circle-xmark text-rose-500 text-base group-hover:scale-110 transition-transform"></i>
+              <span>모르는 문장</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-rose-200/80 text-rose-800 text-[10px] font-mono">← / 1</kbd>
+            </button>
+
+            <button
+              type="button"
+              onclick="App.tmStudyFlipCard()"
+              class="py-3.5 px-3 rounded-2xl ${ts.isCardFlipped ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 shadow-md'} font-black text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 cursor-pointer"
+            >
+              <i class="fa-solid fa-rotate text-sm"></i>
+              <span>${ts.isCardFlipped ? '문장 가리기' : '원문 보기'}</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded ${ts.isCardFlipped ? 'bg-slate-300 text-slate-800' : 'bg-indigo-700 text-white/90'} text-[10px] font-mono">Space</kbd>
+            </button>
+
+            <button
+              type="button"
+              onclick="App.tmStudyMarkSentence(true)"
+              class="py-3.5 px-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-300 text-emerald-700 font-black text-xs sm:text-sm transition flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-xs cursor-pointer group"
+            >
+              <i class="fa-solid fa-circle-check text-emerald-500 text-base group-hover:scale-110 transition-transform"></i>
+              <span>외운 문장</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-emerald-200/80 text-emerald-800 text-[10px] font-mono">→ / 2</kbd>
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // ── 뷰 모드 2: 본문 통독 & 가리기 (Masking) ──
+    if (ts.viewMode === 'mask') {
+      let currentPart = '';
+      let html = '<div class="space-y-4 max-w-3xl mx-auto">';
+
+      ts.filteredSentences.forEach((s, idx) => {
+        if (s.partTitle !== currentPart) {
+          currentPart = s.partTitle;
+          html += `
+            <div class="pt-3 first:pt-0">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-100 text-indigo-900 text-xs font-black">
+                <i class="fa-solid fa-book-open text-indigo-600"></i> ${this.escapeHtml(s.lessonTitle)} - ${this.escapeHtml(s.partTitle)}
+              </div>
+            </div>
+          `;
+        }
+
+        const isEnRevealed = ts.maskMode === 'show_all' || ts.revealedEnSet.has(s.id);
+        const isKoRevealed = ts.maskMode === 'show_all' || ts.maskMode === 'hide_en' || ts.maskMode === 'cloze' || ts.revealedKoSet.has(s.id);
+
+        let enContentHtml = '';
+        if (ts.maskMode === 'hide_en' && !isEnRevealed) {
+          enContentHtml = `
+            <button type="button" onclick="App.toggleTmStudySentenceEnReveal('${s.id}')" class="w-full text-left p-3 rounded-xl bg-indigo-50/70 border border-dashed border-indigo-300 hover:bg-indigo-100 text-indigo-700 text-xs sm:text-sm font-bold transition flex items-center justify-between gap-2 cursor-pointer select-none">
+              <span><i class="fa-solid fa-eye-slash mr-1.5 text-indigo-500"></i>클릭하여 영어 문장 확인하기</span>
+              <span class="text-[11px] text-indigo-400 font-mono">${s.wordCount}단어</span>
+            </button>
+          `;
+        } else if (ts.maskMode === 'cloze') {
+          const cloze = this.generateClozeBlanks(s.en, s.globalIndex);
+          enContentHtml = `
+            <div class="text-sm sm:text-base leading-relaxed text-slate-900 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
+              ${cloze.tokens.map(token => {
+                if (!token.isBlank) {
+                  return `<span>${this.escapeHtml(token.text)}</span>`;
+                }
+                const b = token.blankObj;
+                const isRevealed = ts.revealedClozeSet.has(b.id);
+                if (isRevealed) {
+                  return `
+                    <span onclick="App.toggleTmStudyClozeBlankReveal('${b.id}')" class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-black underline cursor-pointer shadow-2xs" title="클릭하여 다시 가리기">
+                      ${this.escapeHtml(b.word)}
+                    </span>
+                  `;
+                } else {
+                  return `
+                    <button type="button" onclick="App.toggleTmStudyClozeBlankReveal('${b.id}')" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-amber-100 border border-slate-300 hover:border-amber-300 text-slate-700 hover:text-amber-900 text-xs font-mono font-bold transition cursor-pointer" title="클릭하여 빈칸 단어 확인">
+                      [ ${b.firstChar}${'_'.repeat(Math.max(2, b.length - 1))} ]
+                    </button>
+                  `;
+                }
+              }).join('')}
+            </div>
+          `;
+        } else {
+          enContentHtml = `
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-sm sm:text-base font-bold text-slate-900 leading-relaxed">${this.escapeHtml(s.en)}</p>
+              ${ts.maskMode === 'hide_en' ? `
+                <button type="button" onclick="App.toggleTmStudySentenceEnReveal('${s.id}')" class="text-xs text-slate-400 hover:text-indigo-600 flex-shrink-0" title="다시 가리기">
+                  <i class="fa-solid fa-eye-slash"></i>
+                </button>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        let koContentHtml = '';
+        if (ts.maskMode === 'hide_ko' && !isKoRevealed) {
+          koContentHtml = `
+            <button type="button" onclick="App.toggleTmStudySentenceKoReveal('${s.id}')" class="w-full text-left p-2.5 rounded-xl bg-slate-100 border border-dashed border-slate-300 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition cursor-pointer select-none">
+              <i class="fa-solid fa-eye-slash mr-1.5 text-slate-400"></i>클릭하여 우리말 해석 확인하기
+            </button>
+          `;
+        } else {
+          koContentHtml = `
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-xs sm:text-sm font-semibold text-slate-600 leading-snug">${this.escapeHtml(s.ko)}</p>
+              ${ts.maskMode === 'hide_ko' ? `
+                <button type="button" onclick="App.toggleTmStudySentenceKoReveal('${s.id}')" class="text-xs text-slate-400 hover:text-indigo-600 flex-shrink-0" title="다시 가리기">
+                  <i class="fa-solid fa-eye-slash"></i>
+                </button>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        html += `
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-300 transition space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                ${idx + 1}
+              </span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="App.speakSentence('${this.escapeHtml(s.en)}')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs" title="발음 듣기">
+                  <i class="fa-solid fa-volume-high text-indigo-600"></i>
+                  <span>듣기</span>
+                </button>
+                <button type="button" onclick="App.jumpToTmStudySentence(${idx}, 'scramble')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition cursor-pointer" title="이 문장 어순 배열 연습">
+                  <i class="fa-solid fa-puzzle-piece text-[10px] mr-1"></i>어순배열
+                </button>
+                <button type="button" onclick="App.jumpToTmStudySentence(${idx}, 'practice')" class="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-bold transition cursor-pointer" title="이 문장 영작 연습">
+                  <i class="fa-solid fa-pen-clip text-[10px] mr-1"></i>영작
+                </button>
+              </div>
+            </div>
+
+            <!-- 영어 문장 -->
+            ${enContentHtml}
+
+            <!-- 우리말 해석 -->
+            <div class="pt-1.5 border-t border-slate-200/60">
+              ${koContentHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+      return;
+    }
+
+    // ── 뷰 모드 3: 어순 배열 훈련 (Scramble Puzzle) ──
+    if (ts.viewMode === 'scramble') {
+      const curIdx = ts.scrambleIndex || 0;
+      const s = ts.filteredSentences[curIdx] || ts.filteredSentences[0];
+      const isMastered = ts.scrambleMasteredSet.has(s.id);
+
+      container.innerHTML = `
+        <div class="max-w-2xl mx-auto py-2 space-y-4">
+          <!-- 상단 문장 가이드 (우리말) -->
+          <div class="p-4 sm:p-5 rounded-3xl bg-indigo-50/70 border border-indigo-200 space-y-2">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-black text-xs shadow-2xs">
+                #${curIdx + 1} 문장 (${this.escapeHtml(s.partTitle)})
+              </span>
+              <div class="flex items-center gap-2">
+                ${isMastered ? `
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> 마스터 완료
+                  </span>
+                ` : ''}
+                <button type="button" onclick="App.speakSentence('${this.escapeHtml(s.en)}')" class="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition flex items-center gap-1 shadow-2xs cursor-pointer">
+                  <i class="fa-solid fa-volume-high"></i> 발음 듣기
+                </button>
+              </div>
+            </div>
+            <h3 class="text-base sm:text-lg font-black text-slate-900 leading-snug">
+              ${this.escapeHtml(s.ko)}
+            </h3>
+            <p class="text-xs text-slate-500 font-medium">아래 단어들을 올바른 순서대로 클릭하여 영어 문장을 완성하세요.</p>
+          </div>
+
+          <!-- 배치된 단어 영역 (Drop Zone) -->
+          <div class="p-4 sm:p-5 rounded-3xl border-2 ${ts.scrambleIsCorrect ? 'border-emerald-400 bg-emerald-50/40' : (ts.scramblePlacedWords.length === ts.scrambleTokens.length ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200 bg-white')} min-h-[110px] space-y-3 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold ${ts.scrambleIsCorrect ? 'text-emerald-800' : 'text-slate-400'}">
+                ${ts.scrambleIsCorrect ? '🎉 문장 완성 성공!' : `배치된 단어 (${ts.scramblePlacedWords.length} / ${ts.scrambleTokens.length})`}
+              </span>
+              <span class="text-[11px] text-slate-400">클릭 시 단어 취소</span>
+            </div>
+
+            <div class="flex flex-wrap gap-2 min-h-[46px] items-center">
+              ${ts.scramblePlacedWords.length > 0 ? ts.scramblePlacedWords.map((w, pIdx) => `
+                <button
+                  type="button"
+                  onclick="App.tmStudyScrambleRemoveWord(${pIdx})"
+                  class="px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-1 shadow-2xs cursor-pointer ${ts.scrambleIsCorrect ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white hover:bg-rose-500'}"
+                  title="클릭하여 단어 취소"
+                >
+                  <span>${this.escapeHtml(w.text)}</span>
+                  <i class="fa-solid fa-xmark text-[10px] opacity-75"></i>
+                </button>
+              `).join('') : `
+                <p class="text-xs text-slate-400 italic">아래 단어 칩을 클릭하면 이곳에 순서대로 배치됩니다.</p>
+              `}
+            </div>
+
+            ${ts.scrambleIsCorrect ? `
+              <div class="pt-2 border-t border-emerald-200 flex items-center justify-between gap-2 flex-wrap">
+                <p class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                  완벽합니다! 어순을 정확하게 맞혔습니다.
+                </p>
+                <button type="button" onclick="App.tmStudyScrambleNext()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                  <span>다음 문장 ➔</span>
+                </button>
+              </div>
+            ` : (ts.scramblePlacedWords.length === ts.scrambleTokens.length ? `
+              <div class="pt-2 border-t border-rose-200 flex items-center justify-between gap-2">
+                <p class="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-xmark text-rose-500"></i>
+                  어순을 다시 확인해보세요. 틀린 단어를 클릭하면 뺄 수 있습니다.
+                </p>
+                <button type="button" onclick="App.tmStudyScrambleReset()" class="px-3 py-1 rounded-lg bg-rose-100 text-rose-800 font-bold text-xs hover:bg-rose-200 transition">
+                  전체 취소
+                </button>
+              </div>
+            ` : '')}
+          </div>
+
+          <!-- 선택 가능한 단어 뱅크 (Available Words Bank) -->
+          <div class="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700">단어 선택 풀 (${ts.scrambleAvailableWords.length}개 남음)</span>
+              <span class="text-[11px] text-slate-400">클릭하여 순서대로 배치</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${ts.scrambleAvailableWords.map(w => `
+                <button
+                  type="button"
+                  onclick="App.tmStudyScramblePlaceWord(${w.id})"
+                  class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 font-bold text-xs sm:text-sm text-slate-800 transition shadow-2xs cursor-pointer"
+                >
+                  ${this.escapeHtml(w.text)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- 이전 / 다음 네비게이션 -->
+          <div class="flex items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              onclick="App.tmStudyScramblePrev()"
+              ${curIdx === 0 ? 'disabled' : ''}
+              class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1.5"
+            >
+              <i class="fa-solid fa-arrow-left"></i> 이전 문장
+            </button>
+            <span class="text-xs font-bold text-slate-500">${curIdx + 1} / ${ts.filteredSentences.length}</span>
+            <button
+              type="button"
+              onclick="App.tmStudyScrambleNext()"
+              ${curIdx >= ts.filteredSentences.length - 1 ? 'disabled' : ''}
+              class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1.5 shadow-xs"
+            >
+              다음 문장 <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // ── 뷰 모드 4: 영작 자가 연습 (Typing Practice) ──
+    if (ts.viewMode === 'practice') {
+      const curIdx = ts.practiceIndex || 0;
+      const s = ts.filteredSentences[curIdx] || ts.filteredSentences[0];
+      const isMastered = ts.practiceMasteredSet.has(s.id);
+
+      // 첫 글자 힌트 생성
+      const hintPattern = s.en.replace(/([a-zA-Z0-9])([a-zA-Z0-9'-]*)/g, (m, first, rest) => first + '_'.repeat(rest.length));
+
+      container.innerHTML = `
+        <div class="max-w-2xl mx-auto py-2 space-y-4">
+          <!-- 한글 가이드 카드 -->
+          <div class="p-4 sm:p-5 rounded-3xl bg-indigo-50/70 border border-indigo-200 space-y-2">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-black text-xs shadow-2xs">
+                #${curIdx + 1} 문장 (${this.escapeHtml(s.partTitle)})
+              </span>
+              <div class="flex items-center gap-2">
+                ${isMastered ? `
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> 영작 마스터 완료
+                  </span>
+                ` : ''}
+                <button type="button" onclick="App.speakSentence('${this.escapeHtml(s.en)}')" class="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition flex items-center gap-1 shadow-2xs cursor-pointer">
+                  <i class="fa-solid fa-volume-high"></i> 발음 듣기
+                </button>
+              </div>
+            </div>
+            <h3 class="text-base sm:text-lg font-black text-slate-900 leading-snug">
+              ${this.escapeHtml(s.ko)}
+            </h3>
+            ${ts.practiceShowHint ? `
+              <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
+                <span class="text-[11px] font-black text-amber-700 flex items-center gap-1">
+                  <i class="fa-solid fa-lightbulb text-amber-500"></i> 첫 글자 힌트
+                </span>
+                <p class="font-mono text-xs sm:text-sm font-bold tracking-wider leading-relaxed">${this.escapeHtml(hintPattern)}</p>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- 학생 입력 Textarea -->
+          <div class="space-y-2">
+            <textarea
+              id="tmStudyPracticeTextarea"
+              rows="3"
+              oninput="App.onTmStudyPracticeInput(this)"
+              onkeydown="if((event.key === 'Enter' && !event.shiftKey)){ event.preventDefault(); App.tmStudyPracticeCheck(); }"
+              placeholder="한글 해석을 보고 영어 문장 전체를 입력하세요 (한영 자동 오타 교정 지원)"
+              class="w-full p-4 text-xs sm:text-sm font-semibold rounded-2xl border-2 border-indigo-200 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none bg-white text-slate-900 resize-none transition shadow-2xs leading-relaxed"
+            >${this.escapeHtml(ts.practiceUserAnswer || '')}</textarea>
+
+            <div class="flex items-center justify-between gap-2 text-xs">
+              <span class="text-slate-400 font-medium">Shift+Enter로 줄바꿈 · Enter로 즉시 정답 확인</span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="App.tmStudyPracticeToggleHint()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-bold transition flex items-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                  <span>${ts.practiceShowHint ? '힌트 숨기기' : '첫글자 힌트'}</span>
+                </button>
+                <button type="button" onclick="App.tmStudyPracticeCheck()" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-xs cursor-pointer">
+                  정답 확인
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 정답 확인 피드백 영역 -->
+          ${ts.practiceChecked ? `
+            <div class="p-4 sm:p-5 rounded-3xl border-2 ${ts.practiceResult?.isExact ? 'border-emerald-300 bg-emerald-50/70' : 'border-amber-300 bg-amber-50/60'} space-y-3 animate-fade-in">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-black ${ts.practiceResult?.isExact ? 'text-emerald-900' : 'text-amber-900'} flex items-center gap-1.5">
+                  <i class="fa-solid ${ts.practiceResult?.isExact ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-600'}"></i>
+                  ${ts.practiceResult?.isExact ? '완벽한 정답입니다! (100% 일치)' : '원문과 비교해보세요'}
+                </span>
+                <button type="button" onclick="App.speakSentence('${this.escapeHtml(s.en)}')" class="text-xs font-bold text-indigo-700 hover:underline flex items-center gap-1">
+                  <i class="fa-solid fa-volume-high"></i> 원문 듣기
+                </button>
+              </div>
+
+              <div class="space-y-2 text-xs sm:text-sm">
+                <div class="p-3 rounded-xl bg-white border border-slate-200">
+                  <span class="text-[11px] font-bold text-slate-400 block mb-0.5">[내 작성]</span>
+                  <p class="font-bold text-slate-800">${this.escapeHtml(ts.practiceUserAnswer || '(입력값 없음)')}</p>
+                </div>
+                <div class="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-950 font-bold">
+                  <span class="text-[11px] font-black text-emerald-700 block mb-0.5">[정답 원문]</span>
+                  <p class="leading-relaxed">${this.escapeHtml(s.en)}</p>
+                </div>
+              </div>
+
+              ${ts.practiceResult?.isExact ? `
+                <div class="flex justify-end pt-1">
+                  <button type="button" onclick="App.tmStudyPracticeNext()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    <span>다음 문장 ➔</span>
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <!-- 이전 / 다음 네비게이션 -->
+          <div class="flex items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              onclick="App.tmStudyPracticePrev()"
+              ${curIdx === 0 ? 'disabled' : ''}
+              class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1.5"
+            >
+              <i class="fa-solid fa-arrow-left"></i> 이전 문장
+            </button>
+            <span class="text-xs font-bold text-slate-500">${curIdx + 1} / ${ts.filteredSentences.length}</span>
+            <button
+              type="button"
+              onclick="App.tmStudyPracticeNext()"
+              ${curIdx >= ts.filteredSentences.length - 1 ? 'disabled' : ''}
+              class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1.5 shadow-xs"
+            >
+              다음 문장 <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+  },
+
+  renderTmStudyFooter() {
+    const ts = this.state.textMemorizeStudy;
+    const footer = document.getElementById('tmStudyModalFooter');
+    if (!footer || !ts) return;
+
+    let leftInfo = '';
+    if (ts.viewMode === 'card') {
+      leftInfo = `
+        <div class="flex items-center gap-2 text-xs flex-wrap min-w-0">
+          <span class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-black text-xs shadow-2xs">${ts.round}회차</span>
+          <span class="text-slate-600 font-bold hidden sm:inline">문장 ${ts.cardIndex + 1} / ${ts.flashcardDeck.length}</span>
+          <span class="text-rose-600 font-black text-xs flex items-center gap-1">
+            <i class="fa-solid fa-circle-xmark"></i>
+            <span>모르는 문장</span>
+            <strong class="px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700">${ts.unknownSentences.length}</strong>
+          </span>
+          <span class="text-emerald-600 font-black text-xs flex items-center gap-1">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>외운 문장</span>
+            <strong class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700">${ts.knownSentences.length}</strong>
+          </span>
+        </div>
+      `;
+    } else if (ts.viewMode === 'mask') {
+      leftInfo = `
+        <div class="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-eye-slash text-indigo-500"></i>
+          <span>본문 가리기 모드 (총 ${ts.filteredSentences.length}문장)</span>
+        </div>
+      `;
+    } else if (ts.viewMode === 'scramble') {
+      leftInfo = `
+        <div class="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-puzzle-piece text-indigo-500"></i>
+          <span>어순 배열 (${ts.scrambleIndex + 1} / ${ts.filteredSentences.length} · 마스터 ${ts.scrambleMasteredSet.size}개)</span>
+        </div>
+      `;
+    } else if (ts.viewMode === 'practice') {
+      leftInfo = `
+        <div class="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-pen-clip text-indigo-500"></i>
+          <span>영작 연습 (${ts.practiceIndex + 1} / ${ts.filteredSentences.length} · 마스터 ${ts.practiceMasteredSet.size}개)</span>
+        </div>
+      `;
+    }
+
+    footer.innerHTML = `
+      ${leftInfo}
+      <div class="flex items-center gap-2 flex-shrink-0">
+        ${ts.originTestId ? `
+          <button type="button" onclick="App.closeTextMemorizeStudyModal()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days text-[11px]"></i>
+            <span>시험 일정 창</span>
+          </button>
+          <button type="button" onclick="App.closeTextMemorizeStudyModal(); App.startTextMemorizeExam('${ts.originTestId}', ${ts.test?.studentId || App.state.selectedStudentId})" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+            <i class="fa-solid fa-paper-plane text-[11px]"></i>
+            <span>시험 응시하기</span>
+          </button>
+        ` : `
+          <button type="button" onclick="App.closeTextMemorizeStudyModal()" class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer shadow-xs">
+            닫기
+          </button>
+        `}
+      </div>
+    `;
+  },
+
+  // ── 플래시카드 하위 액션 ──
+  tmStudyFlipCard() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.isCardFlipped = !ts.isCardFlipped;
+    this.renderTmStudyContent();
+  },
+
+  tmStudyMarkSentence(isKnown) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || !ts.flashcardDeck || ts.flashcardDeck.length === 0) return;
+    if (ts.isRoundFinished || ts.isMasteryFinished) return;
+
+    const currentSentence = ts.flashcardDeck[ts.cardIndex];
+    if (!currentSentence) return;
+
+    if (isKnown) {
+      ts.knownSentences.push(currentSentence);
+    } else {
+      ts.unknownSentences.push(currentSentence);
+    }
+
+    ts.isCardFlipped = false;
+
+    if (ts.cardIndex + 1 < ts.flashcardDeck.length) {
+      ts.cardIndex += 1;
+    } else {
+      if (ts.unknownSentences.length === 0) {
+        ts.isMasteryFinished = true;
+      } else {
+        ts.isRoundFinished = true;
+      }
+    }
+
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  tmStudyStartNextRound() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || !ts.unknownSentences || ts.unknownSentences.length === 0) return;
+
+    ts.flashcardDeck = [...ts.unknownSentences];
+    ts.unknownSentences = [];
+    ts.knownSentences = [];
+    ts.cardIndex = 0;
+    ts.round += 1;
+    ts.isRoundFinished = false;
+    ts.isMasteryFinished = false;
+    ts.isCardFlipped = false;
+
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  tmStudyRestartMastery() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+
+    ts.flashcardDeck = [...ts.filteredSentences];
+    ts.unknownSentences = [];
+    ts.knownSentences = [];
+    ts.cardIndex = 0;
+    ts.round = 1;
+    ts.isRoundFinished = false;
+    ts.isMasteryFinished = false;
+    ts.isCardFlipped = false;
+
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  toggleTmStudyCardDirection() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.cardDirection = ts.cardDirection === 'ko_to_en' ? 'en_to_ko' : 'ko_to_en';
+    ts.isCardFlipped = false;
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+  },
+
+  toggleTmStudyCardHint() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.showCardHint = !ts.showCardHint;
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+  },
+
+  // ── 본문 통독 & 가리기 하위 액션 ──
+  setTmStudyMaskMode(mode) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.maskMode = mode;
+    ts.revealedEnSet.clear();
+    ts.revealedKoSet.clear();
+    ts.revealedClozeSet.clear();
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+  },
+
+  toggleTmStudySentenceEnReveal(sentenceId) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.revealedEnSet.has(sentenceId)) {
+      ts.revealedEnSet.delete(sentenceId);
+    } else {
+      ts.revealedEnSet.add(sentenceId);
+    }
+    this.renderTmStudyContent();
+  },
+
+  toggleTmStudySentenceKoReveal(sentenceId) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.revealedKoSet.has(sentenceId)) {
+      ts.revealedKoSet.delete(sentenceId);
+    } else {
+      ts.revealedKoSet.add(sentenceId);
+    }
+    this.renderTmStudyContent();
+  },
+
+  toggleTmStudyClozeBlankReveal(blankId) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.revealedClozeSet.has(blankId)) {
+      ts.revealedClozeSet.delete(blankId);
+    } else {
+      ts.revealedClozeSet.add(blankId);
+    }
+    this.renderTmStudyContent();
+  },
+
+  revealAllTmStudyMasked() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+
+    if (ts.maskMode === 'hide_en') {
+      if (ts.revealedEnSet.size >= ts.filteredSentences.length) {
+        ts.revealedEnSet.clear();
+      } else {
+        ts.filteredSentences.forEach(s => ts.revealedEnSet.add(s.id));
+      }
+    } else if (ts.maskMode === 'hide_ko') {
+      if (ts.revealedKoSet.size >= ts.filteredSentences.length) {
+        ts.revealedKoSet.clear();
+      } else {
+        ts.filteredSentences.forEach(s => ts.revealedKoSet.add(s.id));
+      }
+    } else if (ts.maskMode === 'cloze') {
+      if (ts.revealedClozeSet.size > 0) {
+        ts.revealedClozeSet.clear();
+      } else {
+        ts.filteredSentences.forEach(s => {
+          const cloze = this.generateClozeBlanks(s.en, s.globalIndex);
+          cloze.blanks.forEach(b => ts.revealedClozeSet.add(b.id));
+        });
+      }
+    }
+    this.renderTmStudyContent();
+  },
+
+  jumpToTmStudySentence(sentIndex, viewMode) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.viewMode = viewMode;
+    if (viewMode === 'scramble') {
+      this.initTmStudyScramble(sentIndex);
+    } else if (viewMode === 'practice') {
+      this.initTmStudyPractice(sentIndex);
+    }
+    this.updateTmStudyModeButtons();
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  // ── 어순 배열 하위 액션 ──
+  initTmStudyScramble(sentIndex) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || !ts.filteredSentences || ts.filteredSentences.length === 0) return;
+
+    const sIdx = Math.max(0, Math.min(sentIndex, ts.filteredSentences.length - 1));
+    ts.scrambleIndex = sIdx;
+    const s = ts.filteredSentences[sIdx];
+
+    // 단어 토큰 분리
+    const tokens = s.en.trim().split(/\s+/).filter(Boolean);
+    const available = tokens.map((word, idx) => ({ id: idx, text: word }));
+
+    // Fisher-Yates 셔플
+    for (let i = available.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = available[i];
+      available[i] = available[j];
+      available[j] = temp;
+    }
+
+    ts.scrambleTokens = tokens;
+    ts.scrambleAvailableWords = available;
+    ts.scramblePlacedWords = [];
+    ts.scrambleIsCorrect = false;
+  },
+
+  tmStudyScramblePlaceWord(wordId) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || ts.scrambleIsCorrect) return;
+
+    const aIdx = ts.scrambleAvailableWords.findIndex(w => w.id === wordId);
+    if (aIdx === -1) return;
+
+    const [placedWord] = ts.scrambleAvailableWords.splice(aIdx, 1);
+    ts.scramblePlacedWords.push(placedWord);
+
+    // 모든 단어가 배치되었는지 확인
+    if (ts.scramblePlacedWords.length === ts.scrambleTokens.length) {
+      const placedStr = ts.scramblePlacedWords.map(w => w.text.trim().toLowerCase()).join(' ');
+      const targetStr = ts.scrambleTokens.map(w => w.trim().toLowerCase()).join(' ');
+
+      if (placedStr === targetStr) {
+        ts.scrambleIsCorrect = true;
+        const curSentence = ts.filteredSentences[ts.scrambleIndex];
+        if (curSentence) {
+          ts.scrambleMasteredSet.add(curSentence.id);
+          this.speakSentence(curSentence.en);
+        }
+      }
+    }
+
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  tmStudyScrambleRemoveWord(placedIndex) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || ts.scrambleIsCorrect) return;
+
+    if (placedIndex >= 0 && placedIndex < ts.scramblePlacedWords.length) {
+      const [removed] = ts.scramblePlacedWords.splice(placedIndex, 1);
+      ts.scrambleAvailableWords.push(removed);
+    }
+
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  tmStudyScrambleReset() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    this.initTmStudyScramble(ts.scrambleIndex);
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  tmStudyScrambleHint() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || ts.scrambleIsCorrect) return;
+    if (ts.scramblePlacedWords.length >= ts.scrambleTokens.length) return;
+
+    // 다음에 배치되어야 할 정답 단어 텍스트
+    const nextTargetWord = ts.scrambleTokens[ts.scramblePlacedWords.length];
+    const matchIdx = ts.scrambleAvailableWords.findIndex(
+      w => w.text.toLowerCase() === nextTargetWord.toLowerCase()
+    );
+
+    if (matchIdx !== -1) {
+      const [placedWord] = ts.scrambleAvailableWords.splice(matchIdx, 1);
+      ts.scramblePlacedWords.push(placedWord);
+
+      if (ts.scramblePlacedWords.length === ts.scrambleTokens.length) {
+        const placedStr = ts.scramblePlacedWords.map(w => w.text.trim().toLowerCase()).join(' ');
+        const targetStr = ts.scrambleTokens.map(w => w.trim().toLowerCase()).join(' ');
+        if (placedStr === targetStr) {
+          ts.scrambleIsCorrect = true;
+          const curSentence = ts.filteredSentences[ts.scrambleIndex];
+          if (curSentence) {
+            ts.scrambleMasteredSet.add(curSentence.id);
+            this.speakSentence(curSentence.en);
+          }
+        }
+      }
+      this.renderTmStudySubToolbar();
+      this.renderTmStudyContent();
+      this.renderTmStudyFooter();
+    }
+  },
+
+  tmStudyScrambleNext() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.scrambleIndex + 1 < ts.filteredSentences.length) {
+      this.initTmStudyScramble(ts.scrambleIndex + 1);
+      this.renderTmStudySubToolbar();
+      this.renderTmStudyContent();
+      this.renderTmStudyFooter();
+    }
+  },
+
+  tmStudyScramblePrev() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.scrambleIndex > 0) {
+      this.initTmStudyScramble(ts.scrambleIndex - 1);
+      this.renderTmStudySubToolbar();
+      this.renderTmStudyContent();
+      this.renderTmStudyFooter();
+    }
+  },
+
+  // ── 영작 자가 연습 하위 액션 ──
+  initTmStudyPractice(sentIndex) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts || !ts.filteredSentences || ts.filteredSentences.length === 0) return;
+
+    const sIdx = Math.max(0, Math.min(sentIndex, ts.filteredSentences.length - 1));
+    ts.practiceIndex = sIdx;
+    ts.practiceUserAnswer = '';
+    ts.practiceShowHint = false;
+    ts.practiceChecked = false;
+    ts.practiceResult = null;
+  },
+
+  onTmStudyPracticeInput(textarea) {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+
+    let val = textarea.value;
+    // 한글 입력 감지 시 실시간 영문 2벌식 변환 (한영 오타 교정)
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(val)) {
+      val = this.convertKorToEng(val);
+      textarea.value = val;
+    }
+
+    ts.practiceUserAnswer = val;
+    ts.practiceChecked = false;
+  },
+
+  tmStudyPracticeToggleHint() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.practiceShowHint = !ts.practiceShowHint;
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+  },
+
+  tmStudyPracticeCheck() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+
+    const s = ts.filteredSentences[ts.practiceIndex];
+    if (!s) return;
+
+    const userAns = (ts.practiceUserAnswer || '').trim();
+    const cleanUser = userAns.toLowerCase().replace(/["“”'‘’]/g, '');
+    const cleanTarget = s.en.trim().toLowerCase().replace(/["“”'‘’]/g, '');
+
+    const isExact = cleanUser === cleanTarget;
+    ts.practiceChecked = true;
+    ts.practiceResult = { isExact, userAns, target: s.en };
+
+    if (isExact) {
+      ts.practiceMasteredSet.add(s.id);
+      this.speakSentence(s.en);
+    }
+
+    this.renderTmStudySubToolbar();
+    this.renderTmStudyContent();
+    this.renderTmStudyFooter();
+  },
+
+  tmStudyPracticeReset() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    ts.practiceUserAnswer = '';
+    ts.practiceChecked = false;
+    ts.practiceResult = null;
+    this.renderTmStudyContent();
+
+    setTimeout(() => {
+      const textarea = document.getElementById('tmStudyPracticeTextarea');
+      if (textarea) textarea.focus();
+    }, 50);
+  },
+
+  tmStudyPracticeNext() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.practiceIndex + 1 < ts.filteredSentences.length) {
+      this.initTmStudyPractice(ts.practiceIndex + 1);
+      this.renderTmStudySubToolbar();
+      this.renderTmStudyContent();
+      this.renderTmStudyFooter();
+    }
+  },
+
+  tmStudyPracticePrev() {
+    const ts = this.state.textMemorizeStudy;
+    if (!ts) return;
+    if (ts.practiceIndex > 0) {
+      this.initTmStudyPractice(ts.practiceIndex - 1);
+      this.renderTmStudySubToolbar();
+      this.renderTmStudyContent();
+      this.renderTmStudyFooter();
+    }
   }
 
 };
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 사이트 초기화 시작');
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 사이트 초기화 시작 (즉시 UI 렌더링)');
 
-  try {
-    // 1. Firebase 준비 대기 (모듈 스크립트 비동기 로딩 완료 보장)
-    await AppData.waitForFirebase();
+  // 1. 즉시 UI 렌더링: 로컬 캐시 / 기본 데이터로 대기 시간 0초 만에 화면 표출
+  App.init();
 
-    // 2. Firestore에서 학생 데이터 먼저 준비
-    await AppData.initializeStudents();
-    console.log('👨‍🎓 학생 데이터 준비 완료');
+  // 2. 동기화 상태 표시
+  App.updateSyncStatus('syncing', '데이터를 불러오는 중입니다...');
 
-    // 3. 세션 복원 및 UI 초기 렌더링 (최신 학생 목록을 바탕으로 세션 복원)
-    App.init();
-
-    // 4. 시험 / 단어 데이터도 Firestore에서 준비
-    await AppData.initializeCloudData();
-
-    // 5. Firestore 실시간 감시 시작
-    AppData.startStudentListener();
-    AppData.startCloudListeners();
-
-    // 6. 클라우드 최신 데이터가 로드된 후 현재 활성 세션 화면 다시 갱신
-    if (App.state.isStudentLoggedIn && App.state.selectedStudentId) {
-      App.renderStudentDashboard();
-    } else if (App.state.isAdminLoggedIn) {
-      App.renderAdminDashboard();
+  // 3. 백그라운드 비동기 클라우드 동기화 (화면 블로킹 없음)
+  (async () => {
+    try {
+      const isReady = await AppData.waitForFirebase(3000);
+      if (isReady) {
+        await AppData.initializeStudents();
+        await AppData.initializeCloudData();
+        AppData.startStudentListener();
+        AppData.startCloudListeners();
+        console.log('사이트 초기화 및 클라우드 동기화 완료');
+        App.updateSyncStatus('synced', '최신 데이터 동기화 완료');
+      } else {
+        console.warn('Firebase 오프라인 모드로 실행');
+        App.updateSyncStatus('offline', '로컬 안전 모드 (저장됨)');
+      }
+    } catch (error) {
+      console.error('클라우드 동기화 중 오류 (로컬 모드로 전환):', error);
+      App.updateSyncStatus('offline', '로컬 모드로 동작 중');
     }
-
-    console.log('사이트 초기화 및 클라우드 동기화 완료');
-  } catch (error) {
-    console.error('클라우드 동기화 실패 (오프라인 모드로 동작):', error);
-    App.init();
-  }
+  })();
 });
