@@ -706,7 +706,7 @@ const App = {
 
     const statsGrid = document.getElementById('studentStatsGrid');
     statsGrid.innerHTML = `
-      <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
+      <div ${nextTest ? `onclick="App.openTestDetailModal('${nextTest.id}')" role="button" class="glass-card rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:border-indigo-400 hover:shadow-md transition"` : `class="glass-card rounded-2xl p-4 flex flex-col justify-between"`}>
         <div class="flex items-center justify-between text-slate-400 text-xs">
           <span>다음 시험 일정</span>
           <i class="fa-solid fa-hourglass-half text-indigo-500"></i>
@@ -715,6 +715,12 @@ const App = {
           <div class="text-xl sm:text-2xl font-black text-indigo-600">${nextDDay}</div>
           <p class="text-[11px] text-slate-500 truncate mt-0.5">${nextTest ? this.escapeHtml(nextTest.title) : '예정 시험 없음'}</p>
         </div>
+        ${nextTest ? `
+          <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-indigo-600">
+            <span>바로 열기 / 확인</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </div>
+        ` : ''}
       </div>
 
       <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
@@ -1077,6 +1083,11 @@ const App = {
               <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.cutoff)}</strong></div>
               <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.score || '미응시'}</strong></div>
             </div>
+            ${test.type === 'PRACTICE' ? `
+              <button type="button" onclick="event.stopPropagation(); App.startPracticeTest('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
+                <i class="fa-solid fa-pencil"></i> 시험 응시
+              </button>
+            ` : ''}
             <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
               <i class="fa-solid fa-chevron-right text-xs"></i>
             </div>
@@ -2069,18 +2080,18 @@ const App = {
       return { status: 'IN_PROGRESS', label: '재시험 응시 가능', canStart: true, message: '' };
     }
 
-    // 3. 단어 테스트(VOCAB)는 시험 날짜 이전이라도 언제든 사전 응시 가능
-    if (test.type === 'VOCAB') {
+    // 3. 문제풀이 시험(PRACTICE) 및 단어 테스트(VOCAB)는 시험 날짜 이전이라도 언제든 자유롭게 상시/사전 응시 가능
+    if (test.type === 'PRACTICE' || test.type === 'VOCAB') {
       return {
         status: 'IN_PROGRESS',
-        label: '응시 가능 (사전 응시 가능)',
+        label: test.type === 'PRACTICE' ? '응시 가능 (하루종일 / 상시 응시)' : '응시 가능 (사전 응시 가능)',
         canStart: true,
         message: ''
       };
     }
 
-    // 4. 문제풀이 시험(PRACTICE) 및 하루종일 시험은 당일 00:00부터 23:59까지 자유롭게 응시 가능
-    const isAllDayExam = test.type === 'PRACTICE' || test.time === '00:00' || test.time === '18:00';
+    // 4. 하루종일 시험은 당일 00:00부터 23:59까지 자유롭게 응시 가능
+    const isAllDayExam = test.time === '00:00' || test.time === '18:00';
     const dayStartDateTime = new Date(`${testDate}T00:00:00`);
     if (isAllDayExam && now >= dayStartDateTime && now <= endDateTime) {
       return {
@@ -2103,7 +2114,7 @@ const App = {
       };
     }
 
-    // 5. 마감이 지난 경우 (미통과 상태에서 종료 시간 초과)
+    // 6. 마감이 지난 경우 (미통과 상태에서 종료 시간 초과)
     if (now > endDateTime) {
       if (test.allowLate) {
         return { status: 'IN_PROGRESS', label: '지각 응시 허용', canStart: true, message: '' };
@@ -2129,12 +2140,21 @@ const App = {
     if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
 
     const student = AppData.getStudentById(test.studentId);
-    const questions = test.questions || [];
+    let questions = test.questions || [];
+    if (questions.length === 0 && typeof getMock202509QuestionsByPlanId === 'function') {
+      const planMatch = String(test.id).match(/^(mock2509_d\d+)/);
+      if (planMatch) {
+        questions = getMock202509QuestionsByPlanId(planMatch[1]);
+        test.questions = questions;
+      }
+    }
+
     const timeStatus = this.getTestTimeStatus(test);
     const result = test.practiceResult;
+    const isCompleted = Boolean(test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed);
     const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
     const timeDisplay = isAllDay ? '하루종일 응시 가능 (00:00 ~ 23:59)' : (test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : '하루종일');
-    const isAdmin = this.state.isAdminLoggedIn;
+    const isAdmin = Boolean(this.state.isAdminLoggedIn);
 
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 문제풀이 시험` : '문제풀이 시험';
     document.getElementById('detailModalTitle').innerText = test.title;
@@ -2142,7 +2162,12 @@ const App = {
     let actionButtonHtml = '';
     if (isAdmin) {
       actionButtonHtml = `
-        <div class="space-y-2.5 pt-2">
+        <div class="space-y-3 pt-2">
+          <!-- 관리자/선생님 시험 직접 시작 & 체험하기 버튼 (언제든 즉시 열기 가능) -->
+          <button type="button" onclick="App.startPracticeTest('${test.id}')" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 cursor-pointer">
+            <i class="fa-solid fa-play"></i> 문제풀이 시험 바로 열기 (체험 및 풀이)
+          </button>
+
           ${result ? `
             <div class="p-3.5 rounded-xl ${result.passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'} text-xs font-semibold flex items-center justify-between">
               <span>학생 점수: <strong>${result.score}점 (${result.correctCount}/${result.totalCount} 정답)</strong></span>
@@ -2160,13 +2185,13 @@ const App = {
                     ${test.allowRetest ? '허용 중 — 학생이 재시험을 풀 수 있습니다.' : '현재 비허용 — 학생이 다시 풀 수 없습니다.'}
                   </p>
                 </div>
-                <button onclick="App.togglePracticeTestAllowRetest('${test.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}">
+                <button type="button" onclick="App.togglePracticeTestAllowRetest('${test.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}">
                   ${test.allowRetest ? '허용 취소' : '재시험 허용하기'}
                 </button>
               </div>
             ` : ''}
 
-            <button onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
               <i class="fa-solid fa-file-circle-check"></i> 학생 풀이 답안 & 채점 결과 보기
             </button>
           ` : (isCompleted ? `
@@ -2175,17 +2200,18 @@ const App = {
             </div>
           ` : `
             <div class="p-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold text-center">
-              <i class="fa-solid fa-clock mr-1"></i>아직 학생이 시험에 응시하지 않았습니다. (${timeStatus.label})
+              <i class="fa-solid fa-clock mr-1"></i>아직 학생이 시험에 응시하지 않았습니다. (선생님은 위 버튼으로 직접 풀어보실 수 있습니다.)
             </div>
           `)}
-          <div class="flex items-center gap-2">
-            <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+
+          <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+            <button type="button" onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
               <i class="fa-solid fa-calendar-days"></i> 일정 이동
             </button>
-            <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <button type="button" onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
               <i class="fa-solid fa-clock-rotate-left"></i> 시간 연장
             </button>
-            <button onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <button type="button" onclick="App.closeTestDetailModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
               <i class="fa-solid fa-pen-to-square"></i> 전체 수정
             </button>
           </div>
@@ -2200,41 +2226,40 @@ const App = {
               <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${result.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${result.passed ? 'PASS 통과' : '불합격'}</span>
             </div>
 
-            ${!result.passed ? (test.allowRetest ? `
+            ${result.passed ? `
+              <!-- 통과 후 복습 다시 풀기 지원 -->
+              <button type="button" onclick="App.startPracticeTest('${test.id}', true)" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-rotate-right"></i> 다시 풀기 (복습 연습)
+              </button>
+            ` : (test.allowRetest ? `
               <!-- 재시험 허용 시 즉시 재시험 응시하기 버튼 노출 -->
-              <button onclick="App.startPracticeTest('${test.id}')" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+              <button type="button" onclick="App.startPracticeTest('${test.id}')" class="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-indigo-200 cursor-pointer">
                 <i class="fa-solid fa-rotate-right"></i> 재시험 응시하기
               </button>
             ` : `
               <div class="p-3 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-xs text-center font-medium">
                 <i class="fa-solid fa-book-open mr-1"></i>불합격 처리되었습니다. 아래에서 오답과 해설을 확인하고 복습하세요.
               </div>
-            `) : ''}
+            `)}
 
             <!-- 풀이 답안 및 오답 해설 보기 (합격/불합격/재시험 관계없이 항상 확인 가능) -->
-            <button onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
               <i class="fa-solid fa-file-circle-check text-indigo-400"></i> ${result.passed ? '풀이 답안 및 해설 보기' : '오답노트 및 정답·해설 보기'}
             </button>
           </div>
         `;
       } else if (isCompleted) {
         actionButtonHtml = `
-          <div class="pt-2">
+          <div class="space-y-2.5 pt-2">
             <div class="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
               <i class="fa-solid fa-circle-check"></i> 문제풀이 시험 완료
             </div>
-          </div>
-        `;
-      } else if (timeStatus.status === 'NOT_STARTED') {
-        actionButtonHtml = `
-          <div class="space-y-2 pt-2">
-            <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
-              <i class="fa-solid fa-lock"></i> ${timeStatus.label}
+            <button type="button" onclick="App.startPracticeTest('${test.id}', true)" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-rotate-right"></i> 다시 풀기 (복습 연습)
             </button>
-            <p class="text-[11px] text-center text-slate-400">시험 시작 시간 이후에 응시 버튼이 활성화됩니다.</p>
           </div>
         `;
-      } else if (timeStatus.status === 'EXPIRED') {
+      } else if (timeStatus.status === 'EXPIRED' && !test.allowLate) {
         actionButtonHtml = `
           <div class="space-y-2 pt-2">
             <button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed">
@@ -2246,7 +2271,7 @@ const App = {
       } else {
         actionButtonHtml = `
           <div class="pt-2">
-            <button onclick="App.startPracticeTest('${test.id}')" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-emerald-200">
+            <button type="button" onclick="App.startPracticeTest('${test.id}')" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 cursor-pointer">
               <i class="fa-solid fa-pencil"></i> 문제풀이 시험 시작하기
             </button>
           </div>
@@ -2340,45 +2365,57 @@ const App = {
     }
   },
 
-  // ── 학생: 문제풀이 시험 응시 엔진 ──────────────────────────
-  startPracticeTest(testId) {
+  // ── 학생/선생님: 문제풀이 시험 응시 엔진 ──────────────────────────
+  startPracticeTest(testId, isForce = false) {
     const test = AppData.getTests().find(t => t.id === testId);
     if (!test) { this.toast('시험 정보를 찾을 수 없습니다.', 'error'); return; }
 
-    const questions = test.questions || [];
+    let questions = test.questions || [];
+    if (questions.length === 0 && typeof getMock202509QuestionsByPlanId === 'function') {
+      const planMatch = String(test.id).match(/^(mock2509_d\d+)/);
+      if (planMatch) {
+        questions = getMock202509QuestionsByPlanId(planMatch[1]);
+        test.questions = questions;
+      }
+    }
+
     if (questions.length === 0) {
-      this.toast('출제된 문제가 없습니다.', 'error');
+      this.toast('출제된 문제를 불러올 수 없습니다.', 'error');
       return;
     }
 
+    const isAdmin = Boolean(this.state.isAdminLoggedIn);
     const isRetest = Boolean(test.practiceResult && !test.practiceResult.passed && test.allowRetest);
     const timeStatus = this.getTestTimeStatus(test);
 
-    // 재시험이 아닌 일반 최초 응시일 때만 본시험 시간 체크 (재시험은 종료 시간 무관하게 응시 가능)
-    if (!isRetest && !timeStatus.canStart && !test.practiceResult) {
-      this.toast(timeStatus.message || '현재 응시할 수 없는 시간입니다.', 'error');
-      return;
+    // 관리자 또는 강제 다시 풀기가 아닌 일반 학생 최초/재응시 시간 및 자격 검사
+    if (!isAdmin && !isForce) {
+      if (!isRetest && !timeStatus.canStart && !test.practiceResult) {
+        this.toast(timeStatus.message || '현재 응시할 수 없는 시간입니다.', 'error');
+        return;
+      }
+
+      // 불합격 후 선생님의 재시험 허용이 없는 경우 차단
+      if (test.practiceResult && !test.practiceResult.passed && !test.allowRetest) {
+        this.toast('오답 정리 후 선생님의 재시험 허용을 받아주세요.', 'info');
+        return;
+      }
     }
 
-    if (test.practiceResult?.passed) {
-      this.toast('이미 통과 완료된 시험입니다.', 'info');
-      this.viewPracticeTestResultDetail(testId);
-      return;
-    }
-
-    // 불합격 후 선생님의 재시험 허용이 없는 경우 차단
-    if (test.practiceResult && !test.practiceResult.passed && !test.allowRetest) {
-      this.toast('빽빽이 검사 후 다시 응시할 수 있습니다.', 'info');
-      return;
-    }
-
-    // 재시험으로 응시하는 경우, 일회성 허용이므로 시작 즉시 allowRetest = false로 소진 처리
-    if (test.allowRetest) {
+    // 재시험으로 응시하는 경우, 일회성 허용이므로 시작 즉시 allowRetest = false로 소진 처리 (선생님 체험 시 제외)
+    if (test.allowRetest && !isAdmin) {
       test.allowRetest = false;
       AppData.saveOrUpdateTest(test).catch(err => console.error('재시험 권한 일회성 소진 저장 오류:', err));
     }
 
+    // 모달 즉시 닫기 (백드롭 잔상 및 스크롤 락 즉시 해제)
+    const detailModal = document.getElementById('testDetailModal');
+    if (detailModal) {
+      detailModal.classList.add('hidden');
+    }
     this.closeTestDetailModal();
+    this.closeAllModals();
+
     const cutoffScore = Math.min(100, Math.max(1, Number(test.practiceCutoff || test.cutoffScore || (test.cutoff ? parseInt(test.cutoff, 10) : 80) || 80)));
     this.state.practiceTest = {
       testId: test.id,
@@ -2389,7 +2426,8 @@ const App = {
       currentIndex: 0,
       answers: {},
       startedAt: new Date().toISOString(),
-      isCompleted: false
+      isCompleted: false,
+      isReviewOnly: Boolean(test.practiceResult?.passed || isAdmin || isForce)
     };
 
     this.showPracticeTestView();
@@ -2797,7 +2835,7 @@ const App = {
     // 시험 객체 업데이트
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === pt.testId);
-    if (test) {
+    if (test && !this.state.isAdminLoggedIn && !pt.isReviewOnly) {
       test.practiceResult = practiceResult;
       test.status = passed ? 'PASS' : 'FAIL';
       test.score = `${score}점 (${correctCount}/${total})`;
@@ -3064,7 +3102,7 @@ const App = {
 
   exitPracticeTest() {
     const pt = this.state.practiceTest;
-    if (pt && pt.testId && !pt.isCompleted) {
+    if (pt && pt.testId && !pt.isCompleted && !pt.isReviewOnly && !this.state.isAdminLoggedIn) {
       if (!confirm('시험을 종료하면 0점 불합격 처리됩니다.\n정말 나가시겠습니까?')) return;
       this.forceFailPracticeTest();
     }
@@ -3269,6 +3307,11 @@ const App = {
           <!-- 관리 버튼 -->
           <td class="py-3.5 px-4 text-center whitespace-nowrap">
             <div class="flex items-center justify-center space-x-1.5">
+              ${test.type === 'PRACTICE' ? `
+                <button type="button" onclick="App.startPracticeTest('${test.id}')" class="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition" title="문제풀이 시험 바로 열기 (체험/풀이)">
+                  <i class="fa-solid fa-play"></i>
+                </button>
+              ` : ''}
               <button onclick="App.openRescheduleModal('${test.id}')" class="p-1.5 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition" title="시험 일정 이동">
                 <i class="fa-solid fa-calendar-days"></i>
               </button>
