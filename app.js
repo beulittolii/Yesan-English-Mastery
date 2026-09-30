@@ -369,10 +369,9 @@ const App = {
         e.returnValue = '시험 진행 중 페이지를 벗어나면 불합격(0점) 처리됩니다.';
       }
       const pt = this.state.practiceTest;
-      if (this.state.view === 'practiceTest' && pt && pt.testId && !pt.isCompleted) {
-        this.forceFailPracticeTest();
+      if (this.state.view === 'practiceTest' && pt && pt.testId && !pt.isCompleted && !pt.isReviewOnly) {
         e.preventDefault();
-        e.returnValue = '시험 진행 중 페이지를 벗어나면 0점 불합격 처리됩니다.';
+        e.returnValue = '시험 진행 중 페이지를 벗어나면 작성 중인 답안이 저장되지 않습니다.';
       }
       const tm = this.state.textMemorizeExam;
       if (tm && tm.testId && !tm.isCompleted) {
@@ -687,8 +686,8 @@ const App = {
 
     // 2. 통계 위젯 렌더링
     const totalTests = tests.length;
-    const passedTests = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS').length;
-    const retestNeeded = tests.filter(t => t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS')).length;
+    const passedTests = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' || (t.type === 'PRACTICE' && t.practiceResult)).length;
+    const retestNeeded = tests.filter(t => t.type !== 'PRACTICE' && (t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS'))).length;
     const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
 
     const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
@@ -916,10 +915,15 @@ const App = {
       }
       if (test.type === 'PRACTICE') {
         if (test.date === dateStr) {
+          const isCompleted = Boolean(test.practiceResult || test.status === 'PASS');
           const badgeStyle = this.getTestBadgeStyle(test, false);
           testsHtml += `
-            <div onclick="App.openPracticeTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="문제풀이 시험 확인 및 응시">
-              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-pen-to-square"></i></span><span class="truncate">${this.escapeHtml(test.title || '문제풀이 시험')}</span></div>
+            <div onclick="App.openPracticeTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center justify-between gap-1 shadow-xs ${badgeStyle.class}" title="${isCompleted ? '문제풀이 시험 응시 완료 (결과 확인)' : '문제풀이 시험 확인 및 응시'}">
+              <div class="truncate flex items-center gap-1 min-w-0">
+                <span><i class="fa-solid ${isCompleted ? 'fa-circle-check text-emerald-600' : 'fa-pen-to-square'}"></i></span>
+                <span class="truncate">${this.escapeHtml(test.title || '문제풀이 시험')}</span>
+              </div>
+              ${isCompleted ? '<span class="text-[10px] font-black px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 flex-shrink-0">완료</span>' : ''}
             </div>`;
         }
         return;
@@ -985,6 +989,14 @@ const App = {
       }
     }
 
+    // 유형별 문제풀이 시험(PRACTICE)은 재시험 없이 응시만 하면 무조건 초록색(완료) 표시
+    if (test.type === 'PRACTICE') {
+      if (test.practiceResult || test.status === 'PASS' || test.retestStatus === 'RETEST_PASS') {
+        return { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', icon: '<i class="fa-solid fa-check"></i>', tag: '응시 완료' };
+      }
+      return { class: 'bg-blue-100 text-blue-800 border border-blue-200', icon: '', tag: '예정' };
+    }
+
     // 1. 통과/완료된 시험은 응시 가능 시간 여부와 무관하게 무조건 '완료'
     const tmResult = (test.type === 'TEXT_MEMORIZE') ? AppData.getTextMemorizeResult(test.studentId, test.id) : null;
     if (test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed || tmResult?.passed) {
@@ -1034,11 +1046,11 @@ const App = {
     const filter = this.state.studentListFilter;
 
     if (filter === 'SCHEDULED') {
-      tests = tests.filter(t => t.status === 'SCHEDULED');
+      tests = tests.filter(t => t.status === 'SCHEDULED' && (!t.practiceResult || t.type !== 'PRACTICE'));
     } else if (filter === 'PASS') {
-      tests = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS');
+      tests = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' || (t.type === 'PRACTICE' && t.practiceResult));
     } else if (filter === 'RETEST') {
-      tests = tests.filter(t => t.status === 'FAIL' || t.retestStatus === 'RETEST_PENDING');
+      tests = tests.filter(t => t.type !== 'PRACTICE' && (t.status === 'FAIL' || t.retestStatus === 'RETEST_PENDING'));
     }
 
     if (tests.length === 0) {
@@ -1083,11 +1095,15 @@ const App = {
               <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.cutoff)}</strong></div>
               <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.score || '미응시'}</strong></div>
             </div>
-            ${test.type === 'PRACTICE' ? `
-              <button type="button" onclick="event.stopPropagation(); App.startPracticeTest('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
+            ${test.type === 'PRACTICE' ? (test.practiceResult ? `
+              <button type="button" onclick="event.stopPropagation(); App.viewPracticeTestResultDetail('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
+                <i class="fa-solid fa-file-circle-check"></i> 결과 확인
+              </button>
+            ` : `
+              <button type="button" onclick="event.stopPropagation(); App.startPracticeTest('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
                 <i class="fa-solid fa-pencil"></i> 시험 응시
               </button>
-            ` : ''}
+            `) : ''}
             <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
               <i class="fa-solid fa-chevron-right text-xs"></i>
             </div>
@@ -2070,14 +2086,9 @@ const App = {
     const effectiveEndTime = (test.extendedEndTime && String(test.extendedEndTime).trim()) ? String(test.extendedEndTime).trim() : (test.endTime || '23:59:59');
     const endDateTime = this.parseDateTime(effectiveEndDate, effectiveEndTime, true) || new Date(`${effectiveEndDate}T23:59:59`);
 
-    // 1. 이미 통과(PASS)한 경우 시간과 무관하게 무조건 '완료' (COMPLETED)
-    if (test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed) {
-      return { status: 'COMPLETED', label: '완료', canStart: false, message: '이미 통과한 시험입니다.' };
-    }
-
-    // 2. 재시험 허용된 문제풀이 시험은 본시험 종료시간이 지나도 언제든 재응시 가능
-    if (test.type === 'PRACTICE' && test.allowRetest && test.practiceResult && !test.practiceResult.passed) {
-      return { status: 'IN_PROGRESS', label: '재시험 응시 가능', canStart: true, message: '' };
+    // 1. 이미 통과(PASS) 또는 문제풀이 응시 완료된 경우 시간과 무관하게 무조건 '완료' (COMPLETED)
+    if (test.status === 'PASS' || test.retestStatus === 'RETEST_PASS' || test.practiceResult?.passed || (test.type === 'PRACTICE' && test.practiceResult)) {
+      return { status: 'COMPLETED', label: '응시 완료', canStart: false, message: '이미 응시를 완료한 시험입니다.' };
     }
 
     // 3. 문제풀이 시험(PRACTICE) 및 단어 테스트(VOCAB)는 시험 날짜 이전이라도 언제든 자유롭게 상시/사전 응시 가능
@@ -2169,30 +2180,13 @@ const App = {
           </button>
 
           ${result ? `
-            <div class="p-3.5 rounded-xl ${result.passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'} text-xs font-semibold flex items-center justify-between">
+            <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
               <span>학생 점수: <strong>${result.score}점 (${result.correctCount}/${result.totalCount} 정답)</strong></span>
-              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${result.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${result.passed ? 'PASS 통과' : '불합격'}</span>
+              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-200 text-emerald-900">응시 완료 (PASS)</span>
             </div>
 
-            <!-- 관리자 재시험 허용 토글 카드 (불합격 시) -->
-            ${!result.passed ? `
-              <div class="p-3 rounded-xl border flex items-center justify-between gap-3 ${test.allowRetest ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-200'}">
-                <div>
-                  <span class="text-xs font-bold ${test.allowRetest ? 'text-indigo-900' : 'text-slate-700'}">
-                    <i class="fa-solid fa-rotate-right mr-1"></i>재시험 응시 허용
-                  </span>
-                  <p class="text-[11px] ${test.allowRetest ? 'text-indigo-700 font-semibold' : 'text-slate-400'}">
-                    ${test.allowRetest ? '허용 중 — 학생이 재시험을 풀 수 있습니다.' : '현재 비허용 — 학생이 다시 풀 수 없습니다.'}
-                  </p>
-                </div>
-                <button type="button" onclick="App.togglePracticeTestAllowRetest('${test.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}">
-                  ${test.allowRetest ? '허용 취소' : '재시험 허용하기'}
-                </button>
-              </div>
-            ` : ''}
-
-            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
-              <i class="fa-solid fa-file-circle-check"></i> 학생 풀이 답안 & 채점 결과 보기
+            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-circle-check"></i> 학생 풀이 답안 & 정답·해설 결과 보기
             </button>
           ` : (isCompleted ? `
             <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
@@ -2221,30 +2215,19 @@ const App = {
       if (result) {
         actionButtonHtml = `
           <div class="space-y-2.5 pt-2">
-            <div class="p-3.5 rounded-xl ${result.passed ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'} text-xs font-semibold flex items-center justify-between">
+            <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
               <span>내 점수: <strong>${result.score}점 (${result.correctCount}/${result.totalCount} 정답)</strong></span>
-              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${result.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${result.passed ? 'PASS 통과' : '불합격'}</span>
+              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-200 text-emerald-900">응시 완료 (PASS)</span>
             </div>
 
-            ${result.passed ? `
-              <!-- 통과 후 복습 다시 풀기 지원 -->
-              <button type="button" onclick="App.startPracticeTest('${test.id}', true)" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-                <i class="fa-solid fa-rotate-right"></i> 다시 풀기 (복습 연습)
-              </button>
-            ` : (test.allowRetest ? `
-              <!-- 재시험 허용 시 즉시 재시험 응시하기 버튼 노출 -->
-              <button type="button" onclick="App.startPracticeTest('${test.id}')" class="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-indigo-200 cursor-pointer">
-                <i class="fa-solid fa-rotate-right"></i> 재시험 응시하기
-              </button>
-            ` : `
-              <div class="p-3 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-xs text-center font-medium">
-                <i class="fa-solid fa-book-open mr-1"></i>불합격 처리되었습니다. 아래에서 오답과 해설을 확인하고 복습하세요.
-              </div>
-            `)}
+            <!-- 풀이 답안 및 해설 보기 (항상 바로 확인 가능) -->
+            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-emerald-200 cursor-pointer">
+              <i class="fa-solid fa-file-circle-check"></i> 나의 풀이 답안 및 정답·해설 결과 확인하기
+            </button>
 
-            <!-- 풀이 답안 및 오답 해설 보기 (합격/불합격/재시험 관계없이 항상 확인 가능) -->
-            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-              <i class="fa-solid fa-file-circle-check text-indigo-400"></i> ${result.passed ? '풀이 답안 및 해설 보기' : '오답노트 및 정답·해설 보기'}
+            <!-- 다시 풀기 (복습 연습) 지원 -->
+            <button type="button" onclick="App.startPracticeTest('${test.id}', true)" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-rotate-right"></i> 다시 풀기 (복습 연습)
             </button>
           </div>
         `;
@@ -2254,7 +2237,10 @@ const App = {
             <div class="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
               <i class="fa-solid fa-circle-check"></i> 문제풀이 시험 완료
             </div>
-            <button type="button" onclick="App.startPracticeTest('${test.id}', true)" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-circle-check"></i> 풀이 답안 및 정답·해설 결과 확인하기
+            </button>
+            <button type="button" onclick="App.startPracticeTest('${test.id}', true)" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
               <i class="fa-solid fa-rotate-right"></i> 다시 풀기 (복습 연습)
             </button>
           </div>
@@ -2385,27 +2371,20 @@ const App = {
     }
 
     const isAdmin = Boolean(this.state.isAdminLoggedIn);
-    const isRetest = Boolean(test.practiceResult && !test.practiceResult.passed && test.allowRetest);
     const timeStatus = this.getTestTimeStatus(test);
 
-    // 관리자 또는 강제 다시 풀기가 아닌 일반 학생 최초/재응시 시간 및 자격 검사
-    if (!isAdmin && !isForce) {
-      if (!isRetest && !timeStatus.canStart && !test.practiceResult) {
+    // 이미 응시 완료된 시험인 경우 강제 다시풀기(isForce)가 아니면 바로 결과 확인 화면으로 안내
+    if (test.practiceResult && !isForce && !isAdmin) {
+      this.viewPracticeTestResultDetail(testId);
+      return;
+    }
+
+    // 일반 학생 최초 응시 시간 검사
+    if (!isAdmin && !isForce && !test.practiceResult) {
+      if (!timeStatus.canStart) {
         this.toast(timeStatus.message || '현재 응시할 수 없는 시간입니다.', 'error');
         return;
       }
-
-      // 불합격 후 선생님의 재시험 허용이 없는 경우 차단
-      if (test.practiceResult && !test.practiceResult.passed && !test.allowRetest) {
-        this.toast('오답 정리 후 선생님의 재시험 허용을 받아주세요.', 'info');
-        return;
-      }
-    }
-
-    // 재시험으로 응시하는 경우, 일회성 허용이므로 시작 즉시 allowRetest = false로 소진 처리 (선생님 체험 시 제외)
-    if (test.allowRetest && !isAdmin) {
-      test.allowRetest = false;
-      AppData.saveOrUpdateTest(test).catch(err => console.error('재시험 권한 일회성 소진 저장 오류:', err));
     }
 
     // 모달 즉시 닫기 (백드롭 잔상 및 스크롤 락 즉시 해제)
@@ -2815,7 +2794,8 @@ const App = {
     });
 
     const score = Math.round((correctCount / total) * 100);
-    const passed = score >= pt.cutoffScore;
+    // 유형별 문제풀이 시험은 재시험 없이 응시만 완료하면 100% 통과(PASS) 처리
+    const passed = true;
     const completedAt = new Date().toISOString();
 
     const practiceResult = {
@@ -2824,7 +2804,7 @@ const App = {
       score,
       correctCount,
       totalCount: total,
-      passed,
+      passed: true,
       cutoffScore: pt.cutoffScore,
       answers: pt.answers,
       reviewItems,
@@ -2837,7 +2817,8 @@ const App = {
     const test = allTests.find(t => t.id === pt.testId);
     if (test && !this.state.isAdminLoggedIn && !pt.isReviewOnly) {
       test.practiceResult = practiceResult;
-      test.status = passed ? 'PASS' : 'FAIL';
+      test.status = 'PASS';
+      test.retestStatus = 'NONE';
       test.score = `${score}점 (${correctCount}/${total})`;
       test.allowRetest = false;
       try {
@@ -2854,33 +2835,32 @@ const App = {
   },
 
   renderPracticeResult(result, test) {
-    const passed = result.passed;
     const reviewItems = result.reviewItems || [];
     const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
     document.getElementById('practiceTestTopInfo').innerHTML = `
-      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(test?.title || '문제풀이 시험')} — 시험 완료</span>
+      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(test?.title || '문제풀이 시험')} — 시험 응시 완료</span>
     `;
 
     document.getElementById('practiceTestContent').innerHTML = `
       <div class="space-y-6">
         <!-- Result Summary Card -->
         <div class="glass-card rounded-2xl p-8 text-center space-y-4">
-          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
-            <i class="fa-solid ${passed ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600 shadow-md shadow-emerald-100">
+            <i class="fa-solid fa-circle-check"></i>
           </div>
 
           <div>
-            <h3 class="text-2xl font-black ${passed ? 'text-emerald-700' : 'text-rose-700'}">
-              ${passed ? '축하합니다! 시험에 통과하였습니다.' : '아쉽게도 커트라인에 도달하지 못했습니다.'}
+            <h3 class="text-2xl font-black text-emerald-700">
+              문제풀이 시험 응시 완료!
             </h3>
-            <p class="text-slate-500 text-xs mt-1">커트라인: ${result.cutoffScore || 80}점 이상</p>
+            <p class="text-slate-500 text-xs mt-1">답안 제출이 정상 완료되었습니다. 아래에서 문항별 정답과 오답 해설을 바로 확인하세요.</p>
           </div>
 
           <div class="flex items-center justify-center gap-4 pt-2">
-            <div class="px-5 py-3 rounded-2xl bg-slate-50 border border-slate-200">
-              <span class="text-[11px] text-slate-400 font-bold block">획득 점수</span>
-              <strong class="text-2xl font-black ${passed ? 'text-emerald-600' : 'text-rose-600'}">${result.score}점</strong>
+            <div class="px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+              <span class="text-[11px] text-emerald-700 font-bold block">획득 점수</span>
+              <strong class="text-2xl font-black text-emerald-800">${result.score}점</strong>
             </div>
             <div class="px-5 py-3 rounded-2xl bg-slate-50 border border-slate-200">
               <span class="text-[11px] text-slate-400 font-bold block">정답 수</span>
@@ -2889,7 +2869,7 @@ const App = {
           </div>
 
           <div class="pt-2">
-            <button onclick="App.exitPracticeTest()" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-2">
+            <button onclick="App.exitPracticeTest()" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-2 shadow-sm cursor-pointer">
               <i class="fa-solid fa-arrow-left"></i> 학습 대시보드로 돌아가기
             </button>
           </div>
@@ -3051,60 +3031,17 @@ const App = {
     this.renderPracticeResult(test.practiceResult, test);
   },
 
-  // 시험 도중 나가기/창닫기 시 0점 불합격 강제 처리 (진행 중일 때만)
+  // 시험 도중 나가기 시 상태 처리
   forceFailPracticeTest() {
     const pt = this.state.practiceTest;
     if (!pt || !pt.testId || pt.isCompleted) return;
-
-    const total = pt.questions?.length || 0;
-    const completedAt = new Date().toISOString();
-    const practiceResult = {
-      studentId: pt.studentId,
-      testId: pt.testId,
-      score: 0,
-      correctCount: 0,
-      totalCount: total,
-      passed: false,
-      cutoffScore: pt.cutoffScore,
-      answers: pt.answers || {},
-      reviewItems: (pt.questions || []).map((q, idx) => {
-        const qType = q.type || 'CHOICE';
-        return {
-          questionNumber: idx + 1,
-          type: qType,
-          question: q.question,
-          passage: q.passage || '',
-          choices: q.choices || [],
-          studentAnswer: pt.answers?.[idx] || null,
-          correctAnswer: (qType === 'SHORT' || qType === 'ESSAY') ? q.answer : Number(q.answer),
-          acceptableAnswers: q.acceptableAnswers || [],
-          keywords: q.keywords || [],
-          isCorrect: false,
-          explanation: q.explanation || ''
-        };
-      }),
-      startedAt: pt.startedAt || completedAt,
-      completedAt,
-      forceFailed: true
-    };
-
-    const allTests = AppData.getTests();
-    const test = allTests.find(t => t.id === pt.testId);
-    if (test) {
-      test.practiceResult = practiceResult;
-      test.status = 'FAIL';
-      test.score = `0점 (0/${total}) — 시험 중 이탈`;
-      test.allowRetest = false;
-      AppData.saveOrUpdateTest(test).catch(e => console.error('강제 불합격 저장 실패:', e));
-    }
     pt.isCompleted = true;
   },
 
   exitPracticeTest() {
     const pt = this.state.practiceTest;
     if (pt && pt.testId && !pt.isCompleted && !pt.isReviewOnly && !this.state.isAdminLoggedIn) {
-      if (!confirm('시험을 종료하면 0점 불합격 처리됩니다.\n정말 나가시겠습니까?')) return;
-      this.forceFailPracticeTest();
+      if (!confirm('시험 진행 중입니다. 지금 나가시면 작성 중인 답안이 저장되지 않습니다.\n정말 나가시겠습니까?')) return;
     }
 
     const studentId = Number(pt?.studentId || this.state.selectedStudentId || this.state.adminSelectedStudentId || 1);
@@ -3278,18 +3215,41 @@ const App = {
 
           <!-- 1차 본시험 결과 (빠른 상태 변경 토글 버튼) -->
           <td class="py-3.5 px-4 whitespace-nowrap">
-            <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
-              <button onclick="App.quickUpdateTestStatus('${test.id}', 'SCHEDULED')" class="px-2 py-1 rounded-md font-semibold transition ${test.status === 'SCHEDULED' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">대기</button>
-              <button onclick="App.quickUpdateTestStatus('${test.id}', 'PASS')" class="px-2 py-1 rounded-md font-semibold transition ${test.status === 'PASS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">통과</button>
-              <button onclick="App.quickUpdateTestStatus('${test.id}', 'FAIL')" class="px-2 py-1 rounded-md font-semibold transition ${test.status === 'FAIL' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">불합격</button>
-            </div>
+            ${test.type === 'PRACTICE' ? `
+              ${test.practiceResult || test.status === 'PASS' ? `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <i class="fa-solid fa-check"></i> 응시 완료 (${test.practiceResult?.score != null ? test.practiceResult.score + '점' : 'PASS'})
+                </span>
+              ` : `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                  <i class="fa-regular fa-clock"></i> 미응시
+                </span>
+              `}
+            ` : `
+              <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
+                <button onclick="App.quickUpdateTestStatus('${test.id}', 'SCHEDULED')" class="px-2 py-1 rounded-md font-semibold transition ${test.status === 'SCHEDULED' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">대기</button>
+                <button onclick="App.quickUpdateTestStatus('${test.id}', 'PASS')" class="px-2 py-1 rounded-md font-semibold transition ${test.status === 'PASS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">통과</button>
+                <button onclick="App.quickUpdateTestStatus('${test.id}', 'FAIL')" class="px-2 py-1 rounded-md font-semibold transition ${test.status === 'FAIL' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">불합격</button>
+              </div>
+            `}
           </td>
 
           <!-- 재시험 결과 / 허용 관리 -->
           <td class="py-3.5 px-4 whitespace-nowrap">
-            ${test.type === 'PRACTICE' || test.type === 'TEXT_MEMORIZE' ? `
+            ${test.type === 'PRACTICE' ? `
               <div class="flex items-center gap-1.5">
-                <button onclick="App.${test.type === 'TEXT_MEMORIZE' ? 'toggleTextMemorizeAllowRetest' : 'togglePracticeTestAllowRetest'}('${test.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}">
+                <span class="text-xs text-slate-400 font-medium px-2 py-1 rounded bg-slate-50 border border-slate-200">
+                  재시험 없음
+                </span>
+                ${test.practiceResult || test.status === 'PASS' ? `
+                  <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="px-2 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition" title="학생 풀이 답안 & 정답·해설 확인">
+                    <i class="fa-solid fa-file-circle-check mr-1"></i>결과 확인
+                  </button>
+                ` : ''}
+              </div>
+            ` : (test.type === 'TEXT_MEMORIZE' ? `
+              <div class="flex items-center gap-1.5">
+                <button onclick="App.toggleTextMemorizeAllowRetest('${test.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}">
                   <i class="fa-solid ${test.allowRetest ? 'fa-check' : 'fa-rotate-right'} mr-1"></i>${test.allowRetest ? '재시험 허용중' : '재시험 허용하기'}
                 </button>
               </div>
@@ -3301,16 +3261,22 @@ const App = {
                 <button onclick="App.quickUpdateRetestStatus('${test.id}', 'RETEST_FAIL')" class="px-2 py-1 rounded-md font-semibold transition ${test.retestStatus === 'RETEST_FAIL' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">탈락</button>
               </div>
               ${test.retestDate ? `<div class="text-[11px] text-slate-400 mt-1 font-medium">재시험일: ${test.retestDate}</div>` : ''}
-            `}
+            `)}
           </td>
 
           <!-- 관리 버튼 -->
           <td class="py-3.5 px-4 text-center whitespace-nowrap">
             <div class="flex items-center justify-center space-x-1.5">
               ${test.type === 'PRACTICE' ? `
-                <button type="button" onclick="App.startPracticeTest('${test.id}')" class="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition" title="문제풀이 시험 바로 열기 (체험/풀이)">
-                  <i class="fa-solid fa-play"></i>
-                </button>
+                ${test.practiceResult || test.status === 'PASS' ? `
+                  <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition" title="학생 답안 및 정답·해설 결과 확인">
+                    <i class="fa-solid fa-file-circle-check"></i>
+                  </button>
+                ` : `
+                  <button type="button" onclick="App.startPracticeTest('${test.id}')" class="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition" title="문제풀이 시험 바로 열기 (체험/풀이)">
+                    <i class="fa-solid fa-play"></i>
+                  </button>
+                `}
               ` : ''}
               <button onclick="App.openRescheduleModal('${test.id}')" class="p-1.5 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition" title="시험 일정 이동">
                 <i class="fa-solid fa-calendar-days"></i>

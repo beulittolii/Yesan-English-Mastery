@@ -2210,10 +2210,18 @@ const AppData = {
             }
           }
         }
-        // 문제풀이 시험은 시작 시간 제한 없이 당일 하루종일(00:00~23:59) 응시 가능
-        if (t.type === 'PRACTICE' || (t.time === '18:00' && !t.extendedEndTime)) {
+        // 문제풀이 시험은 시작 시간 제한 없이 당일 하루종일(00:00~23:59) 응시 가능 및 재시험 없이 응시 시 완료(초록색) 동기화
+        if (t.type === 'PRACTICE' || (t.time === '18:00' && !t.extendedEndTime && (t.id && String(t.id).startsWith('mock2509_')))) {
           t.time = '00:00';
           t.endTime = '23:59';
+          t.allowRetest = false;
+          if (t.practiceResult) {
+            t.status = 'PASS';
+            t.retestStatus = 'NONE';
+            if (t.practiceResult.passed === false) {
+              t.practiceResult.passed = true;
+            }
+          }
         }
         // 송규인 학생 9/29~10/1 단어 시험 일정 10/12 이후로 동기화
         if (t.id === 'vocab_wm2000_d36_37_student_11' && t.date === '2026-09-29') t.date = '2026-10-12';
