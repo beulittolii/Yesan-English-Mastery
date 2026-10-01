@@ -1070,7 +1070,8 @@ const FirebaseStore = {
   testsListenerStarted: false,
   vocabSetsListenerStarted: false,
   vocabTestResultsListenerStarted: false,
-  textMemorizeResultsListenerStarted: false
+  textMemorizeResultsListenerStarted: false,
+  specialScienceResultsListenerStarted: false
 };
 
 
@@ -2147,6 +2148,23 @@ const AppData = {
       collectionName: 'textMemorizeResults', cacheKey: 'textMemorizeResults', listenerKey: 'textMemorizeResultsListenerStarted',
       normalize: result => ({ ...result, studentId: Number(result.studentId) })
     });
+    this.startSpecialScienceResultsListener();
+  },
+
+  startSpecialScienceResultsListener() {
+    if (FirebaseStore.specialScienceResultsListenerStarted || !this.isFirebaseReady()) return;
+
+    const { doc, onSnapshot } = window.firebaseFns;
+    onSnapshot(doc(window.firebaseDB, 'academicData', 'specialScienceResults'), () => {
+      if (typeof App !== 'undefined' && App.state?.view === 'admin' && App.state.adminTab === 'tests') {
+        const student = this.getStudentById(App.state.adminSelectedStudentId);
+        App.renderAdminSpecialScienceResults?.(student);
+      }
+    }, error => {
+      console.error('Firestore 지구과학 특별 테스트 실시간 동기화 실패:', error);
+    });
+
+    FirebaseStore.specialScienceResultsListenerStarted = true;
   },
 
 

@@ -3604,6 +3604,8 @@ const App = {
       </div>
     `;
 
+    this.renderAdminSpecialScienceResults(currentStudent);
+
     // 테이블 렌더링
     const tests = AppData.getTestsByStudentId(currentStudent.id);
     document.getElementById('adminTableTitle').innerText = `${currentStudent.name} 학생의 시험 일정 (${tests.length}건)`;
@@ -3746,6 +3748,66 @@ const App = {
   setAdminSelectedStudent(studentId) {
     this.state.adminSelectedStudentId = Number(studentId);
     this.renderAdminTestsTab();
+  },
+
+  async renderAdminSpecialScienceResults(student) {
+    const container = document.getElementById('adminSpecialScienceResults');
+    if (!container || !student) return;
+
+    const studentId = Number(student.id);
+    container.innerHTML = `
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border border-sky-200 bg-gradient-to-r from-sky-50/70 to-indigo-50/60">
+        <div class="flex items-center gap-2 text-sky-950">
+          <i class="fa-solid fa-flask-vial text-sky-600"></i>
+          <span class="text-sm font-black">지구과학 특별 테스트 — ${this.escapeHtml(student.name)} 학생</span>
+          <span class="text-[11px] text-sky-700 font-bold">클라우드 기록 불러오는 중…</span>
+        </div>
+      </div>
+    `;
+
+    try {
+      const results = await AppData.getSpecialScienceResultsByStudentId(studentId);
+      // 다른 학생을 선택한 뒤 이전 요청이 늦게 끝난 경우, 화면을 덮어쓰지 않는다.
+      if (Number(this.state.adminSelectedStudentId) !== studentId) return;
+
+      const completedCount = Object.keys(results).length;
+      container.innerHTML = `
+        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-sky-200 bg-gradient-to-r from-sky-50/70 to-indigo-50/60 space-y-3">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex items-center gap-2 text-sky-950">
+              <i class="fa-solid fa-flask-vial text-sky-600"></i>
+              <span class="text-sm font-black">지구과학 특별 테스트 — ${this.escapeHtml(student.name)} 학생</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-white text-sky-800 border border-sky-200 text-[11px] font-black">${completedCount}/5회차 응시</span>
+          </div>
+          <div class="grid grid-cols-5 gap-2">
+            ${[1, 2, 3, 4, 5].map(round => {
+              const result = results[round];
+              return result ? `
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-center">
+                  <div class="text-[11px] font-black text-emerald-900">${round}회차</div>
+                  <div class="mt-1 text-sm font-black text-emerald-700">${result.score}점</div>
+                  <div class="text-[10px] text-emerald-700 font-bold">${result.correctCount}/${result.totalCount} 정답</div>
+                </div>
+              ` : `
+                <div class="rounded-xl border border-slate-200 bg-white/70 p-2 text-center">
+                  <div class="text-[11px] font-black text-slate-700">${round}회차</div>
+                  <div class="mt-1 text-[11px] font-bold text-slate-400">미응시</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('관리자 지구과학 특별 테스트 결과 로드 실패:', error);
+      if (Number(this.state.adminSelectedStudentId) !== studentId) return;
+      container.innerHTML = `
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-900">
+          지구과학 특별 테스트 기록을 클라우드에서 불러오지 못했습니다. 잠시 후 다시 확인해주세요.
+        </div>
+      `;
+    }
   },
 
   // 빠른 상태 업데이트
