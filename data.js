@@ -1080,6 +1080,20 @@ const FirebaseStore = {
 
 const AppData = {
 
+  async withCloudTimeout(operation, label, timeoutMs = 12000) {
+    let timeoutId;
+    try {
+      return await Promise.race([
+        operation,
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error(`${label} 응답 시간이 초과되었습니다.`)), timeoutMs);
+        })
+      ]);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  },
+
   // ======================================================
   // Firebase 준비 확인
   // ======================================================
@@ -1211,8 +1225,9 @@ const AppData = {
         '☁️ Firestore에서 학생 데이터를 불러오는 중...'
       );
 
-      const snapshot = await getDocs(
-        collection(db, 'students')
+      const snapshot = await this.withCloudTimeout(
+        getDocs(collection(db, 'students')),
+        '학생 데이터 클라우드 읽기'
       );
 
       const students = snapshot.docs.map(
@@ -1477,7 +1492,10 @@ const AppData = {
     }
 
     const { collection, getDocs } = window.firebaseFns;
-    const snapshot = await getDocs(collection(window.firebaseDB, collectionName));
+    const snapshot = await this.withCloudTimeout(
+      getDocs(collection(window.firebaseDB, collectionName)),
+      `${collectionName} 클라우드 읽기`
+    );
     return snapshot.docs.map(document => normalize({
       ...document.data(),
       id: document.data().id || document.id
@@ -2963,7 +2981,67 @@ const AppData = {
     const results = this.getTextMemorizeResults().filter(r => r.testId !== testId);
     FirebaseStore.textMemorizeResults = results;
     // Firestore doc deletion handled elsewhere when test is deleted
+  },
+
+  // ── 지구과학 특별 테스트 결과 ───────────────────────────
+
+  getSpecialScienceResultDocId(studentId, round) {
+    return `special_science_${Number(studentId)}_${Number(round)}`;
+  },
+
+  async getSpecialScienceResultsByStudentId(studentId) {
+    if (!this.isFirebaseReady()) {
+      throw new Error('Firebase가 준비되지 않았습니다.');
+    }
+
+    // 기존 학업관리 데이터와 동일하게 허용된 academicData 문서 경로를 사용한다.
+    const { doc, getDoc } = window.firebaseFns;
+    const snapshot = await this.withCloudTimeout(
+      getDoc(doc(window.firebaseDB, 'academicData', 'specialScienceResults')),
+      '지구과학 특별 테스트 기록 읽기'
+    );
+    const items = snapshot.exists() ? Object.values(snapshot.data().items || {}) : [];
+
+    return items.reduce((byRound, rawResult) => {
+      const result = { ...rawResult, studentId: Number(rawResult.studentId), round: Number(rawResult.round) };
+      if (result.studentId === Number(studentId) && result.round >= 1 && result.round <= 5) {
+        byRound[result.round] = result;
+      }
+      return byRound;
+    }, {});
+  },
+
+  async saveSpecialScienceResult(studentId, round, result) {
+    const savedResult = {
+      ...result,
+      id: this.getSpecialScienceResultDocId(studentId, round),
+      studentId: Number(studentId),
+      round: Number(round),
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      if (!this.isFirebaseReady()) {
+        throw new Error('Firebase가 준비되지 않았습니다.');
+      }
+      const { doc, getDoc, setDoc } = window.firebaseFns;
+      const ref = doc(window.firebaseDB, 'academicData', 'specialScienceResults');
+      const snapshot = await this.withCloudTimeout(
+        getDoc(ref),
+        '지구과학 특별 테스트 기록 읽기'
+      );
+      const items = snapshot.exists() ? { ...(snapshot.data().items || {}) } : {};
+      items[savedResult.id] = savedResult;
+      await this.withCloudTimeout(
+        setDoc(ref, { items, updatedAt: savedResult.updatedAt }, { merge: true }),
+        '지구과학 특별 테스트 기록 저장'
+      );
+    } catch (error) {
+      this.reportCloudWriteError('지구과학 특별 테스트 결과', error);
+      throw error;
+    }
+
+    return savedResult;
   }
 
 };
-

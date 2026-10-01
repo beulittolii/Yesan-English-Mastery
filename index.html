@@ -4243,7 +4243,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 
   import {
-    getFirestore,
+    initializeFirestore,
     collection,
     doc,
     getDoc,
@@ -4270,7 +4270,11 @@
 
 
   // Cloud Firestore 연결
-  const db = getFirestore(firebaseApp);
+  // file://로 연 Safari에서도 Firestore 실시간 연결이 멈추지 않도록
+  // WebChannel 대신 HTTP 롱폴링 전송을 사용합니다.
+  const db = initializeFirestore(firebaseApp, {
+    experimentalForceLongPolling: true
+  });
 
 
   // 일반 JavaScript 파일(data.js, app.js)에서도 사용할 수 있도록 등록
@@ -4299,8 +4303,8 @@
 <script src="exam_scope_data.js?v=20260923_0001"></script>
 <script src="mock_202509_practice_data.js?v=20260930_01"></script>
 <script src="science_questions.js?v=20261002_01"></script>
-<script src="data.js?v=20260930_01"></script>
-<script src="app.js?v=20260930_01"></script>
+<script src="data.js?v=20261002_02"></script>
+<script src="app.js?v=20261002_02"></script>
 
 <!-- ========================================== -->
 <!-- YEM ACADEMIC MANAGEMENT PLATFORM JAVASCRIPT -->

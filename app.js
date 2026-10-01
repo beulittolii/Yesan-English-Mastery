@@ -19,7 +19,9 @@ const App = {
     vocabSetReturnToTestForm: false,
     vocabResultSelectedDate: null,
     practiceTest: null,
-    editingPracticeQuestions: []
+    editingPracticeQuestions: [],
+    specialScienceResults: {},
+    specialScienceResultsStudentId: null
   },
 
   // 초기화 (Init)
@@ -2445,7 +2447,7 @@ const App = {
   // ========================================================
   // 4-1. 공지사항 특별 테스트 (지구과학 지질 시대 & 화석 빈칸 50제)
   // ========================================================
-  getSpecialScienceResults() {
+  getLocalSpecialScienceResults() {
     try {
       const raw = localStorage.getItem('yem_special_science_results_v1');
       return raw ? JSON.parse(raw) : {};
@@ -2455,20 +2457,67 @@ const App = {
     }
   },
 
-  saveSpecialScienceResult(round, result) {
+  getSpecialScienceResults() {
+    return this.state.specialScienceResults || {};
+  },
+
+  async loadSpecialScienceResults(forceRefresh = false) {
+    const studentId = Number(this.state.selectedStudentId);
+    if (!studentId) return {};
+    if (!forceRefresh && this.state.specialScienceResultsStudentId === studentId) {
+      return this.getSpecialScienceResults();
+    }
+
     try {
-      const results = this.getSpecialScienceResults();
-      results[round] = result;
-      localStorage.setItem('yem_special_science_results_v1', JSON.stringify(results));
-    } catch (e) {
-      console.error(e);
+      const isFirebaseReady = await AppData.waitForFirebase(6000);
+      if (!isFirebaseReady) {
+        throw new Error('Firebase 연결 준비 시간이 초과되었습니다.');
+      }
+      let results = await AppData.getSpecialScienceResultsByStudentId(studentId);
+
+      // 기존 단말기 전용 결과는 현재 로그인한 학생의 클라우드 기록으로 한 번만 이전한다.
+      if (Object.keys(results).length === 0) {
+        const localResults = this.getLocalSpecialScienceResults();
+        const legacyEntries = Object.entries(localResults)
+          .filter(([round, result]) => Number(round) >= 1 && Number(round) <= 5 && result);
+        if (legacyEntries.length > 0) {
+          const savedResults = await Promise.all(legacyEntries.map(async ([round, result]) => {
+            const saved = await AppData.saveSpecialScienceResult(studentId, Number(round), result);
+            return [Number(round), saved];
+          }));
+          results = Object.fromEntries(savedResults);
+          localStorage.removeItem('yem_special_science_results_v1');
+        }
+      }
+
+      this.state.specialScienceResults = results;
+      this.state.specialScienceResultsStudentId = studentId;
+      return results;
+    } catch (error) {
+      console.error('지구과학 특별 테스트 결과 클라우드 로드 실패:', error);
+      this.toast('지구과학 특별 테스트 기록을 클라우드에서 불러오지 못했습니다.', 'error');
+      // 다른 학생의 메모리상 결과가 노출되지 않도록 실패 시 빈 상태로 시작한다.
+      this.state.specialScienceResults = {};
+      this.state.specialScienceResultsStudentId = studentId;
+      return {};
     }
   },
 
-  openSpecialScienceTestModal(selectedRound = 1) {
+  async saveSpecialScienceResult(round, result) {
+    const studentId = Number(this.state.selectedStudentId);
+    const savedResult = await AppData.saveSpecialScienceResult(studentId, round, result);
+    this.state.specialScienceResults = {
+      ...this.getSpecialScienceResults(),
+      [Number(round)]: savedResult
+    };
+    this.state.specialScienceResultsStudentId = studentId;
+    return savedResult;
+  },
+
+  async openSpecialScienceTestModal(selectedRound = 1) {
     const round = Math.max(1, Math.min(5, Number(selectedRound) || 1));
     const student = AppData.getStudentById(this.state.selectedStudentId);
-    const results = this.getSpecialScienceResults();
+    const results = await this.loadSpecialScienceResults(true);
     const currentResult = results[round];
     const isCompleted = Boolean(currentResult && currentResult.passed);
     const isAdmin = Boolean(this.state.isAdminLoggedIn);
@@ -2623,8 +2672,8 @@ const App = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
-  viewSpecialScienceResult(round = 1) {
-    const results = this.getSpecialScienceResults();
+  async viewSpecialScienceResult(round = 1) {
+    const results = await this.loadSpecialScienceResults(true);
     const result = results[round];
     if (!result) {
       this.toast('응시 기록을 찾을 수 없습니다.', 'info');
@@ -3168,9 +3217,15 @@ const App = {
       completedAt
     };
 
-    // 특별 과학 테스트인 경우 전용 로컬스토리지 저장
+    // 특별 과학 테스트 결과는 학생·회차별 Firestore 문서에 저장
     if (pt.isSpecialScience && pt.round) {
-      this.saveSpecialScienceResult(pt.round, practiceResult);
+      try {
+        await this.saveSpecialScienceResult(pt.round, practiceResult);
+      } catch (error) {
+        console.error(error);
+        this.toast('지구과학 특별 테스트 결과를 클라우드에 저장하지 못했습니다. 다시 제출해주세요.', 'error');
+        return;
+      }
     }
 
     // 시험 객체 업데이트
