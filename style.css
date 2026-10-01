@@ -274,5 +274,16 @@ u, .font-exam u, .passage-text u, .underline {
   -webkit-backdrop-filter: blur(4px);
 }
 
+/* Hover를 쓸 수 없는 태블릿 가로 화면의 좌측 메뉴: 터치로 펼친 상태 */
+@media (min-width: 1024px) {
+  #studentSidebar.sidebar-touch-expanded {
+    width: 18rem;
+    box-shadow: 0 25px 50px -12px rgb(15 23 42 / 0.25);
+  }
+
+  #studentSidebar.sidebar-touch-expanded [class*="group-hover/sidebar:opacity-100"] {
+    opacity: 1;
+  }
+}
 
 

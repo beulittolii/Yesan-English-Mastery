@@ -164,6 +164,35 @@ const App = {
   },
 
   bindEvents() {
+    // 태블릿처럼 hover가 없는 넓은 터치 화면에서는 축소된 좌측 메뉴를
+    // 메뉴 영역 터치로 펼치고, 메뉴 밖 터치로 다시 접는다.
+    const studentSidebar = document.getElementById('studentSidebar');
+    if (studentSidebar) {
+      document.addEventListener('pointerdown', (e) => {
+        const isWideTouchScreen = window.innerWidth >= 1024 && e.pointerType === 'touch';
+        const isStudentDashboardActive = !document.getElementById('studentDashboardView')?.classList.contains('hidden');
+        if (!isWideTouchScreen || !isStudentDashboardActive) return;
+
+        if (studentSidebar.contains(e.target)) {
+          if (!studentSidebar.classList.contains('sidebar-touch-expanded')) {
+            studentSidebar.classList.add('sidebar-touch-expanded');
+            // 첫 터치는 메뉴를 여는 용도로만 사용해 항목이 즉시 실행되지 않게 한다.
+            this.touchSidebarJustOpened = true;
+          }
+        } else {
+          studentSidebar.classList.remove('sidebar-touch-expanded');
+          this.touchSidebarJustOpened = false;
+        }
+      });
+
+      studentSidebar.addEventListener('click', (e) => {
+        if (!this.touchSidebarJustOpened) return;
+        this.touchSidebarJustOpened = false;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }, true);
+    }
+
     // 키보드 ESC로 모달 닫기
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -625,6 +654,8 @@ const App = {
     if (!sidebar) return;
 
     sidebar.classList.add('translate-x-full');
+    sidebar.classList.remove('sidebar-touch-expanded');
+    this.touchSidebarJustOpened = false;
     if (backdrop) backdrop.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
     if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
