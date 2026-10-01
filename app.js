@@ -204,6 +204,7 @@ const App = {
         }
 
         this.closeAllModals();
+        this.closeMobileSidebar();
       }
 
       // 객관식 단어테스트 PC 키보드 숫자 단축키 (1~5 및 넘패드 1~5)
@@ -400,6 +401,13 @@ const App = {
         }
       });
     });
+
+    // 화면 크기 변경 감지: 데스크톱 크기(1024px 이상)로 전환 시 모바일 드로어 및 스크롤 잠금 자동 해제
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) {
+        this.closeMobileSidebar();
+      }
+    });
   },
 
   // ========================================================
@@ -485,6 +493,11 @@ const App = {
 
     this.renderStudentDashboard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 튜토리얼: 처음 방문 시 자동 표시
+    if (!localStorage.getItem('yem_tutorial_seen')) {
+      setTimeout(() => this.openTutorialModal(), 600);
+    }
   },
 
   async showAdminDashboard() {
@@ -527,6 +540,34 @@ const App = {
 
   updateHeaderActions() {
     const container = document.getElementById('headerNavActions');
+    const mobileToggleBtn = document.getElementById('mobileSidebarToggleBtn');
+
+    // 모바일 햄버거 토글 버튼 표시 여부 갱신 (학생 대시보드 뷰 활성 시 노출, 데스크톱 lg: 화면에서는 항상 숨김)
+    const stuDashboard = document.getElementById('studentDashboardView');
+    const isStudentActive = stuDashboard && !stuDashboard.classList.contains('hidden');
+
+    if (mobileToggleBtn) {
+      if (isStudentActive) {
+        mobileToggleBtn.classList.remove('hidden');
+        mobileToggleBtn.classList.add('flex', 'lg:hidden');
+      } else {
+        mobileToggleBtn.classList.add('hidden');
+        mobileToggleBtn.classList.remove('flex');
+        this.closeMobileSidebar();
+      }
+    }
+
+    // 학생 사이드바 표시 여부 제어 (학생 대시보드 뷰 활성 시 노출, 그 외 뷰에서는 숨김)
+    const studentSidebar = document.getElementById('studentSidebar');
+    if (studentSidebar) {
+      if (isStudentActive) {
+        studentSidebar.classList.remove('hidden');
+      } else {
+        studentSidebar.classList.add('hidden');
+        this.closeMobileSidebar();
+      }
+    }
+
     if (!container) return;
 
     if (this.state.isAdminLoggedIn) {
@@ -546,13 +587,57 @@ const App = {
       `;
     } else if (this.state.isStudentLoggedIn) {
       container.innerHTML = `
-        <button onclick="App.logoutStudent()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span>로그아웃</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="App.openTutorialModal()" title="이용 가이드" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+            <i class="fa-solid fa-circle-question"></i>
+            <span>가이드</span>
+          </button>
+          <button onclick="App.logoutStudent()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>로그아웃</span>
+          </button>
+        </div>
       `;
     } else {
       container.innerHTML = '';
+    }
+  },
+
+  // ========================================================
+  // 모바일 사이드바 드로어 제어 (우측 슬라이드 인/아웃)
+  // ========================================================
+  openMobileSidebar() {
+    const sidebar = document.getElementById('studentSidebar');
+    const backdrop = document.getElementById('mobileSidebarBackdrop');
+    const toggleBtn = document.getElementById('mobileSidebarToggleBtn');
+    if (!sidebar) return;
+
+    sidebar.classList.remove('translate-x-full');
+    if (backdrop) backdrop.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+  },
+
+  closeMobileSidebar() {
+    const sidebar = document.getElementById('studentSidebar');
+    const backdrop = document.getElementById('mobileSidebarBackdrop');
+    const toggleBtn = document.getElementById('mobileSidebarToggleBtn');
+    if (!sidebar) return;
+
+    sidebar.classList.add('translate-x-full');
+    if (backdrop) backdrop.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+  },
+
+  toggleMobileSidebar() {
+    const sidebar = document.getElementById('studentSidebar');
+    if (!sidebar) return;
+    const isClosed = sidebar.classList.contains('translate-x-full');
+    if (isClosed) {
+      this.openMobileSidebar();
+    } else {
+      this.closeMobileSidebar();
     }
   },
 
@@ -656,27 +741,27 @@ const App = {
     const tests = AppData.getTestsByStudentId(student.id);
     const todayStr = this.getTodayDateString();
 
-    // 1. 학생 배너 렌더링
+    // 1. 학생 배너 렌더링 (메인창 상단 배치)
     const banner = document.getElementById('studentBanner');
     banner.innerHTML = `
-      <div class="flex items-center justify-between flex-wrap gap-4">
-        <div class="flex items-center space-x-4">
-          <div class="w-16 h-16 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 flex items-center justify-center text-white shadow-md flex-shrink-0 border-2 border-white">
-            <i class="fa-solid fa-user text-2xl text-white/90"></i>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center space-x-3.5 sm:space-x-4">
+          <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 flex items-center justify-center text-white shadow-md flex-shrink-0 border-2 border-white">
+            <i class="fa-solid fa-user text-2xl sm:text-3xl text-white/90"></i>
           </div>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
-              <h2 class="text-2xl font-extrabold text-slate-900">${this.escapeHtml(student.name)} 학생의 학습 공간</h2>
-              ${this.state.isAdminLoggedIn ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200"><i class="fa-solid fa-eye mr-1"></i>선생님 미리보기</span>' : ''}
+              <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">${this.escapeHtml(student.name)} 학생의 학습 공간</h2>
+              ${this.state.isAdminLoggedIn ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap"><i class="fa-solid fa-eye mr-1"></i>선생님 미리보기</span>' : ''}
             </div>
-            <p class="text-xs sm:text-sm text-slate-600 mt-1 flex items-center gap-1.5 font-medium">
+            <p class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
               <i class="fa-solid fa-bullseye text-indigo-500"></i>
-              <span>목표: <strong>${this.escapeHtml(student.target)}</strong></span>
+              <span>목표: <strong class="text-slate-800 font-bold">${this.escapeHtml(student.target)}</strong></span>
             </p>
           </div>
         </div>
         ${this.state.isAdminLoggedIn ? `
-          <button onclick="App.showAdminDashboard()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-md shadow-indigo-200">
+          <button onclick="App.showAdminDashboard()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 self-start sm:self-auto cursor-pointer">
             <i class="fa-solid fa-gauge-high"></i>
             <span>관리자 대시보드로 돌아가기</span>
           </button>
@@ -705,53 +790,53 @@ const App = {
 
     const statsGrid = document.getElementById('studentStatsGrid');
     statsGrid.innerHTML = `
-      <div ${nextTest ? `onclick="App.openTestDetailModal('${nextTest.id}')" role="button" class="glass-card rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:border-indigo-400 hover:shadow-md transition"` : `class="glass-card rounded-2xl p-4 flex flex-col justify-between"`}>
-        <div class="flex items-center justify-between text-slate-400 text-xs">
-          <span>다음 시험 일정</span>
-          <i class="fa-solid fa-hourglass-half text-indigo-500"></i>
+      <div ${nextTest ? `onclick="App.openTestDetailModal('${nextTest.id}')" role="button" class="glass-card rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-indigo-400 hover:shadow-md transition"` : `class="glass-card rounded-xl p-3 flex flex-col justify-between"`}>
+        <div class="flex items-center justify-between text-slate-400 text-[11px]">
+          <span>다음 시험</span>
+          <i class="fa-solid fa-hourglass-half text-indigo-500 text-[11px]"></i>
         </div>
-        <div class="mt-2">
-          <div class="text-xl sm:text-2xl font-black text-indigo-600">${nextDDay}</div>
-          <p class="text-[11px] text-slate-500 truncate mt-0.5">${nextTest ? this.escapeHtml(nextTest.title) : '예정 시험 없음'}</p>
+        <div class="mt-1.5">
+          <div class="text-lg font-black text-indigo-600 leading-tight">${nextDDay}</div>
+          <p class="text-[10px] text-slate-500 truncate mt-0.5">${nextTest ? this.escapeHtml(nextTest.title) : '예정 없음'}</p>
         </div>
         ${nextTest ? `
-          <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-indigo-600">
-            <span>바로 열기 / 확인</span>
-            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-indigo-600">
+            <span>열기</span>
+            <i class="fa-solid fa-arrow-right text-[9px]"></i>
           </div>
         ` : ''}
       </div>
 
-      <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
-        <div class="flex items-center justify-between text-slate-400 text-xs">
+      <div class="glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-[11px]">
           <span>통과율</span>
-          <i class="fa-solid fa-chart-pie text-emerald-500"></i>
+          <i class="fa-solid fa-chart-pie text-emerald-500 text-[11px]"></i>
         </div>
-        <div class="mt-2">
-          <div class="text-xl sm:text-2xl font-black text-emerald-600">${passRate}%</div>
-          <p class="text-[11px] text-slate-500 mt-0.5">${passedTests}개 통과 / 총 ${totalTests}개</p>
-        </div>
-      </div>
-
-      <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
-        <div class="flex items-center justify-between text-slate-400 text-xs">
-          <span>재시험 대기</span>
-          <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-        </div>
-        <div class="mt-2">
-          <div class="text-xl sm:text-2xl font-black ${retestNeeded > 0 ? 'text-amber-600' : 'text-slate-700'}">${retestNeeded}건</div>
-          <p class="text-[11px] text-slate-500 mt-0.5">${retestNeeded > 0 ? '재시험 대비 필수' : '재시험 없음'}</p>
+        <div class="mt-1.5">
+          <div class="text-lg font-black text-emerald-600 leading-tight">${passRate}%</div>
+          <p class="text-[10px] text-slate-500 mt-0.5">${passedTests}개 / ${totalTests}개</p>
         </div>
       </div>
 
-      <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
-        <div class="flex items-center justify-between text-slate-400 text-xs">
-          <span>전체 시험 수</span>
-          <i class="fa-solid fa-file-lines text-slate-500"></i>
+      <div class="glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-[11px]">
+          <span>재시험</span>
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 text-[11px]"></i>
         </div>
-        <div class="mt-2">
-          <div class="text-xl sm:text-2xl font-black text-slate-800">${totalTests}회</div>
-          <p class="text-[11px] text-slate-500 mt-0.5">누적 기록된 테스트</p>
+        <div class="mt-1.5">
+          <div class="text-lg font-black ${retestNeeded > 0 ? 'text-amber-600' : 'text-slate-700'} leading-tight">${retestNeeded}건</div>
+          <p class="text-[10px] text-slate-500 mt-0.5">${retestNeeded > 0 ? '대비 필수' : '재시험 없음'}</p>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-[11px]">
+          <span>시험 수</span>
+          <i class="fa-solid fa-file-lines text-slate-500 text-[11px]"></i>
+        </div>
+        <div class="mt-1.5">
+          <div class="text-lg font-black text-slate-800 leading-tight">${totalTests}회</div>
+          <p class="text-[10px] text-slate-500 mt-0.5">누적 기록</p>
         </div>
       </div>
     `;
@@ -2326,6 +2411,217 @@ const App = {
     this.showModal('testDetailModal');
   },
 
+  // ========================================================
+  // 4-1. 공지사항 특별 테스트 (지구과학 지질 시대 & 화석 빈칸 50제)
+  // ========================================================
+  getSpecialScienceResults() {
+    try {
+      const raw = localStorage.getItem('yem_special_science_results_v1');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      console.error(e);
+      return {};
+    }
+  },
+
+  saveSpecialScienceResult(round, result) {
+    try {
+      const results = this.getSpecialScienceResults();
+      results[round] = result;
+      localStorage.setItem('yem_special_science_results_v1', JSON.stringify(results));
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  openSpecialScienceTestModal(selectedRound = 1) {
+    const round = Math.max(1, Math.min(5, Number(selectedRound) || 1));
+    const student = AppData.getStudentById(this.state.selectedStudentId);
+    const results = this.getSpecialScienceResults();
+    const currentResult = results[round];
+    const isCompleted = Boolean(currentResult && currentResult.passed);
+    const isAdmin = Boolean(this.state.isAdminLoggedIn);
+
+    document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 특별 과학 테스트` : '특별 과학 테스트 (단답형)';
+    document.getElementById('detailModalTitle').innerText = '지구과학 지질 시대 & 화석 빈칸 단답형 (유지현T 정리본)';
+
+    // 회차 탭 버튼 5개 (1~5회차)
+    const roundTabsHtml = `
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-extrabold text-slate-800"><i class="fa-solid fa-list-ol mr-1 text-sky-600"></i>응시 회차 선택 (총 5회차 / 50문항)</span>
+        </div>
+        <div class="grid grid-cols-5 gap-1.5 pt-1">
+          ${[1, 2, 3, 4, 5].map(r => {
+            const isSel = r === round;
+            const rRes = results[r];
+            const isDone = Boolean(rRes && rRes.passed);
+            return `
+              <button type="button" onclick="App.openSpecialScienceTestModal(${r})" class="p-2 rounded-xl text-center transition cursor-pointer border ${
+                isSel
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-sm ring-2 ring-sky-300'
+                  : (isDone
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100')
+              }">
+                <div class="text-[11px] font-black">${r}회차</div>
+                <div class="text-[9px] mt-0.5 ${isSel ? 'text-white/90 font-bold' : (isDone ? 'text-emerald-700 font-bold' : 'text-slate-400')}">
+                  ${isDone ? `${rRes.score}점` : '미응시'}
+                </div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    let actionButtonHtml = '';
+    if (currentResult) {
+      actionButtonHtml = `
+        <div class="space-y-2.5 pt-2">
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+            <span>제 ${round}회차 점수: <strong>${currentResult.score}점 (${currentResult.correctCount}/${currentResult.totalCount} 정답)</strong></span>
+            <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-200 text-emerald-900">응시 완료 (PASS)</span>
+          </div>
+
+          <button type="button" onclick="App.viewSpecialScienceResult(${round})" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-emerald-200 cursor-pointer">
+            <i class="fa-solid fa-file-circle-check"></i> 제 ${round}회차 나의 풀이 답안 및 정답·해설 확인하기
+          </button>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="App.startSpecialScienceTest(${round}, true)" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-rotate-right"></i> 제 ${round}회차 다시 풀기
+            </button>
+            ${round < 5 ? `
+              <button type="button" onclick="App.openSpecialScienceTestModal(${round + 1})" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                <span>다음 ${round + 1}회차 보기</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+              </button>
+            ` : `
+              <div class="py-2.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold text-center flex items-center justify-center">
+                🏆 5회차 전체 완주
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    } else {
+      actionButtonHtml = `
+        <div class="pt-2">
+          <button type="button" onclick="App.startSpecialScienceTest(${round})" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-sky-200 cursor-pointer">
+            <i class="fa-solid fa-pencil"></i> 제 ${round}회차 빈칸 시험 시작하기 (10문항)
+          </button>
+        </div>
+      `;
+    }
+
+    document.getElementById('detailModalBody').innerHTML = `
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50/80 border border-sky-200 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-black text-sky-950 flex items-center gap-1.5">
+            <i class="fa-solid fa-flask-vial text-sky-600"></i>
+            <span>지구과학 지질 시대 & 화석 빈칸 완성 [제 ${round}회차]</span>
+          </span>
+          <div class="flex items-center gap-1.5">
+            ${isCompleted ? '<span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white">완료</span>' : ''}
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">10문항 / 100점</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          유지현T 지구과학 정리본(선캄브리아~신생대) 전 시대의 기후, 수륙 분포, 생물 진화, 대표 표준 화석이 골고루 섞여 출제됩니다. 핵심 단어를 입력하여 빈칸을 완성하세요.
+        </p>
+      </div>
+
+      ${roundTabsHtml}
+
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-bold block mb-0.5">응시 방식</span>
+          <strong class="text-slate-800 font-extrabold">주관식 단답형 빈칸 채우기</strong>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-bold block mb-0.5">통과 기준</span>
+          <strong class="text-slate-800 font-extrabold">80점 이상 (8문항 이상 정답)</strong>
+        </div>
+      </div>
+
+      ${actionButtonHtml}
+    `;
+
+    this.showModal('testDetailModal');
+  },
+
+  startSpecialScienceTest(round = 1, isForce = false) {
+    const r = Math.max(1, Math.min(5, Number(round) || 1));
+    if (typeof getScienceSpecialQuestionsByRound !== 'function') {
+      this.toast('과학 특별 시험 문제를 불러올 수 없습니다.', 'error');
+      return;
+    }
+
+    const questions = getScienceSpecialQuestionsByRound(r).map(question => ({
+      ...question,
+      // 과학 문제 은행의 필드명(correctAnswer)을 공통 문제풀이 채점 형식(answer)으로 맞춘다.
+      answer: question.answer ?? question.correctAnswer,
+      question: question.question ?? question.prompt ?? ''
+    }));
+    if (!questions || questions.length === 0) {
+      this.toast('출제된 문제를 불러올 수 없습니다.', 'error');
+      return;
+    }
+
+    // 모달 닫기
+    this.closeTestDetailModal();
+    this.closeAllModals();
+
+    this.state.practiceTest = {
+      isSpecialScience: true,
+      round: r,
+      testId: `special_science_round_${r}`,
+      studentId: Number(this.state.selectedStudentId),
+      title: `지구과학 지질 시대 & 화석 빈칸 단답형 [제 ${r}회차]`,
+      questions: questions,
+      cutoffScore: 80,
+      currentIndex: 0,
+      answers: {},
+      startedAt: new Date().toISOString(),
+      isCompleted: false,
+      isReviewOnly: false
+    };
+
+    this.showPracticeTestView();
+    this.renderPracticeQuestion(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  viewSpecialScienceResult(round = 1) {
+    const results = this.getSpecialScienceResults();
+    const result = results[round];
+    if (!result) {
+      this.toast('응시 기록을 찾을 수 없습니다.', 'info');
+      return;
+    }
+
+    this.closeTestDetailModal();
+    this.closeAllModals();
+
+    const mockTest = {
+      title: `지구과학 지질 시대 & 화석 빈칸 단답형 [제 ${round}회차]`
+    };
+
+    this.state.practiceTest = {
+      isSpecialScience: true,
+      round: round,
+      testId: `special_science_round_${round}`,
+      studentId: Number(this.state.selectedStudentId),
+      title: mockTest.title,
+      isCompleted: true,
+      isReviewOnly: true
+    };
+
+    this.showPracticeTestView();
+    this.renderPracticeResult(result, mockTest);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
   async togglePracticeTestAllowRetest(testId) {
     const test = AppData.getTests().find(t => t.id === testId);
     if (!test) return;
@@ -2414,6 +2710,29 @@ const App = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
+  renderSpecialScienceInlinePassage(passage, answer, questionIndex) {
+    const blanks = String(passage).match(/\(\s{3,}\)/g) || [];
+    const savedAnswers = blanks.length > 1
+      ? String(answer || '').split(',').map(value => value.trim())
+      : [String(answer || '')];
+    let blankIndex = 0;
+
+    return String(passage).split(/(\(\s{3,}\))/).map(part => {
+      if (!/^\(\s{3,}\)$/.test(part)) return this.renderRichText(part);
+      const value = this.escapeHtml(savedAnswers[blankIndex] || '');
+      const index = blankIndex++;
+      return `<input type="text" data-special-science-blank="${questionIndex}" value="${value}" aria-label="빈칸 ${index + 1} 답안" placeholder="입력" oninput="App.updateSpecialScienceInlineAnswer(${questionIndex})" class="inline-block align-middle mx-1 px-2 py-1 min-w-24 w-28 sm:w-36 rounded-md border-b-2 border-indigo-500 bg-white text-center text-sm font-black text-indigo-950 outline-none focus:ring-2 focus:ring-indigo-200" autocomplete="off" spellcheck="false">`;
+    }).join('');
+  },
+
+  updateSpecialScienceInlineAnswer(questionIndex) {
+    const pt = this.state.practiceTest;
+    if (!pt) return;
+    const inputs = [...document.querySelectorAll(`[data-special-science-blank="${questionIndex}"]`)];
+    const answer = inputs.map(input => input.value.trim()).join(', ');
+    this.updatePracticeTextAnswer(answer);
+  },
+
   renderPracticeQuestion(index) {
     const pt = this.state.practiceTest;
     if (!pt || !pt.questions || pt.questions.length === 0) return;
@@ -2464,6 +2783,12 @@ const App = {
           ? '<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">주관식 단답형</span>'
           : '<span class="text-[10px] font-black text-violet-700 bg-violet-50 px-2 py-0.5 rounded border border-violet-200">서술형 영작</span>'));
 
+    // 특별 과학 시험은 지문 안의 빈칸에 바로 답을 작성한다.
+    const isInlineBlankTest = Boolean(pt.isSpecialScience && qType === 'SHORT' && q.passage && /\(\s{3,}\)/.test(q.passage));
+    const inlinePassageHtml = isInlineBlankTest
+      ? this.renderSpecialScienceInlinePassage(q.passage, currentAnswer, index)
+      : '';
+
     // 답안 작성 컨트롤 (객관식 / 모두 고르기 / 단답형 / 서술형)
     let answerControlHtml = '';
     if (qType === 'CHOICE') {
@@ -2505,7 +2830,7 @@ const App = {
           }).join('')}
         </div>
       `;
-    } else if (qType === 'SHORT') {
+    } else if (qType === 'SHORT' && !isInlineBlankTest) {
       answerControlHtml = `
         <div class="pt-2 space-y-2">
           <div class="flex items-center justify-between">
@@ -2584,7 +2909,7 @@ const App = {
 
           <!-- Passage (제시문) 있을 경우만 노출 -->
           ${q.passage && q.passage.trim() ? `
-            <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 leading-relaxed font-exam">${this.renderRichText(q.passage.trim())}</div>
+            <div class="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 leading-[2.4] font-exam">${isInlineBlankTest ? inlinePassageHtml : this.renderRichText(q.passage.trim())}</div>
           ` : ''}
 
           <!-- Answer Control (Choices or Text/Essay Input) -->
@@ -2694,7 +3019,7 @@ const App = {
     const candidates = [
       correctAnswer,
       ...(Array.isArray(acceptableAnswers) ? acceptableAnswers : [])
-    ].flatMap(a => String(a || '').split(/[/,\n]/))
+    ].map(a => String(a || ''))
      .map(s => this.normalizeAnswer(s))
      .filter(Boolean);
 
@@ -2812,6 +3137,11 @@ const App = {
       completedAt
     };
 
+    // 특별 과학 테스트인 경우 전용 로컬스토리지 저장
+    if (pt.isSpecialScience && pt.round) {
+      this.saveSpecialScienceResult(pt.round, practiceResult);
+    }
+
     // 시험 객체 업데이트
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === pt.testId);
@@ -2837,9 +3167,12 @@ const App = {
   renderPracticeResult(result, test) {
     const reviewItems = result.reviewItems || [];
     const choiceLabels = ['①', '②', '③', '④', '⑤'];
+    const pt = this.state.practiceTest || {};
+    const isSpecialScience = Boolean(pt.isSpecialScience);
+    const round = Number(pt.round || 1);
 
     document.getElementById('practiceTestTopInfo').innerHTML = `
-      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(test?.title || '문제풀이 시험')} — 시험 응시 완료</span>
+      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(test?.title || pt.title || '문제풀이 시험')} — 시험 응시 완료</span>
     `;
 
     document.getElementById('practiceTestContent').innerHTML = `
@@ -2852,7 +3185,7 @@ const App = {
 
           <div>
             <h3 class="text-2xl font-black text-emerald-700">
-              문제풀이 시험 응시 완료!
+              ${isSpecialScience ? `지구과학 특별 시험 [제 ${round}회차] 응시 완료!` : '문제풀이 시험 응시 완료!'}
             </h3>
             <p class="text-slate-500 text-xs mt-1">답안 제출이 정상 완료되었습니다. 아래에서 문항별 정답과 오답 해설을 바로 확인하세요.</p>
           </div>
@@ -2868,10 +3201,29 @@ const App = {
             </div>
           </div>
 
-          <div class="pt-2">
-            <button onclick="App.exitPracticeTest()" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-2 shadow-sm cursor-pointer">
-              <i class="fa-solid fa-arrow-left"></i> 학습 대시보드로 돌아가기
-            </button>
+          <div class="pt-2 flex items-center justify-center flex-wrap gap-2.5">
+            ${isSpecialScience ? `
+              ${round < 5 ? `
+                <button onclick="App.startSpecialScienceTest(${round + 1})" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-black text-xs transition inline-flex items-center gap-2 shadow-md shadow-sky-200 cursor-pointer">
+                  <span>다음 10문제 도전하기 (제 ${round + 1}회차 응시)</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              ` : `
+                <div class="px-4 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 font-black text-xs">
+                  🏆 50문항 전 회차(1~5회) 완주 달성을 축하합니다!
+                </div>
+              `}
+              <button onclick="App.startSpecialScienceTest(${round}, true)" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition inline-flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-rotate-right"></i> 다시 풀기
+              </button>
+              <button onclick="App.exitPracticeTest()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-bullhorn"></i> 공지사항으로 돌아가기
+              </button>
+            ` : `
+              <button onclick="App.exitPracticeTest()" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition inline-flex items-center gap-2 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-arrow-left"></i> 학습 대시보드로 돌아가기
+              </button>
+            `}
           </div>
         </div>
 
@@ -3044,6 +3396,7 @@ const App = {
       if (!confirm('시험 진행 중입니다. 지금 나가시면 작성 중인 답안이 저장되지 않습니다.\n정말 나가시겠습니까?')) return;
     }
 
+    const wasSpecialScience = Boolean(pt?.isSpecialScience);
     const studentId = Number(pt?.studentId || this.state.selectedStudentId || this.state.adminSelectedStudentId || 1);
     this.state.practiceTest = {
       testId: null,
@@ -3067,6 +3420,13 @@ const App = {
       } else {
         this.showLanding();
       }
+    }
+
+    // 특별 과학 시험이었을 경우 공지사항 탭으로 복귀
+    if (wasSpecialScience && typeof AcademicManager !== 'undefined' && typeof AcademicManager.switchStudentTab === 'function') {
+      setTimeout(() => {
+        AcademicManager.switchStudentTab('notice');
+      }, 50);
     }
   },
 
@@ -9642,6 +10002,11 @@ const App = {
   },
 
   openTextMemorizeStudyModal(testId = null, focusPassageId = null) {
+    if (!testId) {
+      this.toast('캘린더에서 본문암기 테스트 일정을 클릭하여 학습을 시작해주세요.', 'info');
+      return;
+    }
+
     const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
     if (allPassages.length === 0) {
       this.toast('본문 데이터가 없습니다.', 'error');
@@ -11108,6 +11473,27 @@ const App = {
       this.renderTmStudySubToolbar();
       this.renderTmStudyContent();
       this.renderTmStudyFooter();
+    }
+  },
+
+  // ========================================================
+  // 튜토리얼 가이드 모달
+  // ========================================================
+  openTutorialModal() {
+    const modal = document.getElementById('tutorialGuideModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    // 체크박스 초기화
+    const cb = document.getElementById('dontShowTutorialAgain');
+    if (cb) cb.checked = false;
+  },
+
+  closeTutorialModal() {
+    const modal = document.getElementById('tutorialGuideModal');
+    if (modal) modal.classList.add('hidden');
+    const dontShow = document.getElementById('dontShowTutorialAgain');
+    if (dontShow && dontShow.checked) {
+      localStorage.setItem('yem_tutorial_seen', '1');
     }
   }
 

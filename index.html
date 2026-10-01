@@ -95,12 +95,135 @@
       <div class="flex items-center gap-2 sm:gap-3">
         <div id="cloudSyncStatusBadge" class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all duration-300"></div>
         <div id="headerNavActions"></div>
+        <!-- Mobile Sidebar Hamburger Toggle Button (Hidden on Desktop) -->
+        <button id="mobileSidebarToggleBtn" onclick="App.toggleMobileSidebar()" class="hidden lg:hidden p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition focus:outline-none cursor-pointer" aria-label="메뉴 열기">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
       </div>
     </div>
   </header>
 
+  <!-- Mobile Backdrop Overlay -->
+  <div id="mobileSidebarBackdrop" onclick="App.closeMobileSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden transition-opacity duration-300 lg:hidden"></div>
+
+  <!-- ============================================================== -->
+  <!-- WINDOW LEFT SIDEBAR (Fixed to absolute left: 0 of window)        -->
+  <!-- ============================================================== -->
+  <aside id="studentSidebar" class="
+    hidden fixed inset-y-0 right-0 z-50 w-full max-w-[340px] bg-white/95 backdrop-blur-xl p-5 shadow-2xl overflow-y-auto transform transition-all duration-300 ease-in-out translate-x-full space-y-3
+    lg:fixed lg:left-0 lg:top-16 lg:bottom-0 lg:right-auto lg:w-16 lg:hover:w-72 lg:bg-white lg:border-r lg:border-slate-200 lg:px-2 lg:py-3 lg:shadow-sm lg:hover:shadow-2xl lg:translate-x-0 lg:overflow-x-hidden lg:overflow-y-auto scrollbar-thin lg:z-40 group/sidebar
+  ">
+    <!-- Mobile Drawer Header Bar (Only visible on mobile) -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 lg:hidden">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm shadow-2xs">
+          <i class="fa-solid fa-bars-staggered"></i>
+        </div>
+        <h3 class="font-black text-slate-900 text-sm">학업 관리 메뉴</h3>
+      </div>
+      <button onclick="App.closeMobileSidebar()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer" aria-label="메뉴 닫기">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <!-- Academic Tab Navigation (Vertical Menu with Pixel-Perfect 8px-48px-8px Symmetry) -->
+    <nav class="flex flex-col gap-1 p-0 m-0 border-0 bg-transparent overflow-hidden" aria-label="학습 관리 메뉴">
+      <button id="stuTabSchedule" onclick="AcademicManager.switchStudentTab('schedule'); App.closeMobileSidebar();" title="학습 캘린더" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden bg-indigo-600 text-white shadow-xs group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base">
+          <i class="fa-regular fa-calendar-check"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-bold truncate">학습 캘린더</span>
+          <i class="fa-solid fa-chevron-right text-[10px] text-white/70"></i>
+        </div>
+      </button>
+
+      <button id="stuTabExamPrep" onclick="AcademicManager.switchStudentTab('examPrep'); App.closeMobileSidebar();" title="지필고사 시험범위" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-amber-500">
+          <i class="fa-solid fa-book-bookmark"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-semibold truncate">지필고사 시험범위</span>
+          <span id="stuExamPrepBadgeCount" class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">0</span>
+        </div>
+      </button>
+
+      <button id="stuTabAssessment" onclick="AcademicManager.switchStudentTab('assessment'); App.closeMobileSidebar();" title="수행평가 관리" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-emerald-600">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-semibold truncate">수행평가 관리</span>
+          <span id="stuAssessmentBadgeCount" class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">0</span>
+        </div>
+      </button>
+
+      <button id="stuTabSchoolGrade" onclick="AcademicManager.switchStudentTab('schoolGrade'); App.closeMobileSidebar();" title="내신 성적 관리" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-violet-600">
+          <i class="fa-solid fa-chart-column"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-semibold truncate">내신 성적 관리</span>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+        </div>
+      </button>
+
+      <button id="stuTabMockExam" onclick="AcademicManager.switchStudentTab('mockExam'); App.closeMobileSidebar();" title="모의고사 성적 관리" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-blue-600">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-semibold truncate">모의고사 성적 관리</span>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+        </div>
+      </button>
+
+      <button id="stuTabTargetUniv" onclick="AcademicManager.switchStudentTab('targetUniv'); App.closeMobileSidebar();" title="목표 대학 & 입시" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-rose-500">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-semibold truncate">목표 대학 & 입시</span>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+        </div>
+      </button>
+
+      <button id="stuTabNotice" onclick="AcademicManager.switchStudentTab('notice'); App.closeMobileSidebar();" title="공지사항" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+        <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-sky-500">
+          <i class="fa-solid fa-bullhorn"></i>
+        </div>
+        <div class="min-w-0 flex-1 flex items-center justify-between pr-3 whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+          <span class="text-xs sm:text-sm font-semibold truncate">공지사항</span>
+          <span id="stuNoticeBadgeCount" class="hidden px-2 py-0.5 bg-sky-100 text-sky-700 text-[10px] font-bold rounded-full">0</span>
+        </div>
+      </button>
+    </nav>
+
+    <!-- Expanded Section: Student Stats Cards & Quick Tools (Reveals on Hover in Desktop) -->
+    <div class="space-y-3 pt-2 lg:opacity-0 lg:max-h-0 lg:pointer-events-none lg:overflow-hidden group-hover/sidebar:lg:opacity-100 group-hover/sidebar:lg:max-h-[800px] group-hover/sidebar:lg:pointer-events-auto transition-all duration-300">
+      <!-- Student Stats Cards (2x2 Grid) -->
+      <div class="grid grid-cols-2 gap-2" id="studentStatsGrid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Quick Actions / Utilities -->
+      <div class="glass-card p-2.5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1.5">
+        <div class="text-[11px] font-bold text-slate-400 px-1 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt-lightning text-amber-500 text-[10px]"></i>
+          <span>빠른 학습 도구</span>
+        </div>
+        <div class="grid grid-cols-1">
+          <button onclick="AcademicManager.openAssessmentModal(); App.closeMobileSidebar();" class="w-full px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-2xs">
+            <i class="fa-solid fa-plus text-emerald-600 text-xs"></i>
+            <span>학교 수행평가 등록</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <!-- Main Content Wrapper -->
-  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:pl-20">
 
     <!-- ========================================== -->
     <!-- 1. LANDING VIEW: UNIFIED LOGIN (통합 로그인) -->
@@ -142,45 +265,10 @@
       <!-- Cloud Sync & Data Loading Status Notice -->
       <div id="dataSyncNoticeBanner" class="hidden"></div>
 
-      <!-- Student Banner -->
-      <div class="glass-card rounded-2xl p-6 relative overflow-hidden" id="studentBanner">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Student Stats Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="studentStatsGrid">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Student Academic Tab Navigation -->
-      <div class="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-        <button id="stuTabSchedule" onclick="AcademicManager.switchStudentTab('schedule')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow-sm whitespace-nowrap">
-          <i class="fa-regular fa-calendar-check text-white"></i>
-          <span>학습 캘린더</span>
-        </button>
-        <button id="stuTabExamPrep" onclick="AcademicManager.switchStudentTab('examPrep')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-book-bookmark text-amber-500"></i>
-          <span>지필고사 시험범위</span>
-          <span id="stuExamPrepBadgeCount" class="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-full">0</span>
-        </button>
-        <button id="stuTabAssessment" onclick="AcademicManager.switchStudentTab('assessment')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-list-check text-emerald-600"></i>
-          <span>수행평가 관리</span>
-          <span id="stuAssessmentBadgeCount" class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full">0</span>
-        </button>
-        <button id="stuTabSchoolGrade" onclick="AcademicManager.switchStudentTab('schoolGrade')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-chart-column text-violet-600"></i>
-          <span>내신 성적 관리</span>
-        </button>
-        <button id="stuTabMockExam" onclick="AcademicManager.switchStudentTab('mockExam')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-chart-line text-blue-600"></i>
-          <span>모의고사 성적 관리</span>
-        </button>
-        <button id="stuTabTargetUniv" onclick="AcademicManager.switchStudentTab('targetUniv')" class="px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-bullseye text-rose-500"></i>
-          <span>목표 대학 & 입시</span>
-        </button>
-      </div>
+      <!-- Student Profile & Target Univ Banner (Main Top) -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/80 relative overflow-hidden" id="studentBanner">
+          <!-- Rendered by JS -->
+        </div>
 
       <!-- ================= 1. TAB: 학습 캘린더 & 기존 영어 시험 ================= -->
       <div id="stuContentSchedule" class="space-y-6">
@@ -203,14 +291,6 @@
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 불합격 및 마감</span>
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> 시험 예정</span>
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span> 수행평가</span>
-            <button onclick="App.openTextMemorizeStudyModal()" class="ml-auto px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer" title="교과서 본문 미리 외우기 (플래시카드·가리기·어순배열)">
-              <i class="fa-solid fa-book-open-reader text-indigo-600 text-[11px]"></i>
-              <span>본문 암기학습</span>
-            </button>
-            <button onclick="AcademicManager.openAssessmentModal()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs shadow-emerald-200">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>학교 수행평가 추가</span>
-            </button>
           </div>
         </div>
 
@@ -229,14 +309,6 @@
             </div>
 
             <div class="flex items-center space-x-2 flex-wrap">
-              <button onclick="App.openTextMemorizeStudyModal()" class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer" title="교과서 본문 미리 외우기 (플래시카드·가리기·어순배열)">
-                <i class="fa-solid fa-book-open-reader text-indigo-600 text-[11px]"></i>
-                <span>본문 암기학습</span>
-              </button>
-              <button onclick="AcademicManager.openAssessmentModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1 shadow-2xs">
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>수행평가 등록</span>
-              </button>
               <button onclick="App.goToToday()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
                 <i class="fa-regular fa-calendar-check"></i>
                 <span>오늘</span>
@@ -619,6 +691,41 @@
           </p>
         </div>
       </div>
+
+      <!-- ================= 7. TAB: 공지사항 ================= -->
+      <div id="stuContentNotice" class="hidden space-y-6">
+        <!-- Top Action Bar -->
+        <div class="glass-card rounded-2xl p-5 shadow-sm flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-bullhorn text-sky-500"></i>
+              <span>공지사항</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">주요 학사 일정과 공지사항을 확인하세요.</p>
+          </div>
+          <div id="stuNoticeAdminActions" class="hidden">
+            <button onclick="AcademicManager.openNoticeModal()" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-md shadow-sky-200 cursor-pointer">
+              <i class="fa-solid fa-plus"></i>
+              <span>새 공지 등록</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Notices Cards Container -->
+        <div id="stuNoticeCardsContainer" class="space-y-4">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="stuNoticeEmptyState" class="hidden glass-card rounded-2xl p-12 text-center space-y-3">
+          <div class="w-16 h-16 rounded-2xl bg-sky-50 text-sky-500 flex items-center justify-center text-2xl mx-auto shadow-inner">
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+          <h4 class="font-bold text-slate-800 text-base">등록된 공지사항이 없습니다.</h4>
+          <p class="text-xs text-slate-500">새로운 공지사항이 등록되면 이곳에 표시됩니다.</p>
+        </div>
+      </div>
+
     </section>
 
     <!-- ========================================== -->
@@ -3975,6 +4082,158 @@
     </div>
   </div>
 
+  <!-- 6. 공지사항 & 학업 안내 등록/수정 모달 -->
+  <div id="academicNoticeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+      <div class="p-6 bg-gradient-to-r from-sky-600 to-indigo-600 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-sky-100">
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold" id="noticeModalTitle">공지사항 등록</h3>
+            <p class="text-xs text-sky-100">학생들에게 전달할 중요 공지사항을 등록합니다.</p>
+          </div>
+        </div>
+        <button type="button" onclick="AcademicManager.closeNoticeModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="academicNoticeForm" onsubmit="AcademicManager.saveNotice(event); return false;" class="p-6 overflow-y-auto space-y-4">
+        <input type="hidden" id="noticeEditId" value="" />
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">공지 제목 <span class="text-rose-500">*</span></label>
+          <input type="text" id="noticeTitleInput" placeholder="공지사항 제목을 입력하세요" class="w-full py-2.5 px-3.5 rounded-xl border border-slate-300 font-bold text-slate-900 text-sm focus:ring-2 focus:ring-sky-500 transition" required />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">상세 내용 <span class="text-rose-500">*</span></label>
+          <textarea id="noticeContentInput" rows="6" placeholder="공지 및 안내 내용을 구체적으로 입력하세요. 줄바꿈이 그대로 반영됩니다." class="w-full py-2.5 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-sky-500 transition leading-relaxed" required></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+            <input type="checkbox" id="noticeIsPinnedInput" class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer" />
+            <span>상단 고정 (중요 공지로 강조)</span>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="AcademicManager.closeNoticeModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50 transition cursor-pointer">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition shadow-md shadow-sky-200 cursor-pointer">
+            공지 저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TUTORIAL & FEATURE GUIDE MODAL (온보딩 기능 가이드) -->
+  <!-- ========================================== -->
+  <div id="tutorialGuideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto" onclick="App.closeTutorialModal()">
+    <div class="glass-card bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200/90 my-8" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-lg shadow-md shadow-indigo-200 flex-shrink-0">
+            <i class="fa-solid fa-compass"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <span>YEM 학업관리 이용 가이드</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">1분 둘러보기</span>
+            </h3>
+            <p class="text-xs text-slate-500">핵심 기능과 사용법을 한눈에 확인하세요.</p>
+          </div>
+        </div>
+        <button type="button" onclick="App.closeTutorialModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer" aria-label="닫기">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Guide Cards Grid -->
+      <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin">
+        
+        <!-- Step 1: 좌측 스마트 독 (사이드바) -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-3.5 transition hover:bg-white hover:shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 font-black shadow-3xs">
+            <i class="fa-solid fa-bars-staggered"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <span>1. 창 왼쪽 스마트 메뉴 독</span>
+              <span class="text-[10px] font-normal text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">마우스 호버</span>
+            </h4>
+            <p class="text-[11px] sm:text-xs text-slate-600 mt-1 leading-relaxed">
+              화면 맨 왼쪽에 마우스를 올리면 <strong>7대 학업 메뉴</strong>(캘린더, 시험범위, 수행평가, 내신, 모의고사, 목표대학, 공지사항)와 누적 통계가 쓱 펼쳐집니다. (모바일은 우측 상단 ☰ 버튼)
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2: 목표 대학 & 프로필 배너 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-3.5 transition hover:bg-white hover:shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 font-black shadow-3xs">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900">2. 목표 대학 & 입시 쇼케이스</h4>
+            <p class="text-[11px] sm:text-xs text-slate-600 mt-1 leading-relaxed">
+              메인창 상단에서 내 목표와 <strong>1·2·3지망 대학교 엠블럼</strong>, 전형 정보(학생부종합 등) 및 목표 등급/수능 최저를 상시 확인하며 동기부여를 얻을 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3: 학습 캘린더 & 본문 암기학습 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-3.5 transition hover:bg-white hover:shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 font-black shadow-3xs">
+            <i class="fa-regular fa-calendar-check"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <span>3. 캘린더 & 본문 암기학습</span>
+              <span class="text-[10px] font-normal text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100">일정 클릭</span>
+            </h4>
+            <p class="text-[11px] sm:text-xs text-slate-600 mt-1 leading-relaxed">
+              월간 테스트 일정을 확인하고, 캘린더에서 <strong>'본문암기' 시험을 클릭</strong>하면 교과서 본문 3단계(플래시카드·가리기·어순배열) 암기학습이 즉시 시작됩니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4: 수행평가, 내신, 모의고사, 공지사항 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-3.5 transition hover:bg-white hover:shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-sm flex-shrink-0 mt-0.5 font-black shadow-3xs">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900">4. 수행평가 · 내신/모의고사 성적 & 공지사항</h4>
+            <p class="text-[11px] sm:text-xs text-slate-600 mt-1 leading-relaxed">
+              수행평가 마감일, 학기별 내신 성적 등급 분석, 교육청/평가원/사설 모의고사 성적 추이를 체계적으로 분석하고 학교 주요 학사 공지를 한눈에 확인하세요.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-wrap gap-2">
+        <label class="inline-flex items-center gap-2 text-xs text-slate-600 font-medium cursor-pointer select-none">
+          <input type="checkbox" id="dontShowTutorialAgain" class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer">
+          <span>앞으로 자동으로 띄우지 않기</span>
+        </label>
+        <button type="button" onclick="App.closeTutorialModal()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition shadow-md shadow-indigo-200 cursor-pointer">
+          <span>확인 완료 · YEM 시작하기</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toastContainer"></div>
 
@@ -4039,6 +4298,7 @@
 <script src="ybm_english2_data.js?v=20260918_0145"></script>
 <script src="exam_scope_data.js?v=20260923_0001"></script>
 <script src="mock_202509_practice_data.js?v=20260930_01"></script>
+<script src="science_questions.js?v=20261002_01"></script>
 <script src="data.js?v=20260930_01"></script>
 <script src="app.js?v=20260930_01"></script>
 
@@ -4076,6 +4336,7 @@ const AcademicManager = {
     mockExams: 'yem_academic_mock_exams_v3',
     targetUnivs: 'yem_academic_target_univs_v3',
     examScopes: 'yem_academic_exam_scopes_v3',
+    notices: 'yem_academic_notices_v3',
     initialized: 'yem_academic_initialized_v3'
   },
 
@@ -5288,7 +5549,7 @@ const AcademicManager = {
   // ----------------------------------------------------
   switchStudentTab(tabName) {
     this.studentTab = tabName;
-    const tabs = ['schedule', 'examPrep', 'assessment', 'schoolGrade', 'mockExam', 'targetUniv'];
+    const tabs = ['schedule', 'examPrep', 'assessment', 'schoolGrade', 'mockExam', 'targetUniv', 'notice'];
 
     const iconColors = {
       schedule: { active: 'text-white', inactive: 'text-indigo-600' },
@@ -5296,7 +5557,8 @@ const AcademicManager = {
       assessment: { active: 'text-emerald-300', inactive: 'text-emerald-600' },
       schoolGrade: { active: 'text-violet-200', inactive: 'text-violet-600' },
       mockExam: { active: 'text-sky-300', inactive: 'text-blue-600' },
-      targetUniv: { active: 'text-rose-300', inactive: 'text-rose-500' }
+      targetUniv: { active: 'text-rose-300', inactive: 'text-rose-500' },
+      notice: { active: 'text-sky-200', inactive: 'text-sky-500' }
     };
 
     tabs.forEach(t => {
@@ -5307,15 +5569,23 @@ const AcademicManager = {
         const icon = btn.querySelector('i');
         const colorCfg = iconColors[t];
 
+        const chevron = btn.querySelector('.fa-chevron-right');
+
         if (t === tabName) {
-          btn.className = 'px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow-sm whitespace-nowrap';
+          btn.className = 'w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden bg-indigo-600 text-white shadow-xs group/btn';
           if (icon && colorCfg) {
             icon.className = icon.className.replace(/text-[a-z0-9-]+/g, '').trim() + ' ' + colorCfg.active;
           }
+          if (chevron) {
+            chevron.className = 'fa-solid fa-chevron-right text-[10px] text-white/70';
+          }
         } else {
-          btn.className = 'px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap';
+          btn.className = 'w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn';
           if (icon && colorCfg) {
             icon.className = icon.className.replace(/text-[a-z0-9-]+/g, '').trim() + ' ' + colorCfg.inactive;
+          }
+          if (chevron) {
+            chevron.className = 'fa-solid fa-chevron-right text-[10px] text-slate-300';
           }
         }
       }
@@ -5332,15 +5602,22 @@ const AcademicManager = {
     const badge = document.getElementById('stuAssessmentBadgeCount');
     if (badge) {
       badge.className = (tabName === 'assessment')
-        ? 'px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-black rounded-full'
-        : 'px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full';
+        ? 'px-2 py-0.5 bg-white/20 text-white text-[10px] font-black rounded-full'
+        : 'px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full';
     }
 
     const examBadge = document.getElementById('stuExamPrepBadgeCount');
     if (examBadge) {
       examBadge.className = (tabName === 'examPrep')
-        ? 'px-1.5 py-0.5 bg-white/20 text-white text-[10px] font-black rounded-full'
-        : 'px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-full';
+        ? 'px-2 py-0.5 bg-white/20 text-white text-[10px] font-black rounded-full'
+        : 'px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-full';
+    }
+
+    const noticeBadge = document.getElementById('stuNoticeBadgeCount');
+    if (noticeBadge) {
+      noticeBadge.className = (tabName === 'notice')
+        ? 'px-2 py-0.5 bg-white/20 text-white text-[10px] font-black rounded-full'
+        : 'px-2 py-0.5 bg-sky-100 text-sky-700 text-[10px] font-black rounded-full';
     }
 
     if (tabName === 'examPrep') this.renderStudentExamScopes();
@@ -5348,6 +5625,7 @@ const AcademicManager = {
     if (tabName === 'schoolGrade') this.renderStudentSchoolGrades();
     if (tabName === 'mockExam') this.renderStudentMockExams();
     if (tabName === 'targetUniv') this.renderStudentTargetUnivs();
+    if (tabName === 'notice') this.renderStudentNotices();
   },
 
   enhanceStudentDashboard() {
@@ -5460,10 +5738,8 @@ const AcademicManager = {
     const badgeCount = document.getElementById('stuAssessmentBadgeCount');
     if (badgeCount) badgeCount.textContent = activeCount;
 
-    // 3. 현재 열려 있는 탭 갱신
-    if (this.studentTab !== 'schedule') {
-      this.switchStudentTab(this.studentTab);
-    }
+    // 3. 현재 열려 있는 탭 갱신 (사이드바 메뉴 활성 상태 동기화)
+    this.switchStudentTab(this.studentTab || 'schedule');
   },
 
   // ----------------------------------------------------
@@ -11253,6 +11529,258 @@ const AcademicManager = {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  },
+
+  // ----------------------------------------------------
+  // 학생 & 관리자: 공지사항 & 학업 안내 관리
+  // ----------------------------------------------------
+  studentNoticeFilter: 'ALL', // 'ALL' | 'IMPORTANT' | 'EXAM' | 'GUIDE'
+
+  getNotices() {
+    const raw = localStorage.getItem(this.storageKeys.notices);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          // 기존 샘플 공지사항(notice_1 ~ notice_4) 및 초기 데이터 삭제
+          const filtered = parsed.filter(n => !['notice_1', 'notice_2', 'notice_3', 'notice_4'].includes(n.id));
+          if (filtered.length !== parsed.length) {
+            this.saveNotices(filtered);
+          }
+          return filtered;
+        }
+      } catch (e) {
+        console.error('Failed to parse notices from storage:', e);
+      }
+    }
+    // 기본 공지사항 비우기
+    return [];
+  },
+
+  saveNotices(notices) {
+    localStorage.setItem(this.storageKeys.notices, JSON.stringify(notices));
+    if (typeof this.pushAllLocalToCloud === 'function' && App.state && App.state.isAdminLoggedIn) {
+      this.pushAllLocalToCloud(false);
+    }
+  },
+
+  filterStudentNotices(category) {
+    this.studentNoticeFilter = category;
+    this.renderStudentNotices();
+  },
+
+  renderStudentNotices() {
+    const container = document.getElementById('stuNoticeCardsContainer');
+    const emptyState = document.getElementById('stuNoticeEmptyState');
+    const adminActions = document.getElementById('stuNoticeAdminActions');
+    if (!container) return;
+
+    if (adminActions) {
+      if (App.state && App.state.isAdminLoggedIn) {
+        adminActions.classList.remove('hidden');
+      } else {
+        adminActions.classList.add('hidden');
+      }
+    }
+
+    const notices = this.getNotices();
+    let filtered = [...notices];
+
+    // 사이드바 뱃지 카운트 동기화
+    const noticeBadge = document.getElementById('stuNoticeBadgeCount');
+    if (noticeBadge) {
+      if (filtered.length > 0) {
+        noticeBadge.textContent = filtered.length;
+        noticeBadge.classList.remove('hidden');
+      } else {
+        noticeBadge.classList.add('hidden');
+      }
+    }
+
+    filtered.sort((a, b) => {
+      if (!!a.isPinned !== !!b.isPinned) return a.isPinned ? -1 : 1;
+      return new Date(b.date || 0) - new Date(a.date || 0);
+    });
+
+    // 1. 특별 과학 테스트 상설 공지 카드 템플릿
+    const specialScienceNoticeHtml = `
+      <article class="glass-card rounded-2xl p-5 sm:p-6 transition hover:shadow-lg border-2 border-sky-400 bg-gradient-to-r from-sky-50/50 via-white to-indigo-50/40 space-y-4 shadow-sm">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-gradient-to-r from-sky-600 to-indigo-600 text-white flex items-center gap-1.5 shadow-xs">
+              <i class="fa-solid fa-flask-vial text-sky-200"></i>
+              <span>특별 실전 테스트</span>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug flex items-center gap-2">
+            <span>🧪 [특별 테스트] 2026 지구과학 지질 시대 & 화석 빈칸 단답형 (유지현T 정리본)</span>
+          </h4>
+        </div>
+
+        <div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-line bg-white/90 p-4 sm:p-5 rounded-xl border border-sky-100/80 shadow-2xs">
+선캄브리아 시대부터 고생대, 중생대, 신생대까지의 기후·환경, 지각 변동, 생물 출현·번성·멸종, 표준 화석 핵심 개념을 점검하는 빈칸 단답형 테스트입니다.
+
+• 출제 범위: 유지현T 지구과학 정리본
+• 문제 형식: 빈칸 채우기 단답형 (핵심 키워드 및 표준 화석 입력)
+• 문항 구성: 1회 응시 시 10문제 (총 5회차 / 50문제)
+        </div>
+
+        <!-- 하단 테스트 응시하기 액션 바 -->
+        <div class="pt-2 border-t border-sky-100 flex justify-end">
+          <button type="button" onclick="App.openSpecialScienceTestModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 hover:from-sky-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm transition shadow-md shadow-sky-200 cursor-pointer flex items-center gap-2">
+            <i class="fa-solid fa-play"></i>
+            <span>특별 과학 테스트 응시하기</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+      </article>
+    `;
+
+    // 2. 일반 공지사항 카드들
+    const regularNoticesHtml = filtered.map(notice => {
+      const isPinned = !!notice.isPinned;
+      const isAdmin = App.state && App.state.isAdminLoggedIn;
+
+      return `
+        <article class="glass-card rounded-2xl p-5 sm:p-6 transition hover:shadow-md ${isPinned ? 'border-l-4 border-l-rose-500 bg-gradient-to-r from-rose-50/20 to-white' : 'border border-slate-200/90'} space-y-3">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              ${isPinned ? '<span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-600 text-white flex items-center gap-1 shadow-2xs"><i class="fa-solid fa-thumbtack text-[10px]"></i> 필독 고정</span>' : ''}
+              <span class="text-xs text-slate-400 font-medium">${this.escapeHtml(notice.date || '')}</span>
+            </div>
+
+            ${isAdmin ? `
+              <div class="flex items-center gap-1.5 ml-auto">
+                <button onclick="AcademicManager.openNoticeModal('${notice.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer flex items-center gap-1">
+                  <i class="fa-solid fa-pen text-[10px]"></i>
+                  <span>수정</span>
+                </button>
+                <button onclick="AcademicManager.deleteNotice('${notice.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-600 transition cursor-pointer flex items-center gap-1">
+                  <i class="fa-solid fa-trash-can text-[10px]"></i>
+                  <span>삭제</span>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+
+          <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug">
+            ${this.escapeHtml(notice.title)}
+          </h4>
+
+          <div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-line bg-slate-50/70 p-4 rounded-xl border border-slate-100">
+            ${this.escapeHtml(notice.content)}
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    container.innerHTML = specialScienceNoticeHtml + regularNoticesHtml;
+  },
+
+  openNoticeModal(noticeId = null) {
+    const modal = document.getElementById('academicNoticeModal');
+    if (!modal) return;
+
+    const editIdInput = document.getElementById('noticeEditId');
+    const titleEl = document.getElementById('noticeModalTitle');
+    const titleInput = document.getElementById('noticeTitleInput');
+    const contentInput = document.getElementById('noticeContentInput');
+    const isPinnedInput = document.getElementById('noticeIsPinnedInput');
+
+    if (noticeId) {
+      const notice = this.getNotices().find(n => n.id === noticeId);
+      if (notice) {
+        if (editIdInput) editIdInput.value = notice.id;
+        if (titleEl) titleEl.textContent = '공지사항 수정';
+        if (titleInput) titleInput.value = notice.title || '';
+        if (contentInput) contentInput.value = notice.content || '';
+        if (isPinnedInput) isPinnedInput.checked = !!notice.isPinned;
+      }
+    } else {
+      if (editIdInput) editIdInput.value = '';
+      if (titleEl) titleEl.textContent = '공지사항 등록';
+      if (titleInput) titleInput.value = '';
+      if (contentInput) contentInput.value = '';
+      if (isPinnedInput) isPinnedInput.checked = false;
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    const content = modal.querySelector('.modal-content');
+    if (content) {
+      setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+  },
+
+  closeNoticeModal() {
+    const modal = document.getElementById('academicNoticeModal');
+    if (!modal) return;
+    const content = modal.querySelector('.modal-content');
+    if (content) {
+      content.classList.add('scale-95', 'opacity-0');
+      content.classList.remove('scale-100', 'opacity-100');
+    }
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }, 200);
+  },
+
+  saveNotice(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const editId = document.getElementById('noticeEditId')?.value;
+    const title = document.getElementById('noticeTitleInput')?.value?.trim();
+    const content = document.getElementById('noticeContentInput')?.value?.trim();
+    const isPinned = document.getElementById('noticeIsPinnedInput')?.checked || false;
+
+    if (!title || !content) {
+      this.notify('제목과 내용을 모두 입력해주세요.', 'error');
+      return;
+    }
+
+    let notices = this.getNotices();
+
+    if (editId) {
+      const idx = notices.findIndex(n => n.id === editId);
+      if (idx !== -1) {
+        notices[idx] = {
+          ...notices[idx],
+          title,
+          content,
+          isPinned
+        };
+        this.notify('공지사항이 수정되었습니다.', 'success');
+      }
+    } else {
+      const newNotice = {
+        id: 'notice_' + Date.now(),
+        title,
+        content,
+        isPinned,
+        date: this.getTodayDateString()
+      };
+      notices.unshift(newNotice);
+      this.notify('새 공지사항이 등록되었습니다.', 'success');
+    }
+
+    this.saveNotices(notices);
+    this.closeNoticeModal();
+    this.renderStudentNotices();
+  },
+
+  deleteNotice(noticeId) {
+    if (!confirm('이 공지사항을 정말 삭제하시겠습니까?')) return;
+    let notices = this.getNotices();
+    notices = notices.filter(n => n.id !== noticeId);
+    this.saveNotices(notices);
+    this.notify('공지사항이 삭제되었습니다.', 'info');
+    this.renderStudentNotices();
   },
 
   notify(message, type = 'info') {
