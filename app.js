@@ -3530,7 +3530,8 @@ const App = {
 
   switchAdminTab(tabName) {
     this.state.adminTab = tabName;
-    ['Tests', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
+    // 모든 관리자 탭을 한 곳에서 토글해, 이전 카테고리 내용이 함께 남지 않게 한다.
+    ['Tests', 'ExamPrep', 'Assessment', 'SchoolGrade', 'MockExam', 'TargetUniv', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
       const btn = document.getElementById(`adminTabBtn${t}`);
       const content = document.getElementById(`adminTabContent${t}`);
       if (t.toLowerCase() === tabName) {
@@ -3624,6 +3625,7 @@ const App = {
     }
 
     tbody.innerHTML = tests.map(test => {
+      const timeStatus = this.getTestTimeStatus(test);
       const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
       const timeStr = isAllDay ? '하루종일' : (test.time ? (test.endTime ? `${test.time}~${test.endTime}` : `${test.time}`) : (test.endTime ? `~${test.endTime}` : ''));
 
