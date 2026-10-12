@@ -2965,7 +2965,7 @@ const AppData = {
   },
 
   async saveTextMemorizeResult(studentId, testId, rawResult) {
-    const { score, correct, total, passed, completedAt, wrongCount, wrongList, mode, cutoffType, cutoffScore, maxWrong, userAnswers } = rawResult || {};
+    const { score, correct, total, passed, completedAt, wrongCount, wrongList, mode, cutoffType, cutoffScore, maxWrong, userAnswers, examSentences } = rawResult || {};
     const results = this.getTextMemorizeResults().filter(
       r => !(r.studentId === Number(studentId) && r.testId === testId)
     );
@@ -2983,6 +2983,7 @@ const AppData = {
       cutoffScore: cutoffScore ?? 80,
       maxWrong: maxWrong ?? 3,
       userAnswers: userAnswers || {},
+      examSentences: examSentences || [],
       completedAt: completedAt || new Date().toISOString()
     };
     results.push(newResult);

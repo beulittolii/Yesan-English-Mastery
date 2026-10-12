@@ -10079,6 +10079,7 @@ const App = {
       cutoffScore: exam.cutoffScore,
       maxWrong: exam.maxWrong,
       userAnswers: exam.userAnswers || {},
+      examSentences: exam.sentences || [],
       completedAt: new Date().toISOString()
     };
 
@@ -10335,6 +10336,55 @@ const App = {
     }
   },
 
+  // ── 시험 결과지용 빈칸 토큰 복원/추출 헬퍼 ──
+  buildClozeTokensForResult(sentenceEn, sentIndex, existingResult) {
+    const cloze = this.generateClozeBlanks(sentenceEn, sentIndex);
+    if (!existingResult || (!existingResult.userAnswers && !existingResult.wrongList)) {
+      return cloze;
+    }
+
+    const wrongBlanks = (existingResult.wrongList || [])
+      .map(w => w.blank)
+      .filter(b => b && (b.sentIndex === sentIndex || String(b.id).startsWith(`blank_${sentIndex}_`)));
+
+    if (wrongBlanks.length > 0) {
+      const wrongCleanWords = new Set(wrongBlanks.map(b => b.cleanWord || (b.word && b.word.toLowerCase())));
+      const tokens = sentenceEn.split(/\s+/);
+      let blankSeq = 0;
+      const newBlanks = [];
+      const newTokens = tokens.map(token => {
+        const match = token.match(/^([^a-zA-Z0-9]*)([a-zA-Z0-9'-]+)([^a-zA-Z0-9]*)$/);
+        if (!match) return { isBlank: false, text: token };
+        const prefix = match[1];
+        const word = match[2];
+        const suffix = match[3];
+        const clean = word.toLowerCase();
+
+        const isWrong = wrongCleanWords.has(clean);
+        const isGen = cloze.blanks.some(b => b.cleanWord === clean);
+
+        if (isWrong || isGen) {
+          const blankId = `blank_${sentIndex}_${blankSeq++}`;
+          const blankObj = {
+            id: blankId,
+            sentIndex,
+            prefix,
+            word,
+            cleanWord: clean,
+            suffix,
+            length: word.length
+          };
+          newBlanks.push(blankObj);
+          return { isBlank: true, blankObj };
+        }
+        return { isBlank: false, text: token };
+      });
+      return { tokens: newTokens, blanks: newBlanks };
+    }
+
+    return cloze;
+  },
+
   viewTextMemorizeExamPaper(testId) {
     const test = AppData.getTests().find(t => String(t.id) === String(testId) || t.id === testId);
     if (!test) {
@@ -10381,32 +10431,19 @@ const App = {
     }
 
     const isDescriptiveOnly = Boolean(test.textMemorizeDescriptiveOnly);
-    const isFullSentence = test.textMemorizeMode === 'FULL_SENTENCE';
+    const isFullSentence = (existingResult && existingResult.mode)
+      ? (existingResult.mode === 'FULL_SENTENCE')
+      : (test.textMemorizeMode === 'FULL_SENTENCE');
 
     let examSentences = [];
-    let globalSentIdx = 0;
-    matchedPassages.forEach(passage => {
-      (passage.sentences || []).forEach(s => {
-        if (isDescriptiveOnly && !s.isDescriptiveTarget) return;
-        examSentences.push({
-          sentIndex: globalSentIdx++,
-          passageId: passage.id,
-          lessonTitle: passage.lessonTitle,
-          partTitle: passage.partTitle,
-          en: s.en,
-          ko: s.ko,
-          isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
-          grammarPoint: s.grammarPoint || ''
-        });
-      });
-    });
-
-    // 안전 폴백: 만약 서술형 엄선 모드였으나 매칭 문장이 없는 경우 전체 문장으로 표시
-    if (examSentences.length === 0) {
-      globalSentIdx = 0;
+    if (existingResult && Array.isArray(existingResult.examSentences) && existingResult.examSentences.length > 0) {
+      examSentences = existingResult.examSentences;
+    } else {
+      let globalSentIdx = 0;
       matchedPassages.forEach(passage => {
         (passage.sentences || []).forEach(s => {
-          examSentences.push({
+          if (isDescriptiveOnly && !s.isDescriptiveTarget) return;
+          const sentObj = {
             sentIndex: globalSentIdx++,
             passageId: passage.id,
             lessonTitle: passage.lessonTitle,
@@ -10415,9 +10452,40 @@ const App = {
             ko: s.ko,
             isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
             grammarPoint: s.grammarPoint || ''
-          });
+          };
+          if (!isFullSentence) {
+            const cloze = this.buildClozeTokensForResult(s.en, sentObj.sentIndex, existingResult);
+            sentObj.tokens = cloze.tokens;
+            sentObj.blanks = cloze.blanks;
+          }
+          examSentences.push(sentObj);
         });
       });
+
+      // 안전 폴백: 만약 서술형 엄선 모드였으나 매칭 문장이 없는 경우 전체 문장으로 표시
+      if (examSentences.length === 0) {
+        globalSentIdx = 0;
+        matchedPassages.forEach(passage => {
+          (passage.sentences || []).forEach(s => {
+            const sentObj = {
+              sentIndex: globalSentIdx++,
+              passageId: passage.id,
+              lessonTitle: passage.lessonTitle,
+              partTitle: passage.partTitle,
+              en: s.en,
+              ko: s.ko,
+              isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
+              grammarPoint: s.grammarPoint || ''
+            };
+            if (!isFullSentence) {
+              const cloze = this.buildClozeTokensForResult(s.en, sentObj.sentIndex, existingResult);
+              sentObj.tokens = cloze.tokens;
+              sentObj.blanks = cloze.blanks;
+            }
+            examSentences.push(sentObj);
+          });
+        });
+      }
     }
 
     if (examSentences.length === 0) {
@@ -10514,11 +10582,11 @@ const App = {
         <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-3">
           <i class="fa-solid fa-circle-info text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
           <div class="space-y-1">
-            <strong class="font-black text-amber-900 block">[응시 및 작성 유의사항]</strong>
+            <strong class="font-black text-amber-900 block">[응시 및 채점 결과 확인 안내]</strong>
             <p class="leading-relaxed text-amber-900/90">
-              1. 각 문항의 <strong>우리말 해석</strong>을 정독하고, 출제된 문법 포인트와 문맥에 부합하도록 올바른 영어 문장으로 작성하세요.<br>
-              2. 철자(Spelling), 인칭·수일치, 동사 시제, 구두점(마침표, 물음표 등) 표기에 각별히 유의하세요.<br>
-              3. 아래 시험지에서 각 문항별 <strong>서술형 출제 핵심 포인트</strong>와 <strong>모범 영작 정답</strong>을 상세히 확인할 수 있습니다.
+              ${isFullSentence
+                ? '1. 실제 시험과 동일한 영작 작성 양식에 제출한 답안이 채워져 있습니다.<br>2. <strong>틀린 문항</strong>은 상단에 <strong class="text-emerald-800">★ 올바른 정답 원문</strong>이 초록색 박스로 첨삭 표출됩니다.'
+                : '1. 실제 시험과 동일한 <strong>문장 속 빈칸 양식</strong>에 제출한 답안이 채워져 있습니다.<br>2. <strong>틀린 빈칸</strong>은 상단에 <strong class="text-emerald-800">★ 정답 단어</strong>가 초록색 배지로 첨삭 표출되며, 제출 답안은 취소선으로 표시됩니다.'}
             </p>
           </div>
         </div>
@@ -10542,130 +10610,276 @@ const App = {
         `;
       }
 
-      // 학생 답안 및 채점 상태 확인
-      let isGraded = false;
-      let isStudentCorrect = false;
-      let studentAns = '';
+      if (!isFullSentence) {
+        // ── 빈칸 채우기 (CLOZE) 모드: 실제 시험 양식 그대로 표시 ──
+        let sentWrongCount = 0;
+        const totalBlanksInSent = (s.blanks || []).length;
+        const isGraded = Boolean(existingResult);
 
-      if (existingResult) {
-        isGraded = true;
-        studentAns = (existingResult.userAnswers && existingResult.userAnswers['sent_' + s.sentIndex]) || '';
-        const wrongItem = (existingResult.wrongList || []).find(w => w.sentIndex === s.sentIndex || (w.correctEn && App.normalizeSentence(w.correctEn) === App.normalizeSentence(s.en)));
-        if (wrongItem) {
-          isStudentCorrect = false;
-          if (!studentAns && wrongItem.userAns && wrongItem.userAns !== '(미입력)') {
-            studentAns = wrongItem.userAns;
+        const tokensHtml = (s.tokens || []).map(token => {
+          if (!token.isBlank) {
+            return `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(token.text)}</span>`;
           }
-        } else {
-          isStudentCorrect = true;
-        }
-      }
 
-      html += `
-        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4 break-inside-avoid">
-          <!-- 문항 헤더 (번호 및 서술형 태그) -->
-          <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <div class="flex items-center gap-2">
-              <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-xs">
-                ${sIdx + 1}
+          const b = token.blankObj;
+          let userAns = '';
+          let isCorrect = true;
+
+          if (existingResult) {
+            if (existingResult.userAnswers && existingResult.userAnswers[b.id] !== undefined) {
+              userAns = existingResult.userAnswers[b.id];
+            }
+
+            const wrongItem = (existingResult.wrongList || []).find(w => {
+              if (w.blank) {
+                if (w.blank.id === b.id) return true;
+                if (w.blank.sentIndex === s.sentIndex && w.blank.cleanWord === b.cleanWord) return true;
+              }
+              if (w.correctWord && w.correctWord.toLowerCase() === b.cleanWord) return true;
+              return false;
+            });
+
+            if (wrongItem) {
+              isCorrect = false;
+              sentWrongCount++;
+              if (!userAns && wrongItem.userAns && wrongItem.userAns !== '(미입력)') {
+                userAns = wrongItem.userAns;
+              }
+            } else {
+              isCorrect = true;
+              if (!userAns) userAns = b.word;
+            }
+          }
+
+          if (!existingResult) {
+            // 미응시 시험지 (인쇄/출제 상태: 빈칸 입력 양식)
+            return `
+              ${b.prefix ? `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(b.prefix)}</span>` : ''}
+              <span class="inline-block text-center font-bold px-3 py-1 text-xs sm:text-sm bg-white border-2 border-dashed border-indigo-300 rounded-lg text-indigo-400 self-end shadow-2xs">
+                ${'_'.repeat(Math.max(4, b.length))} <span class="text-[10px] text-slate-400 font-normal">(${b.length}자)</span>
               </span>
-              <span class="font-black text-sm text-slate-800">문항 ${sIdx + 1}</span>
-              ${s.isDescriptiveTarget ? `
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300">
-                  <i class="fa-solid fa-star text-amber-500 mr-1"></i>서술형 대비 핵심
-                </span>
-              ` : ''}
-            </div>
+              ${b.suffix ? `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(b.suffix)}</span>` : ''}
+            `;
+          }
 
-            <!-- 정답/오답 판정 배지 (응시 완료 시) -->
-            ${isGraded ? `
-              <span class="px-3 py-1 rounded-full text-xs font-black ${isStudentCorrect ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
-                ${isStudentCorrect ? '✓ 정답 (PASS)' : '✗ 오답 (WRONG)'}
+          if (isCorrect) {
+            // 정답: 내가 입력한 답대로 채워져있고 (초록 테두리 + 체크 배지)
+            return `
+              ${b.prefix ? `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(b.prefix)}</span>` : ''}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 border-2 border-emerald-400 text-emerald-950 font-bold text-xs sm:text-sm shadow-2xs self-end">
+                <span>${this.escapeHtml(userAns || b.word)}</span>
+                <i class="fa-solid fa-check text-emerald-600 text-xs ml-1.5" title="정답"></i>
               </span>
-            ` : `
-              <span class="text-xs text-slate-400 font-medium">[배점 1문항]</span>
-            `}
-          </div>
-
-          <!-- 1. 우리말 해석 (조건) -->
-          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <div class="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1.5">
-              <i class="fa-solid fa-language text-slate-400"></i>
-              <span>우리말 해석 (영작 조건)</span>
-            </div>
-            <p class="text-sm sm:text-base font-bold text-slate-900 font-exam leading-relaxed">
-              ${this.escapeHtml(s.ko)}
-            </p>
-          </div>
-
-          <!-- 2. 서술형 문법/구문 핵심 포인트 배너 -->
-          ${s.grammarPoint ? `
-            <div class="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200/80 text-xs text-indigo-950 space-y-1">
-              <div class="font-black text-indigo-800 flex items-center gap-1.5">
-                <i class="fa-solid fa-lightbulb text-amber-500"></i>
-                <span>서술형 출제 문법 & 영작 포인트:</span>
-              </div>
-              <div class="text-slate-700 font-medium leading-relaxed">
-                ${this.escapeHtml(s.grammarPoint)}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- 3. 답안 및 정답 영역 -->
-          ${isGraded ? `
-            <!-- 학생 실제 작성 답안 -->
-            <div class="p-3.5 rounded-xl ${isStudentCorrect ? 'bg-emerald-50/70 border border-emerald-200' : 'bg-rose-50/70 border border-rose-200'} space-y-1">
-              <div class="flex items-center justify-between text-xs font-bold">
-                <span class="text-slate-700 flex items-center gap-1">
-                  <i class="fa-solid fa-pencil text-slate-400"></i>학생 제출 답안:
+              ${b.suffix ? `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(b.suffix)}</span>` : ''}
+            `;
+          } else {
+            // 틀린 것: 내가 입력한 답대로 채워져있고(취소선), 위에 정답 추가로 써줌!
+            return `
+              ${b.prefix ? `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(b.prefix)}</span>` : ''}
+              <span class="inline-flex flex-col items-center mx-1 align-bottom self-end">
+                <span class="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md shadow-2xs mb-1 whitespace-nowrap">
+                  <i class="fa-solid fa-star text-amber-500 text-[10px]"></i>정답: <strong class="underline decoration-emerald-500 font-black">${this.escapeHtml(b.word)}</strong>
                 </span>
-                <span class="${isStudentCorrect ? 'text-emerald-700 font-black' : 'text-rose-600 font-black'}">
-                  ${isStudentCorrect ? '정답 일치' : '오답'}
+                <span class="inline-block text-center font-bold px-2.5 py-1 text-xs sm:text-sm bg-rose-50 border-2 border-rose-400 rounded-lg text-rose-700 line-through shadow-2xs">
+                  ${this.escapeHtml(userAns && userAns.trim() ? userAns : '(미입력)')}
                 </span>
-              </div>
-              <div class="p-2.5 rounded-lg bg-white border border-slate-200 font-mono text-xs sm:text-sm font-bold ${isStudentCorrect ? 'text-emerald-950' : 'text-rose-950'} whitespace-pre-wrap leading-relaxed">
-                ${studentAns && studentAns.trim() ? this.escapeHtml(studentAns) : '<span class="text-slate-400 font-normal italic">미작성 (빈칸 제출)</span>'}
-              </div>
-            </div>
+              </span>
+              ${b.suffix ? `<span class="self-end pb-1 text-slate-900 font-medium">${this.escapeHtml(b.suffix)}</span>` : ''}
+            `;
+          }
+        }).join(' ');
 
-            <!-- 모범 정답 원문 -->
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-              <div class="text-xs font-bold text-indigo-900 flex items-center gap-1">
-                <i class="fa-solid fa-star text-amber-500"></i>모범 영작 / 교과서·모의고사 원문 정답:
-              </div>
-              <div class="p-2.5 rounded-lg bg-white border border-indigo-200 font-mono text-xs sm:text-sm font-bold text-indigo-950 whitespace-pre-wrap leading-relaxed">
-                ${this.escapeHtml(s.en)}
-              </div>
-            </div>
-          ` : `
-            <!-- 미응시 상태 / 인쇄 시 수기 작성란 -->
-            <div class="p-4 rounded-xl bg-white border border-dashed border-slate-300 space-y-3">
-              <div class="text-[11px] font-bold text-slate-400 flex items-center justify-between">
-                <span>[ 영작 답안 작성란 ]</span>
-                <span class="text-[10px] text-slate-400 print:hidden">시험지 인쇄 후 직접 수기로 작성하거나, 화면에서 테스트를 진행하세요.</span>
-              </div>
-              <div class="h-9 border-b border-slate-300"></div>
-              <div class="h-9 border-b border-slate-300"></div>
-            </div>
+        const sentAllCorrect = isGraded && sentWrongCount === 0;
 
-            <!-- 선생님 및 학습자 확인용 모범 정답 아코디언 -->
-            <div class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100">
-              <details class="group cursor-pointer">
-                <summary class="text-xs font-bold text-indigo-800 flex items-center justify-between select-none">
-                  <span class="flex items-center gap-1.5">
-                    <i class="fa-solid fa-key text-amber-500"></i>
-                    <span>정답 및 모범 영작 원문 확인 (클릭)</span>
+        html += `
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-3.5 break-inside-avoid">
+            <!-- 문항 헤더 -->
+            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-xs">
+                  ${sIdx + 1}
+                </span>
+                <span class="font-black text-xs sm:text-sm text-slate-800">문항 ${sIdx + 1}</span>
+                ${s.isDescriptiveTarget ? `
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                    <i class="fa-solid fa-star text-amber-500 mr-1"></i>서술형 대비 핵심
                   </span>
-                  <i class="fa-solid fa-chevron-down text-indigo-400 text-xs transition group-open:rotate-180"></i>
-                </summary>
-                <div class="mt-2.5 pt-2.5 border-t border-indigo-200/60 font-mono text-xs sm:text-sm font-bold text-indigo-950 leading-relaxed bg-white p-3 rounded-lg border border-indigo-100">
-                  ${this.escapeHtml(s.en)}
-                </div>
-              </details>
+                ` : ''}
+              </div>
+
+              ${isGraded ? `
+                <span class="px-3 py-1 rounded-full text-xs font-black ${sentAllCorrect ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
+                  ${sentAllCorrect ? '✓ 전체 정답' : `✗ 오답 ${sentWrongCount}개`}
+                </span>
+              ` : `
+                <span class="text-xs text-slate-400 font-medium">빈칸 ${totalBlanksInSent}개</span>
+              `}
             </div>
-          `}
-        </div>
-      `;
+
+            <!-- 진짜 시험보는 그 양식: 영어 본문 문장 속에 빈칸이 인라인으로 채워진 형태 -->
+            <div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80">
+              <div class="text-sm sm:text-base leading-loose text-slate-900 font-medium flex flex-wrap items-end gap-x-2 gap-y-3">
+                ${tokensHtml}
+              </div>
+            </div>
+
+            <!-- 한글 해석 -->
+            <div class="pt-1 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed flex items-start gap-1.5">
+              <span class="text-slate-400 font-bold flex-shrink-0">[해석]</span>
+              <span>${this.escapeHtml(s.ko)}</span>
+            </div>
+
+            <!-- 서술형 문법 포인트 (있는 경우) -->
+            ${s.grammarPoint ? `
+              <div class="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/80 text-xs text-indigo-950 flex items-start gap-2">
+                <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <span class="font-black text-indigo-900 mr-1.5">[서술형 출제 문법 & 영작 포인트]</span>
+                  <span class="text-slate-700 font-medium">${this.escapeHtml(s.grammarPoint)}</span>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else {
+        // ── 문장 전체 영작 (FULL_SENTENCE) 모드: 실제 시험 양식 그대로 표시 ──
+        let isGraded = false;
+        let isStudentCorrect = false;
+        let studentAns = '';
+
+        if (existingResult) {
+          isGraded = true;
+          studentAns = (existingResult.userAnswers && existingResult.userAnswers['sent_' + s.sentIndex]) || '';
+          const wrongItem = (existingResult.wrongList || []).find(w => w.sentIndex === s.sentIndex || (w.correctEn && App.normalizeSentence(w.correctEn) === App.normalizeSentence(s.en)));
+          if (wrongItem) {
+            isStudentCorrect = false;
+            if (!studentAns && wrongItem.userAns && wrongItem.userAns !== '(미입력)') {
+              studentAns = wrongItem.userAns;
+            }
+          } else {
+            isStudentCorrect = true;
+          }
+        }
+
+        html += `
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-3.5 break-inside-avoid">
+            <!-- 문항 헤더 -->
+            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-xs">
+                  ${sIdx + 1}
+                </span>
+                <span class="font-black text-xs sm:text-sm text-slate-800">문항 ${sIdx + 1}</span>
+                ${s.isDescriptiveTarget ? `
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                    <i class="fa-solid fa-star text-amber-500 mr-1"></i>서술형 대비 핵심
+                  </span>
+                ` : ''}
+              </div>
+
+              ${isGraded ? `
+                <span class="px-3 py-1 rounded-full text-xs font-black ${isStudentCorrect ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
+                  ${isStudentCorrect ? '✓ 정답 (PASS)' : '✗ 오답 (WRONG)'}
+                </span>
+              ` : `
+                <span class="text-xs text-slate-400 font-medium">[서술형 영작]</span>
+              `}
+            </div>
+
+            <!-- 한글 해석 (영작 제시문 조건) -->
+            <div class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+              <span class="text-xs font-bold text-slate-500 flex-shrink-0 mt-0.5">[해석 조건]</span>
+              <p class="text-sm sm:text-base font-bold text-slate-900 font-exam leading-relaxed">
+                ${this.escapeHtml(s.ko)}
+              </p>
+            </div>
+
+            <!-- 영작 답안 작성 양식 (진짜 시험보는 그 양식!) -->
+            ${isGraded ? `
+              ${isStudentCorrect ? `
+                <!-- 정답인 경우: 내가 작성한 답안이 에메랄드 박스에 채워져 있음 -->
+                <div class="p-3.5 rounded-xl border-2 border-emerald-400 bg-emerald-50/60 space-y-1.5 shadow-2xs">
+                  <div class="flex items-center justify-between text-xs font-bold text-emerald-800">
+                    <span class="flex items-center gap-1.5">
+                      <i class="fa-solid fa-pen text-emerald-600"></i>내가 작성한 영작 답안
+                    </span>
+                    <span class="text-emerald-700 font-black"><i class="fa-solid fa-check mr-1"></i>정답 일치</span>
+                  </div>
+                  <div class="font-mono text-xs sm:text-sm font-bold text-emerald-950 whitespace-pre-wrap leading-relaxed">
+                    ${this.escapeHtml(studentAns)}
+                  </div>
+                </div>
+              ` : `
+                <!-- 오답인 경우: 내가 입력한 답대로 채워져있고 (취소선), 위에 정답 추가로 써줌! -->
+                <div class="space-y-2.5">
+                  <!-- 위에 정답 추가로 써주기 -->
+                  <div class="p-3.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 space-y-1.5 shadow-2xs">
+                    <div class="flex items-center justify-between text-xs font-bold text-emerald-900">
+                      <span class="flex items-center gap-1.5 font-black">
+                        <i class="fa-solid fa-star text-amber-500"></i>★ 올바른 정답 원문 (교과서/모의고사)
+                      </span>
+                      <span class="text-xs font-black text-emerald-700">모범 정답</span>
+                    </div>
+                    <div class="font-mono text-xs sm:text-sm font-black text-emerald-950 whitespace-pre-wrap leading-relaxed">
+                      ${this.escapeHtml(s.en)}
+                    </div>
+                  </div>
+
+                  <!-- 내가 작성한 오답 (취소선) -->
+                  <div class="p-3.5 rounded-xl border-2 border-rose-300 bg-rose-50/50 space-y-1">
+                    <div class="flex items-center justify-between text-xs font-bold text-rose-700">
+                      <span class="flex items-center gap-1">
+                        <i class="fa-solid fa-xmark text-rose-500"></i>내가 제출한 답안
+                      </span>
+                      <span class="text-[11px] font-bold text-rose-600">오답</span>
+                    </div>
+                    <div class="font-mono text-xs sm:text-sm font-bold text-rose-900 line-through whitespace-pre-wrap leading-relaxed">
+                      ${studentAns && studentAns.trim() ? this.escapeHtml(studentAns) : '<span class="no-underline text-slate-400 italic">미작성 (빈칸 제출)</span>'}
+                    </div>
+                  </div>
+                </div>
+              `}
+            ` : `
+              <!-- 미응시 상태 / 인쇄 시 수기 작성란 (실제 시험지 작성 양식) -->
+              <div class="p-4 rounded-xl bg-white border border-dashed border-slate-300 space-y-3">
+                <div class="text-[11px] font-bold text-slate-400 flex items-center justify-between">
+                  <span>[ 영작 답안 작성란 ]</span>
+                  <span class="text-[10px] text-slate-400 print:hidden">시험지 인쇄 후 직접 수기로 작성하거나, 화면에서 테스트를 진행하세요.</span>
+                </div>
+                <div class="h-9 border-b border-slate-300"></div>
+                <div class="h-9 border-b border-slate-300"></div>
+              </div>
+
+              <!-- 선생님 및 학습자 확인용 모범 정답 아코디언 -->
+              <div class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100">
+                <details class="group cursor-pointer">
+                  <summary class="text-xs font-bold text-indigo-800 flex items-center justify-between select-none">
+                    <span class="flex items-center gap-1.5">
+                      <i class="fa-solid fa-key text-amber-500"></i>
+                      <span>정답 및 모범 영작 원문 확인 (클릭)</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down text-indigo-400 text-xs transition group-open:rotate-180"></i>
+                  </summary>
+                  <div class="mt-2.5 pt-2.5 border-t border-indigo-200/60 font-mono text-xs sm:text-sm font-bold text-indigo-950 leading-relaxed bg-white p-3 rounded-lg border border-indigo-100">
+                    ${this.escapeHtml(s.en)}
+                  </div>
+                </details>
+              </div>
+            `}
+
+            <!-- 서술형 문법/구문 포인트 -->
+            ${s.grammarPoint ? `
+              <div class="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/80 text-xs text-indigo-950 flex items-start gap-2">
+                <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <span class="font-black text-indigo-900 mr-1.5">[서술형 출제 문법 & 영작 포인트]</span>
+                  <span class="text-slate-700 font-medium">${this.escapeHtml(s.grammarPoint)}</span>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
     });
 
     html += `
