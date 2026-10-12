@@ -483,6 +483,7 @@ const App = {
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
     document.getElementById('practiceTestView')?.classList.add('hidden');
+    document.getElementById('textMemorizePaperView')?.classList.add('hidden');
     this.updateHeaderActions();
     this.renderLanding();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -520,6 +521,7 @@ const App = {
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
     document.getElementById('practiceTestView')?.classList.add('hidden');
+    document.getElementById('textMemorizePaperView')?.classList.add('hidden');
     this.updateHeaderActions();
 
     this.renderStudentDashboard();
@@ -540,6 +542,7 @@ const App = {
     document.getElementById('adminDashboardView').classList.remove('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
     document.getElementById('practiceTestView')?.classList.add('hidden');
+    document.getElementById('textMemorizePaperView')?.classList.add('hidden');
     this.updateHeaderActions();
 
     this.renderAdminDashboard();
@@ -553,6 +556,7 @@ const App = {
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.remove('hidden');
     document.getElementById('practiceTestView')?.classList.add('hidden');
+    document.getElementById('textMemorizePaperView')?.classList.add('hidden');
     this.updateHeaderActions();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
@@ -565,6 +569,7 @@ const App = {
     document.getElementById('adminDashboardView').classList.add('hidden');
     document.getElementById('vocabTestView').classList.add('hidden');
     document.getElementById('practiceTestView')?.classList.remove('hidden');
+    document.getElementById('textMemorizePaperView')?.classList.add('hidden');
     this.updateHeaderActions();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   },
@@ -1221,7 +1226,11 @@ const App = {
               <button type="button" onclick="event.stopPropagation(); App.startPracticeTest('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
                 <i class="fa-solid fa-pencil"></i> 시험 응시
               </button>
-            `) : ''}
+            `) : (test.type === 'TEXT_MEMORIZE' ? `
+              <button type="button" onclick="event.stopPropagation(); App.viewTextMemorizeExamPaper('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap" title="본문암기 시험지 형태로 보기 (인쇄/정답확인)">
+                <i class="fa-solid fa-file-lines"></i> 시험지 보기
+              </button>
+            ` : '')}
             <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
               <i class="fa-solid fa-chevron-right text-xs"></i>
             </div>
@@ -1236,19 +1245,21 @@ const App = {
   // ========================================================
   openTestDetailModal(testId) {
     const allTests = AppData.getTests();
-    const test = allTests.find(t => t.id === testId);
+    const test = allTests.find(t => String(t.id) === String(testId) || t.id === testId);
     if (!test) return;
 
     if (test.type === 'VOCAB') {
       this.openVocabTestScheduleModal(testId);
       return;
     }
-    if (test.type === 'PRACTICE') {
-      this.openPracticeTestScheduleModal(testId);
+    const isTextMemorize = test.type === 'TEXT_MEMORIZE' || (Array.isArray(test.passageIds) && test.passageIds.length > 0) || (test.title && test.title.includes('본문'));
+    if (isTextMemorize) {
+      test.type = 'TEXT_MEMORIZE';
+      this.openTextMemorizeScheduleModal(testId);
       return;
     }
-    if (test.type === 'TEXT_MEMORIZE') {
-      this.openTextMemorizeScheduleModal(testId);
+    if (test.type === 'PRACTICE') {
+      this.openPracticeTestScheduleModal(testId);
       return;
     }
 
@@ -2296,6 +2307,9 @@ const App = {
           <button type="button" onclick="App.startPracticeTest('${test.id}')" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 cursor-pointer">
             <i class="fa-solid fa-play"></i> 문제풀이 시험 바로 열기 (체험 및 풀이)
           </button>
+          <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+            <i class="fa-solid fa-file-lines"></i> 문제풀이 시험지 형태로 보기 (인쇄 및 정답·해설)
+          </button>
 
           ${result ? `
             <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
@@ -2374,7 +2388,10 @@ const App = {
         `;
       } else {
         actionButtonHtml = `
-          <div class="pt-2">
+          <div class="space-y-2 pt-2">
+            <button type="button" onclick="App.viewPracticeTestResultDetail('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-lines"></i> 출제 문항 시험지로 미리보기
+            </button>
             <button type="button" onclick="App.startPracticeTest('${test.id}')" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 cursor-pointer">
               <i class="fa-solid fa-pencil"></i> 문제풀이 시험 시작하기
             </button>
@@ -3454,11 +3471,19 @@ const App = {
   },
 
   viewPracticeTestResultDetail(testId) {
-    const test = AppData.getTests().find(t => t.id === testId);
-    if (!test || !test.practiceResult) {
-      this.toast('응시 결과가 없습니다.', 'info');
+    const test = AppData.getTests().find(t => String(t.id) === String(testId) || t.id === testId);
+    if (!test) {
+      this.toast('시험 정보를 찾을 수 없습니다.', 'error');
       return;
     }
+
+    // 본문암기 테스트인 경우 본문암기 전용 시험지 뷰어로 전달
+    if (test.type === 'TEXT_MEMORIZE' || (Array.isArray(test.passageIds) && test.passageIds.length > 0) || (test.title && test.title.includes('본문'))) {
+      this.viewTextMemorizeExamPaper(test.id);
+      return;
+    }
+
+    this.closeAllModals();
     this.closeTestDetailModal();
     this.state.practiceTest = {
       testId: test.id,
@@ -3466,7 +3491,38 @@ const App = {
       isCompleted: true
     };
     this.showPracticeTestView();
-    this.renderPracticeResult(test.practiceResult, test);
+
+    if (test.practiceResult) {
+      this.renderPracticeResult(test.practiceResult, test);
+    } else {
+      let questions = test.questions || [];
+      if (questions.length === 0 && typeof getMock202509QuestionsByPlanId === 'function') {
+        const planMatch = String(test.id).match(/^(mock2509_d\d+)/);
+        if (planMatch) {
+          questions = getMock202509QuestionsByPlanId(planMatch[1]);
+          test.questions = questions;
+        }
+      }
+      const previewResult = {
+        score: test.score ? parseInt(test.score) || 0 : 0,
+        totalCount: questions.length,
+        correctCount: 0,
+        passed: Boolean(test.status === 'PASS'),
+        isPreview: true,
+        items: questions.map((q, idx) => ({
+          questionIndex: idx,
+          question: q.question,
+          passage: q.passage || '',
+          type: q.type || 'CHOICE',
+          choices: q.choices || [],
+          correctAnswer: q.answer,
+          explanation: q.explanation || '',
+          studentAnswer: '',
+          isCorrect: false
+        }))
+      };
+      this.renderPracticeResult(previewResult, test);
+    }
   },
 
   // 시험 도중 나가기 시 상태 처리
@@ -3702,6 +3758,9 @@ const App = {
                 <button onclick="App.toggleTextMemorizeAllowRetest('${test.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${test.allowRetest ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}">
                   <i class="fa-solid ${test.allowRetest ? 'fa-check' : 'fa-rotate-right'} mr-1"></i>${test.allowRetest ? '재시험 허용중' : '재시험 허용하기'}
                 </button>
+                <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="px-2 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition" title="본문암기 시험지 및 학생 답안/정답표 확인">
+                  <i class="fa-solid fa-file-lines mr-1"></i>시험지
+                </button>
               </div>
             ` : `
               <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
@@ -3727,7 +3786,11 @@ const App = {
                     <i class="fa-solid fa-play"></i>
                   </button>
                 `}
-              ` : ''}
+              ` : (test.type === 'TEXT_MEMORIZE' ? `
+                <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="p-1.5 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition" title="본문암기 시험지 형태로 보기 (인쇄 및 정답/해설)">
+                  <i class="fa-solid fa-file-lines"></i>
+                </button>
+              ` : '')}
               <button onclick="App.openRescheduleModal('${test.id}')" class="p-1.5 rounded-lg text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition" title="시험 일정 이동">
                 <i class="fa-solid fa-calendar-days"></i>
               </button>
@@ -4217,6 +4280,9 @@ const App = {
     if (document.getElementById('formIsEnglishDefTest')) document.getElementById('formIsEnglishDefTest').checked = false;
     this.onEnglishDefTestToggle();
     document.getElementById('formPracticeCutoff').value = '80';
+    if (document.getElementById('formTextMemorizeDescriptiveOnly')) {
+      document.getElementById('formTextMemorizeDescriptiveOnly').checked = false;
+    }
     document.getElementById('formScore').value = '';
     document.getElementById('formRetestDate').value = '';
     document.getElementById('formTeacherNote').value = '';
@@ -4308,6 +4374,10 @@ const App = {
     const tmMode = test.textMemorizeMode || 'CLOZE';
     const tmModeRadio = document.querySelector(`input[name="formTextMemorizeMode"][value="${tmMode}"]`);
     if (tmModeRadio) tmModeRadio.checked = true;
+
+    if (document.getElementById('formTextMemorizeDescriptiveOnly')) {
+      document.getElementById('formTextMemorizeDescriptiveOnly').checked = Boolean(test.textMemorizeDescriptiveOnly);
+    }
 
     document.getElementById('formScore').value = test.score || '';
     document.getElementById('formRetestDate').value = test.retestDate || '';
@@ -5199,6 +5269,7 @@ const App = {
     const textMemorizeCutoffType = isTextMemorize ? (document.getElementById('formTextMemorizeCutoffType')?.value || 'SCORE') : null;
     const textMemorizeCutoff = Number(document.getElementById('formTextMemorizeCutoff')?.value ?? 80);
     const textMemorizeMaxWrong = Number(document.getElementById('formTextMemorizeMaxWrong')?.value ?? 3);
+    const textMemorizeDescriptiveOnly = isTextMemorize ? Boolean(document.getElementById('formTextMemorizeDescriptiveOnly')?.checked) : false;
 
     // TEXT_MEMORIZE: collect selected passage IDs
     const selectedPassageCheckboxes = document.querySelectorAll('input[name="formPassageCheckbox"]:checked');
@@ -5224,14 +5295,22 @@ const App = {
     } else if (isPracticeTest) {
       scope = scope || '선생님 출제 5지선다 객관식 문제풀이';
     } else if (isTextMemorize) {
-      const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+      const allPassages = this.getAllTextMemorizePassages();
       const matched = allPassages.filter(p => selectedPassageIds.includes(p.id));
       if (matched.length > 0) {
         const parts = matched.map(p => p.partTitle.replace(/\s*\(\d+문장\)/, '')).join(', ');
-        const totalSentences = matched.reduce((sum, p) => sum + (p.sentences?.length || 0), 0);
-        scope = `${parts} (총 ${matched.length}개 문단 / ${totalSentences}문장)`;
+        let count = 0;
+        if (textMemorizeDescriptiveOnly) {
+          count = matched.reduce((sum, p) => sum + p.sentences.filter(s => s.isDescriptiveTarget).length, 0);
+          scope = `${parts} (서술형 대비 엄선 ${count}문장)`;
+        } else {
+          count = matched.reduce((sum, p) => sum + p.sentences.length, 0);
+          scope = `${parts} (총 ${matched.length}개 지문 / ${count}문장)`;
+        }
       } else {
-        scope = textMemorizeMode === 'FULL_SENTENCE' ? '본문암기 문장 전체 영작(서술형) 테스트' : '본문암기 빈칸 채우기 테스트';
+        scope = textMemorizeMode === 'FULL_SENTENCE'
+          ? (textMemorizeDescriptiveOnly ? '본문암기 핵심 서술형 대비 영작 테스트' : '본문암기 문장 전체 영작(서술형) 테스트')
+          : '본문암기 빈칸 채우기 테스트';
       }
     }
 
@@ -5411,6 +5490,7 @@ const App = {
             textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
             textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
             textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
+            textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : (existingTest?.textMemorizeDescriptiveOnly || false),
             extendedDate: existingTest?.extendedDate || null,
             extendedEndTime: existingTest?.extendedEndTime || null,
             allowLate: existingTest?.allowLate || false,
@@ -5461,6 +5541,7 @@ const App = {
               textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
               textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
               textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
+              textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : (matchingExistingTest.textMemorizeDescriptiveOnly || false),
               type: testType,
               isMockSpecial
             };
@@ -5502,6 +5583,7 @@ const App = {
               textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
               textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
               textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
+              textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : false,
               type: testType,
               isMockSpecial
             };
@@ -5554,6 +5636,7 @@ const App = {
           textMemorizeCutoffType: isTextMemorize ? textMemorizeCutoffType : null,
           textMemorizeMaxWrong: isTextMemorize ? textMemorizeMaxWrong : null,
           textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
+          textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : false,
           type: testType,
           isMockSpecial
         };
@@ -9112,23 +9195,47 @@ const App = {
     }
   },
 
-  // ── 본문 암기 출제 범위 설정 및 문단 렌더링 ───────────────────
+  // ── 본문 암기 전체 지문 데이터 통합 조회 (YBM 1·2과 + 2025 9모 29~40번) ──
+  getAllTextMemorizePassages() {
+    const ybmPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+    const mockPassages = (typeof MOCK_202509_MEMORIZE_PASSAGES !== 'undefined') ? MOCK_202509_MEMORIZE_PASSAGES : [];
+    return [...ybmPassages, ...mockPassages];
+  },
+
   onTextMemorizeBookChange(bookName) {
     this.renderTextMemorizePassages(bookName);
+  },
+
+  onTextMemorizeDescriptiveOnlyChange() {
+    const bookName = document.getElementById('formTextMemorizeBookSelect')?.value || 'YBM(박준언) 공통영어 2';
+    const checked = Array.from(document.querySelectorAll('input[name="formPassageCheckbox"]:checked')).map(cb => cb.value);
+    this.renderTextMemorizePassages(bookName, checked);
   },
 
   renderTextMemorizePassages(bookName = 'YBM(박준언) 공통영어 2', selectedPassageIds = []) {
     const container = document.getElementById('formTextMemorizePassageList');
     if (!container) return;
 
-    const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
-    const filtered = allPassages.filter(p => !bookName || p.book === bookName);
+    const allPassages = this.getAllTextMemorizePassages();
+    // 교재별 필터링: YBM은 1과와 2과 본문만 허용 (Further Reading 및 3, 4과 배제), 모의고사는 29~40번
+    const filtered = allPassages.filter(p => {
+      if (!bookName) return true;
+      if (bookName.includes('YBM')) {
+        return (p.book && p.book.includes('YBM')) && (p.lesson === 1 || p.lesson === 2);
+      }
+      if (bookName.includes('인천학평') || bookName.includes('모의고사')) {
+        return (p.book && (p.book.includes('인천학평') || p.book.includes('29~40')));
+      }
+      return p.book === bookName;
+    });
 
     if (filtered.length === 0) {
       container.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">선택한 교재의 본문 데이터가 없습니다.</p>';
       this.updateTextMemorizeCountBadge();
       return;
     }
+
+    const isDescOnly = Boolean(document.getElementById('formTextMemorizeDescriptiveOnly')?.checked);
 
     // 단원(lesson)별 그룹화
     const lessonMap = {};
@@ -9153,7 +9260,7 @@ const App = {
             <h5 class="text-xs font-black text-indigo-950 flex items-center gap-1.5">
               <i class="fa-solid fa-bookmark text-indigo-500"></i> ${this.escapeHtml(group.lessonTitle)}
             </h5>
-            <button type="button" onclick="App.toggleAllPassagesInLesson(${lessonNum}, ${!allSelectedInLesson})" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+            <button type="button" onclick="App.toggleAllPassagesInLesson(${lessonNum}, ${!allSelectedInLesson})" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer">
               ${allSelectedInLesson ? '단원 전체 해제' : '단원 전체 선택'}
             </button>
           </div>
@@ -9161,11 +9268,17 @@ const App = {
             ${group.passages.map(p => {
               const isChecked = selectedPassageIds.includes(p.id);
               const sentenceCount = p.sentences.length;
+              const descCount = p.sentences.filter(s => s.isDescriptiveTarget).length;
+              const badgeText = isDescOnly
+                ? `<span class="px-1.5 py-0.5 rounded bg-violet-100 text-violet-800 font-black">서술형 대비 ${descCount}문장</span>`
+                : `<span class="text-slate-500 font-semibold">총 ${sentenceCount}문장</span> <span class="text-violet-600 font-bold ml-1">(서술형 ${descCount})</span>`;
+
               return `
                 <label class="flex items-start gap-2 p-2.5 rounded-lg border ${isChecked ? 'bg-indigo-50/80 border-indigo-300 text-indigo-950 font-bold' : 'bg-slate-50/50 border-slate-200 text-slate-700 font-medium'} hover:bg-indigo-50 transition cursor-pointer text-xs">
                   <input type="checkbox" name="formPassageCheckbox" value="${p.id}" data-lesson="${p.lesson}" ${isChecked ? 'checked' : ''} onchange="App.onPassageCheckboxChange(this)" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500" />
                   <div class="flex-1 min-w-0">
                     <p class="font-bold leading-tight">${this.escapeHtml(p.partTitle)}</p>
+                    <p class="text-[10px] mt-1">${badgeText}</p>
                   </div>
                 </label>
               `;
@@ -9203,11 +9316,23 @@ const App = {
   updateTextMemorizeCountBadge() {
     const checked = Array.from(document.querySelectorAll('input[name="formPassageCheckbox"]:checked')).map(cb => cb.value);
     const badge = document.getElementById('formTextMemorizeCountBadge');
+    const descBadge = document.getElementById('formTextMemorizeDescriptiveCountBadge');
+    const isDescOnly = Boolean(document.getElementById('formTextMemorizeDescriptiveOnly')?.checked);
+
+    const allPassages = this.getAllTextMemorizePassages();
+    const matched = allPassages.filter(p => checked.includes(p.id));
+    const totalSentences = matched.reduce((acc, p) => acc + p.sentences.length, 0);
+    const descSentences = matched.reduce((acc, p) => acc + p.sentences.filter(s => s.isDescriptiveTarget).length, 0);
+
+    if (descBadge) {
+      descBadge.innerText = `${descSentences}문장`;
+    }
     if (badge) {
-      const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
-      const matched = allPassages.filter(p => checked.includes(p.id));
-      const totalSentences = matched.reduce((acc, p) => acc + p.sentences.length, 0);
-      badge.innerText = `${checked.length}개 문단 선택됨 (총 ${totalSentences}문장)`;
+      if (isDescOnly) {
+        badge.innerText = `${checked.length}개 지문 선택됨 (서술형 엄선 ${descSentences}문장)`;
+      } else {
+        badge.innerText = `${checked.length}개 지문 선택됨 (총 ${totalSentences}문장 / 서술형 ${descSentences}문장)`;
+      }
     }
   },
 
@@ -9300,15 +9425,18 @@ const App = {
     const isPassed = test.status === 'PASS' || existingResult?.passed;
     const isAdmin = this.state.isAdminLoggedIn;
 
-    const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+    const allPassages = this.getAllTextMemorizePassages();
     let passageIds = test.passageIds || [];
     if ((!Array.isArray(passageIds) || passageIds.length === 0) && allPassages.length > 0) {
       passageIds = [allPassages[0].id];
     }
     const matchedPassages = allPassages.filter(p => passageIds.includes(p.id));
-    const totalSentences = matchedPassages.reduce((acc, p) => acc + (p.sentences?.length || 0), 0);
+    const isDescriptiveOnly = Boolean(test.textMemorizeDescriptiveOnly);
+    const totalSentences = isDescriptiveOnly
+      ? matchedPassages.reduce((acc, p) => acc + p.sentences.filter(s => s.isDescriptiveTarget).length, 0)
+      : matchedPassages.reduce((acc, p) => acc + (p.sentences?.length || 0), 0);
 
-    document.getElementById('tmScheduleStudentBadge').innerText = student ? `${student.name} 학생 · 본문암기` : '본문암기 테스트';
+    document.getElementById('tmScheduleStudentBadge').innerText = student ? `${student.name} 학생 · ${isDescriptiveOnly ? '서술형 대비 본문암기' : '본문암기'}` : '본문암기 테스트';
     document.getElementById('tmScheduleTitle').innerText = test.title || '본문암기 테스트';
 
     let statusBadge = { class: 'bg-blue-100 text-blue-800 border border-blue-200', label: '시험 대기' };
@@ -9366,16 +9494,20 @@ const App = {
             </div>
           `)}
           <div class="flex items-center gap-2">
-            <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <button onclick="App.openRescheduleModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
               <i class="fa-solid fa-calendar-days"></i> 일정 이동
             </button>
-            <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs">
+            <button onclick="App.openExtendTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
               <i class="fa-solid fa-clock-rotate-left"></i> 시험 시간 연장
             </button>
-            <button onclick="App.closeTextMemorizeScheduleModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <button onclick="App.closeTextMemorizeScheduleModal(); App.openEditTestModal('${test.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
               <i class="fa-solid fa-pen-to-square"></i> 전체 수정
             </button>
           </div>
+          <!-- 본문암기 시험지 형태로 보기 (관리자용) -->
+          <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+            <i class="fa-solid fa-file-lines"></i> 본문암기 시험지 형태로 보기 (인쇄 및 정답·해설)
+          </button>
           <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition flex items-center justify-center gap-1.5 border border-indigo-200 cursor-pointer shadow-2xs">
             <i class="fa-solid fa-book-open-reader text-indigo-600"></i> 본문 암기학습 미리보기 (학생 모드)
           </button>
@@ -9389,6 +9521,11 @@ const App = {
               <span>내 점수: <strong>${existingResult.score}점 (${existingResult.correct}/${existingResult.total} 정답)</strong></span>
               <span class="px-2.5 py-1 rounded-full text-xs font-extrabold ${existingResult.passed ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}">${existingResult.passed ? 'PASS 통과' : '불합격'}</span>
             </div>
+
+            <!-- 본문암기 시험지 결과 확인 버튼 (학생용) -->
+            <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-lines"></i> 나의 풀이 답안 & 정답·해설 시험지 보기
+            </button>
 
             ${existingResult.passed ? `
               <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
@@ -9423,6 +9560,9 @@ const App = {
             <div class="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
               <i class="fa-solid fa-circle-check"></i> 본문암기 테스트 완료
             </div>
+            <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-lines"></i> 정답·해설 시험지 보기
+            </button>
             <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
               <i class="fa-solid fa-book-open"></i> 본문 복습 및 다시 외우기
             </button>
@@ -9431,6 +9571,9 @@ const App = {
       } else if (timeStatus.status === 'NOT_STARTED') {
         actionButtonHtml = `
           <div class="space-y-2 pt-2">
+            <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-lines"></i> 출제 문항 시험지로 미리보기
+            </button>
             <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-200 flex items-center justify-center gap-2 cursor-pointer">
               <i class="fa-solid fa-graduation-cap"></i> 시험 전 본문 미리 외우기 (암기학습)
             </button>
@@ -9443,6 +9586,9 @@ const App = {
       } else if (timeStatus.status === 'EXPIRED') {
         actionButtonHtml = `
           <div class="space-y-2 pt-2">
+            <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-lines"></i> 출제 문항 시험지로 보기
+            </button>
             <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-200 flex items-center justify-center gap-2 cursor-pointer">
               <i class="fa-solid fa-book-open-reader"></i> 본문 자유 암기학습
             </button>
@@ -9455,6 +9601,9 @@ const App = {
       } else {
         actionButtonHtml = `
           <div class="space-y-2 pt-2">
+            <button type="button" onclick="App.viewTextMemorizeExamPaper('${test.id}')" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+              <i class="fa-solid fa-file-lines"></i> 출제 문항 시험지로 미리보기
+            </button>
             <button type="button" onclick="App.openTextMemorizeStudyModal('${test.id}')" class="w-full py-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-300 font-black text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
               <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 본문 미리 외우기 (암기학습)
             </button>
@@ -9570,16 +9719,18 @@ const App = {
       AppData.saveOrUpdateTest(test).catch(err => console.error('재시험 권한 일회성 소진 저장 오류:', err));
     }
 
-    const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+    const allPassages = this.getAllTextMemorizePassages();
     const passageIds = test.passageIds || [];
     let matchedPassages = allPassages.filter(p => passageIds.includes(p.id));
 
     // 만약 passageIds가 구버전이거나 일치하지 않을 경우 안전하게 기본 본문 매칭
     if (matchedPassages.length === 0 && allPassages.length > 0) {
-      if (test.title && test.title.includes('2과') || (test.scope && test.scope.includes('2과'))) {
-        matchedPassages = allPassages.filter(p => p.id === 'ybm2_l2_all');
+      if (test.title && (test.title.includes('2과') || (test.scope && test.scope.includes('2과')))) {
+        matchedPassages = allPassages.filter(p => p.id === 'ybm2_l2_all' || p.lesson === 2);
+      } else if (test.title && (test.title.includes('모의고사') || test.title.includes('9모') || (test.scope && test.scope.includes('모의고사')))) {
+        matchedPassages = allPassages.filter(p => p.book && p.book.includes('인천학평'));
       } else {
-        matchedPassages = allPassages.filter(p => p.id === 'ybm2_l1_all');
+        matchedPassages = allPassages.filter(p => p.id === 'ybm2_l1_all' || p.lesson === 1);
       }
       if (matchedPassages.length === 0) matchedPassages = [allPassages[0]];
     }
@@ -9590,6 +9741,7 @@ const App = {
     }
 
     const isFullSentence = test.textMemorizeMode === 'FULL_SENTENCE';
+    const isDescriptiveOnly = Boolean(test.textMemorizeDescriptiveOnly);
     const cutoffType = test.textMemorizeCutoffType || 'SCORE';
     const maxWrong = test.textMemorizeMaxWrong ?? 3;
     const cutoffScore = test.textMemorizeCutoff || test.cutoffScore || 80;
@@ -9601,6 +9753,9 @@ const App = {
 
     matchedPassages.forEach(passage => {
       passage.sentences.forEach(s => {
+        // 서술형 대비 문장만 출제 체크 시 서술형 문장만 추출
+        if (isDescriptiveOnly && !s.isDescriptiveTarget) return;
+
         if (isFullSentence) {
           examSentences.push({
             sentIndex: globalSentIdx,
@@ -9608,7 +9763,9 @@ const App = {
             lessonTitle: passage.lessonTitle,
             partTitle: passage.partTitle,
             en: s.en,
-            ko: s.ko
+            ko: s.ko,
+            isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
+            grammarPoint: s.grammarPoint || ''
           });
         } else {
           const cloze = this.generateClozeBlanks(s.en, globalSentIdx);
@@ -9620,13 +9777,20 @@ const App = {
             en: s.en,
             ko: s.ko,
             tokens: cloze.tokens,
-            blanks: cloze.blanks
+            blanks: cloze.blanks,
+            isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
+            grammarPoint: s.grammarPoint || ''
           });
           cloze.blanks.forEach(b => allBlanks.push(b));
         }
         globalSentIdx++;
       });
     });
+
+    if (examSentences.length === 0) {
+      this.toast('선택된 범위에 서술형 대비 문장이 없습니다.', 'warning');
+      return;
+    }
 
     this.state.textMemorizeExam = {
       testId,
@@ -9914,6 +10078,7 @@ const App = {
       cutoffType: exam.cutoffType,
       cutoffScore: exam.cutoffScore,
       maxWrong: exam.maxWrong,
+      userAnswers: exam.userAnswers || {},
       completedAt: new Date().toISOString()
     };
 
@@ -9926,6 +10091,7 @@ const App = {
         test.status = passed ? 'PASS' : 'FAIL';
         test.score = `${score}점`;
         test.allowRetest = false; // 재응시는 관리자 허용 필요
+        test.textMemorizeResult = resultData;
         await AppData.saveOrUpdateTest(test);
       }
 
@@ -10038,14 +10204,20 @@ const App = {
 
     if (footerElem) {
       footerElem.innerHTML = `
-        <div class="flex items-center gap-2 w-full">
-          <button type="button" onclick="App.closeTextMemorizeResult(); App.openTextMemorizeStudyModal('${testId}')" class="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
-            <i class="fa-solid fa-book-open"></i>
-            <span>본문 다시 외우기</span>
+        <div class="space-y-2 w-full">
+          <button type="button" onclick="App.closeTextMemorizeResult(); App.viewTextMemorizeExamPaper('${testId}')" class="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-file-lines text-indigo-300"></i>
+            <span>나의 풀이 답안 & 정답·해설 시험지 보기</span>
           </button>
-          <button type="button" onclick="App.closeTextMemorizeResult()" class="px-5 py-3 rounded-2xl ${result.passed ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-800 hover:bg-slate-700'} text-white font-bold text-xs sm:text-sm transition shadow-sm cursor-pointer">
-            확인 및 닫기
-          </button>
+          <div class="flex items-center gap-2 w-full">
+            <button type="button" onclick="App.closeTextMemorizeResult(); App.openTextMemorizeStudyModal('${testId}')" class="flex-1 py-3 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-book-open"></i>
+              <span>본문 다시 외우기</span>
+            </button>
+            <button type="button" onclick="App.closeTextMemorizeResult()" class="px-5 py-3 rounded-2xl ${result.passed ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-700 hover:bg-slate-600'} text-white font-bold text-xs sm:text-sm transition shadow-sm cursor-pointer">
+              닫기
+            </button>
+          </div>
         </div>
       `;
     }
@@ -10130,6 +10302,395 @@ const App = {
   },
 
   // ========================================================
+  // 본문암기 시험지 뷰어 & 인쇄 시스템 (Exam Paper View)
+  // ========================================================
+  showTextMemorizePaperView() {
+    this.clearVocabQuestionTimer();
+    this.closeAllModals();
+    document.body.style.overflow = '';
+    document.body.classList.remove('overflow-hidden');
+    this.state.view = 'textMemorizePaper';
+    document.getElementById('landingView')?.classList.add('hidden');
+    document.getElementById('studentDashboardView')?.classList.add('hidden');
+    document.getElementById('adminDashboardView')?.classList.add('hidden');
+    document.getElementById('vocabTestView')?.classList.add('hidden');
+    document.getElementById('practiceTestView')?.classList.add('hidden');
+    const paperView = document.getElementById('textMemorizePaperView');
+    if (paperView) {
+      paperView.classList.remove('hidden');
+    }
+    this.updateHeaderActions();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  exitTextMemorizePaperView() {
+    document.getElementById('textMemorizePaperView')?.classList.add('hidden');
+    if (this.state.isAdminLoggedIn) {
+      this.showAdminDashboard();
+    } else if (this.state.isStudentLoggedIn) {
+      const sId = this.state.selectedStudentId || (AppData.getStudents && AppData.getStudents()[0]?.id) || 1;
+      this.selectStudent(sId);
+    } else {
+      this.showLanding();
+    }
+  },
+
+  viewTextMemorizeExamPaper(testId) {
+    const test = AppData.getTests().find(t => String(t.id) === String(testId) || t.id === testId);
+    if (!test) {
+      this.toast('시험 정보를 찾을 수 없습니다.', 'error');
+      return;
+    }
+
+    // 만약 문제풀이(PRACTICE) 시험인 경우 문제풀이 시험지 뷰로 자연스럽게 연결
+    if (test.type === 'PRACTICE' && (!Array.isArray(test.passageIds) || test.passageIds.length === 0)) {
+      this.viewPracticeTestResultDetail(test.id);
+      return;
+    }
+
+    // 열려있는 모든 모달 및 배경 즉시 닫기
+    this.closeAllModals();
+    this.closeTextMemorizeScheduleModal();
+    this.closeTestDetailModal();
+    this.closeTextMemorizeResult();
+
+    const student = AppData.getStudentById(test.studentId);
+    const studentName = student ? student.name : '학생';
+
+    // 학생의 응시 결과 확인
+    const results = (typeof AppData.getTextMemorizeResults === 'function') ? AppData.getTextMemorizeResults() : [];
+    const existingResult = results.find(r => (String(r.testId) === String(test.id) || r.testId === test.id) && Number(r.studentId) === Number(test.studentId)) || test.textMemorizeResult || null;
+
+    // 출제 본문 지문 및 문장 추출
+    const allPassages = this.getAllTextMemorizePassages();
+    let matchedPassages = [];
+    const passageIds = test.passageIds || [];
+    if (Array.isArray(passageIds) && passageIds.length > 0) {
+      matchedPassages = allPassages.filter(p => passageIds.includes(p.id));
+    } else if (test.passageId) {
+      matchedPassages = allPassages.filter(p => p.id === test.passageId);
+    } else if (test.passageBook && (test.passageBook.includes('모의고사') || test.passageBook.includes('인천학평') || test.passageBook.includes('9모'))) {
+      matchedPassages = allPassages.filter(p => p.book && (p.book.includes('인천학평') || p.book.includes('29~40')));
+    } else if (test.title && (test.title.includes('2과') || (test.scope && test.scope.includes('2과')))) {
+      matchedPassages = allPassages.filter(p => p.id === 'ybm2_l2_all' || p.lesson === 2);
+    } else {
+      matchedPassages = allPassages.filter(p => p.id === 'ybm2_l1_all' || p.lesson === 1);
+    }
+    if (matchedPassages.length === 0 && allPassages.length > 0) {
+      matchedPassages = allPassages;
+    }
+
+    const isDescriptiveOnly = Boolean(test.textMemorizeDescriptiveOnly);
+    const isFullSentence = test.textMemorizeMode === 'FULL_SENTENCE';
+
+    let examSentences = [];
+    let globalSentIdx = 0;
+    matchedPassages.forEach(passage => {
+      (passage.sentences || []).forEach(s => {
+        if (isDescriptiveOnly && !s.isDescriptiveTarget) return;
+        examSentences.push({
+          sentIndex: globalSentIdx++,
+          passageId: passage.id,
+          lessonTitle: passage.lessonTitle,
+          partTitle: passage.partTitle,
+          en: s.en,
+          ko: s.ko,
+          isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
+          grammarPoint: s.grammarPoint || ''
+        });
+      });
+    });
+
+    // 안전 폴백: 만약 서술형 엄선 모드였으나 매칭 문장이 없는 경우 전체 문장으로 표시
+    if (examSentences.length === 0) {
+      globalSentIdx = 0;
+      matchedPassages.forEach(passage => {
+        (passage.sentences || []).forEach(s => {
+          examSentences.push({
+            sentIndex: globalSentIdx++,
+            passageId: passage.id,
+            lessonTitle: passage.lessonTitle,
+            partTitle: passage.partTitle,
+            en: s.en,
+            ko: s.ko,
+            isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
+            grammarPoint: s.grammarPoint || ''
+          });
+        });
+      });
+    }
+
+    if (examSentences.length === 0) {
+      this.toast('출제된 문장 데이터가 없습니다.', 'warning');
+      return;
+    }
+
+    // 상단 네비 바 타이틀 정보
+    const topInfoEl = document.getElementById('textMemorizePaperTopInfo');
+    if (topInfoEl) {
+      topInfoEl.innerHTML = `
+        <div class="flex items-center justify-center gap-2 flex-wrap">
+          <span class="font-bold text-slate-800">${this.escapeHtml(test.title || '본문암기 테스트')}</span>
+          <span class="text-xs px-2.5 py-0.5 rounded-full ${isFullSentence ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'} font-bold">
+            ${isFullSentence ? '문장 전체 영작' : '빈칸 채우기'}
+          </span>
+          ${isDescriptiveOnly ? '<span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300">★ 서술형 대비</span>' : ''}
+          <span class="text-xs text-slate-500 font-medium">${this.escapeHtml(studentName)} 학생 ${existingResult ? `· <strong class="${existingResult.passed ? 'text-emerald-600' : 'text-rose-600'}">${existingResult.score}점 (${existingResult.passed ? 'PASS 통과' : '불합격'})</strong>` : '· (미응시 시험지)'}</span>
+        </div>
+      `;
+    }
+
+    // 시험지 뷰 전환
+    this.showTextMemorizePaperView();
+
+    // 시험지 본문 렌더링
+    const contentEl = document.getElementById('textMemorizePaperContent');
+    if (!contentEl) return;
+
+    const cutoffLabel = test.textMemorizeCutoffType === 'WRONG_COUNT'
+      ? `오답 ${test.textMemorizeMaxWrong ?? 3}개 이하 허용`
+      : `${test.textMemorizeCutoff || test.cutoffScore || 80}점 이상`;
+
+    let html = `
+      <!-- 시험지 표지 헤더 카드 -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 pb-6">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-black tracking-wider uppercase">
+                YEM English Mastery Exam Paper
+              </span>
+              <span class="px-2.5 py-1 rounded-md text-xs font-bold ${isFullSentence ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'}">
+                ${isFullSentence ? '서술형 영작 평가' : '빈칸 암기 평가'}
+              </span>
+              ${isDescriptiveOnly ? `
+                <span class="px-2.5 py-1 rounded-md bg-amber-500 text-white text-xs font-black shadow-xs">
+                  <i class="fa-solid fa-star mr-1"></i>서술형 대비 핵심 문장 엄선 (${examSentences.length}문항)
+                </span>
+              ` : `
+                <span class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold">
+                  전체 본문 문장 (${examSentences.length}문항)
+                </span>
+              `}
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-exam">
+              ${this.escapeHtml(test.title || '본문암기 시험지')}
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 font-medium">
+              출제 교재 / 범위: <strong class="text-slate-800">${this.escapeHtml(test.passageBook || 'YBM(박준언) 공통영어 2')}</strong> · ${matchedPassages.length}개 지문 (${matchedPassages.map(p => p.partTitle || p.lessonTitle).join(', ')})
+            </p>
+          </div>
+
+          <!-- 시험 응시자 및 결과 배지 정보 -->
+          <div class="sm:text-right flex-shrink-0 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 min-w-[220px]">
+            <div class="text-xs text-slate-500 mb-1">수험자 / 응시 학생</div>
+            <div class="text-lg font-black text-slate-900 mb-2">${this.escapeHtml(studentName)} 학생</div>
+            <div class="text-xs text-slate-600 flex items-center justify-between sm:justify-end gap-2">
+              <span>시험일:</span>
+              <strong class="text-slate-800">${this.escapeHtml(test.date || '지정일')}</strong>
+            </div>
+            <div class="text-xs text-slate-600 flex items-center justify-between sm:justify-end gap-2 mt-1">
+              <span>합격 기준:</span>
+              <strong class="text-indigo-700">${cutoffLabel}</strong>
+            </div>
+            ${existingResult ? `
+              <div class="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between sm:justify-end gap-2">
+                <span class="text-xs font-bold text-slate-700">채점 결과:</span>
+                <span class="px-2.5 py-1 rounded-xl text-xs font-black ${existingResult.passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                  ${existingResult.score}점 (${existingResult.passed ? 'PASS 통과' : '불합격'})
+                </span>
+              </div>
+            ` : `
+              <div class="mt-3 pt-3 border-t border-slate-200 text-center">
+                <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-200 text-slate-600">
+                  <i class="fa-solid fa-clock mr-1"></i>미응시 (출제 시험지)
+                </span>
+              </div>
+            `}
+          </div>
+        </div>
+
+        <!-- 시험 안내 가이드 (인쇄 시에도 표준 출제 지침으로 표출) -->
+        <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-3">
+          <i class="fa-solid fa-circle-info text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
+          <div class="space-y-1">
+            <strong class="font-black text-amber-900 block">[응시 및 작성 유의사항]</strong>
+            <p class="leading-relaxed text-amber-900/90">
+              1. 각 문항의 <strong>우리말 해석</strong>을 정독하고, 출제된 문법 포인트와 문맥에 부합하도록 올바른 영어 문장으로 작성하세요.<br>
+              2. 철자(Spelling), 인칭·수일치, 동사 시제, 구두점(마침표, 물음표 등) 표기에 각별히 유의하세요.<br>
+              3. 아래 시험지에서 각 문항별 <strong>서술형 출제 핵심 포인트</strong>와 <strong>모범 영작 정답</strong>을 상세히 확인할 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 문항 본체 영역 -->
+      <div class="space-y-5">
+    `;
+
+    let currentPart = '';
+    examSentences.forEach((s, sIdx) => {
+      if (s.partTitle !== currentPart) {
+        currentPart = s.partTitle;
+        html += `
+          <div class="pt-3 first:pt-0">
+            <div class="flex items-center gap-2 p-3.5 bg-slate-900 text-white rounded-2xl shadow-xs">
+              <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+              <span class="font-black text-xs sm:text-sm tracking-wide">${this.escapeHtml(s.lessonTitle)} - ${this.escapeHtml(s.partTitle)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // 학생 답안 및 채점 상태 확인
+      let isGraded = false;
+      let isStudentCorrect = false;
+      let studentAns = '';
+
+      if (existingResult) {
+        isGraded = true;
+        studentAns = (existingResult.userAnswers && existingResult.userAnswers['sent_' + s.sentIndex]) || '';
+        const wrongItem = (existingResult.wrongList || []).find(w => w.sentIndex === s.sentIndex || (w.correctEn && App.normalizeSentence(w.correctEn) === App.normalizeSentence(s.en)));
+        if (wrongItem) {
+          isStudentCorrect = false;
+          if (!studentAns && wrongItem.userAns && wrongItem.userAns !== '(미입력)') {
+            studentAns = wrongItem.userAns;
+          }
+        } else {
+          isStudentCorrect = true;
+        }
+      }
+
+      html += `
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4 break-inside-avoid">
+          <!-- 문항 헤더 (번호 및 서술형 태그) -->
+          <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-xs">
+                ${sIdx + 1}
+              </span>
+              <span class="font-black text-sm text-slate-800">문항 ${sIdx + 1}</span>
+              ${s.isDescriptiveTarget ? `
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                  <i class="fa-solid fa-star text-amber-500 mr-1"></i>서술형 대비 핵심
+                </span>
+              ` : ''}
+            </div>
+
+            <!-- 정답/오답 판정 배지 (응시 완료 시) -->
+            ${isGraded ? `
+              <span class="px-3 py-1 rounded-full text-xs font-black ${isStudentCorrect ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
+                ${isStudentCorrect ? '✓ 정답 (PASS)' : '✗ 오답 (WRONG)'}
+              </span>
+            ` : `
+              <span class="text-xs text-slate-400 font-medium">[배점 1문항]</span>
+            `}
+          </div>
+
+          <!-- 1. 우리말 해석 (조건) -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1.5">
+              <i class="fa-solid fa-language text-slate-400"></i>
+              <span>우리말 해석 (영작 조건)</span>
+            </div>
+            <p class="text-sm sm:text-base font-bold text-slate-900 font-exam leading-relaxed">
+              ${this.escapeHtml(s.ko)}
+            </p>
+          </div>
+
+          <!-- 2. 서술형 문법/구문 핵심 포인트 배너 -->
+          ${s.grammarPoint ? `
+            <div class="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200/80 text-xs text-indigo-950 space-y-1">
+              <div class="font-black text-indigo-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                <span>서술형 출제 문법 & 영작 포인트:</span>
+              </div>
+              <div class="text-slate-700 font-medium leading-relaxed">
+                ${this.escapeHtml(s.grammarPoint)}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- 3. 답안 및 정답 영역 -->
+          ${isGraded ? `
+            <!-- 학생 실제 작성 답안 -->
+            <div class="p-3.5 rounded-xl ${isStudentCorrect ? 'bg-emerald-50/70 border border-emerald-200' : 'bg-rose-50/70 border border-rose-200'} space-y-1">
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span class="text-slate-700 flex items-center gap-1">
+                  <i class="fa-solid fa-pencil text-slate-400"></i>학생 제출 답안:
+                </span>
+                <span class="${isStudentCorrect ? 'text-emerald-700 font-black' : 'text-rose-600 font-black'}">
+                  ${isStudentCorrect ? '정답 일치' : '오답'}
+                </span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-white border border-slate-200 font-mono text-xs sm:text-sm font-bold ${isStudentCorrect ? 'text-emerald-950' : 'text-rose-950'} whitespace-pre-wrap leading-relaxed">
+                ${studentAns && studentAns.trim() ? this.escapeHtml(studentAns) : '<span class="text-slate-400 font-normal italic">미작성 (빈칸 제출)</span>'}
+              </div>
+            </div>
+
+            <!-- 모범 정답 원문 -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <div class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                <i class="fa-solid fa-star text-amber-500"></i>모범 영작 / 교과서·모의고사 원문 정답:
+              </div>
+              <div class="p-2.5 rounded-lg bg-white border border-indigo-200 font-mono text-xs sm:text-sm font-bold text-indigo-950 whitespace-pre-wrap leading-relaxed">
+                ${this.escapeHtml(s.en)}
+              </div>
+            </div>
+          ` : `
+            <!-- 미응시 상태 / 인쇄 시 수기 작성란 -->
+            <div class="p-4 rounded-xl bg-white border border-dashed border-slate-300 space-y-3">
+              <div class="text-[11px] font-bold text-slate-400 flex items-center justify-between">
+                <span>[ 영작 답안 작성란 ]</span>
+                <span class="text-[10px] text-slate-400 print:hidden">시험지 인쇄 후 직접 수기로 작성하거나, 화면에서 테스트를 진행하세요.</span>
+              </div>
+              <div class="h-9 border-b border-slate-300"></div>
+              <div class="h-9 border-b border-slate-300"></div>
+            </div>
+
+            <!-- 선생님 및 학습자 확인용 모범 정답 아코디언 -->
+            <div class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100">
+              <details class="group cursor-pointer">
+                <summary class="text-xs font-bold text-indigo-800 flex items-center justify-between select-none">
+                  <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-key text-amber-500"></i>
+                    <span>정답 및 모범 영작 원문 확인 (클릭)</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down text-indigo-400 text-xs transition group-open:rotate-180"></i>
+                </summary>
+                <div class="mt-2.5 pt-2.5 border-t border-indigo-200/60 font-mono text-xs sm:text-sm font-bold text-indigo-950 leading-relaxed bg-white p-3 rounded-lg border border-indigo-100">
+                  ${this.escapeHtml(s.en)}
+                </div>
+              </details>
+            </div>
+          `}
+        </div>
+      `;
+    });
+
+    html += `
+      </div>
+
+      <!-- 하단 인쇄 & 나가기 바 -->
+      <div class="p-6 bg-white rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
+        <button onclick="App.exitTextMemorizePaperView()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>학습공간으로 돌아가기</span>
+        </button>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button onclick="window.print()" class="flex-1 sm:flex-initial px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+            <i class="fa-solid fa-print"></i>
+            <span>시험지 인쇄하기 (A4)</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    contentEl.innerHTML = html;
+  },
+
+  // ========================================================
   // 본문 암기학습 (미리 외우기) 엔진
   // 1) 플래시카드 암기 (모르는 문장 0개까지 반복 루프)
   // 2) 본문 통독 & 가리기 (전체보기 / 영어 가리기 / 해석 가리기 / 빈칸 가리기)
@@ -10157,7 +10718,7 @@ const App = {
       return;
     }
 
-    const allPassages = (typeof YBM_ENGLISH2_PASSAGES !== 'undefined') ? YBM_ENGLISH2_PASSAGES : [];
+    const allPassages = this.getAllTextMemorizePassages();
     if (allPassages.length === 0) {
       this.toast('본문 데이터가 없습니다.', 'error');
       return;

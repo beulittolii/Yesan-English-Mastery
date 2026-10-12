@@ -2072,8 +2072,16 @@ const AppData = {
       const testsList = FirebaseStore.tests || [];
 
       testsList.forEach(t => {
-        // 문제풀이 시험(PRACTICE)이나 본문 암기(TEXT_MEMORIZE)는 절대로 단어 시험으로 변환하지 않음
-        if (t.type === 'PRACTICE' || t.type === 'TEXT_MEMORIZE' || (t.id && String(t.id).startsWith('mock2509_')) || (t.title && t.title.includes('문제풀이'))) {
+        // 본문 암기(TEXT_MEMORIZE)는 절대로 다른 시험으로 변환하지 않고 유지
+        if (t.type === 'TEXT_MEMORIZE' || (t.id && String(t.id).startsWith('tm_')) || (t.title && t.title.includes('본문')) || (Array.isArray(t.passageIds) && t.passageIds.length > 0)) {
+          t.type = 'TEXT_MEMORIZE';
+          delete t.vocabSetId;
+          delete t.vocabSetIds;
+          return;
+        }
+
+        // 문제풀이 시험(PRACTICE)은 절대로 단어 시험으로 변환하지 않음
+        if (t.type === 'PRACTICE' || (t.id && String(t.id).startsWith('mock2509_')) || (t.title && t.title.includes('문제풀이'))) {
           t.type = 'PRACTICE';
           delete t.vocabSetId;
           delete t.vocabSetIds;
@@ -2956,7 +2964,8 @@ const AppData = {
     return `tm_${Number(result.studentId)}_${encodeURIComponent(String(result.testId || 'free'))}`;
   },
 
-  async saveTextMemorizeResult(studentId, testId, { score, correct, total, passed, completedAt }) {
+  async saveTextMemorizeResult(studentId, testId, rawResult) {
+    const { score, correct, total, passed, completedAt, wrongCount, wrongList, mode, cutoffType, cutoffScore, maxWrong, userAnswers } = rawResult || {};
     const results = this.getTextMemorizeResults().filter(
       r => !(r.studentId === Number(studentId) && r.testId === testId)
     );
@@ -2967,6 +2976,13 @@ const AppData = {
       correct,
       total,
       passed,
+      wrongCount: wrongCount ?? (total - correct),
+      wrongList: wrongList || [],
+      mode: mode || 'CLOZE',
+      cutoffType: cutoffType || 'SCORE',
+      cutoffScore: cutoffScore ?? 80,
+      maxWrong: maxWrong ?? 3,
+      userAnswers: userAnswers || {},
       completedAt: completedAt || new Date().toISOString()
     };
     results.push(newResult);

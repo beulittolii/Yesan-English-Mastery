@@ -20,11 +20,15 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "Later, during the morning news on TV, a reporter standing next to the undamaged Heundeulbawi said, “Today’s Internet stories of the Heundeulbawi being damaged were fake.”",
-        "ko": "이후에, TV의 아침 뉴스에서 피해 없는 흔들바위 옆에 서 있던 기자가 “오늘 인터넷에 올라온 흔들바위가 무너졌다는 기사는 가짜였습니다”라고 말했다."
+        "ko": "이후에, TV의 아침 뉴스에서 피해 없는 흔들바위 옆에 서 있던 기자가 “오늘 인터넷에 올라온 흔들바위가 무너졌다는 기사는 가짜였습니다”라고 말했다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "현재분사구 standing 수식 & 동명사의 수동형 being damaged & 주어-동사 수일치 were"
       },
       {
         "en": "Gina was embarrassed by the fact that she had spread the fake news.",
-        "ko": "지나는 자신이 가짜 뉴스를 퍼뜨렸다는 사실에 당황했다."
+        "ko": "지나는 자신이 가짜 뉴스를 퍼뜨렸다는 사실에 당황했다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "감정 분사 embarrassed & 동격 접속사 that & 과거완료 had spread"
       }
     ]
   },
@@ -41,7 +45,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "The news that a famous athlete had died became the number one issue online, but it turned out to be fake.",
-        "ko": "유명한 운동선수가 사망했다는 뉴스가 온라인에서 가장 큰 이슈가 되었지만, 가짜로 밝혀졌다."
+        "ko": "유명한 운동선수가 사망했다는 뉴스가 온라인에서 가장 큰 이슈가 되었지만, 가짜로 밝혀졌다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "동격 접속사 that & 과거완료 had died & 2형식 구동사 turned out to be"
       },
       {
         "en": "It had been made by content creators who sought people’s attention.",
@@ -103,7 +109,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "This was because of fake news stories on social media that another earthquake followed by a tsunami was about to strike.",
-        "ko": "이것은 소셜 미디어에 또 다른 지진이 발생한 후 쓰나미가 곧 이어질 것이라는 가짜 뉴스 이야기 때문이었다."
+        "ko": "이것은 소셜 미디어에 또 다른 지진이 발생한 후 쓰나미가 곧 이어질 것이라는 가짜 뉴스 이야기 때문이었다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "구전치사 because of & 동격 접속사 that & 과거분사구 followed by & be about to부정사"
       },
       {
         "en": "One of those messages said, “It’s up to you if you want to believe me or not, but apparently Ambon is going to sink in the next few days.”",
@@ -157,7 +165,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "It is more likely for them to believe new information without any proof, instead of critically examining it.",
-        "ko": "사람들은 비판적으로 그것을 조사하는 대신에, 어떠한 증거도 없이 새로운 정보를 믿을 가능성이 더 크다."
+        "ko": "사람들은 비판적으로 그것을 조사하는 대신에, 어떠한 증거도 없이 새로운 정보를 믿을 가능성이 더 크다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "가주어-진주어 (It ~ for them to believe) & instead of + 동명사구"
       }
     ]
   },
@@ -170,7 +180,9 @@ const YBM_ENGLISH2_PASSAGES = [
     "sentences": [
       {
         "en": "Moreover, people are inclined to believe information that fits their prejudices or experiences even when not true.",
-        "ko": "또한, 사람들은 사실이 아니더라도 자신의 편견이나 경험에 부합하는 정보를 믿으려는 경향이 있다."
+        "ko": "또한, 사람들은 사실이 아니더라도 자신의 편견이나 경험에 부합하는 정보를 믿으려는 경향이 있다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "be inclined to부정사 & 주격 관계대명사 that & 접속사+형용사 축약구문 (even when not true)"
       },
       {
         "en": "In this process, people easily fall into the trap of “confirmation bias.”",
@@ -203,11 +215,15 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "They can be so stimulating to get more clicks that you may click on them accidentally.",
-        "ko": "그것들은 더 많은 클릭을 유도하기 위해 지나치게 자극적이어서 당신은 뜻하지 않게 그것들을 클릭할 수 있다."
+        "ko": "그것들은 더 많은 클릭을 유도하기 위해 지나치게 자극적이어서 당신은 뜻하지 않게 그것들을 클릭할 수 있다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "so ~ that 결과 구문 & 감정 유발 현재분사 stimulating & 목적의 to부정사 to get"
       },
       {
         "en": "So don’t just read the headlines, but read the text carefully.",
-        "ko": "따라서 표제만 읽지 말고 본문을 주의 깊게 읽어라."
+        "ko": "따라서 표제만 읽지 말고 본문을 주의 깊게 읽어라.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "not just A but B 병렬구문 & 명령문 병렬연결"
       },
       {
         "en": "Second, don’t read the news at face value.",
@@ -310,7 +326,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "This is what the media has been calling the drought ever since people got tired of hearing the word “drought.”",
-        "ko": "이것은 사람들이 ‘가뭄’이라는 단어를 듣는 데 지친 이후로 언론이 가뭄을 불러온 명칭이다."
+        "ko": "이것은 사람들이 ‘가뭄’이라는 단어를 듣는 데 지친 이후로 언론이 가뭄을 불러온 명칭이다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "관계대명사 what (5형식 call 목적격보어 결핍) & 현재완료진행 has been calling & ever since 구문"
       },
       {
         "en": "Now the crisis is entering a new stage.",
@@ -347,11 +365,15 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "Inside it’s like Black Friday at its worst — but today it’s not televisions and video games people are after.",
-        "ko": "가게 안은 최악의 블랙 프라이데이 같다 — 하지만 오늘 사람들이 쫓고 있는 것은 텔레비전이나 비디오 게임이 아니다."
+        "ko": "가게 안은 최악의 블랙 프라이데이 같다 — 하지만 오늘 사람들이 쫓고 있는 것은 텔레비전이나 비디오 게임이 아니다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "상황주어 it is like & at one's worst & it ~ that 강조 구문 (that 생략)"
       },
       {
         "en": "What I see in the carts in the checkout line are mostly water bottles.",
-        "ko": "계산대 줄에 늘어선 카트에서 내가 본 것은 대부분 생수병들이다."
+        "ko": "계산대 줄에 늘어선 카트에서 내가 본 것은 대부분 생수병들이다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "관계대명사 what 주어절 & 복수 의미 동사 수일치 are"
       },
       {
         "en": "The essentials of life.",
@@ -418,7 +440,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "I reach for it, only to find it pulled away at the last second by a woman.",
-        "ko": "손을 뻗었지만, 마지막 순간에 한 여성이 그것을 낚아채 가 버린다."
+        "ko": "손을 뻗었지만, 마지막 순간에 한 여성이 그것을 낚아채 가 버린다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "to부정사의 결과적 용법 (only to find) & 5형식 find + 목적어 + 과거분사 (pulled away)"
       },
       {
         "en": "She stacks it on top of her cart like a crown on top of her canned goods.",
@@ -459,7 +483,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "She looks back to her mother, who’s already moving down the aisle, then turns back to me shaking her head.",
-        "ko": "그녀는 이미 통로를 따라 이동 중인 엄마를 돌아본 다음, 고개를 흔들며 나에게 돌아선다."
+        "ko": "그녀는 이미 통로를 따라 이동 중인 엄마를 돌아본 다음, 고개를 흔들며 나에게 돌아선다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "계속적 용법의 관계대명사 who & 동사 병렬연결 (looks ~ turns) & 분사구문 shaking"
       },
       {
         "en": "And then she gets a little bit red in the face, and turns to leave before it becomes a deep flush.",
@@ -603,7 +629,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "As long as his hands are firmly locked on the handle of our cart, there is nothing to prove that it’s ours and not his.",
-        "ko": "그의 두 손이 우리 카트 손잡이를 꽉 쥐고 있는 한, 그것이 그의 것이 아니라 우리의 것임을 증명할 방법이 없다."
+        "ko": "그의 두 손이 우리 카트 손잡이를 꽉 쥐고 있는 한, 그것이 그의 것이 아니라 우리의 것임을 증명할 방법이 없다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "조건 접속사 As long as & 수동태 are firmly locked & to부정사 형용사적 수식 & 소유대명사 (ours / his)"
       }
     ]
   },
@@ -657,7 +685,9 @@ const YBM_ENGLISH2_PASSAGES = [
       },
       {
         "en": "Provided that the factors contributing to water shortages worldwide are not addressed, including climate change, population growth, and using too much water for agriculture, it is possible that this story can become a reality.",
-        "ko": "기후 변화, 인구 증가, 농업용수의 과도한 사용을 포함하여 전 세계적인 물 부족의 원인이 되는 요인들이 해결되지 않는다면, 이 이야기가 현실이 될 수도 있다."
+        "ko": "기후 변화, 인구 증가, 농업용수의 과도한 사용을 포함하여 전 세계적인 물 부족의 원인이 되는 요인들이 해결되지 않는다면, 이 이야기가 현실이 될 수도 있다.",
+        "isDescriptiveTarget": true,
+        "grammarPoint": "조건 접속사 Provided that & 현재분사 수식 contributing to & 수동태 are not addressed & 가주어-진주어"
       }
     ]
   },
