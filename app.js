@@ -10959,12 +10959,16 @@ const App = {
       targetPassages = allPassages;
     }
 
-    // 모든 문장 데이터 플랫화
+    // 서술형 대비 문장만 출제 여부
+    const isDescriptiveOnly = test ? Boolean(test.textMemorizeDescriptiveOnly) : false;
+
+    // 모든 문장 데이터 플랫화 (서술형 대비 모드이면 해당 문장만)
     const allSentences = [];
     let sGlobalIdx = 0;
     targetPassages.forEach(p => {
       if (Array.isArray(p.sentences)) {
         p.sentences.forEach((s, sIdx) => {
+          if (isDescriptiveOnly && !s.isDescriptiveTarget) return;
           allSentences.push({
             id: `tm_sent_${p.id}_${sIdx}`,
             globalIndex: sGlobalIdx++,
@@ -10974,6 +10978,8 @@ const App = {
             partTitle: p.partTitle,
             en: s.en,
             ko: s.ko,
+            isDescriptiveTarget: Boolean(s.isDescriptiveTarget),
+            grammarPoint: s.grammarPoint || '',
             wordCount: s.en.trim().split(/\s+/).filter(Boolean).length
           });
         });
@@ -11008,6 +11014,7 @@ const App = {
       test,
       bookName,
       title,
+      isDescriptiveOnly,
       targetPassages,
       allSentences,
       filteredSentences,
@@ -11058,19 +11065,37 @@ const App = {
     const passageSelect = document.getElementById('tmStudyPassageSelect');
 
     if (titleEl) titleEl.innerText = title;
-    if (badgeEl) badgeEl.innerText = bookName;
+    if (badgeEl) {
+      badgeEl.innerText = bookName;
+      // 서술형 대비 문장만 암기학습 배지
+      const existingDescBadge = document.getElementById('tmStudyDescOnlyBadge');
+      if (existingDescBadge) existingDescBadge.remove();
+      if (isDescriptiveOnly && badgeEl.parentNode) {
+        const descBadge = document.createElement('span');
+        descBadge.id = 'tmStudyDescOnlyBadge';
+        descBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300';
+        descBadge.innerHTML = '<i class="fa-solid fa-star text-amber-500 mr-1"></i>서술형 대비 문장만';
+        badgeEl.parentNode.insertBefore(descBadge, badgeEl.nextSibling);
+      }
+    }
     if (countBadgeEl) countBadgeEl.innerText = `총 ${filteredSentences.length}문장`;
     if (searchInput) searchInput.value = '';
 
-    // 문단 선택 Select 박스 채우기
+    // 문단 선택 Select 박스 채우기 (서술형 대비 모드면 각 passage 서술형 문장 수 반영)
     if (passageSelect) {
       passageSelect.innerHTML = `
         <option value="ALL">전체 문단 (총 ${allSentences.length}문장)</option>
-        ${targetPassages.map(p => `
-          <option value="${p.id}" ${p.id === initialPassageId ? 'selected' : ''}>
-            ${this.escapeHtml(p.partTitle)} (${p.sentences ? p.sentences.length : 0}문장)
-          </option>
-        `).join('')}
+        ${targetPassages.map(p => {
+          const sentCount = isDescriptiveOnly
+            ? (p.sentences || []).filter(s => s.isDescriptiveTarget).length
+            : (p.sentences ? p.sentences.length : 0);
+          if (isDescriptiveOnly && sentCount === 0) return ''; // 서술형 문장 없는 문단 제외
+          return `
+            <option value="${p.id}" ${p.id === initialPassageId ? 'selected' : ''}>
+              ${this.escapeHtml(p.partTitle)} (${sentCount}문장${isDescriptiveOnly ? ' ★서술형' : ''})
+            </option>
+          `;
+        }).join('')}
       `;
     }
 
