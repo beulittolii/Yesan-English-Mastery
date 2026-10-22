@@ -588,7 +588,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d12_13_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 12~13',
-      date: '2026-09-15',
+      date: '2026-10-22',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 12, Day 13 (총 80단어)',
@@ -611,7 +611,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d14_15_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 14~15',
-      date: '2026-09-16',
+      date: '2026-10-23',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 14, Day 15 (총 80단어)',
@@ -634,7 +634,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d16_17_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 16~17',
-      date: '2026-09-17',
+      date: '2026-10-24',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 16, Day 17 (총 80단어)',
@@ -657,7 +657,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d18_19_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 18~19',
-      date: '2026-09-18',
+      date: '2026-10-26',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 18, Day 19 (총 80단어)',
@@ -680,7 +680,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d20_21_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 20~21',
-      date: '2026-09-19',
+      date: '2026-10-27',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 20, Day 21 (총 80단어)',
@@ -703,7 +703,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d22_23_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 22~23',
-      date: '2026-09-21',
+      date: '2026-10-28',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 22, Day 23 (총 80단어)',
@@ -726,7 +726,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d24_25_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 24~25',
-      date: '2026-09-22',
+      date: '2026-10-29',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 24, Day 25 (총 80단어)',
@@ -749,7 +749,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d26_27_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 26~27',
-      date: '2026-09-23',
+      date: '2026-10-30',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 26, Day 27 (총 80단어)',
@@ -772,7 +772,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d28_29_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 28~29',
-      date: '2026-09-24',
+      date: '2026-10-31',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 28, Day 29 (총 80단어)',
@@ -795,7 +795,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d30_31_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 30~31',
-      date: '2026-09-25',
+      date: '2026-11-02',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 30, Day 31 (총 80단어)',
@@ -818,7 +818,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d32_33_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 32~33',
-      date: '2026-09-26',
+      date: '2026-11-03',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)',
@@ -841,7 +841,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d34_35_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 34~35',
-      date: '2026-09-28',
+      date: '2026-11-04',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)',
@@ -864,7 +864,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d36_37_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 36~37',
-      date: '2026-10-12',
+      date: '2026-11-05',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)',
@@ -887,7 +887,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d38_39_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 38~39',
-      date: '2026-10-13',
+      date: '2026-11-06',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)',
@@ -910,7 +910,7 @@ function generateDefaultTests() {
       id: 'vocab_wm2000_d40_student_11',
       studentId: 11,
       title: '[워드마스터 수능 2000] Day 40',
-      date: '2026-10-14',
+      date: '2026-11-07',
       time: '18:00',
       endTime: '23:59',
       scope: '[워드마스터 수능 2000] Day 40 (총 40단어)',
@@ -1662,15 +1662,36 @@ const AppData = {
 
     // 1. Tests 병합: 기본 시험 및 11일간 9모 실전 시험이 절대 증발하지 않도록 Firestore 기록과 안전 병합
     const defTests = generateDefaultTests();
+    // 10/22 일정 재편성 대상 테스트 ID 목록 (이 테스트들은 date를 DEFAULT 기준으로 고정)
+    const gyuinVocabRescheduledIds = new Set([
+      'vocab_wm2000_d12_13_student_11', 'vocab_wm2000_d14_15_student_11',
+      'vocab_wm2000_d16_17_student_11', 'vocab_wm2000_d18_19_student_11',
+      'vocab_wm2000_d20_21_student_11', 'vocab_wm2000_d22_23_student_11',
+      'vocab_wm2000_d24_25_student_11', 'vocab_wm2000_d26_27_student_11',
+      'vocab_wm2000_d28_29_student_11', 'vocab_wm2000_d30_31_student_11',
+      'vocab_wm2000_d32_33_student_11', 'vocab_wm2000_d34_35_student_11',
+      'vocab_wm2000_d36_37_student_11', 'vocab_wm2000_d38_39_student_11',
+      'vocab_wm2000_d40_student_11'
+    ]);
     const testMap = new Map();
     defTests.forEach(t => testMap.set(String(t.id), t));
     tests.forEach(t => {
       const base = testMap.get(String(t.id));
-      testMap.set(String(t.id), base ? {
-        ...base,
-        ...t,
-        questions: (t.questions && t.questions.length > 0) ? t.questions : base.questions
-      } : t);
+      if (base) {
+        // 완료 여부 판단
+        const isDone = t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' ||
+          (t.score !== '' && t.score != null && Number(t.score) >= (t.cutoffScore || 80));
+        // 송규인 단어 재편성 테스트: 미완료 테스트는 DEFAULT 날짜(새 일정) 강제 유지
+        const keepDefaultDate = gyuinVocabRescheduledIds.has(String(t.id)) && !isDone;
+        testMap.set(String(t.id), {
+          ...base,
+          ...t,
+          date: keepDefaultDate ? base.date : (t.date || base.date),
+          questions: (t.questions && t.questions.length > 0) ? t.questions : base.questions
+        });
+      } else {
+        testMap.set(String(t.id), t);
+      }
     });
     FirebaseStore.tests = Array.from(testMap.values());
     FirebaseStore.testsLoaded = true;
@@ -1954,6 +1975,79 @@ const AppData = {
       console.warn('2025년 9월 학평 실전 문제풀이 테스트 일괄 등록 동기화 안내:', err);
     }
 
+    // 10/12 문장 삽입 3세트 실전 테스트 전체 학생 대상 일괄 등록 및 동기화
+    try {
+      if (typeof MOCK_202510_INSERT_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202510_INSERT_TEST_PLANS)) {
+        const students = this.getStudents();
+        let currentTests = this.getTests();
+        let insertModified = false;
+
+        students.forEach(student => {
+          MOCK_202510_INSERT_TEST_PLANS.forEach(plan => {
+            const testId = `${plan.planId}_student_${student.id}`;
+            const questions = typeof getMock202510InsertQuestionsByPlanId === 'function'
+              ? getMock202510InsertQuestionsByPlanId(plan.planId)
+              : [];
+            const existingTest = currentTests.find(t =>
+              t.id === testId ||
+              (Number(t.studentId) === Number(student.id) && t.date === plan.date && t.title === plan.title)
+            );
+
+            const testConfig = {
+              id: testId,
+              studentId: Number(student.id),
+              title: plan.title,
+              date: plan.date,
+              time: plan.time || '00:00',
+              endTime: plan.endTime || '23:59',
+              scope: plan.scope,
+              cutoff: plan.cutoff || '80점 이상',
+              cutoffScore: plan.cutoffScore || 80,
+              practiceCutoff: plan.practiceCutoff || 80,
+              score: existingTest?.score || '',
+              status: existingTest?.status || 'SCHEDULED',
+              retestStatus: existingTest?.retestStatus || 'NONE',
+              retestDate: existingTest?.retestDate || '',
+              teacherNote: plan.teacherNote || '',
+              type: 'PRACTICE',
+              questions: questions,
+              practiceResult: existingTest?.practiceResult || null,
+              allowLate: true
+            };
+
+            if (!existingTest) {
+              currentTests.push(testConfig);
+              insertModified = true;
+            } else {
+              existingTest.id = testId;
+              existingTest.title = testConfig.title;
+              existingTest.date = testConfig.date;
+              existingTest.time = testConfig.time;
+              existingTest.endTime = testConfig.endTime;
+              existingTest.scope = testConfig.scope;
+              existingTest.type = 'PRACTICE';
+              existingTest.cutoff = testConfig.cutoff;
+              existingTest.cutoffScore = testConfig.cutoffScore;
+              existingTest.practiceCutoff = testConfig.practiceCutoff;
+              existingTest.teacherNote = testConfig.teacherNote;
+              existingTest.allowLate = true;
+              // JS 파일이 수정되면 항상 최신 문제로 강제 갱신 (캐시 무시)
+              existingTest.questions = testConfig.questions;
+              insertModified = true;
+            }
+          });
+        });
+
+        if (insertModified) {
+          FirebaseStore.tests = currentTests;
+          setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
+          console.log('10/12 문장 삽입 3세트 실전 테스트가 전체 학생에게 성공적으로 등록되었습니다.');
+        }
+      }
+    } catch (err) {
+      console.warn('10/12 문장 삽입 테스트 일괄 등록 동기화 안내:', err);
+    }
+
     // 송규인(id: 11) 학생에게 워드마스터 2000 단어 세트 권한 부여
     try {
       let vocabSetsModified = false;
@@ -1975,40 +2069,53 @@ const AppData = {
       console.warn('워드마스터 학생 권한 동기화 안내:', err);
     }
 
-    // 9/15~10/1 송규인(id: 11) 학생 워드마스터 2000 단어 테스트 일괄 등록 (일요일 제외, 하루 2 Day씩 Day 12~40)
+    // 10/22부로 송규인(id: 11) 학생 워드마스터 2000 단어 테스트 일정 재편성 (일요일 제외, 미완료 테스트만, 하루 1테스트)
     try {
       const gyuinStudentId = 11;
       let currentTests = this.getTests();
       let gyuinModified = false;
 
+      // 완료 여부 판단 헬퍼
+      const isTestDone = (t) =>
+        t.status === 'PASS' ||
+        t.retestStatus === 'RETEST_PASS' ||
+        (t.score !== '' && t.score != null && Number(t.score) >= (t.cutoffScore || 80));
+
+      // 일요일 건너뛰는 날짜 증가 헬퍼
+      const nextNonSunday = (dateStr) => {
+        const d = new Date(dateStr + 'T00:00:00');
+        d.setDate(d.getDate() + 1);
+        if (d.getDay() === 0) d.setDate(d.getDate() + 1); // 일요일이면 월요일로
+        return d.toISOString().slice(0, 10);
+      };
+
       const gyuinVocabSchedules = [
-        { id: 'vocab_wm2000_d12_13_student_11', date: '2026-09-15', setIds: ['wm2000_day_12', 'wm2000_day_13'], title: '[워드마스터 수능 2000] Day 12~13', scope: '[워드마스터 수능 2000] Day 12, Day 13 (총 80단어)' },
-        { id: 'vocab_wm2000_d14_15_student_11', date: '2026-09-16', setIds: ['wm2000_day_14', 'wm2000_day_15'], title: '[워드마스터 수능 2000] Day 14~15', scope: '[워드마스터 수능 2000] Day 14, Day 15 (총 80단어)' },
-        { id: 'vocab_wm2000_d16_17_student_11', date: '2026-09-17', setIds: ['wm2000_day_16', 'wm2000_day_17'], title: '[워드마스터 수능 2000] Day 16~17', scope: '[워드마스터 수능 2000] Day 16, Day 17 (총 80단어)' },
-        { id: 'vocab_wm2000_d18_19_student_11', date: '2026-09-18', setIds: ['wm2000_day_18', 'wm2000_day_19'], title: '[워드마스터 수능 2000] Day 18~19', scope: '[워드마스터 수능 2000] Day 18, Day 19 (총 80단어)' },
-        { id: 'vocab_wm2000_d20_21_student_11', date: '2026-09-19', setIds: ['wm2000_day_20', 'wm2000_day_21'], title: '[워드마스터 수능 2000] Day 20~21', scope: '[워드마스터 수능 2000] Day 20, Day 21 (총 80단어)' },
-        // 9/20(일) 제외
-        { id: 'vocab_wm2000_d22_23_student_11', date: '2026-09-21', setIds: ['wm2000_day_22', 'wm2000_day_23'], title: '[워드마스터 수능 2000] Day 22~23', scope: '[워드마스터 수능 2000] Day 22, Day 23 (총 80단어)' },
-        { id: 'vocab_wm2000_d24_25_student_11', date: '2026-09-22', setIds: ['wm2000_day_24', 'wm2000_day_25'], title: '[워드마스터 수능 2000] Day 24~25', scope: '[워드마스터 수능 2000] Day 24, Day 25 (총 80단어)' },
-        { id: 'vocab_wm2000_d26_27_student_11', date: '2026-09-23', setIds: ['wm2000_day_26', 'wm2000_day_27'], title: '[워드마스터 수능 2000] Day 26~27', scope: '[워드마스터 수능 2000] Day 26, Day 27 (총 80단어)' },
-        { id: 'vocab_wm2000_d28_29_student_11', date: '2026-09-24', setIds: ['wm2000_day_28', 'wm2000_day_29'], title: '[워드마스터 수능 2000] Day 28~29', scope: '[워드마스터 수능 2000] Day 28, Day 29 (총 80단어)' },
-        { id: 'vocab_wm2000_d30_31_student_11', date: '2026-09-25', setIds: ['wm2000_day_30', 'wm2000_day_31'], title: '[워드마스터 수능 2000] Day 30~31', scope: '[워드마스터 수능 2000] Day 30, Day 31 (총 80단어)' },
-        { id: 'vocab_wm2000_d32_33_student_11', date: '2026-09-26', setIds: ['wm2000_day_32', 'wm2000_day_33'], title: '[워드마스터 수능 2000] Day 32~33', scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)' },
-        // 9/27(일) 제외
-        { id: 'vocab_wm2000_d34_35_student_11', date: '2026-09-28', setIds: ['wm2000_day_34', 'wm2000_day_35'], title: '[워드마스터 수능 2000] Day 34~35', scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)' },
-        // 9/29 ~ 10/9 기간은 9모 기출 실전 문제풀이에 전념하도록 단어 시험은 10/12 이후로 일정 조정
-        { id: 'vocab_wm2000_d36_37_student_11', date: '2026-10-12', setIds: ['wm2000_day_36', 'wm2000_day_37'], title: '[워드마스터 수능 2000] Day 36~37', scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)' },
-        { id: 'vocab_wm2000_d38_39_student_11', date: '2026-10-13', setIds: ['wm2000_day_38', 'wm2000_day_39'], title: '[워드마스터 수능 2000] Day 38~39', scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)' },
-        { id: 'vocab_wm2000_d40_student_11', date: '2026-10-14', setIds: ['wm2000_day_40'], title: '[워드마스터 수능 2000] Day 40', scope: '[워드마스터 수능 2000] Day 40 (총 40단어)' }
+        { id: 'vocab_wm2000_d12_13_student_11', setIds: ['wm2000_day_12', 'wm2000_day_13'], title: '[워드마스터 수능 2000] Day 12~13', scope: '[워드마스터 수능 2000] Day 12, Day 13 (총 80단어)' },
+        { id: 'vocab_wm2000_d14_15_student_11', setIds: ['wm2000_day_14', 'wm2000_day_15'], title: '[워드마스터 수능 2000] Day 14~15', scope: '[워드마스터 수능 2000] Day 14, Day 15 (총 80단어)' },
+        { id: 'vocab_wm2000_d16_17_student_11', setIds: ['wm2000_day_16', 'wm2000_day_17'], title: '[워드마스터 수능 2000] Day 16~17', scope: '[워드마스터 수능 2000] Day 16, Day 17 (총 80단어)' },
+        { id: 'vocab_wm2000_d18_19_student_11', setIds: ['wm2000_day_18', 'wm2000_day_19'], title: '[워드마스터 수능 2000] Day 18~19', scope: '[워드마스터 수능 2000] Day 18, Day 19 (총 80단어)' },
+        { id: 'vocab_wm2000_d20_21_student_11', setIds: ['wm2000_day_20', 'wm2000_day_21'], title: '[워드마스터 수능 2000] Day 20~21', scope: '[워드마스터 수능 2000] Day 20, Day 21 (총 80단어)' },
+        { id: 'vocab_wm2000_d22_23_student_11', setIds: ['wm2000_day_22', 'wm2000_day_23'], title: '[워드마스터 수능 2000] Day 22~23', scope: '[워드마스터 수능 2000] Day 22, Day 23 (총 80단어)' },
+        { id: 'vocab_wm2000_d24_25_student_11', setIds: ['wm2000_day_24', 'wm2000_day_25'], title: '[워드마스터 수능 2000] Day 24~25', scope: '[워드마스터 수능 2000] Day 24, Day 25 (총 80단어)' },
+        { id: 'vocab_wm2000_d26_27_student_11', setIds: ['wm2000_day_26', 'wm2000_day_27'], title: '[워드마스터 수능 2000] Day 26~27', scope: '[워드마스터 수능 2000] Day 26, Day 27 (총 80단어)' },
+        { id: 'vocab_wm2000_d28_29_student_11', setIds: ['wm2000_day_28', 'wm2000_day_29'], title: '[워드마스터 수능 2000] Day 28~29', scope: '[워드마스터 수능 2000] Day 28, Day 29 (총 80단어)' },
+        { id: 'vocab_wm2000_d30_31_student_11', setIds: ['wm2000_day_30', 'wm2000_day_31'], title: '[워드마스터 수능 2000] Day 30~31', scope: '[워드마스터 수능 2000] Day 30, Day 31 (총 80단어)' },
+        { id: 'vocab_wm2000_d32_33_student_11', setIds: ['wm2000_day_32', 'wm2000_day_33'], title: '[워드마스터 수능 2000] Day 32~33', scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)' },
+        { id: 'vocab_wm2000_d34_35_student_11', setIds: ['wm2000_day_34', 'wm2000_day_35'], title: '[워드마스터 수능 2000] Day 34~35', scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)' },
+        { id: 'vocab_wm2000_d36_37_student_11', setIds: ['wm2000_day_36', 'wm2000_day_37'], title: '[워드마스터 수능 2000] Day 36~37', scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)' },
+        { id: 'vocab_wm2000_d38_39_student_11', setIds: ['wm2000_day_38', 'wm2000_day_39'], title: '[워드마스터 수능 2000] Day 38~39', scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)' },
+        { id: 'vocab_wm2000_d40_student_11', setIds: ['wm2000_day_40'], title: '[워드마스터 수능 2000] Day 40', scope: '[워드마스터 수능 2000] Day 40 (총 40단어)' }
       ];
 
+      // 10/22부터 순서대로 미완료 테스트에 날짜 배정 (일요일 제외)
+      let nextDate = '2026-10-22';
       gyuinVocabSchedules.forEach(scheduleItem => {
         const existingTest = currentTests.find(t => t.id === scheduleItem.id || (t.studentId === gyuinStudentId && t.type === 'VOCAB' && t.title === scheduleItem.title));
         const vocabTestConfig = {
           id: scheduleItem.id,
           studentId: gyuinStudentId,
           title: scheduleItem.title,
-          date: scheduleItem.date,
+          date: nextDate,
           time: '18:00',
           endTime: '23:59',
           scope: scheduleItem.scope,
@@ -2031,10 +2138,13 @@ const AppData = {
         if (!existingTest) {
           currentTests.push(vocabTestConfig);
           gyuinModified = true;
+          nextDate = nextNonSunday(nextDate);
         } else {
+          const done = isTestDone(existingTest);
           let itemUpdated = false;
-          if (existingTest.date !== vocabTestConfig.date) {
-            existingTest.date = vocabTestConfig.date;
+          // 미완료 테스트만 날짜 변경
+          if (!done && existingTest.date !== nextDate) {
+            existingTest.date = nextDate;
             itemUpdated = true;
           }
           if (existingTest.vocabSetId !== vocabTestConfig.vocabSetId || JSON.stringify(existingTest.vocabSetIds) !== JSON.stringify(vocabTestConfig.vocabSetIds)) {
@@ -2054,12 +2164,31 @@ const AppData = {
             itemUpdated = true;
           }
           if (itemUpdated) gyuinModified = true;
+          // 완료 여부와 관계없이 날짜 포인터 전진
+          nextDate = nextNonSunday(nextDate);
         }
       });
 
       if (gyuinModified) {
         FirebaseStore.tests = currentTests;
         setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
+        // Firestore에도 변경된 날짜 반영 - 개별 문서 업데이트 (다음 로드 시 새 날짜 유지)
+        const gyuinVocabIds = [
+          'vocab_wm2000_d12_13_student_11', 'vocab_wm2000_d14_15_student_11',
+          'vocab_wm2000_d16_17_student_11', 'vocab_wm2000_d18_19_student_11',
+          'vocab_wm2000_d20_21_student_11', 'vocab_wm2000_d22_23_student_11',
+          'vocab_wm2000_d24_25_student_11', 'vocab_wm2000_d26_27_student_11',
+          'vocab_wm2000_d28_29_student_11', 'vocab_wm2000_d30_31_student_11',
+          'vocab_wm2000_d32_33_student_11', 'vocab_wm2000_d34_35_student_11',
+          'vocab_wm2000_d36_37_student_11', 'vocab_wm2000_d38_39_student_11',
+          'vocab_wm2000_d40_student_11'
+        ];
+        gyuinVocabIds.forEach(tid => {
+          const t = currentTests.find(x => x.id === tid);
+          if (t) {
+            this.writeDocument('tests', tid, t).catch(e => console.warn(`송규인 단어 일정 저장(${tid}):`, e));
+          }
+        });
       }
     } catch (err) {
       console.warn('송규인 학생 단어테스트 일괄 등록 동기화 안내:', err);
@@ -2267,10 +2396,7 @@ const AppData = {
             }
           }
         }
-        // 송규인 학생 9/29~10/1 단어 시험 일정 10/12 이후로 동기화
-        if (t.id === 'vocab_wm2000_d36_37_student_11' && t.date === '2026-09-29') t.date = '2026-10-12';
-        if (t.id === 'vocab_wm2000_d38_39_student_11' && t.date === '2026-09-30') t.date = '2026-10-13';
-        if (t.id === 'vocab_wm2000_d40_student_11' && t.date === '2026-10-01') t.date = '2026-10-14';
+
       });
     }
 
