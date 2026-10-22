@@ -2639,30 +2639,25 @@
     </div>
   </div>
 
-  <!-- 2. 수행평가 상세 확인 및 점수 입력 모달 (깔끔한 보기 전용 모달) -->
+  <!-- 2. 수행평가 상세 확인 및 점수 입력 모달 (심플 & 모던 뷰) -->
   <div id="academicAssessmentDetailModal" class="fixed inset-0 z-[65] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-emerald-100/50 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
       
-      <!-- Modal Header -->
-      <div class="p-5 sm:p-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between flex-shrink-0">
-        <div class="flex items-center space-x-3 min-w-0">
-          <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-xl text-emerald-100 shadow-inner flex-shrink-0">
-            <i class="fa-solid fa-school"></i>
+      <!-- Modal Header (수행평가 시그니처 에메랄드/틸 그라데이션) -->
+      <div class="p-5 sm:p-6 pb-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-start justify-between gap-3 flex-shrink-0 shadow-sm">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span id="detailAssessSubject" class="px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-white text-emerald-800 shadow-3xs">과목</span>
+            <span id="detailAssessTeacherBadge" class="hidden px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-900/50 text-emerald-100 border border-emerald-300/30 flex items-center gap-1 shadow-3xs">
+              <i class="fa-solid fa-chalkboard-user text-emerald-300 text-[10px]"></i>
+              <span id="detailAssessTeacher"></span>
+            </span>
+            <span id="detailAssessDDay" class="px-2 py-0.5 rounded-lg text-[11px] font-black bg-emerald-950/50 text-emerald-100 border border-emerald-300/30 shadow-3xs">D-Day</span>
+            <span id="detailAssessLinkBadge" class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-indigo-950/50 text-indigo-100 border border-indigo-300/30 shadow-3xs">내신 연계</span>
           </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span id="detailAssessSubject" class="px-2 py-0.5 rounded-md text-[11px] font-black bg-white text-emerald-800">과목</span>
-              <span id="detailAssessTeacherBadge" class="hidden px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-800/90 text-emerald-100 border border-emerald-300/30 flex items-center gap-1 shadow-3xs">
-                <i class="fa-solid fa-chalkboard-user text-emerald-300 text-[10px]"></i>
-                <span id="detailAssessTeacher"></span>
-              </span>
-              <span id="detailAssessDDay" class="px-2 py-0.5 rounded-md text-[11px] font-black bg-emerald-900/50 text-emerald-200">D-Day</span>
-              <span id="detailAssessLinkBadge" class="px-2 py-0.5 rounded-md text-[11px] font-black bg-indigo-900/60 text-indigo-100 border border-indigo-300/30">내신 연계</span>
-            </div>
-            <h3 id="detailAssessTitle" class="text-base sm:text-lg font-black text-white mt-1 leading-snug break-keep truncate">수행평가 과제명</h3>
-          </div>
+          <h3 id="detailAssessTitle" class="text-lg sm:text-xl font-black text-white mt-2 leading-snug break-keep drop-shadow-xs">수행평가 과제명</h3>
         </div>
-        <button onclick="AcademicManager.closeAssessmentDetailModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition flex-shrink-0 ml-2">
+        <button type="button" onclick="AcademicManager.closeAssessmentDetailModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition flex-shrink-0 -mr-1 -mt-1 cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -2671,33 +2666,30 @@
       <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
         <input type="hidden" id="detailAssessId" />
 
-        <!-- 1. 학교 일정 & 배점 카드 -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-1">
-            <span class="text-[11px] font-bold text-emerald-800 flex items-center gap-1.5">
-              <i class="fa-solid fa-calendar-day text-emerald-600"></i>
-              <span>학교 실시 일정</span>
+        <!-- 1. 학교 일정 & 배점 카드 (에메랄드/틸 산뜻한 2열 카드) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-0.5 min-w-0">
+            <span class="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
+              <i class="fa-solid fa-calendar-day text-emerald-600 text-[10px]"></i>
+              <span>실시 일정</span>
             </span>
-            <div id="detailAssessSchedule" class="text-sm font-black text-slate-900 pt-0.5">
+            <div id="detailAssessSchedule" class="text-xs sm:text-sm font-black text-slate-900 truncate pt-0.5">
               -
             </div>
-            <span class="text-[10px] text-emerald-700 font-medium">학교 시간표 기준</span>
           </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-            <span class="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
-              <i class="fa-solid fa-calculator text-indigo-500"></i>
+          <div class="p-3.5 rounded-2xl bg-teal-50/70 border border-teal-200/80 space-y-0.5 min-w-0">
+            <span class="text-[11px] font-bold text-teal-800 flex items-center gap-1">
+              <i class="fa-solid fa-calculator text-teal-600 text-[10px]"></i>
               <span>배점 및 반영 비율</span>
             </span>
-            <div id="detailAssessRatio" class="text-sm font-black text-slate-900 pt-0.5">
+            <div id="detailAssessRatio" class="text-xs sm:text-sm font-black text-slate-900 truncate pt-0.5">
               100점 만점 / 20%
             </div>
-            <span class="text-[10px] text-slate-500 font-medium">학기 종합 성적 산출</span>
           </div>
         </div>
 
         <!-- 다회차 진행 일정 리스트 (다회차 과제일 때만 표시) -->
-        <div id="detailMultiSessionsWrap" class="hidden p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/90 space-y-2">
+        <div id="detailMultiSessionsWrap" class="hidden p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 space-y-2">
           <div class="flex items-center justify-between text-xs font-bold text-emerald-950">
             <span class="flex items-center gap-1.5">
               <i class="fa-solid fa-repeat text-emerald-600"></i>
@@ -2705,96 +2697,95 @@
             </span>
             <span class="text-[10px] text-emerald-700 font-semibold bg-white px-2 py-0.5 rounded border border-emerald-200">각 날짜 캘린더 연동</span>
           </div>
-          <div id="detailMultiSessionsList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5"></div>
+          <div id="detailMultiSessionsList" class="grid grid-cols-1 gap-1.5 pt-0.5"></div>
         </div>
 
         <!-- 2. 진행 상태 3단계 퀵 탭 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <i class="fa-solid fa-bars-progress text-slate-500"></i>
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-bars-progress text-emerald-600"></i>
               <span>진행 상태</span>
             </span>
-            <span id="detailAssessStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-slate-200 text-slate-800">
+            <span id="detailAssessStatusBadge" class="text-[11px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
               준비 전
             </span>
           </div>
           
-          <div class="grid grid-cols-3 gap-2 pt-0.5">
-            <button type="button" id="detailStatusBtnBefore" onclick="AcademicManager.changeDetailModalStatus('준비 전')" class="py-2 px-2 rounded-xl text-xs font-bold transition text-center border">
+          <div class="p-1 rounded-xl bg-slate-100 grid grid-cols-3 gap-1">
+            <button type="button" id="detailStatusBtnBefore" onclick="AcademicManager.changeDetailModalStatus('준비 전')" class="py-2 px-2 rounded-lg text-xs font-medium transition text-center cursor-pointer">
               준비 전
             </button>
-            <button type="button" id="detailStatusBtnReady" onclick="AcademicManager.changeDetailModalStatus('준비 후')" class="py-2 px-2 rounded-xl text-xs font-bold transition text-center border">
+            <button type="button" id="detailStatusBtnReady" onclick="AcademicManager.changeDetailModalStatus('준비 후')" class="py-2 px-2 rounded-lg text-xs font-medium transition text-center cursor-pointer">
               준비 후
             </button>
-            <button type="button" id="detailStatusBtnDone" onclick="AcademicManager.changeDetailModalStatus('응시 후')" class="py-2 px-2 rounded-xl text-xs font-bold transition text-center border">
+            <button type="button" id="detailStatusBtnDone" onclick="AcademicManager.changeDetailModalStatus('응시 후')" class="py-2 px-2 rounded-lg text-xs font-medium transition text-center cursor-pointer">
               응시 완료
             </button>
           </div>
         </div>
 
         <!-- 3. 점수 직접 입력 & 실시간 내신 기여도 카드 -->
-        <div class="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white border-2 border-emerald-200/90 space-y-3 shadow-xs">
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-teal-50/20 to-white border border-emerald-200/90 space-y-2.5 shadow-xs">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
-              <i class="fa-solid fa-award text-emerald-600 text-sm"></i>
-              <span>내가 받은 점수 (100점 만점 기준)</span>
-            </span>
-            <span class="text-[11px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200 shadow-3xs">
-              내신 즉시 반영
+            <label for="detailScoreInput" class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-award text-emerald-600"></i>
+              <span>내가 받은 점수 입력</span>
+            </label>
+            <span class="text-[11px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200 shadow-3xs">
+              100점 만점 기준
             </span>
           </div>
 
-          <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-2">
             <div class="relative flex-1">
-              <input type="number" id="detailScoreInput" min="0" max="100" step="0.5" placeholder="점수 입력 (예: 95)" oninput="AcademicManager.updateDetailScorePreview()" onkeydown="if(event.key==='Enter'){event.preventDefault();AcademicManager.saveDetailModalScore();}" class="w-full py-2.5 px-3.5 pr-9 rounded-xl border border-emerald-300 bg-white text-base sm:text-lg font-black text-emerald-800 focus:ring-2 focus:ring-emerald-500 outline-none" />
-              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">점</span>
+              <input type="number" id="detailScoreInput" min="0" max="100" step="0.5" placeholder="예: 95" oninput="AcademicManager.updateDetailScorePreview()" onkeydown="if(event.key==='Enter'){event.preventDefault();AcademicManager.saveDetailModalScore();}" class="w-full py-2 px-3 pr-8 rounded-xl border border-emerald-200 bg-white text-base font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition shadow-2xs" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-600/70 pointer-events-none">점</span>
             </div>
-            <button type="button" onclick="AcademicManager.saveDetailModalScore()" class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm transition flex items-center gap-1.5 shadow-md shadow-emerald-200 flex-shrink-0">
-              <i class="fa-solid fa-check"></i>
-              <span>점수 저장</span>
+            <button type="button" onclick="AcademicManager.saveDetailModalScore()" class="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition flex-shrink-0 shadow-sm shadow-emerald-200 cursor-pointer">
+              저장
             </button>
           </div>
 
           <!-- 환산 내신 반영 기여 결과 뱃지 -->
-          <div id="detailScoreContribResult" class="p-2.5 rounded-xl bg-white border border-emerald-200/80 text-xs text-center font-bold text-emerald-900 shadow-3xs">
+          <div id="detailScoreContribResult" class="text-xs text-emerald-950 bg-white py-2 px-3 rounded-xl border border-emerald-200/80 font-bold text-center shadow-3xs">
             환산 내신 기여: - 점
           </div>
         </div>
 
         <!-- 4. 과제 내용 및 평가 방식 -->
-        <div id="detailContentWrap" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+        <div id="detailContentWrap" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
           <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <i class="fa-solid fa-file-lines text-slate-500"></i>
+            <i class="fa-solid fa-file-lines text-slate-400"></i>
             <span>과제 내용 및 안내</span>
           </span>
-          <p id="detailAssessContent" class="text-xs text-slate-700 whitespace-pre-line leading-relaxed pt-1 font-medium"></p>
+          <p id="detailAssessContent" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
         </div>
 
         <!-- 5. 선생님 코멘트 -->
-        <div id="detailNoteWrap" class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 space-y-1">
+        <div id="detailNoteWrap" class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200/70 space-y-1">
           <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
             <i class="fa-solid fa-comment-dots text-indigo-500"></i>
             <span>선생님 코멘트</span>
           </span>
-          <p id="detailAssessNote" class="text-xs text-indigo-950 whitespace-pre-line leading-relaxed pt-1 font-medium"></p>
+          <p id="detailAssessNote" class="text-xs text-indigo-950 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
         </div>
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="AcademicManager.editCurrentAssessmentFromDetail()" class="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition flex items-center gap-1.5 shadow-3xs">
-            <i class="fa-solid fa-pen text-slate-400 text-[11px]"></i>
-            <span>과제 정보 수정</span>
+      <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="AcademicManager.editCurrentAssessmentFromDetail()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-3xs">
+            <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
+            <span>수정</span>
           </button>
-          <button type="button" onclick="AcademicManager.deleteCurrentAssessmentFromDetail()" class="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600 transition flex items-center gap-1.5 shadow-3xs">
-            <i class="fa-solid fa-trash text-rose-400 text-[11px]"></i>
+          <button type="button" onclick="AcademicManager.deleteCurrentAssessmentFromDetail()" class="px-3 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-xs font-bold text-rose-600 transition flex items-center gap-1.5 cursor-pointer shadow-3xs">
+            <i class="fa-solid fa-trash text-[10px] text-rose-400"></i>
             <span>삭제</span>
           </button>
         </div>
 
-        <button type="button" onclick="AcademicManager.closeAssessmentDetailModal()" class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
+        <button type="button" onclick="AcademicManager.closeAssessmentDetailModal()" class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer shadow-sm">
           닫기
         </button>
       </div>
@@ -4338,6 +4329,7 @@
 <script src="exam_scope_data.js?v=20261012_07"></script>
 <script src="mock_202509_practice_data.js?v=20261012_07"></script>
 <script src="mock_202509_memorize_data.js?v=20261012_07"></script>
+<script src="mock_202510_insert_data.js?v=20261012_01"></script>
 <script src="science_questions.js?v=20261012_07"></script>
 <script src="data.js?v=20261012_07"></script>
 <script src="app.js?v=20261012_07"></script>
@@ -8307,11 +8299,11 @@ const AcademicManager = {
     if (dDayEl) {
       dDayEl.textContent = dDay;
       if (dDay.includes('마감') || dDay.includes('D+')) {
-        dDayEl.className = 'px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-500 text-white shadow-3xs';
+        dDayEl.className = 'px-2 py-0.5 rounded-lg text-[11px] font-black bg-rose-500 text-white shadow-3xs';
       } else if (dDay === 'D-Day') {
-        dDayEl.className = 'px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-400 text-amber-950 shadow-3xs';
+        dDayEl.className = 'px-2 py-0.5 rounded-lg text-[11px] font-black bg-amber-400 text-amber-950 shadow-3xs';
       } else {
-        dDayEl.className = 'px-2 py-0.5 rounded-md text-[11px] font-black bg-emerald-900/60 text-emerald-100 shadow-3xs';
+        dDayEl.className = 'px-2 py-0.5 rounded-lg text-[11px] font-black bg-emerald-950/50 text-emerald-100 border border-emerald-300/30 shadow-3xs';
       }
     }
 
@@ -8328,13 +8320,13 @@ const AcademicManager = {
       if (multiWrap && multiList) {
         if (multiCount) multiCount.textContent = item.sessions.length;
         multiList.innerHTML = item.sessions.map((s, idx) => `
-          <div class="p-2 rounded-xl bg-white border border-emerald-100 flex items-center justify-between text-[11px] shadow-3xs">
+          <div class="p-2 rounded-xl bg-white border border-emerald-100 flex items-center justify-between text-xs shadow-3xs">
             <div class="flex items-center gap-1.5 min-w-0">
-              <span class="font-extrabold text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded text-[10px] flex-shrink-0">${this.escapeHtml(s.title || (idx + 1) + '차')}</span>
-              <span class="font-bold text-slate-800 flex-shrink-0">${this.formatDateShort(s.date)}</span>
-              <span class="font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded flex-shrink-0">${this.escapeHtml(s.period || '3교시')}</span>
+              <span class="font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded text-[10px] flex-shrink-0">${this.escapeHtml(s.title || (idx + 1) + '차')}</span>
+              <span class="font-medium text-slate-800 flex-shrink-0">${this.formatDateShort(s.date)}</span>
+              <span class="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] flex-shrink-0">${this.escapeHtml(s.period || '3교시')}</span>
             </div>
-            ${s.memo ? `<span class="text-slate-500 font-medium text-[10px] truncate ml-1 max-w-[120px]" title="${this.escapeHtml(s.memo)}">${this.escapeHtml(s.memo)}</span>` : ''}
+            ${s.memo ? `<span class="text-slate-400 font-medium text-[10px] truncate ml-1 max-w-[120px]" title="${this.escapeHtml(s.memo)}">${this.escapeHtml(s.memo)}</span>` : ''}
           </div>
         `).join('');
         multiWrap.classList.remove('hidden');
@@ -8357,14 +8349,14 @@ const AcademicManager = {
     const linkBadge = document.getElementById('detailAssessLinkBadge');
     if (linkBadge) {
       const linkMap = {
-        'assess1': { text: '내신 연계: 수행평가 1', cls: 'bg-emerald-900/70 text-emerald-200 border-emerald-400/40' },
-        'assess2': { text: '내신 연계: 수행평가 2', cls: 'bg-teal-900/70 text-teal-200 border-teal-400/40' },
-        'obtained': { text: '내신 연계: 절대평가', cls: 'bg-indigo-900/70 text-indigo-200 border-indigo-400/40' },
-        'none': { text: '내신 연계 없음', cls: 'bg-slate-800/60 text-slate-300 border-slate-600/30' }
+        'assess1': { text: '수행평가 1 연계', cls: 'bg-emerald-950/60 text-emerald-100 border-emerald-300/30' },
+        'assess2': { text: '수행평가 2 연계', cls: 'bg-teal-950/60 text-teal-100 border-teal-300/30' },
+        'obtained': { text: '절대평가 연계', cls: 'bg-indigo-950/60 text-indigo-100 border-indigo-300/30' },
+        'none': { text: '연계 없음', cls: 'bg-slate-900/40 text-slate-200 border-slate-500/30' }
       };
-      const info = linkMap[item.linkType] || { text: '내신 연계 없음', cls: 'bg-slate-800/60 text-slate-300 border-slate-600/30' };
+      const info = linkMap[item.linkType] || { text: '연계 없음', cls: 'bg-slate-900/40 text-slate-200 border-slate-500/30' };
       linkBadge.textContent = info.text;
-      linkBadge.className = `px-2 py-0.5 rounded-md text-[11px] font-bold border shadow-3xs ${info.cls}`;
+      linkBadge.className = `px-2 py-0.5 rounded-lg text-[11px] font-bold border shadow-3xs ${info.cls}`;
     }
 
     // 상태 뱃지 & 버튼 렌더링
@@ -8419,38 +8411,38 @@ const AcademicManager = {
 
     if (badge) {
       if (status === '응시 후') {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300';
+        badge.className = 'text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
         badge.textContent = '응시 완료';
       } else if (status === '준비 후') {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300';
+        badge.className = 'text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300';
         badge.textContent = '준비 후';
       } else {
-        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-slate-200 text-slate-800 border border-slate-300';
+        badge.className = 'text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300';
         badge.textContent = '준비 전';
       }
     }
 
     if (btnBefore) {
       if (status === '준비 전') {
-        btnBefore.className = 'py-2 px-2 rounded-xl text-xs font-black transition text-center bg-slate-900 text-white border-slate-900 shadow-sm';
+        btnBefore.className = 'py-2 px-2 rounded-lg text-xs font-black transition text-center bg-slate-900 text-white shadow-xs cursor-pointer';
       } else {
-        btnBefore.className = 'py-2 px-2 rounded-xl text-xs font-bold transition text-center bg-white text-slate-600 border-slate-200 hover:bg-slate-100';
+        btnBefore.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center text-slate-500 hover:text-slate-900 cursor-pointer';
       }
     }
 
     if (btnReady) {
       if (status === '준비 후') {
-        btnReady.className = 'py-2 px-2 rounded-xl text-xs font-black transition text-center bg-amber-500 text-white border-amber-500 shadow-sm';
+        btnReady.className = 'py-2 px-2 rounded-lg text-xs font-black transition text-center bg-amber-500 text-white shadow-xs cursor-pointer';
       } else {
-        btnReady.className = 'py-2 px-2 rounded-xl text-xs font-bold transition text-center bg-white text-slate-600 border-slate-200 hover:bg-amber-50 hover:text-amber-700';
+        btnReady.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center text-slate-500 hover:text-amber-600 cursor-pointer';
       }
     }
 
     if (btnDone) {
       if (status === '응시 후') {
-        btnDone.className = 'py-2 px-2 rounded-xl text-xs font-black transition text-center bg-emerald-600 text-white border-emerald-600 shadow-sm';
+        btnDone.className = 'py-2 px-2 rounded-lg text-xs font-black transition text-center bg-emerald-600 text-white shadow-xs cursor-pointer';
       } else {
-        btnDone.className = 'py-2 px-2 rounded-xl text-xs font-bold transition text-center bg-white text-slate-600 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700';
+        btnDone.className = 'py-2 px-2 rounded-lg text-xs font-medium transition text-center text-slate-500 hover:text-emerald-600 cursor-pointer';
       }
     }
   },
@@ -8498,15 +8490,15 @@ const AcademicManager = {
     if (scoreVal !== '' && scoreVal != null && !isNaN(Number(scoreVal))) {
       const score = Number(scoreVal);
       const contrib = ((score * ratio) / 100).toFixed(2);
-      resultEl.innerHTML = `내신 기여점수: <strong class="text-emerald-700 font-black text-sm">+${contrib}점</strong> (${ratio}% 반영 / 100점 만점 중 <strong>${score}점</strong>)`;
-      resultEl.className = 'p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-center font-bold text-emerald-950 shadow-3xs';
+      resultEl.innerHTML = `환산 내신 기여: <strong class="text-emerald-700 font-black text-sm">+${contrib}점</strong> <span class="text-slate-500 text-xs">(${ratio}% 반영 / ${score}점 만점)</span>`;
+      resultEl.className = 'text-xs text-emerald-950 bg-white py-2 px-3 rounded-xl border border-emerald-200/90 font-bold text-center shadow-3xs';
     } else if (item && item.studentScore != null && item.studentScore !== '') {
       const contrib = ((Number(item.studentScore) * ratio) / 100).toFixed(2);
-      resultEl.innerHTML = `현재 획득 점수: <strong>${item.studentScore}점</strong> → 내신 기여: <strong class="text-emerald-700 text-sm font-black">+${contrib}점</strong> (${ratio}% 반영)`;
-      resultEl.className = 'p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-center font-bold text-emerald-950 shadow-3xs';
+      resultEl.innerHTML = `현재 획득 점수: <strong>${item.studentScore}점</strong> → 내신 기여: <strong class="text-emerald-700 text-sm font-black">+${contrib}점</strong> <span class="text-slate-500 text-xs">(${ratio}% 반영)</span>`;
+      resultEl.className = 'text-xs text-emerald-950 bg-white py-2 px-3 rounded-xl border border-emerald-200/90 font-bold text-center shadow-3xs';
     } else {
-      resultEl.innerHTML = `내신 기여: <span class="text-slate-400 font-medium">점수 미입력 (만점 시 +${((100 * ratio) / 100).toFixed(1)}점 기여)</span>`;
-      resultEl.className = 'p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-center font-bold text-slate-600 shadow-3xs';
+      resultEl.innerHTML = `환산 내신 기여: <span class="text-slate-400 font-medium">점수 미입력 (만점 기준 +${((100 * ratio) / 100).toFixed(1)}점)</span>`;
+      resultEl.className = 'text-xs text-slate-500 bg-slate-50 py-2 px-3 rounded-xl border border-slate-200 font-medium text-center';
     }
   },
 
@@ -11578,23 +11570,44 @@ const AcademicManager = {
 
   getNotices() {
     const raw = localStorage.getItem(this.storageKeys.notices);
+    let notices = [];
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           // 기존 샘플 공지사항(notice_1 ~ notice_4) 및 초기 데이터 삭제
-          const filtered = parsed.filter(n => !['notice_1', 'notice_2', 'notice_3', 'notice_4'].includes(n.id));
-          if (filtered.length !== parsed.length) {
-            this.saveNotices(filtered);
-          }
-          return filtered;
+          notices = parsed.filter(n => !['notice_1', 'notice_2', 'notice_3', 'notice_4'].includes(n.id));
         }
       } catch (e) {
         console.error('Failed to parse notices from storage:', e);
       }
     }
-    // 기본 공지사항 비우기
-    return [];
+
+    // 지구과학 테스트 공지사항 초기 1회 등록 (관리자가 수정/삭제 가능하도록)
+    const initKey = 'academic_notices_science_v4_migrated';
+    if (!localStorage.getItem(initKey)) {
+      localStorage.setItem(initKey, 'true');
+      const hasScience = notices.some(n => n.id === 'notice_science_special');
+      if (!hasScience) {
+        const scienceNotice = {
+          id: 'notice_science_special',
+          title: '🧪 [특별 테스트] 2026 지구과학 지질 시대 & 화석 빈칸 단답형 (유지현T 정리본)',
+          content: `선캄브리아 시대부터 고생대, 중생대, 신생대까지의 기후·환경, 지각 변동, 생물 출현·번성·멸종, 표준 화석 핵심 개념을 점검하는 빈칸 단답형 테스트입니다.\n\n• 응시 기간: ~ 2026. 10. 16(목) 마감 (기간 지남)\n• 출제 범위: 유지현T 지구과학 정리본\n• 문제 형식: 빈칸 채우기 단답형 (핵심 키워드 및 표준 화석 입력)\n• 문항 구성: 1회 응시 시 10문제 (총 5회차 / 50문제)\n\n※ 해당 시험은 지정된 응시 기간(10/16)이 마감되어 테스트 데이터가 삭제되었으며, 현재 시험 응시 및 결과 확인이 종료되었습니다.`,
+          date: '2026.10.16',
+          isPinned: false,
+          isExpired: true
+        };
+        notices.unshift(scienceNotice);
+        this.saveNotices(notices);
+      }
+    }
+
+    // 기존 지구과학 테스트 로컬 응시 데이터 완전 삭제
+    try {
+      localStorage.removeItem('yem_special_science_results_v1');
+    } catch (e) {}
+
+    return notices;
   },
 
   saveNotices(notices) {
@@ -11642,53 +11655,26 @@ const AcademicManager = {
       return new Date(b.date || 0) - new Date(a.date || 0);
     });
 
-    // 1. 특별 과학 테스트 상설 공지 카드 템플릿
-    const specialScienceNoticeHtml = `
-      <article class="glass-card rounded-2xl p-5 sm:p-6 transition hover:shadow-lg border-2 border-sky-400 bg-gradient-to-r from-sky-50/50 via-white to-indigo-50/40 space-y-4 shadow-sm">
-        <div class="flex items-start justify-between gap-3 flex-wrap">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-gradient-to-r from-sky-600 to-indigo-600 text-white flex items-center gap-1.5 shadow-xs">
-              <i class="fa-solid fa-flask-vial text-sky-200"></i>
-              <span>특별 실전 테스트</span>
-            </span>
-          </div>
-        </div>
+    if (filtered.length === 0) {
+      if (emptyState) emptyState.classList.remove('hidden');
+      container.innerHTML = '';
+      return;
+    } else {
+      if (emptyState) emptyState.classList.add('hidden');
+    }
 
-        <div>
-          <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug flex items-center gap-2">
-            <span>🧪 [특별 테스트] 2026 지구과학 지질 시대 & 화석 빈칸 단답형 (유지현T 정리본)</span>
-          </h4>
-        </div>
-
-        <div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-line bg-white/90 p-4 sm:p-5 rounded-xl border border-sky-100/80 shadow-2xs">
-선캄브리아 시대부터 고생대, 중생대, 신생대까지의 기후·환경, 지각 변동, 생물 출현·번성·멸종, 표준 화석 핵심 개념을 점검하는 빈칸 단답형 테스트입니다.
-
-• 출제 범위: 유지현T 지구과학 정리본
-• 문제 형식: 빈칸 채우기 단답형 (핵심 키워드 및 표준 화석 입력)
-• 문항 구성: 1회 응시 시 10문제 (총 5회차 / 50문제)
-        </div>
-
-        <!-- 하단 테스트 응시하기 액션 바 -->
-        <div class="pt-2 border-t border-sky-100 flex justify-end">
-          <button type="button" onclick="App.openSpecialScienceTestModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 hover:from-sky-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm transition shadow-md shadow-sky-200 cursor-pointer flex items-center gap-2">
-            <i class="fa-solid fa-play"></i>
-            <span>특별 과학 테스트 응시하기</span>
-            <i class="fa-solid fa-arrow-right text-xs"></i>
-          </button>
-        </div>
-      </article>
-    `;
-
-    // 2. 일반 공지사항 카드들
-    const regularNoticesHtml = filtered.map(notice => {
+    // 공지사항 카드들 (지구과학 공지 포함 모든 공지사항을 관리자가 수정/삭제 가능)
+    const noticesHtml = filtered.map(notice => {
       const isPinned = !!notice.isPinned;
+      const isExpired = !!notice.isExpired || notice.id === 'notice_science_special';
       const isAdmin = App.state && App.state.isAdminLoggedIn;
 
       return `
-        <article class="glass-card rounded-2xl p-5 sm:p-6 transition hover:shadow-md ${isPinned ? 'border-l-4 border-l-rose-500 bg-gradient-to-r from-rose-50/20 to-white' : 'border border-slate-200/90'} space-y-3">
+        <article class="glass-card rounded-2xl p-5 sm:p-6 transition hover:shadow-md ${isPinned ? 'border-l-4 border-l-rose-500 bg-gradient-to-r from-rose-50/20 to-white' : (isExpired ? 'border border-slate-200 bg-slate-50/40' : 'border border-slate-200/90')} space-y-3">
           <div class="flex items-start justify-between gap-3 flex-wrap">
             <div class="flex items-center gap-2 flex-wrap">
               ${isPinned ? '<span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-600 text-white flex items-center gap-1 shadow-2xs"><i class="fa-solid fa-thumbtack text-[10px]"></i> 필독 고정</span>' : ''}
+              ${isExpired ? '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"><i class="fa-solid fa-clock-rotate-left text-rose-500 text-[10px]"></i> 기간 지남 (~10/16)</span>' : ''}
               <span class="text-xs text-slate-400 font-medium">${this.escapeHtml(notice.date || '')}</span>
             </div>
 
@@ -11710,14 +11696,14 @@ const AcademicManager = {
             ${this.escapeHtml(notice.title)}
           </h4>
 
-          <div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-line bg-slate-50/70 p-4 rounded-xl border border-slate-100">
+          <div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-line bg-white/80 p-4 rounded-xl border border-slate-200/70">
             ${this.escapeHtml(notice.content)}
           </div>
         </article>
       `;
     }).join('');
 
-    container.innerHTML = specialScienceNoticeHtml + regularNoticesHtml;
+    container.innerHTML = noticesHtml;
   },
 
   openNoticeModal(noticeId = null) {

@@ -2288,6 +2288,14 @@ const App = {
         test.questions = questions;
       }
     }
+    // mock2510 insert: JS 파일 수정 시 항상 최신 문제 반영 (캐시 무시)
+    if (typeof getMock202510InsertQuestionsByPlanId === 'function') {
+      const planMatch = String(test.id).match(/^(mock2510_insert_s\d+)/);
+      if (planMatch) {
+        questions = getMock202510InsertQuestionsByPlanId(planMatch[1]);
+        test.questions = questions;
+      }
+    }
 
     const timeStatus = this.getTestTimeStatus(test);
     const result = test.practiceResult;
@@ -2532,191 +2540,19 @@ const App = {
   },
 
   async openSpecialScienceTestModal(selectedRound = 1) {
-    const round = Math.max(1, Math.min(5, Number(selectedRound) || 1));
-    const student = AppData.getStudentById(this.state.selectedStudentId);
-    const results = await this.loadSpecialScienceResults(true);
-    const currentResult = results[round];
-    const isCompleted = Boolean(currentResult && currentResult.passed);
-    const isAdmin = Boolean(this.state.isAdminLoggedIn);
-
-    document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 특별 과학 테스트` : '특별 과학 테스트 (단답형)';
-    document.getElementById('detailModalTitle').innerText = '지구과학 지질 시대 & 화석 빈칸 단답형 (유지현T 정리본)';
-
-    // 회차 탭 버튼 5개 (1~5회차)
-    const roundTabsHtml = `
-      <div class="space-y-1.5">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-extrabold text-slate-800"><i class="fa-solid fa-list-ol mr-1 text-sky-600"></i>응시 회차 선택 (총 5회차 / 50문항)</span>
-        </div>
-        <div class="grid grid-cols-5 gap-1.5 pt-1">
-          ${[1, 2, 3, 4, 5].map(r => {
-            const isSel = r === round;
-            const rRes = results[r];
-            const isDone = Boolean(rRes && rRes.passed);
-            return `
-              <button type="button" onclick="App.openSpecialScienceTestModal(${r})" class="p-2 rounded-xl text-center transition cursor-pointer border ${
-                isSel
-                  ? 'bg-sky-600 text-white border-sky-600 shadow-sm ring-2 ring-sky-300'
-                  : (isDone
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100')
-              }">
-                <div class="text-[11px] font-black">${r}회차</div>
-                <div class="text-[9px] mt-0.5 ${isSel ? 'text-white/90 font-bold' : (isDone ? 'text-emerald-700 font-bold' : 'text-slate-400')}">
-                  ${isDone ? `${rRes.score}점` : '미응시'}
-                </div>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-
-    let actionButtonHtml = '';
-    if (currentResult) {
-      actionButtonHtml = `
-        <div class="space-y-2.5 pt-2">
-          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
-            <span>제 ${round}회차 점수: <strong>${currentResult.score}점 (${currentResult.correctCount}/${currentResult.totalCount} 정답)</strong></span>
-            <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-200 text-emerald-900">응시 완료 (PASS)</span>
-          </div>
-
-          <button type="button" onclick="App.viewSpecialScienceResult(${round})" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-md shadow-emerald-200 cursor-pointer">
-            <i class="fa-solid fa-file-circle-check"></i> 제 ${round}회차 나의 풀이 답안 및 정답·해설 확인하기
-          </button>
-
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="App.startSpecialScienceTest(${round}, true)" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
-              <i class="fa-solid fa-rotate-right"></i> 제 ${round}회차 다시 풀기
-            </button>
-            ${round < 5 ? `
-              <button type="button" onclick="App.openSpecialScienceTestModal(${round + 1})" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-xs font-black transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
-                <span>다음 ${round + 1}회차 보기</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
-              </button>
-            ` : `
-              <div class="py-2.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold text-center flex items-center justify-center">
-                🏆 5회차 전체 완주
-              </div>
-            `}
-          </div>
-        </div>
-      `;
-    } else {
-      actionButtonHtml = `
-        <div class="pt-2">
-          <button type="button" onclick="App.startSpecialScienceTest(${round})" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-sky-200 cursor-pointer">
-            <i class="fa-solid fa-pencil"></i> 제 ${round}회차 빈칸 시험 시작하기 (10문항)
-          </button>
-        </div>
-      `;
-    }
-
-    document.getElementById('detailModalBody').innerHTML = `
-      <div class="p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50/80 border border-sky-200 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-black text-sky-950 flex items-center gap-1.5">
-            <i class="fa-solid fa-flask-vial text-sky-600"></i>
-            <span>지구과학 지질 시대 & 화석 빈칸 완성 [제 ${round}회차]</span>
-          </span>
-          <div class="flex items-center gap-1.5">
-            ${isCompleted ? '<span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white">완료</span>' : ''}
-            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">10문항 / 100점</span>
-          </div>
-        </div>
-        <p class="text-xs text-slate-600 leading-relaxed">
-          유지현T 지구과학 정리본(선캄브리아~신생대) 전 시대의 기후, 수륙 분포, 생물 진화, 대표 표준 화석이 골고루 섞여 출제됩니다. 핵심 단어를 입력하여 빈칸을 완성하세요.
-        </p>
-      </div>
-
-      ${roundTabsHtml}
-
-      <div class="grid grid-cols-2 gap-3 text-xs">
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="text-slate-400 font-bold block mb-0.5">응시 방식</span>
-          <strong class="text-slate-800 font-extrabold">주관식 단답형 빈칸 채우기</strong>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="text-slate-400 font-bold block mb-0.5">통과 기준</span>
-          <strong class="text-slate-800 font-extrabold">80점 이상 (8문항 이상 정답)</strong>
-        </div>
-      </div>
-
-      ${actionButtonHtml}
-    `;
-
-    this.showModal('testDetailModal');
+    try {
+      localStorage.removeItem('yem_special_science_results_v1');
+      this.state.specialScienceResults = {};
+    } catch (e) {}
+    this.toast('지구과학 특별 테스트는 응시 기간(10/16)이 마감되어 시험 응시 및 결과 확인이 종료되었습니다.', 'info');
   },
 
   startSpecialScienceTest(round = 1, isForce = false) {
-    const r = Math.max(1, Math.min(5, Number(round) || 1));
-    if (typeof getScienceSpecialQuestionsByRound !== 'function') {
-      this.toast('과학 특별 시험 문제를 불러올 수 없습니다.', 'error');
-      return;
-    }
-
-    const questions = getScienceSpecialQuestionsByRound(r).map(question => ({
-      ...question,
-      // 과학 문제 은행의 필드명(correctAnswer)을 공통 문제풀이 채점 형식(answer)으로 맞춘다.
-      answer: question.answer ?? question.correctAnswer,
-      question: question.question ?? question.prompt ?? ''
-    }));
-    if (!questions || questions.length === 0) {
-      this.toast('출제된 문제를 불러올 수 없습니다.', 'error');
-      return;
-    }
-
-    // 모달 닫기
-    this.closeTestDetailModal();
-    this.closeAllModals();
-
-    this.state.practiceTest = {
-      isSpecialScience: true,
-      round: r,
-      testId: `special_science_round_${r}`,
-      studentId: Number(this.state.selectedStudentId),
-      title: `지구과학 지질 시대 & 화석 빈칸 단답형 [제 ${r}회차]`,
-      questions: questions,
-      cutoffScore: 80,
-      currentIndex: 0,
-      answers: {},
-      startedAt: new Date().toISOString(),
-      isCompleted: false,
-      isReviewOnly: false
-    };
-
-    this.showPracticeTestView();
-    this.renderPracticeQuestion(0);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.toast('지구과학 특별 테스트는 응시 기간(10/16)이 마감되었습니다.', 'info');
   },
 
   async viewSpecialScienceResult(round = 1) {
-    const results = await this.loadSpecialScienceResults(true);
-    const result = results[round];
-    if (!result) {
-      this.toast('응시 기록을 찾을 수 없습니다.', 'info');
-      return;
-    }
-
-    this.closeTestDetailModal();
-    this.closeAllModals();
-
-    const mockTest = {
-      title: `지구과학 지질 시대 & 화석 빈칸 단답형 [제 ${round}회차]`
-    };
-
-    this.state.practiceTest = {
-      isSpecialScience: true,
-      round: round,
-      testId: `special_science_round_${round}`,
-      studentId: Number(this.state.selectedStudentId),
-      title: mockTest.title,
-      isCompleted: true,
-      isReviewOnly: true
-    };
-
-    this.showPracticeTestView();
-    this.renderPracticeResult(result, mockTest);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.toast('지구과학 특별 테스트는 응시 기간(10/16)이 마감되어 결과 조회가 종료되었습니다.', 'info');
   },
 
   async togglePracticeTestAllowRetest(testId) {
@@ -2754,6 +2590,14 @@ const App = {
       const planMatch = String(test.id).match(/^(mock2509_d\d+)/);
       if (planMatch) {
         questions = getMock202509QuestionsByPlanId(planMatch[1]);
+        test.questions = questions;
+      }
+    }
+    // mock2510 insert: JS 파일 수정 시 항상 최신 문제 반영 (캐시 무시)
+    if (typeof getMock202510InsertQuestionsByPlanId === 'function') {
+      const planMatch = String(test.id).match(/^(mock2510_insert_s\d+)/);
+      if (planMatch) {
+        questions = getMock202510InsertQuestionsByPlanId(planMatch[1]);
         test.questions = questions;
       }
     }
@@ -3500,6 +3344,14 @@ const App = {
         const planMatch = String(test.id).match(/^(mock2509_d\d+)/);
         if (planMatch) {
           questions = getMock202509QuestionsByPlanId(planMatch[1]);
+          test.questions = questions;
+        }
+      }
+      // mock2510 insert: JS 파일 수정 시 항상 최신 문제 반영 (캐시 무시)
+      if (typeof getMock202510InsertQuestionsByPlanId === 'function') {
+        const planMatch = String(test.id).match(/^(mock2510_insert_s\d+)/);
+        if (planMatch) {
+          questions = getMock202510InsertQuestionsByPlanId(planMatch[1]);
           test.questions = questions;
         }
       }
