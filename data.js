@@ -1018,7 +1018,7 @@ function getDefaultVocabSets() {
 // ========================================================
 
 const LOCAL_CACHE_KEYS = {
-  tests: 'yem_cache_tests_v3',
+  tests: 'yem_cache_tests_v4',
   students: 'yem_cache_students_v3',
   vocabSets: 'yem_cache_vocab_sets_v3'
 };
@@ -1038,6 +1038,72 @@ function setLocalCache(key, data) {
   } catch (e) {}
 }
 
+// 송규인(id: 11) 학생 워드마스터 단어테스트 15개 일정 보정 함수
+// - 이미 완료된 테스트(PASS, RETEST_PASS, 합격점수 등)는 기존 날짜 유지
+// - 미완료 테스트는 2026-10-22부터 일요일을 건너뛰고 하루에 1개씩 순차 배정
+const GYUIN_VOCAB_TEST_IDS = [
+  'vocab_wm2000_d12_13_student_11',
+  'vocab_wm2000_d14_15_student_11',
+  'vocab_wm2000_d16_17_student_11',
+  'vocab_wm2000_d18_19_student_11',
+  'vocab_wm2000_d20_21_student_11',
+  'vocab_wm2000_d22_23_student_11',
+  'vocab_wm2000_d24_25_student_11',
+  'vocab_wm2000_d26_27_student_11',
+  'vocab_wm2000_d28_29_student_11',
+  'vocab_wm2000_d30_31_student_11',
+  'vocab_wm2000_d32_33_student_11',
+  'vocab_wm2000_d34_35_student_11',
+  'vocab_wm2000_d36_37_student_11',
+  'vocab_wm2000_d38_39_student_11',
+  'vocab_wm2000_d40_student_11'
+];
+
+function applyGyuinVocabSchedule(testsList) {
+  if (!Array.isArray(testsList)) return false;
+
+  const gyuinStudentId = 11;
+  const isDone = (t) => {
+    if (!t) return false;
+    if (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS') return true;
+    if (t.practiceResult?.passed || t.vocabResult?.passed) return true;
+    if (t.score !== '' && t.score != null && !isNaN(Number(t.score)) && Number(t.score) >= (t.cutoffScore || 80)) return true;
+    return false;
+  };
+
+  const getNextDate = (dateStr) => {
+    const parts = dateStr.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() === 0) d.setDate(d.getDate() + 1); // 일요일이면 월요일로
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  let nextDate = '2026-10-22';
+  let modified = false;
+
+  for (const tid of GYUIN_VOCAB_TEST_IDS) {
+    const test = testsList.find(t => String(t.id) === tid || (Number(t.studentId) === gyuinStudentId && t.type === 'VOCAB' && String(t.id).includes(tid)));
+    if (!test) continue;
+
+    if (isDone(test)) {
+      // 완료된 테스트는 기존 완료 날짜 유지
+      continue;
+    }
+
+    if (test.date !== nextDate) {
+      test.date = nextDate;
+      modified = true;
+    }
+    nextDate = getNextDate(nextDate);
+  }
+
+  return modified;
+}
+
 const cachedTests = getLocalCache(LOCAL_CACHE_KEYS.tests);
 const cachedStudents = getLocalCache(LOCAL_CACHE_KEYS.students);
 const cachedVocabSets = getLocalCache(LOCAL_CACHE_KEYS.vocabSets);
@@ -1046,6 +1112,7 @@ const FirebaseStore = {
   students: Array.isArray(cachedStudents) && cachedStudents.length > 0 ? cachedStudents : [...DEFAULT_STUDENTS],
   tests: (() => {
     const base = generateDefaultTests();
+    let initialList = base;
     if (Array.isArray(cachedTests) && cachedTests.length > 0) {
       const baseMap = new Map();
       base.forEach(t => baseMap.set(String(t.id), t));
@@ -1057,9 +1124,10 @@ const FirebaseStore = {
           questions: (t.questions && t.questions.length > 0) ? t.questions : existing.questions
         } : t);
       });
-      return Array.from(baseMap.values());
+      initialList = Array.from(baseMap.values());
     }
-    return base;
+    applyGyuinVocabSchedule(initialList);
+    return initialList;
   })(),
   vocabSets: Array.isArray(cachedVocabSets) && cachedVocabSets.length > 0 ? cachedVocabSets : getDefaultVocabSets(),
   vocabTestResults: [],
@@ -1574,6 +1642,7 @@ const AppData = {
             }
           }
         });
+        applyGyuinVocabSchedule(items);
         setLocalCache(LOCAL_CACHE_KEYS.tests, items);
       }
 
@@ -1694,6 +1763,7 @@ const AppData = {
       }
     });
     FirebaseStore.tests = Array.from(testMap.values());
+    applyGyuinVocabSchedule(FirebaseStore.tests);
     FirebaseStore.testsLoaded = true;
     setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests);
 
@@ -2071,128 +2141,18 @@ const AppData = {
 
     // 10/22부로 송규인(id: 11) 학생 워드마스터 2000 단어 테스트 일정 재편성 (일요일 제외, 미완료 테스트만, 하루 1테스트)
     try {
-      const gyuinStudentId = 11;
       let currentTests = this.getTests();
-      let gyuinModified = false;
+      applyGyuinVocabSchedule(currentTests);
+      FirebaseStore.tests = currentTests;
+      setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
 
-      // 완료 여부 판단 헬퍼
-      const isTestDone = (t) =>
-        t.status === 'PASS' ||
-        t.retestStatus === 'RETEST_PASS' ||
-        (t.score !== '' && t.score != null && Number(t.score) >= (t.cutoffScore || 80));
-
-      // 일요일 건너뛰는 날짜 증가 헬퍼 (로컬 날짜 기준 - toISOString은 UTC 변환으로 날짜 어긋남)
-      const nextNonSunday = (dateStr) => {
-        const d = new Date(dateStr + 'T00:00:00');
-        d.setDate(d.getDate() + 1);
-        if (d.getDay() === 0) d.setDate(d.getDate() + 1); // 일요일이면 월요일로
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
-
-      const gyuinVocabSchedules = [
-        { id: 'vocab_wm2000_d12_13_student_11', setIds: ['wm2000_day_12', 'wm2000_day_13'], title: '[워드마스터 수능 2000] Day 12~13', scope: '[워드마스터 수능 2000] Day 12, Day 13 (총 80단어)' },
-        { id: 'vocab_wm2000_d14_15_student_11', setIds: ['wm2000_day_14', 'wm2000_day_15'], title: '[워드마스터 수능 2000] Day 14~15', scope: '[워드마스터 수능 2000] Day 14, Day 15 (총 80단어)' },
-        { id: 'vocab_wm2000_d16_17_student_11', setIds: ['wm2000_day_16', 'wm2000_day_17'], title: '[워드마스터 수능 2000] Day 16~17', scope: '[워드마스터 수능 2000] Day 16, Day 17 (총 80단어)' },
-        { id: 'vocab_wm2000_d18_19_student_11', setIds: ['wm2000_day_18', 'wm2000_day_19'], title: '[워드마스터 수능 2000] Day 18~19', scope: '[워드마스터 수능 2000] Day 18, Day 19 (총 80단어)' },
-        { id: 'vocab_wm2000_d20_21_student_11', setIds: ['wm2000_day_20', 'wm2000_day_21'], title: '[워드마스터 수능 2000] Day 20~21', scope: '[워드마스터 수능 2000] Day 20, Day 21 (총 80단어)' },
-        { id: 'vocab_wm2000_d22_23_student_11', setIds: ['wm2000_day_22', 'wm2000_day_23'], title: '[워드마스터 수능 2000] Day 22~23', scope: '[워드마스터 수능 2000] Day 22, Day 23 (총 80단어)' },
-        { id: 'vocab_wm2000_d24_25_student_11', setIds: ['wm2000_day_24', 'wm2000_day_25'], title: '[워드마스터 수능 2000] Day 24~25', scope: '[워드마스터 수능 2000] Day 24, Day 25 (총 80단어)' },
-        { id: 'vocab_wm2000_d26_27_student_11', setIds: ['wm2000_day_26', 'wm2000_day_27'], title: '[워드마스터 수능 2000] Day 26~27', scope: '[워드마스터 수능 2000] Day 26, Day 27 (총 80단어)' },
-        { id: 'vocab_wm2000_d28_29_student_11', setIds: ['wm2000_day_28', 'wm2000_day_29'], title: '[워드마스터 수능 2000] Day 28~29', scope: '[워드마스터 수능 2000] Day 28, Day 29 (총 80단어)' },
-        { id: 'vocab_wm2000_d30_31_student_11', setIds: ['wm2000_day_30', 'wm2000_day_31'], title: '[워드마스터 수능 2000] Day 30~31', scope: '[워드마스터 수능 2000] Day 30, Day 31 (총 80단어)' },
-        { id: 'vocab_wm2000_d32_33_student_11', setIds: ['wm2000_day_32', 'wm2000_day_33'], title: '[워드마스터 수능 2000] Day 32~33', scope: '[워드마스터 수능 2000] Day 32, Day 33 (총 80단어)' },
-        { id: 'vocab_wm2000_d34_35_student_11', setIds: ['wm2000_day_34', 'wm2000_day_35'], title: '[워드마스터 수능 2000] Day 34~35', scope: '[워드마스터 수능 2000] Day 34, Day 35 (총 80단어)' },
-        { id: 'vocab_wm2000_d36_37_student_11', setIds: ['wm2000_day_36', 'wm2000_day_37'], title: '[워드마스터 수능 2000] Day 36~37', scope: '[워드마스터 수능 2000] Day 36, Day 37 (총 80단어)' },
-        { id: 'vocab_wm2000_d38_39_student_11', setIds: ['wm2000_day_38', 'wm2000_day_39'], title: '[워드마스터 수능 2000] Day 38~39', scope: '[워드마스터 수능 2000] Day 38, Day 39 (총 80단어)' },
-        { id: 'vocab_wm2000_d40_student_11', setIds: ['wm2000_day_40'], title: '[워드마스터 수능 2000] Day 40', scope: '[워드마스터 수능 2000] Day 40 (총 40단어)' }
-      ];
-
-      // 10/22부터 순서대로 미완료 테스트에 날짜 배정 (일요일 제외)
-      let nextDate = '2026-10-22';
-      gyuinVocabSchedules.forEach(scheduleItem => {
-        const existingTest = currentTests.find(t => t.id === scheduleItem.id || (t.studentId === gyuinStudentId && t.type === 'VOCAB' && t.title === scheduleItem.title));
-        const vocabTestConfig = {
-          id: scheduleItem.id,
-          studentId: gyuinStudentId,
-          title: scheduleItem.title,
-          date: nextDate,
-          time: '18:00',
-          endTime: '23:59',
-          scope: scheduleItem.scope,
-          cutoff: '객관식 80점 · 스펠링 80점 · 통합 80점',
-          cutoffScore: 80,
-          vocabCutoff: 80,
-          vocabCutoffs: { 2: 80, 3: 80, 4: 80 },
-          vocabSetId: scheduleItem.setIds[0],
-          vocabSetIds: scheduleItem.setIds,
-          score: existingTest?.score || '',
-          status: existingTest?.status || 'SCHEDULED',
-          retestStatus: existingTest?.retestStatus || 'NONE',
-          retestDate: existingTest?.retestDate || '',
-          teacherNote: existingTest?.teacherNote || '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
-          type: 'VOCAB',
-          allowLate: false,
-          isMockSpecial: false
-        };
-
-        if (!existingTest) {
-          currentTests.push(vocabTestConfig);
-          gyuinModified = true;
-          nextDate = nextNonSunday(nextDate);
-        } else {
-          const done = isTestDone(existingTest);
-          let itemUpdated = false;
-          // 미완료 테스트만 날짜 변경
-          if (!done && existingTest.date !== nextDate) {
-            existingTest.date = nextDate;
-            itemUpdated = true;
-          }
-          if (existingTest.vocabSetId !== vocabTestConfig.vocabSetId || JSON.stringify(existingTest.vocabSetIds) !== JSON.stringify(vocabTestConfig.vocabSetIds)) {
-            existingTest.vocabSetId = vocabTestConfig.vocabSetId;
-            existingTest.vocabSetIds = vocabTestConfig.vocabSetIds;
-            itemUpdated = true;
-          }
-          if (existingTest.scope !== vocabTestConfig.scope) {
-            existingTest.scope = vocabTestConfig.scope;
-            itemUpdated = true;
-          }
-          if (existingTest.cutoff !== vocabTestConfig.cutoff) {
-            existingTest.cutoff = vocabTestConfig.cutoff;
-            existingTest.cutoffScore = vocabTestConfig.cutoffScore;
-            existingTest.vocabCutoff = vocabTestConfig.vocabCutoff;
-            existingTest.vocabCutoffs = vocabTestConfig.vocabCutoffs;
-            itemUpdated = true;
-          }
-          if (itemUpdated) gyuinModified = true;
-          // 완료 여부와 관계없이 날짜 포인터 전진
-          nextDate = nextNonSunday(nextDate);
+      // Firestore에도 올바른 날짜로 개별 업데이트 보장 (다음 로드 시 새 날짜 유지)
+      GYUIN_VOCAB_TEST_IDS.forEach(tid => {
+        const t = currentTests.find(x => x.id === tid);
+        if (t) {
+          this.writeDocument('tests', tid, t).catch(e => console.warn(`송규인 단어 일정 저장(${tid}):`, e));
         }
       });
-
-      if (gyuinModified) {
-        FirebaseStore.tests = currentTests;
-        setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
-        // Firestore에도 변경된 날짜 반영 - 개별 문서 업데이트 (다음 로드 시 새 날짜 유지)
-        const gyuinVocabIds = [
-          'vocab_wm2000_d12_13_student_11', 'vocab_wm2000_d14_15_student_11',
-          'vocab_wm2000_d16_17_student_11', 'vocab_wm2000_d18_19_student_11',
-          'vocab_wm2000_d20_21_student_11', 'vocab_wm2000_d22_23_student_11',
-          'vocab_wm2000_d24_25_student_11', 'vocab_wm2000_d26_27_student_11',
-          'vocab_wm2000_d28_29_student_11', 'vocab_wm2000_d30_31_student_11',
-          'vocab_wm2000_d32_33_student_11', 'vocab_wm2000_d34_35_student_11',
-          'vocab_wm2000_d36_37_student_11', 'vocab_wm2000_d38_39_student_11',
-          'vocab_wm2000_d40_student_11'
-        ];
-        gyuinVocabIds.forEach(tid => {
-          const t = currentTests.find(x => x.id === tid);
-          if (t) {
-            this.writeDocument('tests', tid, t).catch(e => console.warn(`송규인 단어 일정 저장(${tid}):`, e));
-          }
-        });
-      }
     } catch (err) {
       console.warn('송규인 학생 단어테스트 일괄 등록 동기화 안내:', err);
     }
@@ -2403,8 +2363,10 @@ const AppData = {
       });
     }
 
-    if (added) {
+    const gyuinRescheduled = applyGyuinVocabSchedule(current);
+    if (added || gyuinRescheduled) {
       FirebaseStore.tests = current;
+      setLocalCache(LOCAL_CACHE_KEYS.tests, current);
     }
     return current;
   },
