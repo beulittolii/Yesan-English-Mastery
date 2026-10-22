@@ -2081,12 +2081,15 @@ const AppData = {
         t.retestStatus === 'RETEST_PASS' ||
         (t.score !== '' && t.score != null && Number(t.score) >= (t.cutoffScore || 80));
 
-      // 일요일 건너뛰는 날짜 증가 헬퍼
+      // 일요일 건너뛰는 날짜 증가 헬퍼 (로컬 날짜 기준 - toISOString은 UTC 변환으로 날짜 어긋남)
       const nextNonSunday = (dateStr) => {
         const d = new Date(dateStr + 'T00:00:00');
         d.setDate(d.getDate() + 1);
         if (d.getDay() === 0) d.setDate(d.getDate() + 1); // 일요일이면 월요일로
-        return d.toISOString().slice(0, 10);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       };
 
       const gyuinVocabSchedules = [
