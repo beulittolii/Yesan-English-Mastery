@@ -998,6 +998,17 @@ function getDefaultVocabSets() {
     });
   }
 
+  // 2-2. 워드마스터 고등 Basic 전체 30개 Day 세트
+  if (typeof WORDMASTER_BASIC_SETS !== 'undefined' && Array.isArray(WORDMASTER_BASIC_SETS)) {
+    WORDMASTER_BASIC_SETS.forEach(set => {
+      allSets.push({
+        ...set,
+        book: (set.book || '워드마스터 고등 Basic').trim(),
+        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+      });
+    });
+  }
+
   // 3. YBM(박준언) 공통영어 2 단어 세트 (백발백중)
   if (typeof YBM_ENGLISH2_VOCAB_SETS !== 'undefined' && Array.isArray(YBM_ENGLISH2_VOCAB_SETS)) {
     YBM_ENGLISH2_VOCAB_SETS.forEach(set => {
@@ -1020,7 +1031,7 @@ function getDefaultVocabSets() {
 const LOCAL_CACHE_KEYS = {
   tests: 'yem_cache_tests_v4',
   students: 'yem_cache_students_v3',
-  vocabSets: 'yem_cache_vocab_sets_v3'
+  vocabSets: 'yem_cache_vocab_sets_v4'
 };
 
 function getLocalCache(key) {
@@ -1792,7 +1803,7 @@ const AppData = {
       // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터/9모 단어 세트 권한 보장
       const allStudentIds = this.getStudents().map(s => Number(s.id));
       setMap.forEach(s => {
-        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
+        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
           if (!Array.isArray(s.studentIds)) s.studentIds = [];
           allStudentIds.forEach(sid => {
             if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
@@ -1804,28 +1815,35 @@ const AppData = {
       const fullSets = Array.from(setMap.values()).filter(s => !s.id.startsWith('mock2026_g1_sep_part') && s.id !== 'mock2026_g1_sep_all');
 
       // 발음기호(IPA) 누락 자동 보강
+      const wmIpaLookup = new Map();
       if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
-        const wmIpaLookup = new Map();
         WORDMASTER_2000_SETS.forEach(s => {
           (s.words || []).forEach(w => {
             if (w.en && w.ipa) wmIpaLookup.set(w.en.trim().toLowerCase(), w.ipa);
           });
         });
-        fullSets.forEach(s => {
+      }
+      if (typeof WORDMASTER_BASIC_SETS !== 'undefined' && Array.isArray(WORDMASTER_BASIC_SETS)) {
+        WORDMASTER_BASIC_SETS.forEach(s => {
           (s.words || []).forEach(w => {
-            if (w.en && !w.ipa) {
-              const foundIpa = wmIpaLookup.get(w.en.trim().toLowerCase());
-              if (foundIpa) w.ipa = foundIpa;
-            }
+            if (w.en && w.ipa) wmIpaLookup.set(w.en.trim().toLowerCase(), w.ipa);
           });
         });
       }
+      fullSets.forEach(s => {
+        (s.words || []).forEach(w => {
+          if (w.en && !w.ipa) {
+            const foundIpa = wmIpaLookup.get(w.en.trim().toLowerCase());
+            if (foundIpa) w.ipa = foundIpa;
+          }
+        });
+      });
 
       const needsSync = currentSets.length < defSets.length || fullSets.length !== currentSets.length;
       FirebaseStore.vocabSets = fullSets;
 
       if (needsSync) {
-        console.log('기본 단어 세트 전체 51개(워드마스터 50개 + 9모 특별단어)가 성공적으로 복원 및 동기화되었습니다.');
+        console.log('기본 단어 세트 전체가 성공적으로 복원 및 동기화되었습니다.');
         this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Vocab sets auto-healing notice:', e));
       }
     } catch (vocabSyncErr) {

@@ -18,6 +18,7 @@ const App = {
     vocabTest: null,
     vocabSetReturnToTestForm: false,
     vocabResultSelectedDate: null,
+    adminVocabCalendarMonth: null,
     practiceTest: null,
     editingPracticeQuestions: [],
     specialScienceResults: {},
@@ -5936,7 +5937,7 @@ const App = {
         `}
       </div>`;
 
-    // ── 2. 날짜별 단어 테스트 결과 및 채점 섹션 ───────────
+    // ── 2. 날짜별 단어 테스트 결과 및 채점 섹션 (캘린더 기반) ────
     const dateSet = new Set();
     tests.forEach(test => {
       if (test.date) dateSet.add(test.date);
@@ -5949,52 +5950,172 @@ const App = {
     const dates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
     let resultsSectionHtml = '';
 
-    if (dates.length === 0) {
-      resultsSectionHtml = `
-        <div class="glass-card rounded-2xl p-8 text-center text-slate-400 space-y-2">
-          <i class="fa-solid fa-calendar-days text-3xl opacity-30"></i>
-          <p class="text-sm font-bold text-slate-700">아직 등록된 단어 테스트 일정이나 응시 결과가 없습니다.</p>
-          <p class="text-xs text-slate-500">학생 시험 일정에서 단어 테스트를 등록하면 학생별 시험 결과와 채점 버튼이 여기에 표시됩니다.</p>
-        </div>`;
-    } else {
-      if (!this.state.vocabResultSelectedDate || !dates.includes(this.state.vocabResultSelectedDate)) {
-        this.state.vocabResultSelectedDate = dates[0];
+    if (!this.state.vocabResultSelectedDate || (!dates.includes(this.state.vocabResultSelectedDate) && dates.length > 0)) {
+      this.state.vocabResultSelectedDate = dates.length > 0 ? dates[0] : this.getTodayDateString();
+    }
+    const selectedDate = this.state.vocabResultSelectedDate || this.getTodayDateString();
+
+    if (!this.state.adminVocabCalendarMonth) {
+      if (selectedDate) {
+        const [sy, sm] = selectedDate.split('-').map(Number);
+        this.state.adminVocabCalendarMonth = new Date(sy, sm - 1, 1);
+      } else {
+        this.state.adminVocabCalendarMonth = new Date();
       }
-      const selectedDate = this.state.vocabResultSelectedDate;
+    }
 
-      const dateCardsHtml = dates.map(date => {
-        const dateResults = results.filter(result => this.getVocabResultDate(result) === date);
-        const dateTests = tests.filter(test => test.date === date);
-        const uniqueStudentIds = new Set([
-          ...dateResults.map(result => Number(result.studentId)),
-          ...dateTests.map(test => Number(test.studentId))
-        ]);
-        const passed = dateResults.filter(result => result.passed).length;
-        const resultCount = dateResults.length;
-        const isSelected = date === selectedDate;
-        const [, month, day] = date.split('-');
+    const calYear = this.state.adminVocabCalendarMonth.getFullYear();
+    const calMonth = this.state.adminVocabCalendarMonth.getMonth(); // 0-11
+    const firstDayIndex = new Date(calYear, calMonth, 1).getDay(); // 0: Sun, 6: Sat
+    const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+    const prevLastDate = new Date(calYear, calMonth, 0).getDate();
+    const todayStr = this.getTodayDateString();
 
-        return `
-          <button onclick="App.selectVocabResultDate('${date}')"
-            class="text-left rounded-2xl border-2 p-3.5 transition ${isSelected
-              ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
-              : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'}">
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">시험 날짜</p>
-                <p class="text-xl font-black text-slate-900 mt-0.5">${Number(month)}/${Number(day)}</p>
+    const calendarCells = [];
+
+    const renderCell = (dayNum, dateStr, isOtherMonth) => {
+      const isToday = (dateStr === todayStr);
+      const isSelected = (dateStr === selectedDate);
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dObj = new Date(y, m - 1, d);
+      const dayOfWeek = dObj.getDay();
+      const isSunday = (dayOfWeek === 0);
+      const isSaturday = (dayOfWeek === 6);
+
+      const cellTests = tests.filter(test => test.date === dateStr);
+      const cellResults = results.filter(result => this.getVocabResultDate(result) === dateStr);
+      const uniqueStudentIds = new Set([
+        ...cellResults.map(r => Number(r.studentId)),
+        ...cellTests.map(t => Number(t.studentId))
+      ]);
+      const hasData = (cellTests.length > 0 || cellResults.length > 0);
+      const passedCount = cellResults.filter(r => r.passed).length;
+      const resultCount = cellResults.length;
+      const hasPending = cellResults.some(r => r.direction === 4 && r.waitingGrading && !r.gradedByAdmin);
+      const hasRetest = cellResults.some(r => !r.passed && !(r.direction === 4 && r.waitingGrading && !r.gradedByAdmin));
+
+      let borderClass = 'border-slate-200';
+      let bgClass = 'bg-white hover:bg-slate-50';
+      let ringClass = '';
+
+      if (isSelected) {
+        borderClass = 'border-indigo-600';
+        bgClass = 'bg-indigo-50/90 shadow-sm';
+        ringClass = 'ring-2 ring-indigo-500 ring-offset-1 z-10';
+      } else if (hasPending) {
+        borderClass = 'border-amber-300';
+        bgClass = 'bg-amber-50/70 hover:bg-amber-100/70 hover:border-amber-400';
+      } else if (hasData && passedCount > 0 && passedCount === resultCount && resultCount >= uniqueStudentIds.size) {
+        borderClass = 'border-emerald-200';
+        bgClass = 'bg-emerald-50/60 hover:bg-emerald-100/60 hover:border-emerald-300';
+      } else if (hasData) {
+        borderClass = 'border-slate-300';
+        bgClass = 'bg-slate-50/90 hover:bg-indigo-50/40 hover:border-indigo-300';
+      } else if (isOtherMonth) {
+        borderClass = 'border-slate-100/70';
+        bgClass = 'bg-slate-50/30 text-slate-300';
+      }
+
+      const numColorClass = isSelected
+        ? 'text-indigo-700 font-black'
+        : isOtherMonth
+        ? 'text-slate-300'
+        : isSunday
+        ? 'text-rose-500 font-bold'
+        : isSaturday
+        ? 'text-indigo-500 font-bold'
+        : 'text-slate-700 font-bold';
+
+      return `
+        <div onclick="App.selectVocabResultDate('${dateStr}')"
+          class="min-h-[70px] sm:min-h-[82px] p-1.5 sm:p-2 rounded-xl border ${borderClass} ${bgClass} ${ringClass} transition flex flex-col justify-between cursor-pointer group relative overflow-hidden"
+          title="${dateStr}${hasData ? ` (학생 ${uniqueStudentIds.size}명 / 결과 ${resultCount}건)` : ''}">
+          <!-- Top Row: Day Number & Status Indicator -->
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs sm:text-sm ${numColorClass}">${dayNum}</span>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              ${isToday ? `<span class="text-[9px] font-black text-indigo-700 bg-indigo-100 px-1 py-0.2 rounded leading-tight">오늘</span>` : ''}
+              ${hasPending ? `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="채점 대기 중인 답안이 있습니다"></span>` : ''}
+            </div>
+          </div>
+
+          <!-- Bottom: Test & Result Summary Badges -->
+          ${hasData ? `
+            <div class="space-y-0.5 mt-1">
+              ${hasPending ? `
+                <div class="text-[9px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded-md border border-amber-200 flex items-center justify-center gap-0.5 truncate">
+                  <i class="fa-solid fa-clock text-[8px]"></i> 채점대기
+                </div>
+              ` : ''}
+              <div class="flex items-center gap-1 flex-wrap">
+                <span class="text-[9px] font-extrabold text-slate-600 bg-white/80 border border-slate-200 px-1 py-0.2 rounded leading-tight">
+                  ${uniqueStudentIds.size}명
+                </span>
+                ${passedCount > 0 ? `
+                  <span class="text-[9px] font-extrabold text-emerald-700 bg-emerald-100/90 border border-emerald-200 px-1 py-0.2 rounded leading-tight">
+                    통과 ${passedCount}
+                  </span>
+                ` : ''}
+                ${hasRetest ? `
+                  <span class="text-[9px] font-extrabold text-rose-700 bg-rose-100 border border-rose-200 px-1 py-0.2 rounded leading-tight">
+                    재시험
+                  </span>
+                ` : ''}
+                ${cellTests.length > 0 && resultCount === 0 ? `
+                  <span class="text-[9px] font-bold text-slate-400 bg-slate-100 px-1 py-0.2 rounded leading-tight">
+                    미응시
+                  </span>
+                ` : ''}
               </div>
-              <span class="w-8 h-8 rounded-xl ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'} flex items-center justify-center text-xs">
-                <i class="fa-solid fa-calendar-check"></i>
-              </span>
             </div>
-            <div class="mt-2.5 flex items-center gap-1 flex-wrap">
-              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">학생 ${uniqueStudentIds.size}명</span>
-              <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">통과 ${passed}명</span>
-              <span class="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold">결과 ${resultCount}건</span>
-            </div>
-          </button>`;
-      }).join('');
+          ` : `
+            <div></div>
+          `}
+        </div>
+      `;
+    };
+
+    // 1. 이전 달 날짜들
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = prevLastDate - i;
+      const prevDate = new Date(calYear, calMonth - 1, dayNum);
+      calendarCells.push(renderCell(dayNum, this.formatDate(prevDate), true));
+    }
+
+    // 2. 이번 달 날짜들
+    for (let dayNum = 1; dayNum <= lastDate; dayNum++) {
+      const curDate = new Date(calYear, calMonth, dayNum);
+      calendarCells.push(renderCell(dayNum, this.formatDate(curDate), false));
+    }
+
+    // 3. 다음 달 날짜들 (7열 그리드 마감)
+    const totalCells = firstDayIndex + lastDate;
+    const nextDaysNeeded = (7 - (totalCells % 7)) % 7;
+    for (let dayNum = 1; dayNum <= nextDaysNeeded; dayNum++) {
+      const nextDate = new Date(calYear, calMonth + 1, dayNum);
+      calendarCells.push(renderCell(dayNum, this.formatDate(nextDate), true));
+    }
+
+    const calendarGridHtml = calendarCells.join('');
+
+    const recentDates = dates.slice(0, 5);
+    const recentTestJumpButtonsHtml = recentDates.length > 0 ? `
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <span class="text-[11px] font-bold text-slate-500 mr-1">최근 시험일:</span>
+        ${recentDates.map(d => {
+          const [, m, day] = d.split('-');
+          const isAct = (d === selectedDate);
+          return `
+            <button type="button" onclick="App.selectVocabResultDate('${d}')"
+              class="px-2 py-0.5 rounded-lg text-xs font-bold transition ${isAct ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+              ${Number(m)}/${Number(day)}
+            </button>
+          `;
+        }).join('')}
+      </div>
+    ` : '';
+
+    const calMonthTitle = `${calYear}년 ${calMonth + 1}월`;
 
       const selectedTests = tests.filter(test => test.date === selectedDate);
       const selectedResults = results.filter(result => this.getVocabResultDate(result) === selectedDate);
@@ -6116,36 +6237,94 @@ const App = {
       }).filter(Boolean).join('');
 
       resultsSectionHtml = `
-        <div class="glass-card rounded-2xl p-5 space-y-5">
-          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <!-- ================= 단어 테스트 결과 캘린더 ================= -->
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <i class="fa-solid fa-calendar-days text-indigo-600"></i>
-                <span>날짜별 단어 테스트 결과 & 채점</span>
+                <span>단어 테스트 결과 캘린더</span>
+                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">${dates.length}개 시험일</span>
               </h3>
-              <p class="text-xs text-slate-500 mt-0.5">날짜를 선택하여 각 학생의 시험 결과 확인 및 [채점하기]를 진행하세요.</p>
+              <p class="text-xs text-slate-500 mt-0.5">캘린더에서 시험 날짜를 선택하여 각 학생의 결과 확인 및 채점을 진행하세요.</p>
             </div>
-            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">${dates.length}개 날짜</span>
+
+            <!-- 월 이동 네비게이션 컨트롤 -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200 shadow-2xs">
+                <button type="button" onclick="App.prevAdminVocabMonth()" class="w-8 h-8 rounded-lg hover:bg-white text-slate-700 flex items-center justify-center text-xs transition cursor-pointer" title="이전 달">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="text-xs sm:text-sm font-black text-slate-800 px-3 min-w-[95px] text-center">
+                  ${calMonthTitle}
+                </span>
+                <button type="button" onclick="App.nextAdminVocabMonth()" class="w-8 h-8 rounded-lg hover:bg-white text-slate-700 flex items-center justify-center text-xs transition cursor-pointer" title="다음 달">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+              <button type="button" onclick="App.setAdminVocabMonthToday()" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition border border-indigo-200 cursor-pointer shadow-2xs">
+                오늘
+              </button>
+            </div>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">${dateCardsHtml}</div>
+          <!-- 요일 헤더 (일 ~ 토) -->
+          <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[11px] font-black text-slate-400 py-1 border-b border-slate-100">
+            <div class="text-rose-500">일</div>
+            <div>월</div>
+            <div>화</div>
+            <div>수</div>
+            <div>목</div>
+            <div>금</div>
+            <div class="text-indigo-500">토</div>
+          </div>
+
+          <!-- 월간 7열 캘린더 그리드 -->
+          <div class="grid grid-cols-7 gap-1.5 sm:gap-2">
+            ${calendarGridHtml}
+          </div>
+
+          <!-- 범례 및 최근 시험일 바로가기 -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between flex-wrap gap-2 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>선택된 날짜</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>응시 완료</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>채점 대기</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>재시험</span>
+            </div>
+            ${recentTestJumpButtonsHtml}
+          </div>
         </div>
 
+        <!-- ================= 선택된 날짜 상세 결과 & 채점 ================= -->
         <div class="glass-card rounded-2xl p-5 space-y-4">
-          <div class="flex items-center justify-between gap-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <p class="text-xs font-bold text-indigo-600">선택한 날짜</p>
-              <h3 class="text-xl font-black text-slate-900 mt-0.5">${this.formatVocabResultDateLong(selectedDate)}</h3>
+              <p class="text-xs font-bold text-indigo-600 flex items-center gap-1.5">
+                <i class="fa-solid fa-calendar-check text-[11px]"></i>
+                <span>선택한 시험 날짜</span>
+              </p>
+              <h3 class="text-lg sm:text-xl font-black text-slate-900 mt-0.5">${this.formatVocabResultDateLong(selectedDate)}</h3>
             </div>
-            <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">${selectedResults.length}건 결과</span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 shadow-2xs">
+                ${selectedResults.length}건 응시
+              </span>
+              <button type="button" onclick="App.jumpAdminVocabTestDate(-1)" class="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1 cursor-pointer shadow-2xs" title="이전 시험일로 이동">
+                <i class="fa-solid fa-chevron-left text-[10px]"></i> 이전 시험일
+              </button>
+              <button type="button" onclick="App.jumpAdminVocabTestDate(1)" class="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1 cursor-pointer shadow-2xs" title="다음 시험일로 이동">
+                다음 시험일 <i class="fa-solid fa-chevron-right text-[10px]"></i>
+              </button>
+            </div>
           </div>
           ${studentCards || `
             <div class="rounded-2xl bg-slate-50 border border-slate-200 p-8 text-center text-slate-400">
               <i class="fa-solid fa-user-clock text-3xl mb-2 opacity-30"></i>
-              <p class="text-sm font-semibold">이 날짜에는 표시할 학생 결과가 없습니다.</p>
+              <p class="text-sm font-semibold text-slate-600">이 날짜에는 표시할 학생 결과가 없습니다.</p>
+              <p class="text-xs text-slate-400 mt-1">캘린더에서 시험이 등록되었거나 응시 완료된 날짜를 클릭하면 학생들의 상세 결과와 채점 버튼이 표시됩니다.</p>
             </div>`}
         </div>`;
-    }
 
     container.innerHTML = `
       ${vocabSetsHtml}
@@ -6154,8 +6333,65 @@ const App = {
   },
 
   selectVocabResultDate(date) {
+    if (!date) return;
     this.state.vocabResultSelectedDate = date;
+    const [y, m] = date.split('-').map(Number);
+    if (y && m) {
+      if (!this.state.adminVocabCalendarMonth) {
+        this.state.adminVocabCalendarMonth = new Date(y, m - 1, 1);
+      } else {
+        this.state.adminVocabCalendarMonth.setFullYear(y);
+        this.state.adminVocabCalendarMonth.setMonth(m - 1);
+      }
+    }
     this.renderAdminVocabTab();
+  },
+
+  prevAdminVocabMonth() {
+    if (!this.state.adminVocabCalendarMonth) {
+      this.state.adminVocabCalendarMonth = new Date();
+    }
+    this.state.adminVocabCalendarMonth.setMonth(this.state.adminVocabCalendarMonth.getMonth() - 1);
+    this.renderAdminVocabTab();
+  },
+
+  nextAdminVocabMonth() {
+    if (!this.state.adminVocabCalendarMonth) {
+      this.state.adminVocabCalendarMonth = new Date();
+    }
+    this.state.adminVocabCalendarMonth.setMonth(this.state.adminVocabCalendarMonth.getMonth() + 1);
+    this.renderAdminVocabTab();
+  },
+
+  setAdminVocabMonthToday() {
+    const today = new Date();
+    this.state.adminVocabCalendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    this.state.vocabResultSelectedDate = this.getTodayDateString();
+    this.renderAdminVocabTab();
+  },
+
+  jumpAdminVocabTestDate(direction) {
+    const results = AppData.getVocabTestResults();
+    const tests = AppData.getTests().filter(t => t.type === 'VOCAB');
+    const dateSet = new Set();
+    tests.forEach(t => { if (t.date) dateSet.add(t.date); });
+    results.forEach(r => { const d = this.getVocabResultDate(r); if (d) dateSet.add(d); });
+    const dates = Array.from(dateSet).sort();
+    if (dates.length === 0) return;
+
+    const current = this.state.vocabResultSelectedDate || dates[dates.length - 1];
+    const currentIndex = dates.indexOf(current);
+    let targetIndex = -1;
+
+    if (direction < 0) {
+      targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    } else {
+      targetIndex = currentIndex >= 0 && currentIndex < dates.length - 1 ? currentIndex + 1 : dates.length - 1;
+    }
+
+    if (targetIndex >= 0 && dates[targetIndex]) {
+      this.selectVocabResultDate(dates[targetIndex]);
+    }
   },
 
   getVocabResultDate(result) {
@@ -6196,7 +6432,10 @@ const App = {
   formatVocabResultDateLong(dateString) {
     const [year, month, day] = String(dateString).split('-').map(Number);
     if (!year || !month || !day) return dateString;
-    return `${year}년 ${month}월 ${day}일`;
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const d = new Date(year, month - 1, day);
+    const dayName = dayNames[d.getDay()] || '';
+    return `${year}년 ${month}월 ${day}일 (${dayName}요일)`;
   },
 
   // ── 관리자: 단어 세트 모달 열기 ──────────────────────────
@@ -6691,7 +6930,7 @@ const App = {
           title = mockSet.title || '1등급 킬러 반전 다의어 60선';
           bookName = mockSet.book || '2026 고1 9모 대비';
           isMockSpecial = true;
-        } else if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
+        } else if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS) && WORDMASTER_2000_SETS.some(s => idList.includes(s.id))) {
           const wmMatches = WORDMASTER_2000_SETS.filter(s => idList.includes(s.id));
           if (wmMatches.length > 0) {
             wmMatches.forEach(s => {
@@ -6699,6 +6938,15 @@ const App = {
             });
             bookName = wmMatches[0]?.book || '워드마스터 수능 2000';
             title = wmMatches.map(s => s.title).join(' + ');
+          }
+        } else if (typeof WORDMASTER_BASIC_SETS !== 'undefined' && Array.isArray(WORDMASTER_BASIC_SETS) && WORDMASTER_BASIC_SETS.some(s => idList.includes(s.id))) {
+          const wmBasicMatches = WORDMASTER_BASIC_SETS.filter(s => idList.includes(s.id));
+          if (wmBasicMatches.length > 0) {
+            wmBasicMatches.forEach(s => {
+              if (Array.isArray(s.words)) words.push(...s.words);
+            });
+            bookName = wmBasicMatches[0]?.book || '워드마스터 고등 Basic';
+            title = wmBasicMatches.map(s => s.title).join(' + ');
           }
         }
       }
