@@ -1031,7 +1031,7 @@ function getDefaultVocabSets() {
 const LOCAL_CACHE_KEYS = {
   tests: 'yem_cache_tests_v4',
   students: 'yem_cache_students_v3',
-  vocabSets: 'yem_cache_vocab_sets_v5'
+  vocabSets: 'yem_cache_vocab_sets_v6'
 };
 
 function getLocalCache(key) {
@@ -1140,7 +1140,22 @@ const FirebaseStore = {
     applyGyuinVocabSchedule(initialList);
     return initialList;
   })(),
-  vocabSets: Array.isArray(cachedVocabSets) && cachedVocabSets.length > 0 ? cachedVocabSets : getDefaultVocabSets(),
+  vocabSets: (() => {
+    const defSets = getDefaultVocabSets();
+    if (!Array.isArray(cachedVocabSets) || cachedVocabSets.length === 0) return defSets;
+    const defMap = new Map(defSets.map(s => [s.id, s]));
+    cachedVocabSets.forEach(s => {
+      if (s.id && s.id.startsWith('wm_basic_')) {
+        const defSet = defMap.get(s.id);
+        if (defSet && defSet.words) {
+          s.words = defSet.words;
+          s.book = defSet.book || '워드마스터 고등 Basic';
+          s.title = defSet.title;
+        }
+      }
+    });
+    return cachedVocabSets;
+  })(),
   vocabTestResults: [],
   textMemorizeResults: [],
   studentsLoaded: false,
@@ -1660,16 +1675,32 @@ const AppData = {
       // vocabSets 컬렉션 보호: Firestore에서 빈 배열이 오거나 워드마스터/9모가 누락된 경우 기본 세트를 자동 병합하여 절대 소실되지 않도록 함
       if (cacheKey === 'vocabSets') {
         const defSets = getDefaultVocabSets();
+        const defMap = new Map(defSets.map(s => [s.id, s]));
         const existingIds = new Set(items.map(s => s.id));
         defSets.forEach(defSet => {
           if (!existingIds.has(defSet.id)) {
             items.push(defSet);
           }
         });
+        let needsCloudUpdate = false;
+        // 워드마스터 고등 Basic 2022 개정판(Day 1: include...) 최신 정본 강제 갱신
+        items.forEach(s => {
+          if (s.id && s.id.startsWith('wm_basic_')) {
+            const defSet = defMap.get(s.id);
+            if (defSet && defSet.words) {
+              if (s.id === 'wm_basic_day_01' && (!s.words || !s.words[0] || s.words[0].en.toLowerCase() !== 'include')) {
+                needsCloudUpdate = true;
+              }
+              s.words = defSet.words;
+              s.book = defSet.book || '워드마스터 고등 Basic';
+              s.title = defSet.title;
+            }
+          }
+        });
         // 모든 학생 ID 매핑 보장
         const currentStudentIds = (FirebaseStore.students || DEFAULT_STUDENTS).map(s => Number(s.id));
         items.forEach(s => {
-          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
+          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
             if (!Array.isArray(s.studentIds)) s.studentIds = [];
             currentStudentIds.forEach(sid => {
               if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
@@ -1677,6 +1708,9 @@ const AppData = {
           }
         });
         setLocalCache(LOCAL_CACHE_KEYS.vocabSets, items);
+        if (needsCloudUpdate) {
+          this.replaceCollection('vocabSets', items, set => set.id).catch(e => console.warn('Vocab sets auto-healing notice:', e));
+        }
       }
 
       FirebaseStore[cacheKey] = items;
@@ -1789,15 +1823,28 @@ const AppData = {
       }
     }
 
-    // 기본 단어 세트(워드마스터 2000 50개 Day + 2026 고1 9모 대비 특별단어) 전체 복원 및 학생 권한 보장
+    // 기본 단어 세트(워드마스터 2000 50개 Day + 워드마스터 고등 Basic 30개 Day + 2026 고1 9모 대비 특별단어) 전체 복원 및 학생 권한 보장
     try {
       const defSets = getDefaultVocabSets();
       const currentSets = FirebaseStore.vocabSets || [];
       const setMap = new Map();
       defSets.forEach(s => setMap.set(s.id, s));
+      let wmBasicUpdated = false;
       currentSets.forEach(s => {
         const base = setMap.get(s.id);
-        setMap.set(s.id, base ? { ...base, ...s } : s);
+        if (base) {
+          if (s.id && s.id.startsWith('wm_basic_')) {
+            // 워드마스터 고등 Basic은 2022 개정판 최신 정본 데이터(base.words)를 항상 우선 강제 적용
+            if (!s.words || s.words.length === 0 || (s.id === 'wm_basic_day_01' && s.words[0]?.en?.toLowerCase() !== 'include')) {
+              wmBasicUpdated = true;
+            }
+            setMap.set(s.id, { ...s, words: base.words, title: base.title, book: base.book });
+          } else {
+            setMap.set(s.id, { ...base, ...s });
+          }
+        } else {
+          setMap.set(s.id, s);
+        }
       });
 
       // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터/9모 단어 세트 권한 보장
@@ -1839,8 +1886,9 @@ const AppData = {
         });
       });
 
-      const needsSync = currentSets.length < defSets.length || fullSets.length !== currentSets.length;
+      const needsSync = currentSets.length < defSets.length || fullSets.length !== currentSets.length || wmBasicUpdated;
       FirebaseStore.vocabSets = fullSets;
+      setLocalCache(LOCAL_CACHE_KEYS.vocabSets, fullSets);
 
       if (needsSync) {
         console.log('기본 단어 세트 전체가 성공적으로 복원 및 동기화되었습니다.');
@@ -2709,21 +2757,37 @@ const AppData = {
       return defSets;
     }
 
-    // 기본 세트(50개 Day + 9모) 중 하나라도 누락되어 있다면 자동 보강
-    const currentIds = new Set(current.map(s => s.id));
-    let missingFound = false;
-    const merged = [...current];
+    const defMap = new Map(defSets.map(s => [s.id, s]));
+    let modified = false;
 
-    defSets.forEach(defSet => {
-      if (!currentIds.has(defSet.id)) {
-        merged.push(defSet);
-        missingFound = true;
+    // 워드마스터 고등 Basic 2022 개정판(Day 1: include...) 최신 정본 데이터 즉시 보정
+    current.forEach(s => {
+      if (s.id && s.id.startsWith('wm_basic_')) {
+        const defSet = defMap.get(s.id);
+        if (defSet && defSet.words) {
+          if (!s.words || s.words.length === 0 || (s.id === 'wm_basic_day_01' && s.words[0]?.en?.toLowerCase() !== 'include')) {
+            s.words = defSet.words;
+            s.book = defSet.book || '워드마스터 고등 Basic';
+            s.title = defSet.title;
+            modified = true;
+          }
+        }
       }
     });
 
-    if (missingFound) {
-      FirebaseStore.vocabSets = merged;
-      return merged;
+    // 기본 세트(50개 Day + 9모 + Basic 30개 Day) 중 하나라도 누락되어 있다면 자동 보강
+    const currentIds = new Set(current.map(s => s.id));
+    defSets.forEach(defSet => {
+      if (!currentIds.has(defSet.id)) {
+        current.push(defSet);
+        modified = true;
+      }
+    });
+
+    if (modified) {
+      FirebaseStore.vocabSets = current;
+      setLocalCache(LOCAL_CACHE_KEYS.vocabSets, current);
+      this.replaceCollection('vocabSets', current, set => set.id).catch(() => {});
     }
 
     return current;

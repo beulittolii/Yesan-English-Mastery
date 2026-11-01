@@ -820,9 +820,6 @@
           <!-- Populated by JS -->
         </div>
 
-        <!-- Student Special Science Test Progress (Populated by JS) -->
-        <div id="adminSpecialScienceResults"></div>
-
         <!-- Tests Table Card -->
         <div class="glass-card rounded-2xl p-5 overflow-hidden shadow-sm">
           <div class="flex items-center justify-between mb-4">
@@ -11577,30 +11574,11 @@ const AcademicManager = {
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          // 기존 샘플 공지사항(notice_1 ~ notice_4) 및 초기 데이터 삭제
-          notices = parsed.filter(n => !['notice_1', 'notice_2', 'notice_3', 'notice_4'].includes(n.id));
+          // 기존 샘플 공지사항 및 지구과학 테스트 공지사항 완전 삭제
+          notices = parsed.filter(n => !['notice_1', 'notice_2', 'notice_3', 'notice_4', 'notice_science_special'].includes(n.id) && !(n.title || '').includes('지구과학'));
         }
       } catch (e) {
         console.error('Failed to parse notices from storage:', e);
-      }
-    }
-
-    // 지구과학 테스트 공지사항 초기 1회 등록 (관리자가 수정/삭제 가능하도록)
-    const initKey = 'academic_notices_science_v4_migrated';
-    if (!localStorage.getItem(initKey)) {
-      localStorage.setItem(initKey, 'true');
-      const hasScience = notices.some(n => n.id === 'notice_science_special');
-      if (!hasScience) {
-        const scienceNotice = {
-          id: 'notice_science_special',
-          title: '🧪 [특별 테스트] 2026 지구과학 지질 시대 & 화석 빈칸 단답형 (유지현T 정리본)',
-          content: `선캄브리아 시대부터 고생대, 중생대, 신생대까지의 기후·환경, 지각 변동, 생물 출현·번성·멸종, 표준 화석 핵심 개념을 점검하는 빈칸 단답형 테스트입니다.\n\n• 응시 기간: ~ 2026. 10. 16(목) 마감 (기간 지남)\n• 출제 범위: 유지현T 지구과학 정리본\n• 문제 형식: 빈칸 채우기 단답형 (핵심 키워드 및 표준 화석 입력)\n• 문항 구성: 1회 응시 시 10문제 (총 5회차 / 50문제)\n\n※ 해당 시험은 지정된 응시 기간(10/16)이 마감되어 테스트 데이터가 삭제되었으며, 현재 시험 응시 및 결과 확인이 종료되었습니다.`,
-          date: '2026.10.16',
-          isPinned: false,
-          isExpired: true
-        };
-        notices.unshift(scienceNotice);
-        this.saveNotices(notices);
       }
     }
 
