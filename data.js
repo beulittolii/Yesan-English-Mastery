@@ -1031,7 +1031,7 @@ function getDefaultVocabSets() {
 const LOCAL_CACHE_KEYS = {
   tests: 'yem_cache_tests_v4',
   students: 'yem_cache_students_v3',
-  vocabSets: 'yem_cache_vocab_sets_v4'
+  vocabSets: 'yem_cache_vocab_sets_v5'
 };
 
 function getLocalCache(key) {
