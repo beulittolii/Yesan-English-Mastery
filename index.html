@@ -5573,11 +5573,21 @@ const AcademicManager = {
       notice: { active: 'text-sky-200', inactive: 'text-sky-500' }
     };
 
+    // 항상 숨겨야 하는 탭 목록 (삭제된 기능)
+    const permanentlyHidden = ['examPrep', 'mockExam'];
+
     tabs.forEach(t => {
       const btn = document.getElementById(`stuTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
       const content = document.getElementById(`stuContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
 
       if (btn) {
+        // 삭제된 탭은 항상 hidden 유지
+        if (permanentlyHidden.includes(t)) {
+          btn.classList.add('hidden');
+          if (content) content.classList.add('hidden');
+          return;
+        }
+
         const icon = btn.querySelector('i');
         const colorCfg = iconColors[t];
 

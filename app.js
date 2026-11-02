@@ -3490,9 +3490,17 @@ const App = {
     if (tabName === 'examprep' || tabName === 'mockexam') tabName = 'tests';
     this.state.adminTab = tabName;
     // 모든 관리자 탭을 한 곳에서 토글해, 이전 카테고리 내용이 함께 남지 않게 한다.
+    // 항상 숨겨야 하는 탭 목록 (삭제된 기능)
+    const permanentlyHiddenAdminTabs = ['examprep', 'mockexam'];
     ['Tests', 'ExamPrep', 'Assessment', 'SchoolGrade', 'MockExam', 'TargetUniv', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
       const btn = document.getElementById(`adminTabBtn${t}`);
       const content = document.getElementById(`adminTabContent${t}`);
+      // 삭제된 탭은 항상 hidden 유지
+      if (permanentlyHiddenAdminTabs.includes(t.toLowerCase())) {
+        if (btn) btn.classList.add('hidden');
+        if (content) content.classList.add('hidden');
+        return;
+      }
       if (t.toLowerCase() === tabName) {
         if (btn) btn.className = 'pb-3 px-2 border-b-2 border-indigo-600 font-bold text-xs sm:text-sm text-indigo-600 flex items-center gap-2 whitespace-nowrap';
         if (content) content.classList.remove('hidden');
