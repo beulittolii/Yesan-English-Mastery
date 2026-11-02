@@ -138,7 +138,7 @@
         </div>
       </button>
 
-      <button id="stuTabExamPrep" onclick="AcademicManager.switchStudentTab('examPrep'); App.closeMobileSidebar();" title="지필고사 시험범위" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+      <button id="stuTabExamPrep" onclick="AcademicManager.switchStudentTab('examPrep'); App.closeMobileSidebar();" title="지필고사 시험범위" class="hidden w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
         <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-amber-500">
           <i class="fa-solid fa-book-bookmark"></i>
         </div>
@@ -168,7 +168,7 @@
         </div>
       </button>
 
-      <button id="stuTabMockExam" onclick="AcademicManager.switchStudentTab('mockExam'); App.closeMobileSidebar();" title="모의고사 성적 관리" class="w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
+      <button id="stuTabMockExam" onclick="AcademicManager.switchStudentTab('mockExam'); App.closeMobileSidebar();" title="모의고사 성적 관리" class="hidden w-full h-11 rounded-xl flex items-center relative transition-all cursor-pointer overflow-hidden text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 group/btn">
         <div class="w-12 h-full flex-shrink-0 flex items-center justify-center text-base text-blue-600">
           <i class="fa-solid fa-chart-line"></i>
         </div>
@@ -764,7 +764,7 @@
           <i class="fa-solid fa-list-check"></i>
           <span>시험 & 성적 관리</span>
         </button>
-        <button id="adminTabBtnExamPrep" onclick="App.switchAdminTab('examprep')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+        <button id="adminTabBtnExamPrep" onclick="App.switchAdminTab('examprep')" class="hidden pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
           <i class="fa-solid fa-book-bookmark text-amber-500"></i>
           <span>지필고사 시험범위</span>
         </button>
@@ -776,7 +776,7 @@
           <i class="fa-solid fa-chart-column text-violet-600"></i>
           <span>내신 성적 관리</span>
         </button>
-        <button id="adminTabBtnMockExam" onclick="App.switchAdminTab('mockexam')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+        <button id="adminTabBtnMockExam" onclick="App.switchAdminTab('mockexam')" class="hidden pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
           <i class="fa-solid fa-chart-line text-blue-600"></i>
           <span>모의고사 성적 관리</span>
         </button>
@@ -5370,29 +5370,8 @@ const AcademicManager = {
         // 현재 대시보드 학생의 해당 일자 지필고사 및 학교 수행평가 일정 조회
         const currentStudentId = Number(App.state.selectedStudentId);
         if (currentStudentId) {
-          // 1. 지필고사 시험범위 일정 뱃지 생성
-          const dayScopes = this.getExamScopes().filter(s => Number(s.studentId) === currentStudentId && s.examDate === dateStr);
+          // 1. 지필고사 시험범위 탭 제거로 인해 캘린더 뱃지 비활성화
           let examBadgesHtml = '';
-          if (dayScopes.length > 0) {
-            examBadgesHtml = dayScopes.map(scope => {
-              const memoText = scope.memo ? ` | ${this.escapeHtml(scope.memo)}` : '';
-              const targetText = scope.targetScore ? ` | 목표: ${this.escapeHtml(scope.targetScore)}` : '';
-              return `
-                <div onclick="AcademicManager.viewExamScopeFromCalendar('${scope.id}'); event.stopPropagation();" 
-                     class="test-event-pill px-1.5 py-[3px] rounded-md mb-1 text-[10px] flex flex-col justify-center shadow-xs bg-amber-600 hover:bg-amber-700 text-white border border-amber-400/80 cursor-pointer transition" 
-                     title="[지필고사] ${this.escapeHtml(scope.subject)} (${this.escapeHtml(scope.examType)})${targetText}${memoText}">
-                  <div class="flex items-center justify-between gap-1 w-full min-w-0">
-                    <div class="flex items-center gap-1 min-w-0 truncate">
-                      <i class="fa-solid fa-book-bookmark text-[8.5px] text-amber-200 flex-shrink-0"></i>
-                      <span class="bg-amber-800/90 px-1 py-[1.5px] rounded text-[8.5px] font-black text-amber-100 flex-shrink-0 leading-none">지필</span>
-                      <span class="font-bold text-[9.5px] text-white truncate leading-none min-w-0">${this.escapeHtml(scope.subject)}</span>
-                    </div>
-                    <span class="text-[8.5px] px-1.5 py-[1.5px] rounded-full font-bold flex-shrink-0 shadow-2xs leading-none bg-amber-100 text-amber-900">${this.escapeHtml(scope.examType)}</span>
-                  </div>
-                </div>
-              `;
-            }).join('');
-          }
 
           // 2. 학교 수행평가 일정 조회
           const allAssessments = this.getAssessments().filter(a => Number(a.studentId) === currentStudentId);
@@ -5579,6 +5558,8 @@ const AcademicManager = {
   // 학생 대시보드 탭 전환 & 배너 강화
   // ----------------------------------------------------
   switchStudentTab(tabName) {
+    // 삭제된 탭으로 전환 시도 시 기본 탭으로 리다이렉트
+    if (tabName === 'examPrep' || tabName === 'mockExam') tabName = 'schedule';
     this.studentTab = tabName;
     const tabs = ['schedule', 'examPrep', 'assessment', 'schoolGrade', 'mockExam', 'targetUniv', 'notice'];
 
@@ -5759,10 +5740,7 @@ const AcademicManager = {
       banner.insertAdjacentHTML('beforeend', univSectionHtml);
     }
 
-    // 2. 지필고사 및 수행평가 진행 중 개수 뱃지 갱신
-    const studentScopes = this.getExamScopes().filter(s => Number(s.studentId) === Number(studentId));
-    const examBadgeCount = document.getElementById('stuExamPrepBadgeCount');
-    if (examBadgeCount) examBadgeCount.textContent = studentScopes.length;
+    // 2. 수행평가 진행 중 개수 뱃지 갱신 (지필고사 탭 제거로 해당 뱃지 비활성화)
 
     const assessments = this.getAssessments().filter(a => Number(a.studentId) === Number(studentId));
     const activeCount = assessments.filter(a => a.status !== '응시 후').length;

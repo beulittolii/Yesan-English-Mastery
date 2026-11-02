@@ -103,8 +103,13 @@ const App = {
       badge.classList.add('flex');
       if (status === 'synced') {
         setTimeout(() => {
-          badge.classList.add('hidden');
-          badge.classList.remove('flex');
+          badge.style.transition = 'opacity 0.5s ease';
+          badge.style.opacity = '0';
+          setTimeout(() => {
+            badge.classList.add('hidden');
+            badge.classList.remove('flex');
+            badge.style.opacity = '';
+          }, 520);
         }, 3000);
       }
     }
@@ -116,7 +121,14 @@ const App = {
         el.classList.remove('hidden');
         if (status === 'synced') {
           setTimeout(() => {
-            el.classList.add('hidden');
+            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-4px)';
+            setTimeout(() => {
+              el.classList.add('hidden');
+              el.style.opacity = '';
+              el.style.transform = '';
+            }, 520);
           }, 2500);
         }
       } else {
@@ -3474,6 +3486,8 @@ const App = {
   },
 
   switchAdminTab(tabName) {
+    // 삭제된 탭으로 전환 시도 시 기본 탭으로 리다이렉트
+    if (tabName === 'examprep' || tabName === 'mockexam') tabName = 'tests';
     this.state.adminTab = tabName;
     // 모든 관리자 탭을 한 곳에서 토글해, 이전 카테고리 내용이 함께 남지 않게 한다.
     ['Tests', 'ExamPrep', 'Assessment', 'SchoolGrade', 'MockExam', 'TargetUniv', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
@@ -5648,9 +5662,14 @@ const App = {
     container.appendChild(toastEl);
 
     setTimeout(() => {
+      toastEl.style.transition = 'opacity 0.4s ease, transform 0.4s ease, max-height 0.4s ease, padding 0.4s ease, margin 0.4s ease';
       toastEl.style.opacity = '0';
-      toastEl.style.transform = 'translateY(-8px)';
-      setTimeout(() => toastEl.remove(), 250);
+      toastEl.style.transform = 'translateY(-10px) scale(0.96)';
+      toastEl.style.maxHeight = '0';
+      toastEl.style.paddingTop = '0';
+      toastEl.style.paddingBottom = '0';
+      toastEl.style.marginTop = '0';
+      setTimeout(() => toastEl.remove(), 420);
     }, 3000);
   },
 
@@ -6790,7 +6809,7 @@ const App = {
 
     // 5. 10분 재응시 대기 중 (불합격 - 쿨다운 진행 중)
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
-      const minutes = Math.ceil((new Date(retryAvailableAt) - new Date()) / 60000);
+      const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
       return `
         <div class="h-full rounded-2xl border border-rose-200 bg-rose-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="space-y-1">

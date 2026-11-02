@@ -180,7 +180,8 @@ body {
 .toast-item {
   pointer-events: auto;
   animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: all 0.25s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.4s ease;
+  overflow: hidden;
 }
 
 @keyframes toast-in {
