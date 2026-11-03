@@ -132,7 +132,18 @@ body {
   }
 
   .calendar-day-cell .test-event-pill i {
-    font-size: 0.82rem;
+    font-size: 0.7rem;
+  }
+
+  /* 수행평가는 초록색 학교 아이콘만 남겨 다른 시험과 즉시 구분합니다. */
+  .calendar-day-cell .calendar-assessment-pill > div > div {
+    justify-content: center;
+  }
+
+  .calendar-day-cell .calendar-assessment-pill > div > div > span,
+  .calendar-day-cell .calendar-assessment-pill > div > span,
+  .calendar-day-cell .calendar-assessment-pill > div:nth-child(2) {
+    display: none;
   }
 
   .calendar-day-cell .text-\[10px\].uppercase {
@@ -157,13 +168,19 @@ body {
     display: none !important;
   }
 
+  #headerNavActions,
   #headerNavActions .flex {
+    display: flex;
+    align-items: center;
     gap: 0.35rem;
   }
 
   /* Keep account actions reachable without consuming the entire app bar. */
   #headerNavActions button,
   #mobileSidebarToggleBtn {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
     width: 2.5rem;
     height: 2.5rem;
     min-width: 2.5rem;

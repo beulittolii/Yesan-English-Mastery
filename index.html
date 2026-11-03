@@ -28,7 +28,7 @@
   <!-- Font Awesome Icons CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css?v=20261104_01" />
+  <link rel="stylesheet" href="style.css?v=20261104_02" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -114,12 +114,7 @@
     lg:fixed lg:left-0 lg:top-16 lg:bottom-0 lg:right-auto lg:w-16 lg:hover:w-72 lg:bg-white lg:border-r lg:border-slate-200 lg:px-2 lg:py-3 lg:shadow-sm lg:hover:shadow-2xl lg:translate-x-0 lg:overflow-x-hidden lg:overflow-y-auto scrollbar-thin lg:z-40 group/sidebar
   ">
     <!-- Mobile Drawer Header Bar (Only visible on mobile) -->
-    <div class="flex items-center justify-between pb-3 border-b border-slate-100 lg:hidden">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm shadow-2xs">
-          <i class="fa-solid fa-bars-staggered"></i>
-        </div>
-      </div>
+    <div class="flex items-center justify-end pb-3 border-b border-slate-100 lg:hidden">
       <button onclick="App.closeMobileSidebar()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer" aria-label="메뉴 닫기">
         <i class="fa-solid fa-xmark text-base"></i>
       </button>
@@ -5374,7 +5369,7 @@ const AcademicManager = {
               const teacherLabel = item.teacherName ? ` (${this.escapeHtml(item.teacherName)})` : '';
               return `
                 <div onclick="AcademicManager.openAssessmentDetailModal('${item.id}'); event.stopPropagation();" 
-                     class="test-event-pill px-1.5 py-[3px] rounded-md mb-1 text-[10px] flex flex-col justify-center shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400/80 cursor-pointer transition" 
+                     class="test-event-pill calendar-assessment-pill px-1.5 py-[3px] rounded-md mb-1 text-[10px] flex flex-col justify-center shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400/80 cursor-pointer transition"
                      title="[학교 수행평가] ${this.escapeHtml(item.subject)}${teacherLabel} - ${cleanSessionTitle ? '[' + cleanSessionTitle + '] ' : ''}${this.escapeHtml(item.title)} (${periodLabel})${hasContent ? ' | 내용: ' + this.escapeHtml(item.content) : ''}${memo ? ' | 차시: ' + this.escapeHtml(memo) : ''}${isDone && item.studentScore != null ? ' | 점수: ' + item.studentScore + '점' : ''}">
                   <div class="flex items-center justify-between gap-1 w-full min-w-0">
                     <div class="flex items-center gap-1 min-w-0 truncate">
