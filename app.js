@@ -540,10 +540,6 @@ const App = {
     this.renderStudentDashboard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // 튜토리얼: 처음 방문 시 자동 표시
-    if (!localStorage.getItem('yem_tutorial_seen')) {
-      setTimeout(() => this.openTutorialModal(), 600);
-    }
   },
 
   async showAdminDashboard() {
@@ -637,10 +633,6 @@ const App = {
     } else if (this.state.isStudentLoggedIn) {
       container.innerHTML = `
         <div class="flex items-center gap-2">
-          <button onclick="App.openTutorialModal()" title="이용 가이드" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
-            <i class="fa-solid fa-circle-question"></i>
-            <span>가이드</span>
-          </button>
           <button onclick="App.logoutStudent()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>로그아웃</span>
@@ -12587,26 +12579,6 @@ const App = {
     }
   },
 
-  // ========================================================
-  // 튜토리얼 가이드 모달
-  // ========================================================
-  openTutorialModal() {
-    const modal = document.getElementById('tutorialGuideModal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    // 체크박스 초기화
-    const cb = document.getElementById('dontShowTutorialAgain');
-    if (cb) cb.checked = false;
-  },
-
-  closeTutorialModal() {
-    const modal = document.getElementById('tutorialGuideModal');
-    if (modal) modal.classList.add('hidden');
-    const dontShow = document.getElementById('dontShowTutorialAgain');
-    if (dontShow && dontShow.checked) {
-      localStorage.setItem('yem_tutorial_seen', '1');
-    }
-  }
 
 };
 document.addEventListener('DOMContentLoaded', () => {
