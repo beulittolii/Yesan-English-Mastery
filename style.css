@@ -104,7 +104,7 @@ body {
   }
 
   .calendar-day-cell {
-    min-height: 96px;
+    min-height: 80px;
     padding: 0.38rem !important;
   }
 
@@ -117,7 +117,7 @@ body {
   }
 
   .calendar-day-cell > div:last-child {
-    max-height: 71px !important;
+    max-height: 55px !important;
   }
 
   .calendar-day-cell .test-event-pill > div {
