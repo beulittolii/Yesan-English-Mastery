@@ -1898,7 +1898,12 @@ const AppData = {
       console.warn('단어 세트 자동 복원 동기화 안내:', vocabSyncErr);
     }
 
+    // 기존 실습용 일정은 관리자만 직접 등록합니다. 앱 시작 시 모든 학생에게
+    // 자동으로 시험을 추가하거나 기존 일정을 바꾸지 않습니다.
+    const autoCreateTestsForAllStudents = false;
+
     // 9/2 모의고사 D-Day: 기존 9/2 단어 시험 일정을 삭제하고, 모든 학생에게 [9모 킬러] 시험 일괄 등록
+    if (autoCreateTestsForAllStudents) {
     try {
       const targetExamDate = '2026-09-02';
       const students = this.getStudents();
@@ -1968,8 +1973,10 @@ const AppData = {
     } catch (err) {
       console.warn('9/2 파이널 시험 일괄 등록 동기화 안내:', err);
     }
+    }
 
     // 9/4(금) 문제풀이 테스트: 전체 학생 대상 일괄 등록 및 동기화 (13:10 ~ 13:30)
+    if (autoCreateTestsForAllStudents) {
     try {
       const practiceExamDate = '2026-09-04';
       const students = this.getStudents();
@@ -2026,8 +2033,10 @@ const AppData = {
     } catch (err) {
       console.warn('9/4 문제풀이 테스트 일괄 등록 동기화 안내:', err);
     }
+    }
 
     // 2025년 9월 고1 학평 (29~40번) 유형별 실전 문제풀이 테스트 (Day 1 ~ Day 11: 9/29 ~ 10/9) 전체 학생 대상 일괄 등록 및 동기화
+    if (autoCreateTestsForAllStudents) {
     try {
       if (typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202509_PRACTICE_TEST_PLANS)) {
         const students = this.getStudents();
@@ -2110,8 +2119,10 @@ const AppData = {
     } catch (err) {
       console.warn('2025년 9월 학평 실전 문제풀이 테스트 일괄 등록 동기화 안내:', err);
     }
+    }
 
     // 10/12 문장 삽입 3세트 실전 테스트 전체 학생 대상 일괄 등록 및 동기화
+    if (autoCreateTestsForAllStudents) {
     try {
       if (typeof MOCK_202510_INSERT_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202510_INSERT_TEST_PLANS)) {
         const students = this.getStudents();
@@ -2182,6 +2193,7 @@ const AppData = {
       }
     } catch (err) {
       console.warn('10/12 문장 삽입 테스트 일괄 등록 동기화 안내:', err);
+    }
     }
 
     // 송규인(id: 11) 학생에게 워드마스터 2000 단어 세트 권한 부여
