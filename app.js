@@ -1480,8 +1480,11 @@ const App = {
                       ? { class: 'bg-amber-100 text-amber-800 border border-amber-200', label: '지각 응시 허용됨' }
                       : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' }))));
     const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
-    const baseTimeStr = isAllDay ? '하루종일 응시 가능 (00:00 ~ 23:59)' : (test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : `${test.time}`) : '하루종일');
-    const timeDisplay = test.extendedDate ? `${baseTimeStr} (연장: ~${test.extendedDate} ${test.extendedEndTime || '23:59'})` : baseTimeStr;
+    const scheduleSummary = isAllDay
+      ? `총 ${set.words.length}개 단어${test.extendedDate ? ' · 연장됨' : ''}`
+      : (test.extendedDate
+          ? `${test.time} ~ ${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장됨)`
+          : (test.time ? (test.endTime ? `${test.time} ~ ${test.endTime}` : test.time) : '하루종일 응시 가능'));
 
     const bookName = (primaryBook || '').trim();
     const hasSpecialBook = bookName && bookName !== '기본 단어장';
@@ -1502,7 +1505,7 @@ const App = {
     document.getElementById('detailModalStudentBadge').innerText = student ? `${student.name} 학생 · 단어 테스트` : '단어 테스트';
     document.getElementById('detailModalTitle').innerText = cleanModalTitle;
     document.getElementById('detailModalBody').innerHTML = `
-      <div class="p-4 rounded-2xl bg-violet-50 border border-violet-200">
+      <div class="relative p-4 rounded-2xl bg-violet-50 border border-violet-200">
         <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5">
           <div class="flex items-center gap-1.5 flex-wrap">
             ${hasSpecialBook ? `
@@ -1514,13 +1517,15 @@ const App = {
           </div>
           ${statusBadge ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">${statusBadge.label}</span>` : ''}
         </div>
-        <p class="text-xs text-slate-600 mt-1">
-          시험일: <strong>${test.date}</strong>${
-            test.extendedDate
-              ? ` · 마감: <strong>${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장됨)</strong>`
-              : (test.endTime ? ` · 마감: <strong>${test.endTime}</strong>` : '')
-          } · <strong>${matchingSets.length > 1 ? `총 ${matchingSets.length}개 세트 · ${set.words.length}단어 (40단어 랜덤 출제)` : (set.words.length > 40 ? `${set.words.length}단어 (40단어 랜덤 출제)` : `${set.words.length}개 단어`)}</strong>
+        <p class="text-xs text-slate-600 mt-1 ${!isMockExamTest ? 'pr-28' : ''}">
+          시험일: <strong>${test.date}</strong> · ${scheduleSummary}
         </p>
+        ${!isMockExamTest ? `
+          <button type="button" onclick="App.openVocabStudyModal('${set.id}', '${test.id}')" class="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-violet-200 cursor-pointer">
+            <i class="fa-solid fa-book-open text-[11px]"></i>
+            <span>단어장 열기</span>
+          </button>
+        ` : ''}
       </div>
 
       ${isAdmin ? `
@@ -1534,7 +1539,7 @@ const App = {
             <div>
               <h4 class="text-xs font-bold text-amber-950">시험 시간 / 마감 연장 설정</h4>
               <p class="text-[11px] text-amber-800">
-                ${test.allowLate ? '상시 응시 허용 중 (마감 없음)' : `원래 시험일: ${test.date}${test.extendedDate ? ` · 마감: ${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장)` : (test.endTime ? ` · 마감: ${test.endTime}` : '')}`}
+                ${test.allowLate ? '상시 응시 허용 중 (마감 없음)' : (isAllDay ? `원래 시험일: ${test.date} · 하루종일 응시 가능` : `원래 시험일: ${test.date}${test.extendedDate ? ` · 마감: ${test.extendedDate} ${test.extendedEndTime || '23:59'} (연장)` : (test.endTime ? ` · 마감: ${test.endTime}` : '')}`)}
               </p>
             </div>
           </div>
@@ -1558,26 +1563,6 @@ const App = {
       </div>` : ''}
 
       ${!isMockExamTest ? `
-        <!-- 단어장 크게 보기 안내 & 버튼 카드 -->
-        <div class="p-4 rounded-2xl bg-gradient-to-r from-violet-50 via-indigo-50 to-purple-50 border border-violet-200 shadow-2xs flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-lg shadow-xs flex-shrink-0">
-              <i class="fa-solid fa-book-open"></i>
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <h4 class="text-sm font-black text-slate-900 truncate">단어장 학습 & 암기</h4>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-violet-200 text-violet-800">총 ${set.words.length}단어</span>
-              </div>
-              <p class="text-xs text-slate-500 mt-0.5">시험 시작 전 단어를 크게 보며 뜻 가리기 및 발음을 확인하세요</p>
-            </div>
-          </div>
-          <button type="button" onclick="App.openVocabStudyModal('${set.id}', '${test.id}')" class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs flex-shrink-0 cursor-pointer">
-            <i class="fa-solid fa-expand text-[11px]"></i>
-            <span>단어장 크게 보기</span>
-          </button>
-        </div>
-
         ${test.isEnglishDefTest ? `
           <div class="grid grid-cols-1 gap-2.5">
             ${this.renderVocabTestButton(set, test.studentId, 5, '영영풀이 테스트 (주관식)', 'bg-teal-600 hover:bg-teal-700 shadow-teal-200', test.id)}
@@ -1656,6 +1641,36 @@ const App = {
       ` : ''}
     `;
     this.showModal('testDetailModal');
+    this.startVocabRetryCountdown(test.id);
+  },
+
+  startVocabRetryCountdown(testId) {
+    if (this.vocabRetryCountdownTimer) clearInterval(this.vocabRetryCountdownTimer);
+
+    const updateCountdown = () => {
+      const countdown = document.getElementById('vocabRetryCountdown');
+      if (!countdown) {
+        clearInterval(this.vocabRetryCountdownTimer);
+        this.vocabRetryCountdownTimer = null;
+        return;
+      }
+
+      const remainingMs = new Date(countdown.dataset.retryUntil).getTime() - Date.now();
+      if (remainingMs <= 0) {
+        clearInterval(this.vocabRetryCountdownTimer);
+        this.vocabRetryCountdownTimer = null;
+        this.openVocabTestScheduleModal(testId);
+        return;
+      }
+
+      const totalSeconds = Math.ceil(remainingMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+      countdown.textContent = `${minutes}:${seconds}`;
+    };
+
+    updateCountdown();
+    this.vocabRetryCountdownTimer = setInterval(updateCountdown, 1000);
   },
 
   // ── 9모 대비 특별 단어 시험: Part 1, 2 버튼 렌더러 ──────────
@@ -6794,22 +6809,24 @@ const App = {
 
     // 5. 10분 재응시 대기 중 (불합격 - 쿨다운 진행 중)
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
-      const minutes = Math.ceil((new Date(result.retryAvailableAt) - new Date()) / 60000);
       return `
         <div class="h-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-slate-700 truncate">${label}</span>
+              <span class="text-[10px] font-extrabold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shadow-2xs whitespace-nowrap flex-shrink-0">
+                재응시
+              </span>
             </div>
             <div class="text-[11px] text-slate-500 font-semibold flex items-center justify-between gap-1 min-w-0">
-              <span class="truncate">다음 응시 준비 중</span>
-              <span class="text-slate-600 font-bold whitespace-nowrap flex-shrink-0"><i class="fa-solid fa-clock mr-1"></i>${minutes}분 후 가능</span>
+              <span class="truncate">재시험까지</span>
+              <span id="vocabRetryCountdown" data-retry-until="${this.escapeHtml(result.retryAvailableAt)}" class="text-indigo-600 font-bold whitespace-nowrap flex-shrink-0"></span>
             </div>
           </div>
           <div class="space-y-1.5 pt-0.5">
             <button disabled class="w-full py-2.5 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed shadow-inner whitespace-nowrap overflow-hidden">
               <i class="fa-solid fa-clock text-[11px]"></i>
-              <span class="truncate">재시험 대기 (${minutes}분)</span>
+              <span class="truncate">재시험 대기</span>
             </button>
             ${this.state.isAdminLoggedIn ? `
               <button type="button" onclick="App.resetVocabRetryCooldown('${studentId}', '${set.id}', ${direction}, ${effectiveTestId ? `'${effectiveTestId}'` : 'null'})" class="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition flex items-center justify-center gap-1 shadow-2xs whitespace-nowrap overflow-hidden">
@@ -6998,7 +7015,7 @@ const App = {
       isMockSpecial,
       meaningHidden: false,
       revealedIndices: new Set(),
-      viewMode: 'card', // 'card' (플래시카드 암기학습 기본) | 'list' (목록형)
+      viewMode: 'list', // 'list' (목록형 기본) | 'card' (플래시카드 암기학습)
       flashcardDeck: [...words],
       cardIndex: 0,
       round: 1,

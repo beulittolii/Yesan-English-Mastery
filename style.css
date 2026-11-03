@@ -63,6 +63,11 @@ body {
   border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
 
+/* 단어장 툴바: 보기 방식 → 뜻 가리기 → 검색 순서 */
+#vocabStudyMeaningToggleBtn {
+  order: 2;
+}
+
 /* Student Avatar Hover Animation */
 .profile-card {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -258,6 +263,15 @@ body {
   body > div.fixed[id$="Modal"] {
     padding: 0.5rem !important;
     align-items: flex-end !important;
+  }
+
+  /* 단어 테스트 상세는 선택지가 많은 긴 폼이 아니므로 중앙에 띄워 맥락을 유지합니다. */
+  #testDetailModal,
+  #vocabStudyModal,
+  #academicAssessmentModal,
+  #academicAssessmentDetailModal,
+  #academicAssessmentScoreModal {
+    align-items: center !important;
   }
 
   body > div.fixed[id$="Modal"] > .modal-content,
