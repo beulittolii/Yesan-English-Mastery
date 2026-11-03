@@ -28,7 +28,7 @@
   <!-- Font Awesome Icons CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css?v=20261012_05" />
+  <link rel="stylesheet" href="style.css?v=20261103_01" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -96,7 +96,7 @@
         <div id="cloudSyncStatusBadge" class="hidden items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all duration-300"></div>
         <div id="headerNavActions"></div>
         <!-- Mobile Sidebar Hamburger Toggle Button (Hidden on Desktop) -->
-        <button id="mobileSidebarToggleBtn" onclick="App.toggleMobileSidebar()" class="hidden lg:hidden p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition focus:outline-none cursor-pointer" aria-label="메뉴 열기">
+        <button id="mobileSidebarToggleBtn" onclick="App.toggleMobileSidebar()" class="hidden lg:hidden p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition focus:outline-none cursor-pointer" aria-label="메뉴 열기" aria-controls="studentSidebar" aria-expanded="false">
           <i class="fa-solid fa-bars text-xl"></i>
         </button>
       </div>

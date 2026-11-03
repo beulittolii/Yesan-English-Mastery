@@ -85,6 +85,11 @@ body {
 }
 
 @media (max-width: 640px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     overflow-x: hidden;
   }
@@ -105,6 +110,157 @@ body {
 
   .test-event-pill {
     font-size: 0.68rem;
+  }
+}
+
+/* Phone-first layout refinements ------------------------------------------------
+   Most screen-level UI is generated dynamically, so these rules intentionally
+   target stable containers instead of depending on individual generated cards. */
+@media (max-width: 639px) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  header > div {
+    padding-left: 1rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  #cloudSyncStatusBadge {
+    display: none !important;
+  }
+
+  #headerNavActions .flex {
+    gap: 0.35rem;
+  }
+
+  /* Keep account actions reachable without consuming the entire app bar. */
+  #headerNavActions button,
+  #mobileSidebarToggleBtn {
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  #headerNavActions button span {
+    display: none;
+  }
+
+  main {
+    padding: 1rem !important;
+  }
+
+  footer {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* The desktop dock reveals labels on hover. A phone has no hover state, so
+     labels must always be visible once the drawer is opened. */
+  #studentSidebar {
+    width: calc(100vw - 1rem);
+    max-width: 23rem;
+    padding: 1rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  #studentSidebar nav > button {
+    height: 3rem;
+  }
+
+  #studentSidebar nav > button > div:nth-child(2) {
+    opacity: 1 !important;
+  }
+
+  /* Horizontally scrollable controls retain a visible, touch-friendly edge. */
+  .overflow-x-auto {
+    scrollbar-width: thin;
+    scroll-padding-inline: 0.5rem;
+  }
+
+  /* Avoid iOS zooming the page when a student fills in an answer or form. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Test/paper controls become two tidy rows instead of fighting for width. */
+  #vocabTestView > div:first-child,
+  #practiceTestView > div:first-child,
+  #textMemorizePaperView > div:first-child {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  #vocabTestTopInfo,
+  #practiceTestTopInfo,
+  #textMemorizePaperTopInfo {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  #vocabTestView > div:first-child > button span,
+  #practiceTestView > div:first-child > button span,
+  #textMemorizePaperView > div:first-child > button span {
+    display: none;
+  }
+
+  /* Bottom-sheet sizing keeps every modal within the visual viewport when the
+     browser chrome or software keyboard reduces available height. */
+  body > div.fixed[id$="Modal"] {
+    padding: 0.5rem !important;
+    align-items: flex-end !important;
+  }
+
+  body > div.fixed[id$="Modal"] > .modal-content,
+  body > div.fixed[id$="Modal"] > .glass-card {
+    width: 100%;
+    max-height: calc(100dvh - 1rem) !important;
+    border-radius: 1.25rem 1.25rem 0.9rem 0.9rem;
+  }
+
+  body > div.fixed[id$="Modal"] > .modal-content > :first-child,
+  body > div.fixed[id$="Modal"] > .glass-card > :first-child {
+    padding: 1rem !important;
+  }
+
+  body > div.fixed[id$="Modal"] .p-5,
+  body > div.fixed[id$="Modal"] .p-6 {
+    padding: 1rem;
+  }
+
+  #adminTestFormModal form,
+  #testDetailModal #detailModalBody {
+    max-height: calc(100dvh - 8.5rem) !important;
+  }
+
+  /* Long toolbar controls should stack rather than crop their search field. */
+  #vocabStudyModal .min-w-\[180px\],
+  #textMemorizeStudyModal .min-w-\[220px\] {
+    min-width: 100% !important;
+  }
+
+  #textMemorizeStudyModal .min-w-\[140px\] {
+    min-width: 0 !important;
+  }
+
+  #vocabStudyModalFooter,
+  #tmStudyModalFooter {
+    flex-wrap: wrap;
+  }
+
+  #toastContainer {
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: 0.75rem;
+  }
+
+  .toast-item {
+    width: 100%;
   }
 }
 

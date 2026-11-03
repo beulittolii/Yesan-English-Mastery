@@ -664,7 +664,10 @@ const App = {
     sidebar.classList.remove('translate-x-full');
     if (backdrop) backdrop.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
-    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      toggleBtn.setAttribute('aria-label', '메뉴 닫기');
+    }
   },
 
   closeMobileSidebar() {
@@ -678,7 +681,10 @@ const App = {
     this.touchSidebarJustOpened = false;
     if (backdrop) backdrop.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
-    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.setAttribute('aria-label', '메뉴 열기');
+    }
   },
 
   toggleMobileSidebar() {
