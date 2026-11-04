@@ -1504,7 +1504,7 @@ const App = {
                   ? null
                   : (test.allowLate
                       ? { class: 'bg-amber-100 text-amber-800 border border-amber-200', label: '지각 응시 허용됨' }
-                      : { class: 'bg-emerald-100 text-emerald-800', label: test.extendedDate ? '연장 진행 중' : '응시 가능' }))));
+                      : (test.extendedDate ? { class: 'bg-emerald-100 text-emerald-800', label: '연장 진행 중' } : null)))));
     const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
     const scheduleSummary = isAllDay
       ? `총 ${set.words.length}개 단어${test.extendedDate ? ' · 연장됨' : ''}`
@@ -1532,7 +1532,7 @@ const App = {
     document.getElementById('detailModalTitle').innerText = cleanModalTitle;
     document.getElementById('detailModalBody').innerHTML = `
       <div class="relative p-4 rounded-2xl bg-violet-50 border border-violet-200">
-        <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+        <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5 ${!isMockExamTest ? 'pr-28' : ''}">
           <div class="flex items-center gap-1.5 flex-wrap">
             ${hasSpecialBook ? `
               <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-600 text-white shadow-2xs inline-flex items-center gap-1">
@@ -1541,7 +1541,7 @@ const App = {
             ` : ''}
             <p class="text-xs sm:text-sm font-black text-violet-950">${this.escapeHtml(cleanCardTitle)}</p>
           </div>
-          ${statusBadge ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">${statusBadge.label}</span>` : ''}
+          ${statusBadge && statusBadge.label !== '응시 가능' ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">${statusBadge.label}</span>` : ''}
         </div>
         <p class="text-xs text-slate-600 mt-1 ${!isMockExamTest ? 'pr-28' : ''}">
           시험일: <strong>${test.date}</strong> · ${scheduleSummary}
