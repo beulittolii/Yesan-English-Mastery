@@ -1701,73 +1701,113 @@
           <div id="formVocabCutoffSection" class="hidden sm:col-span-2 p-4 rounded-xl bg-violet-50/80 border border-violet-200 space-y-3">
             <div class="flex items-center justify-between">
               <label class="block text-xs font-bold text-violet-900" id="formVocabCutoffSectionLabel">
-                <i class="fa-solid fa-sliders mr-1 text-violet-600"></i>유형별 통과 커트라인 설정 (점수) <span class="text-rose-500">*</span>
+                <i class="fa-solid fa-sliders mr-1 text-violet-600"></i>유형별 통과 커트라인 &amp; 출제 문항 수 설정 <span class="text-rose-500">*</span>
               </label>
-              <span class="text-[11px] text-violet-600">100점 만점 기준 (1~100)</span>
+              <span class="text-[11px] text-violet-600">100점 만점 / 미입력 시 40문항 출제</span>
             </div>
             <div id="formVocabCutoffGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div id="formVocabCutoffCard_2" class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
-                <label class="block text-[11px] font-bold text-slate-700">1. 객관식 커트라인</label>
-                <div class="flex items-center gap-1.5">
-                  <input type="number" id="formVocabCutoff_2" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
-                  <span class="text-xs font-bold text-slate-500">점</span>
+              <div id="formVocabCutoffCard_2" class="bg-white p-3.5 rounded-xl border border-violet-200 space-y-2.5 shadow-2xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-violet-100">
+                  <span class="text-xs font-black text-violet-950 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-violet-600"></span> 1. 객관식
+                  </span>
+                  <span class="text-[10px] text-violet-700 font-bold bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200">5지선다</span>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-slate-700">통과 커트라인</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabCutoff_2" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">점</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-indigo-900 flex items-center justify-between">
+                    <span>출제 문항 수</span>
+                    <span class="text-[10px] text-slate-400 font-normal">기본: 40문항</span>
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_2" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-indigo-200 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-bold text-slate-900 bg-indigo-50/30" />
+                    <span class="text-xs font-bold text-indigo-700">문항</span>
+                  </div>
                 </div>
               </div>
-              <div id="formVocabCutoffCard_3" class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
-                <label class="block text-[11px] font-bold text-slate-700">2. 스펠링 커트라인</label>
-                <div class="flex items-center gap-1.5">
-                  <input type="number" id="formVocabCutoff_3" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
-                  <span class="text-xs font-bold text-slate-500">점</span>
+              <div id="formVocabCutoffCard_3" class="bg-white p-3.5 rounded-xl border border-violet-200 space-y-2.5 shadow-2xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-violet-100">
+                  <span class="text-xs font-black text-blue-950 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-blue-600"></span> 2. 스펠링
+                  </span>
+                  <span class="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">주관식</span>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-slate-700">통과 커트라인</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabCutoff_3" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">점</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-indigo-900 flex items-center justify-between">
+                    <span>출제 문항 수</span>
+                    <span class="text-[10px] text-slate-400 font-normal">기본: 40문항</span>
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_3" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-indigo-200 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-bold text-slate-900 bg-indigo-50/30" />
+                    <span class="text-xs font-bold text-indigo-700">문항</span>
+                  </div>
                 </div>
               </div>
-              <div id="formVocabCutoffCard_4" class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
-                <label class="block text-[11px] font-bold text-slate-700">3. 통합 커트라인</label>
-                <div class="flex items-center gap-1.5">
-                  <input type="number" id="formVocabCutoff_4" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
-                  <span class="text-xs font-bold text-slate-500">점</span>
+              <div id="formVocabCutoffCard_4" class="bg-white p-3.5 rounded-xl border border-violet-200 space-y-2.5 shadow-2xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-violet-100">
+                  <span class="text-xs font-black text-emerald-950 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 3. 통합
+                  </span>
+                  <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">스펠링+뜻</span>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-slate-700">통과 커트라인</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabCutoff_4" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">점</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-indigo-900 flex items-center justify-between">
+                    <span>출제 문항 수</span>
+                    <span class="text-[10px] text-slate-400 font-normal">기본: 40문항</span>
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_4" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-indigo-200 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-bold text-slate-900 bg-indigo-50/30" />
+                    <span class="text-xs font-bold text-indigo-700">문항</span>
+                  </div>
                 </div>
               </div>
-              <div id="formVocabCutoffCard_5" class="hidden bg-white p-3 rounded-xl border border-teal-200 space-y-1">
-                <label class="block text-[11px] font-bold text-teal-800">영영풀이 커트라인</label>
-                <div class="flex items-center gap-1.5">
-                  <input type="number" id="formVocabCutoff_5" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 text-xs sm:text-sm font-bold text-slate-900" />
-                  <span class="text-xs font-bold text-slate-500">점</span>
+              <div id="formVocabCutoffCard_5" class="hidden bg-white p-3.5 rounded-xl border border-teal-200 space-y-2.5 shadow-2xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-teal-100">
+                  <span class="text-xs font-black text-teal-950 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-teal-600"></span> 영영풀이
+                  </span>
+                  <span class="text-[10px] text-teal-700 font-bold bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">주관식</span>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-teal-800">통과 커트라인</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabCutoff_5" min="1" max="100" step="1" inputmode="numeric" placeholder="80" value="80" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">점</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-[11px] font-bold text-teal-900 flex items-center justify-between">
+                    <span>출제 문항 수</span>
+                    <span class="text-[10px] text-slate-400 font-normal">기본: 40문항</span>
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_5" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-teal-200 focus:ring-2 focus:ring-teal-500 text-xs sm:text-sm font-bold text-slate-900 bg-teal-50/30" />
+                    <span class="text-xs font-bold text-teal-700">문항</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <!-- 출제 문항 수 설정 -->
-            <div class="pt-2 border-t border-violet-100">
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-[11px] font-bold text-violet-900">
-                  <i class="fa-solid fa-list-ol mr-1 text-violet-600"></i>출제 문항 수 설정
-                </label>
-                <span class="text-[11px] text-violet-600">전체 단어 수 이하로 입력 (기본: 40문항)</span>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
-                  <label class="block text-[11px] font-bold text-slate-700">객관식 문항 수</label>
-                  <div class="flex items-center gap-1.5">
-                    <input type="number" id="formVocabQuestionCount_2" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
-                    <span class="text-xs font-bold text-slate-500">문항</span>
-                  </div>
-                </div>
-                <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
-                  <label class="block text-[11px] font-bold text-slate-700">스펠링 문항 수</label>
-                  <div class="flex items-center gap-1.5">
-                    <input type="number" id="formVocabQuestionCount_3" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
-                    <span class="text-xs font-bold text-slate-500">문항</span>
-                  </div>
-                </div>
-                <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
-                  <label class="block text-[11px] font-bold text-slate-700">통합 문항 수</label>
-                  <div class="flex items-center gap-1.5">
-                    <input type="number" id="formVocabQuestionCount_4" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
-                    <span class="text-xs font-bold text-slate-500">문항</span>
-                  </div>
-                </div>
-              </div>
-              <p class="text-[11px] text-violet-500 mt-1.5">비워두면 전체 단어 수 (최대 40문항)로 출제됩니다.</p>
-            </div>
+            <p class="text-[11px] text-violet-600 mt-1">※ 문항 수를 비워두면 연결된 단어 세트의 전체 단어 수(최대 40개)로 자동 출제됩니다.</p>
           </div>
           <div id="formPracticeCutoffSection" class="hidden">
             <label class="block text-xs font-bold text-emerald-800 mb-1">문제풀이 통과 커트라인 (점수) <span class="text-rose-500">*</span></label>
@@ -4233,7 +4273,7 @@
 <script src="mock_202510_insert_data.js?v=20261012_01"></script>
 <script src="science_questions.js?v=20261012_07"></script>
 <script src="data.js?v=20261105_01"></script>
-<script src="app.js?v=20261105_01"></script>
+<script src="app.js?v=20261105_02"></script>
 
 <!-- ========================================== -->
 <!-- YEM ACADEMIC MANAGEMENT PLATFORM JAVASCRIPT -->

@@ -1355,6 +1355,12 @@ const App = {
             <span>커트라인 (기준점)</span>
           </div>
           <div class="text-base font-extrabold text-slate-900 mt-1">${this.escapeHtml(test.cutoff || '미설정')}</div>
+          ${test.type === 'VOCAB' ? `
+            <div class="text-[11px] text-violet-700 font-bold mt-1.5 pt-1 border-t border-violet-100 flex items-center gap-1">
+              <i class="fa-solid fa-list-ol"></i>
+              <span>출제 문항: ${test.vocabQuestionCounts ? (test.isEnglishDefTest ? `${test.vocabQuestionCounts[5] || 40}문항` : `객관식 ${test.vocabQuestionCounts[2] || 40} · 스펠링 ${test.vocabQuestionCounts[3] || 40} · 통합 ${test.vocabQuestionCounts[4] || 40}`) : '각 40문항'}</span>
+            </div>
+          ` : ''}
         </div>
         <div class="p-3.5 rounded-xl bg-slate-100 border border-slate-200">
           <div class="text-xs font-semibold text-slate-600 flex items-center gap-1">
@@ -3627,6 +3633,7 @@ const App = {
           <!-- 커트라인 / 점수 -->
           <td class="py-3.5 px-4 whitespace-nowrap">
             <div class="text-xs text-slate-600">컷: <strong class="text-slate-800">${this.escapeHtml(test.cutoff || '-')}</strong></div>
+            ${test.type === 'VOCAB' && test.vocabQuestionCounts ? `<div class="text-[10px] text-violet-700 font-semibold">문항: 객 ${test.vocabQuestionCounts[2] || 40} · 스 ${test.vocabQuestionCounts[3] || 40} · 통 ${test.vocabQuestionCounts[4] || 40}</div>` : ''}
             <div class="text-xs">점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.score || '-'}</strong></div>
           </td>
 
@@ -4152,6 +4159,7 @@ const App = {
     if (document.getElementById('formVocabQuestionCount_2')) document.getElementById('formVocabQuestionCount_2').value = '';
     if (document.getElementById('formVocabQuestionCount_3')) document.getElementById('formVocabQuestionCount_3').value = '';
     if (document.getElementById('formVocabQuestionCount_4')) document.getElementById('formVocabQuestionCount_4').value = '';
+    if (document.getElementById('formVocabQuestionCount_5')) document.getElementById('formVocabQuestionCount_5').value = '';
     if (document.getElementById('formIsMockSpecial')) document.getElementById('formIsMockSpecial').checked = false;
     if (document.getElementById('formIsEnglishDefTest')) document.getElementById('formIsEnglishDefTest').checked = false;
     this.onEnglishDefTestToggle();
@@ -4234,6 +4242,7 @@ const App = {
     if (document.getElementById('formVocabQuestionCount_2')) document.getElementById('formVocabQuestionCount_2').value = testQC[2] || testQC['2'] || test.vocabQuestionCount_2 || '';
     if (document.getElementById('formVocabQuestionCount_3')) document.getElementById('formVocabQuestionCount_3').value = testQC[3] || testQC['3'] || test.vocabQuestionCount_3 || '';
     if (document.getElementById('formVocabQuestionCount_4')) document.getElementById('formVocabQuestionCount_4').value = testQC[4] || testQC['4'] || test.vocabQuestionCount_4 || '';
+    if (document.getElementById('formVocabQuestionCount_5')) document.getElementById('formVocabQuestionCount_5').value = testQC[5] || testQC['5'] || test.vocabQuestionCount_5 || '';
     if (document.getElementById('formIsMockSpecial')) {
       document.getElementById('formIsMockSpecial').checked = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
     }
@@ -4423,7 +4432,7 @@ const App = {
         cutoffGrid.classList.add('sm:grid-cols-1');
       }
       if (cutoffSectionLabel) {
-        cutoffSectionLabel.innerHTML = '<i class="fa-solid fa-graduation-cap mr-1 text-teal-600"></i>영영풀이 통과 커트라인 설정 (점수) <span class="text-rose-500">*</span>';
+        cutoffSectionLabel.innerHTML = '<i class="fa-solid fa-graduation-cap mr-1 text-teal-600"></i>영영풀이 통과 커트라인 & 출제 문항 수 설정 <span class="text-rose-500">*</span>';
       }
 
       const formTitle = document.getElementById('formTitle');
@@ -4440,7 +4449,7 @@ const App = {
         cutoffGrid.classList.remove('sm:grid-cols-1');
       }
       if (cutoffSectionLabel) {
-        cutoffSectionLabel.innerHTML = '<i class="fa-solid fa-sliders mr-1 text-violet-600"></i>유형별 통과 커트라인 설정 (점수) <span class="text-rose-500">*</span>';
+        cutoffSectionLabel.innerHTML = '<i class="fa-solid fa-sliders mr-1 text-violet-600"></i>유형별 통과 커트라인 & 출제 문항 수 설정 <span class="text-rose-500">*</span>';
       }
 
       const formTitle = document.getElementById('formTitle');
@@ -5147,10 +5156,12 @@ const App = {
     const rawQC2 = document.getElementById('formVocabQuestionCount_2')?.value;
     const rawQC3 = document.getElementById('formVocabQuestionCount_3')?.value;
     const rawQC4 = document.getElementById('formVocabQuestionCount_4')?.value;
+    const rawQC5 = document.getElementById('formVocabQuestionCount_5')?.value;
     const vocabQuestionCounts = isVocabTest ? {
       2: (rawQC2 && Number(rawQC2) >= 5) ? Number(rawQC2) : null,
       3: (rawQC3 && Number(rawQC3) >= 5) ? Number(rawQC3) : null,
-      4: (rawQC4 && Number(rawQC4) >= 5) ? Number(rawQC4) : null
+      4: (rawQC4 && Number(rawQC4) >= 5) ? Number(rawQC4) : null,
+      5: (rawQC5 && Number(rawQC5) >= 5) ? Number(rawQC5) : null
     } : null;
     const practiceCutoff = Number(document.getElementById('formPracticeCutoff')?.value ?? 80);
 
