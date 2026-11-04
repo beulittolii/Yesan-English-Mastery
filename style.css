@@ -349,6 +349,10 @@ body {
    Most screen-level UI is generated dynamically, so these rules intentionally
    target stable containers instead of depending on individual generated cards. */
 @media (max-width: 639px) {
+  body.calendar-only-student #mobileSidebarToggleBtn {
+    display: none !important;
+  }
+
   body {
     padding-bottom: env(safe-area-inset-bottom);
   }

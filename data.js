@@ -22,6 +22,16 @@ const LEGACY_STORAGE_KEYS = {
 };
 const TEACHER_LOGIN_ID = 'admin';
 const TEACHER_PASSWORD = '1357';
+// 10월 31일 이전 시험은 영구적으로 정리하며, 이 날짜부터의 일정만 유지합니다.
+const TEST_RETENTION_START_DATE = '2026-11-01';
+
+function shouldKeepTest(test) {
+  return Boolean(test && typeof test.date === 'string' && test.date >= TEST_RETENTION_START_DATE);
+}
+
+function retainFutureTests(tests) {
+  return (Array.isArray(tests) ? tests : []).filter(shouldKeepTest);
+}
 
 
 // ========================================================
@@ -1122,23 +1132,8 @@ const cachedVocabSets = getLocalCache(LOCAL_CACHE_KEYS.vocabSets);
 const FirebaseStore = {
   students: Array.isArray(cachedStudents) && cachedStudents.length > 0 ? cachedStudents : [...DEFAULT_STUDENTS],
   tests: (() => {
-    const base = generateDefaultTests();
-    let initialList = base;
-    if (Array.isArray(cachedTests) && cachedTests.length > 0) {
-      const baseMap = new Map();
-      base.forEach(t => baseMap.set(String(t.id), t));
-      cachedTests.forEach(t => {
-        const existing = baseMap.get(String(t.id));
-        baseMap.set(String(t.id), existing ? {
-          ...existing,
-          ...t,
-          questions: (t.questions && t.questions.length > 0) ? t.questions : existing.questions
-        } : t);
-      });
-      initialList = Array.from(baseMap.values());
-    }
-    applyGyuinVocabSchedule(initialList);
-    return initialList;
+    // 기본 시험을 자동 주입하지 않습니다. 클라우드에 실제로 저장된 11월 이후 일정만 사용합니다.
+    return retainFutureTests(cachedTests);
   })(),
   vocabSets: (() => {
     const defSets = getDefaultVocabSets();
@@ -1653,23 +1648,14 @@ const AppData = {
       }));
       if (sort) items.sort(sort);
 
-      // tests 컬렉션 보호: Firestore에서 가져올 때 기본 시험 및 11일간 9모 실전 시험이 누락되지 않도록 자동 병합
+      // 삭제 기준일 이전 시험은 어떤 경로로 다시 들어와도 즉시 화면·캐시·클라우드에서 제거합니다.
       if (cacheKey === 'tests') {
-        const defTests = generateDefaultTests();
-        const existingMap = new Map(items.map(t => [String(t.id), t]));
-        defTests.forEach(defTest => {
-          if (!existingMap.has(String(defTest.id))) {
-            items.push(defTest);
-          } else {
-            // Firestore에 저장된 시험이라도 questions가 누락되어 있다면 기본 데이터에서 즉시 복원
-            const cloudItem = existingMap.get(String(defTest.id));
-            if (defTest.questions && defTest.questions.length > 0 && (!cloudItem.questions || cloudItem.questions.length === 0)) {
-              cloudItem.questions = defTest.questions;
-            }
-          }
-        });
-        applyGyuinVocabSchedule(items);
+        const expiredTestIds = items.filter(test => !shouldKeepTest(test)).map(test => test.id);
+        items = retainFutureTests(items);
         setLocalCache(LOCAL_CACHE_KEYS.tests, items);
+        expiredTestIds.forEach(id => {
+          this.removeDocument('tests', id).catch(error => console.warn(`만료 시험 삭제 실패 (${id}):`, error));
+        });
       }
 
       // vocabSets 컬렉션 보호: Firestore에서 빈 배열이 오거나 워드마스터/9모가 누락된 경우 기본 세트를 자동 병합하여 절대 소실되지 않도록 함
@@ -1751,7 +1737,7 @@ const AppData = {
   async initializeCloudData() {
     await this.waitForFirebase();
 
-    const [tests, vocabSets, vocabTestResults] = await Promise.all([
+    const [loadedTests, vocabSets, vocabTestResults] = await Promise.all([
       this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })).catch(e => {
         console.warn('tests 로드 실패 (로컬 유지):', e);
         return [];
@@ -1774,53 +1760,27 @@ const AppData = {
       })
     ]);
 
-    // 1. Tests 병합: 기본 시험 및 11일간 9모 실전 시험이 절대 증발하지 않도록 Firestore 기록과 안전 병합
-    const defTests = generateDefaultTests();
-    // 10/22 일정 재편성 대상 테스트 ID 목록 (이 테스트들은 date를 DEFAULT 기준으로 고정)
-    const gyuinVocabRescheduledIds = new Set([
-      'vocab_wm2000_d12_13_student_11', 'vocab_wm2000_d14_15_student_11',
-      'vocab_wm2000_d16_17_student_11', 'vocab_wm2000_d18_19_student_11',
-      'vocab_wm2000_d20_21_student_11', 'vocab_wm2000_d22_23_student_11',
-      'vocab_wm2000_d24_25_student_11', 'vocab_wm2000_d26_27_student_11',
-      'vocab_wm2000_d28_29_student_11', 'vocab_wm2000_d30_31_student_11',
-      'vocab_wm2000_d32_33_student_11', 'vocab_wm2000_d34_35_student_11',
-      'vocab_wm2000_d36_37_student_11', 'vocab_wm2000_d38_39_student_11',
-      'vocab_wm2000_d40_student_11'
-    ]);
-    const testMap = new Map();
-    defTests.forEach(t => testMap.set(String(t.id), t));
-    tests.forEach(t => {
-      const base = testMap.get(String(t.id));
-      if (base) {
-        // 완료 여부 판단
-        const isDone = t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' ||
-          (t.score !== '' && t.score != null && Number(t.score) >= (t.cutoffScore || 80));
-        // 송규인 단어 재편성 테스트: 미완료 테스트는 DEFAULT 날짜(새 일정) 강제 유지
-        const keepDefaultDate = gyuinVocabRescheduledIds.has(String(t.id)) && !isDone;
-        testMap.set(String(t.id), {
-          ...base,
-          ...t,
-          date: keepDefaultDate ? base.date : (t.date || base.date),
-          questions: (t.questions && t.questions.length > 0) ? t.questions : base.questions
-        });
-      } else {
-        testMap.set(String(t.id), t);
-      }
-    });
-    FirebaseStore.tests = Array.from(testMap.values());
-    applyGyuinVocabSchedule(FirebaseStore.tests);
+    // 1. 10월 31일 이전 일정은 삭제하고, 기본/샘플 시험 자동 병합을 하지 않습니다.
+    const tests = retainFutureTests(loadedTests);
+    FirebaseStore.tests = tests;
     FirebaseStore.testsLoaded = true;
     setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests);
+
+    if (loadedTests.length !== tests.length) {
+      await this.replaceCollection('tests', FirebaseStore.tests, test => test.id);
+      console.log(`🧹 11월 이전 시험 ${loadedTests.length - tests.length}건을 클라우드에서 삭제했습니다.`);
+    }
 
     FirebaseStore.vocabSets = vocabSets;
     FirebaseStore.vocabTestResults = vocabTestResults;
 
-    if (tests.length === 0) {
+    if (loadedTests.length === 0) {
       const legacyTests = this.getLegacyArray(LEGACY_STORAGE_KEYS.tests);
-      if (legacyTests && legacyTests.length > 0) {
-        await this.saveTests(legacyTests);
-        localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
+      const retainedLegacyTests = retainFutureTests(legacyTests);
+      if (retainedLegacyTests.length > 0) {
+        await this.saveTests(retainedLegacyTests);
       }
+      localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
     }
 
     // 기본 단어 세트(워드마스터 2000 50개 Day + 워드마스터 고등 Basic 30개 Day + 2026 고1 9모 대비 특별단어) 전체 복원 및 학생 권한 보장
@@ -2217,24 +2177,6 @@ const AppData = {
       console.warn('워드마스터 학생 권한 동기화 안내:', err);
     }
 
-    // 10/22부로 송규인(id: 11) 학생 워드마스터 2000 단어 테스트 일정 재편성 (일요일 제외, 미완료 테스트만, 하루 1테스트)
-    try {
-      let currentTests = this.getTests();
-      applyGyuinVocabSchedule(currentTests);
-      FirebaseStore.tests = currentTests;
-      setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
-
-      // Firestore에도 올바른 날짜로 개별 업데이트 보장 (다음 로드 시 새 날짜 유지)
-      GYUIN_VOCAB_TEST_IDS.forEach(tid => {
-        const t = currentTests.find(x => x.id === tid);
-        if (t) {
-          this.writeDocument('tests', tid, t).catch(e => console.warn(`송규인 단어 일정 저장(${tid}):`, e));
-        }
-      });
-    } catch (err) {
-      console.warn('송규인 학생 단어테스트 일괄 등록 동기화 안내:', err);
-    }
-
     // 모든 학생의 단어 시험(VOCAB)에 대해 vocabSetId / vocabSetIds 누락 자동 탐지 및 원래 일정대로 완벽 자동 재연동
     try {
       const allVocabSets = this.getVocabSets();
@@ -2383,20 +2325,7 @@ const AppData = {
   // ======================================================
 
   getTests() {
-    let current = Array.isArray(FirebaseStore.tests) && FirebaseStore.tests.length > 0
-      ? FirebaseStore.tests
-      : generateDefaultTests();
-
-    // 혹시라도 기본 시험이나 11일 모의고사 실전 시험이 누락되어 있다면 자동 보충 보장
-    const defTests = generateDefaultTests();
-    const existingIds = new Set(current.map(t => String(t.id)));
-    let added = false;
-    defTests.forEach(dt => {
-      if (!existingIds.has(String(dt.id))) {
-        current.push(dt);
-        added = true;
-      }
-    });
+    let current = retainFutureTests(FirebaseStore.tests);
 
     // 9모 실전 시험 118문항 데이터 및 단어 제외 무결성 동기화
     if (typeof getMock202509QuestionsByPlanId === 'function' && typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined') {
@@ -2441,8 +2370,7 @@ const AppData = {
       });
     }
 
-    const gyuinRescheduled = applyGyuinVocabSchedule(current);
-    if (added || gyuinRescheduled) {
+    if (current.length !== (FirebaseStore.tests || []).length) {
       FirebaseStore.tests = current;
       setLocalCache(LOCAL_CACHE_KEYS.tests, current);
     }
@@ -2455,7 +2383,7 @@ const AppData = {
   // ======================================================
 
   async saveTests(tests) {
-    FirebaseStore.tests = tests.map(test => ({ ...test, studentId: Number(test.studentId) }));
+    FirebaseStore.tests = retainFutureTests(tests).map(test => ({ ...test, studentId: Number(test.studentId) }));
     await this.replaceCollection('tests', FirebaseStore.tests, test => test.id);
     return FirebaseStore.tests;
   },
@@ -2485,6 +2413,16 @@ const AppData = {
   // ======================================================
 
   async saveOrUpdateTest(testData) {
+
+    if (!shouldKeepTest(testData)) {
+      const currentTests = retainFutureTests(this.getTests());
+      FirebaseStore.tests = currentTests;
+      setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
+      if (testData?.id) {
+        await this.removeDocument('tests', testData.id).catch(() => {});
+      }
+      return null;
+    }
 
     const tests =
       this.getTests();
@@ -2665,8 +2603,7 @@ const AppData = {
       DEFAULT_STUDENTS
     );
 
-    const defTests =
-      generateDefaultTests();
+    const defTests = retainFutureTests(generateDefaultTests());
 
     await this.saveTests(defTests);
     await this.saveVocabSets(getDefaultVocabSets());

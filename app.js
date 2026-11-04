@@ -598,12 +598,17 @@ const App = {
     const stuDashboard = document.getElementById('studentDashboardView');
     const isStudentActive = stuDashboard && !stuDashboard.classList.contains('hidden');
     const hideStudentMenu = this.isCalendarOnlyStudent();
+    document.body.classList.toggle('calendar-only-student', Boolean(isStudentActive && hideStudentMenu));
 
     if (mobileToggleBtn) {
       if (isStudentActive && !hideStudentMenu) {
+        mobileToggleBtn.style.removeProperty('display');
         mobileToggleBtn.classList.remove('hidden');
         mobileToggleBtn.classList.add('flex', 'lg:hidden');
       } else {
+        // 모바일 전용 CSS보다 우선하여 캘린더 전용 계정에서는 메뉴 버튼을 완전히 제거합니다.
+        if (hideStudentMenu) mobileToggleBtn.style.setProperty('display', 'none', 'important');
+        else mobileToggleBtn.style.removeProperty('display');
         mobileToggleBtn.classList.add('hidden');
         mobileToggleBtn.classList.remove('flex');
         this.closeMobileSidebar();
