@@ -3498,21 +3498,11 @@ const App = {
   },
 
   switchAdminTab(tabName) {
-    // 삭제된 탭으로 전환 시도 시 기본 탭으로 리다이렉트
-    if (tabName === 'examprep' || tabName === 'mockexam') tabName = 'tests';
     this.state.adminTab = tabName;
     // 모든 관리자 탭을 한 곳에서 토글해, 이전 카테고리 내용이 함께 남지 않게 한다.
-    // 항상 숨겨야 하는 탭 목록 (삭제된 기능)
-    const permanentlyHiddenAdminTabs = ['examprep', 'mockexam'];
-    ['Tests', 'ExamPrep', 'Assessment', 'SchoolGrade', 'MockExam', 'TargetUniv', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
+    ['Tests', 'Assessment', 'SchoolGrade', 'TargetUniv', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
       const btn = document.getElementById(`adminTabBtn${t}`);
       const content = document.getElementById(`adminTabContent${t}`);
-      // 삭제된 탭은 항상 hidden 유지
-      if (permanentlyHiddenAdminTabs.includes(t.toLowerCase())) {
-        if (btn) btn.classList.add('hidden');
-        if (content) content.classList.add('hidden');
-        return;
-      }
       if (t.toLowerCase() === tabName) {
         if (btn) btn.className = 'pb-3 px-2 border-b-2 border-indigo-600 font-bold text-xs sm:text-sm text-indigo-600 flex items-center gap-2 whitespace-nowrap';
         if (content) content.classList.remove('hidden');
@@ -4159,6 +4149,9 @@ const App = {
     if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = '80';
     if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = '80';
     if (document.getElementById('formVocabCutoff_5')) document.getElementById('formVocabCutoff_5').value = '80';
+    if (document.getElementById('formVocabQuestionCount_2')) document.getElementById('formVocabQuestionCount_2').value = '';
+    if (document.getElementById('formVocabQuestionCount_3')) document.getElementById('formVocabQuestionCount_3').value = '';
+    if (document.getElementById('formVocabQuestionCount_4')) document.getElementById('formVocabQuestionCount_4').value = '';
     if (document.getElementById('formIsMockSpecial')) document.getElementById('formIsMockSpecial').checked = false;
     if (document.getElementById('formIsEnglishDefTest')) document.getElementById('formIsEnglishDefTest').checked = false;
     this.onEnglishDefTestToggle();
@@ -4237,6 +4230,10 @@ const App = {
     if (document.getElementById('formVocabCutoff_3')) document.getElementById('formVocabCutoff_3').value = this.getBaseVocabCutoffScore(test, 3);
     if (document.getElementById('formVocabCutoff_4')) document.getElementById('formVocabCutoff_4').value = this.getBaseVocabCutoffScore(test, 4);
     if (document.getElementById('formVocabCutoff_5')) document.getElementById('formVocabCutoff_5').value = this.getBaseVocabCutoffScore(test, 5);
+    const testQC = test.vocabQuestionCounts || {};
+    if (document.getElementById('formVocabQuestionCount_2')) document.getElementById('formVocabQuestionCount_2').value = testQC[2] || testQC['2'] || test.vocabQuestionCount_2 || '';
+    if (document.getElementById('formVocabQuestionCount_3')) document.getElementById('formVocabQuestionCount_3').value = testQC[3] || testQC['3'] || test.vocabQuestionCount_3 || '';
+    if (document.getElementById('formVocabQuestionCount_4')) document.getElementById('formVocabQuestionCount_4').value = testQC[4] || testQC['4'] || test.vocabQuestionCount_4 || '';
     if (document.getElementById('formIsMockSpecial')) {
       document.getElementById('formIsMockSpecial').checked = Boolean(test.isMockSpecial || (test.title && (test.title.includes('9모') || test.title.includes('모의고사'))));
     }
@@ -5146,6 +5143,15 @@ const App = {
     const vocabCutoff4 = Number(document.getElementById('formVocabCutoff_4')?.value ?? 80);
     const vocabCutoff5 = Number(document.getElementById('formVocabCutoff_5')?.value ?? 80);
     const vocabCutoffs = isVocabTest ? { 2: vocabCutoff2, 3: vocabCutoff3, 4: vocabCutoff4, 5: vocabCutoff5 } : null;
+    // 출제 문항 수
+    const rawQC2 = document.getElementById('formVocabQuestionCount_2')?.value;
+    const rawQC3 = document.getElementById('formVocabQuestionCount_3')?.value;
+    const rawQC4 = document.getElementById('formVocabQuestionCount_4')?.value;
+    const vocabQuestionCounts = isVocabTest ? {
+      2: (rawQC2 && Number(rawQC2) >= 5) ? Number(rawQC2) : null,
+      3: (rawQC3 && Number(rawQC3) >= 5) ? Number(rawQC3) : null,
+      4: (rawQC4 && Number(rawQC4) >= 5) ? Number(rawQC4) : null
+    } : null;
     const practiceCutoff = Number(document.getElementById('formPracticeCutoff')?.value ?? 80);
 
     const textMemorizeMode = isTextMemorize ? (document.querySelector('input[name="formTextMemorizeMode"]:checked')?.value || 'CLOZE') : null;
@@ -5378,7 +5384,8 @@ const App = {
             extendedEndTime: existingTest?.extendedEndTime || null,
             allowLate: existingTest?.allowLate || false,
             type: testType,
-            isMockSpecial
+            isMockSpecial,
+            vocabQuestionCounts: isVocabTest ? vocabQuestionCounts : null
           };
           return AppData.saveOrUpdateTest(testData);
         } else {
@@ -5426,7 +5433,8 @@ const App = {
               textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
               textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : (matchingExistingTest.textMemorizeDescriptiveOnly || false),
               type: testType,
-              isMockSpecial
+              isMockSpecial,
+              vocabQuestionCounts: isVocabTest ? vocabQuestionCounts : null
             };
             if (isRegularTest) {
               if (score) testData.score = score;
@@ -5468,7 +5476,8 @@ const App = {
               textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
               textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : false,
               type: testType,
-              isMockSpecial
+              isMockSpecial,
+              vocabQuestionCounts: isVocabTest ? vocabQuestionCounts : null
             };
             return AppData.saveOrUpdateTest(newTest);
           }
@@ -5521,7 +5530,8 @@ const App = {
           textMemorizeMode: isTextMemorize ? textMemorizeMode : null,
           textMemorizeDescriptiveOnly: isTextMemorize ? textMemorizeDescriptiveOnly : false,
           type: testType,
-          isMockSpecial
+          isMockSpecial,
+          vocabQuestionCounts: isVocabTest ? vocabQuestionCounts : null
         };
         return AppData.saveOrUpdateTest(newTest);
       });
@@ -6786,7 +6796,7 @@ const App = {
           </div>
           <div class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap overflow-hidden">
             <i class="fa-solid fa-circle-check text-[11px]"></i>
-            <span class="truncate">통과 완료 (${result.score}점)</span>
+            <span class="truncate">통과 완료</span>
           </div>
         </div>`;
     }
@@ -8052,7 +8062,15 @@ const App = {
     }
 
     const startedAt = new Date().toISOString();
-    const testWords = this.selectVocabTestWords(eligibleWords);
+    let targetWordCount = 40;
+    if (scheduledTest) {
+      const qCounts = scheduledTest.vocabQuestionCounts || {};
+      const customQC = qCounts[direction] || qCounts[String(direction)] || scheduledTest[`vocabQuestionCount_${direction}`];
+      if (customQC && Number(customQC) >= 5) {
+        targetWordCount = Number(customQC);
+      }
+    }
+    const testWords = this.selectVocabTestWords(eligibleWords, targetWordCount);
     const isMockSpecial = Boolean(
       (scheduledTest && (scheduledTest.isMockSpecial || (scheduledTest.title && (scheduledTest.title.includes('9모') || scheduledTest.title.includes('모의고사')))))
       || set.isMockSpecial
@@ -8115,8 +8133,8 @@ const App = {
     return shuffled;
   },
 
-  selectVocabTestWords(words) {
-    return this.shuffleItems(words).slice(0, Math.min(words.length, 40));
+  selectVocabTestWords(words, maxCount = 40) {
+    return this.shuffleItems(words).slice(0, Math.min(words.length, maxCount));
   },
 
   buildVocabQuestions(words, direction, choicePool = words) {

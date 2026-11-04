@@ -833,10 +833,7 @@
           <i class="fa-solid fa-list-check"></i>
           <span>시험 & 성적 관리</span>
         </button>
-        <button id="adminTabBtnExamPrep" onclick="App.switchAdminTab('examprep')" class="hidden pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
-          <i class="fa-solid fa-book-bookmark text-amber-500"></i>
-          <span>지필고사 시험범위</span>
-        </button>
+
         <button id="adminTabBtnAssessment" onclick="App.switchAdminTab('assessment')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
           <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
           <span>수행평가 관리</span>
@@ -845,10 +842,7 @@
           <i class="fa-solid fa-chart-column text-violet-600"></i>
           <span>내신 성적 관리</span>
         </button>
-        <button id="adminTabBtnMockExam" onclick="App.switchAdminTab('mockexam')" class="hidden pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
-          <i class="fa-solid fa-chart-line text-blue-600"></i>
-          <span>모의고사 성적 관리</span>
-        </button>
+
         <button id="adminTabBtnTargetUniv" onclick="App.switchAdminTab('targetuniv')" class="pb-3 px-2 border-b-2 border-transparent font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
           <i class="fa-solid fa-bullseye text-rose-500"></i>
           <span>목표 대학 (1·2·3지망)</span>
@@ -1086,60 +1080,6 @@
           <!-- 날짜별 결과 및 단어 세트 관리 영역은 JS에서 렌더링됩니다. -->
         </div>
       </div>
-
-      <!-- ================= Admin Tab: Exam Scope Management ================= -->
-      <div id="adminTabContentExamPrep" class="hidden space-y-6">
-        <!-- Student Selection Pills -->
-        <div class="glass-card rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
-          <div class="flex items-center gap-2 overflow-x-auto" id="adminExamPrepStudentPills">
-            <!-- Populated by JS -->
-          </div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold text-xs sm:text-sm hover:bg-amber-700 shadow-md shadow-amber-200 transition flex items-center gap-2 whitespace-nowrap">
-              <i class="fa-solid fa-plus"></i>
-              <span>새 시험범위 등록</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Selected Student Summary Card -->
-        <div class="glass-card rounded-2xl p-5 border-l-4 border-amber-500 space-y-3">
-          <div class="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-book-bookmark text-amber-500"></i>
-                <span id="adminExamPrepSelectedStudentName">학생 선택</span>의 지필고사 시험범위 & 공부현황
-              </h3>
-              <p class="text-xs text-slate-500 mt-0.5">학생의 과목별 시험범위(교과서·모의고사·부교재)와 1·2·3회독 진행 상태를 실시간으로 확인하고 관리합니다.</p>
-            </div>
-            <div class="flex items-center gap-1.5 overflow-x-auto" id="adminExamScopeTermPills">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-          <!-- Subject Filter Pills (과목별 모아보기) -->
-          <div class="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-100" id="adminExamScopeSubjectPills">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
-        <!-- Admin Student Scope Cards Container -->
-        <div id="adminExamScopeCardsContainer" class="space-y-6">
-          <!-- Populated by JS -->
-        </div>
-
-        <div id="adminExamScopeEmptyState" class="hidden glass-card rounded-2xl p-12 text-center space-y-3">
-          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto">
-            <i class="fa-solid fa-book-open"></i>
-          </div>
-          <h4 class="font-bold text-slate-800 text-sm">해당 학생의 등록된 지필고사 시험범위가 없습니다.</h4>
-          <p class="text-xs text-slate-400">교과서 출판사별 목차 및 국어·영어 모의고사 범위를 등록해보세요.</p>
-          <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
-            <i class="fa-solid fa-plus text-[10px]"></i>
-            <span>시험범위 등록하기</span>
-          </button>
-        </div>
-      </div>
-
       <!-- ================= Admin Tab 6: Assessment Management ================= -->
       <div id="adminTabContentAssessment" class="hidden space-y-6">
         <div class="glass-card rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
@@ -1332,44 +1272,6 @@
           </div>
         </div>
       </div>
-
-      <!-- ================= Admin Tab 8: Mock Exam Management ================= -->
-      <div id="adminTabContentMockExam" class="hidden space-y-6">
-        <div class="glass-card rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
-          <div class="flex items-center gap-2 overflow-x-auto" id="adminMockStudentPills">
-            <!-- Populated by JS -->
-          </div>
-          <button onclick="AcademicManager.openMockExamModal(null, true)" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs sm:text-sm hover:bg-blue-700 shadow-md shadow-blue-200 transition flex items-center gap-2 whitespace-nowrap">
-            <i class="fa-solid fa-plus"></i>
-            <span>모의고사 성적 등록</span>
-          </button>
-        </div>
-
-        <div class="glass-card rounded-2xl p-5 border-l-4 border-blue-600 flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h4 class="font-black text-slate-900 text-base flex items-center gap-2">
-              <span id="adminMockSelectedStudentName">학생</span>
-              <span class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">모의고사 성적 분석</span>
-            </h4>
-            <p class="text-xs text-slate-500 mt-1">교육청 학평, 평가원 모의평가 및 사설 모의고사 성적을 통합 관리합니다.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="AcademicManager.filterAdminMockExams('ALL')" id="adminMockFilterALL" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-900 text-white">전체</button>
-            <button onclick="AcademicManager.filterAdminMockExams('OFFICIAL')" id="adminMockFilterOfficial" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">교육청 학평</button>
-            <button onclick="AcademicManager.filterAdminMockExams('EVAL')" id="adminMockFilterEval" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">평가원 / 수능</button>
-            <button onclick="AcademicManager.filterAdminMockExams('PRIVATE')" id="adminMockFilterPrivate" class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">사설 모의고사</button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="adminMockSummaryGrid">
-          <!-- Populated by JS -->
-        </div>
-
-        <div id="adminMockExamListContent" class="space-y-4">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
       <!-- ================= Admin Tab 9: Target Univ Management ================= -->
       <div id="adminTabContentTargetUniv" class="hidden space-y-6">
         <div class="glass-card rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
@@ -1832,6 +1734,39 @@
                   <span class="text-xs font-bold text-slate-500">점</span>
                 </div>
               </div>
+            </div>
+            <!-- 출제 문항 수 설정 -->
+            <div class="pt-2 border-t border-violet-100">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-[11px] font-bold text-violet-900">
+                  <i class="fa-solid fa-list-ol mr-1 text-violet-600"></i>출제 문항 수 설정
+                </label>
+                <span class="text-[11px] text-violet-600">전체 단어 수 이하로 입력 (기본: 40문항)</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+                  <label class="block text-[11px] font-bold text-slate-700">객관식 문항 수</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_2" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">문항</span>
+                  </div>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+                  <label class="block text-[11px] font-bold text-slate-700">스펠링 문항 수</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_3" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">문항</span>
+                  </div>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+                  <label class="block text-[11px] font-bold text-slate-700">통합 문항 수</label>
+                  <div class="flex items-center gap-1.5">
+                    <input type="number" id="formVocabQuestionCount_4" min="5" max="200" step="1" inputmode="numeric" placeholder="40" value="" class="w-full py-2 px-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-violet-500 text-xs sm:text-sm font-bold text-slate-900" />
+                    <span class="text-xs font-bold text-slate-500">문항</span>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[11px] text-violet-500 mt-1.5">비워두면 전체 단어 수 (최대 40문항)로 출제됩니다.</p>
             </div>
           </div>
           <div id="formPracticeCutoffSection" class="hidden">
@@ -4323,7 +4258,6 @@ const AcademicManager = {
   selectedGradeTerm: '1-2', // 현재 학기: 1학년 2학기
 
   adminAssessFilter: 'ALL',
-  adminMockFilter: 'ALL',
   adminSelectedGradeTerm: '1-2', // 현재 학기: 1학년 2학기
   currentAdminTab: 'tests',
 
@@ -5315,10 +5249,8 @@ const AcademicManager = {
 
     // 관리자 화면 탭 리렌더링
     const adminTab = this.currentAdminTab || String(App?.state?.adminTab || '').toLowerCase();
-    if (adminTab === 'examprep') this.renderAdminExamScopesTab();
     if (adminTab === 'assessment') this.renderAdminAssessmentsTab();
     if (adminTab === 'schoolgrade') this.renderAdminSchoolGradeTab();
-    if (adminTab === 'mockexam') this.renderAdminMockExamTab();
     if (adminTab === 'targetuniv') this.renderAdminTargetUnivTab();
   },
 
@@ -5502,7 +5434,7 @@ const AcademicManager = {
       App.renderAdminDashboard = () => {
         origRenderAdminDashboard();
         const lower = this.currentAdminTab || String(App.state?.adminTab || '').toLowerCase();
-        const academicTabs = ['examprep', 'assessment', 'schoolgrade', 'mockexam', 'targetuniv'];
+        const academicTabs = ['assessment', 'schoolgrade', 'targetuniv'];
         if (academicTabs.includes(lower)) {
           this.handleAdminTabSwitch(lower);
         }
@@ -7954,11 +7886,6 @@ const AcademicManager = {
     // 관리자 화면이 활성화되어 있거나 관리자 로그인 상태인 경우
     if (App.state.isAdminLoggedIn) {
       if (App.state) App.state.adminSelectedStudentId = studentId;
-      const isAdminViewActive = !document.getElementById('adminDashboardView')?.classList.contains('hidden');
-      if (isAdminViewActive) {
-        if (typeof App.switchAdminTab === 'function') App.switchAdminTab('examprep');
-        this.renderAdminExamScopesTab();
-      }
     }
 
     this.refreshAcademicViews();
@@ -10136,7 +10063,6 @@ const AcademicManager = {
     this.notify('모의고사 성적이 등록되었습니다.', 'success');
 
     this.renderStudentMockExams();
-    if (App.state.isAdminLoggedIn) this.renderAdminMockExamTab();
   },
 
   deleteMockExam(id) {
@@ -10146,7 +10072,6 @@ const AcademicManager = {
     this.saveMockExams(list);
     this.notify('모의고사 기록이 삭제되었습니다.', 'info');
     this.renderStudentMockExams();
-    if (App.state.isAdminLoggedIn) this.renderAdminMockExamTab();
   },
 
   // ----------------------------------------------------
@@ -10387,13 +10312,11 @@ const AcademicManager = {
       tests: 'Tests',
       assessment: 'Assessment',
       schoolgrade: 'SchoolGrade',
-      mockexam: 'MockExam',
       targetuniv: 'TargetUniv',
       overview: 'Overview',
       students: 'Students',
       vocab: 'Vocab',
-      backup: 'Backup',
-      examprep: 'ExamPrep'
+      backup: 'Backup'
     };
 
     Object.entries(tabMap).forEach(([t, suffix]) => {
@@ -10413,471 +10336,16 @@ const AcademicManager = {
       }
     });
 
-    if (lower === 'examprep') this.renderAdminExamScopesTab();
-    else if (lower === 'assessment') this.renderAdminAssessmentsTab();
+    if (lower === 'assessment') this.renderAdminAssessmentsTab();
     else if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
-    else if (lower === 'mockexam') this.renderAdminMockExamTab();
     else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
   },
 
   onAdminStudentChange(studentId) {
     const lower = this.currentAdminTab || String(App?.state?.adminTab || '').toLowerCase();
-    if (lower === 'examprep') this.renderAdminExamScopesTab();
-    else if (lower === 'assessment') this.renderAdminAssessmentsTab();
+    if (lower === 'assessment') this.renderAdminAssessmentsTab();
     else if (lower === 'schoolgrade') this.renderAdminSchoolGradeTab();
-    else if (lower === 'mockexam') this.renderAdminMockExamTab();
     else if (lower === 'targetuniv') this.renderAdminTargetUnivTab();
-  },
-
-  resetAdminExamScopeFilters() {
-    this.adminExamScopeTerm = 'ALL';
-    this.adminExamSubjectFilter = 'ALL';
-    this.renderAdminExamScopesTab();
-  },
-
-  selectAdminExamScopeTerm(term) {
-    this.adminExamScopeTerm = term;
-    this.renderAdminExamScopesTab();
-  },
-
-  filterAdminExamScopeSubject(subject) {
-    this.adminExamSubjectFilter = subject;
-    this.renderAdminExamScopesTab();
-  },
-
-  renderAdminExamScopesTab() {
-    const studentId = this.getAdminSelectedStudentId();
-    const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
-    const nameEl = document.getElementById('adminExamPrepSelectedStudentName');
-    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
-
-    this.renderAdminPills('adminExamPrepStudentPills');
-
-    if (!this.adminExamScopeTerm) this.adminExamScopeTerm = '1-2';
-    if (!this.adminExamSubjectFilter) this.adminExamSubjectFilter = 'ALL';
-
-    const allScopes = this.getExamScopes().filter(s => Number(s.studentId) === studentId);
-
-    // 1. 학기 필터 Pills 렌더링 (각 학기별 등록된 시험 개수 표시)
-    const termPills = document.getElementById('adminExamScopeTermPills');
-    if (termPills) {
-      const terms = [
-        { id: 'ALL', label: '전체 학기' },
-        { id: '1-1', label: '1-1' },
-        { id: '1-2', label: '1-2' },
-        { id: '2-1', label: '2-1' },
-        { id: '2-2', label: '2-2' },
-        { id: '3-1', label: '3-1' },
-        { id: '3-2', label: '3-2' }
-      ];
-      termPills.innerHTML = terms.map(t => {
-        const isActive = this.adminExamScopeTerm === t.id;
-        const count = t.id === 'ALL' ? allScopes.length : allScopes.filter(s => s.term === t.id).length;
-        const badge = count > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${isActive ? 'bg-white/30 text-white' : 'bg-amber-100 text-amber-800'}">${count}</span>` : '';
-        return `
-          <button type="button" onclick="AcademicManager.selectAdminExamScopeTerm('${t.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center ${
-            isActive ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }">
-            <span>${t.label}</span>${badge}
-          </button>
-        `;
-      }).join('');
-    }
-
-    // 2. 과목 필터 Pills 렌더링 (관리자용)
-    const subjectPills = document.getElementById('adminExamScopeSubjectPills');
-    if (subjectPills) {
-      const presentSubjects = Array.from(new Set(allScopes.filter(s => {
-        if (this.adminExamScopeTerm !== 'ALL' && s.term !== this.adminExamScopeTerm) return false;
-        return true;
-      }).map(s => s.subject)));
-
-      const configured = this.getStudentConfiguredSubjects(studentId, this.adminExamScopeTerm !== 'ALL' ? this.adminExamScopeTerm : null);
-      const configuredSubs = (configured.relative && configured.relative.length > 0)
-        ? configured.relative
-        : (Array.isArray(configured) ? configured : (configured.all || []));
-      const combinedSubjects = Array.from(new Set([...presentSubjects, ...configuredSubs]));
-
-      const subjectOptions = [{ id: 'ALL', label: '전체 과목' }];
-      if (combinedSubjects.length > 0) {
-        combinedSubjects.forEach(sub => subjectOptions.push({ id: sub, label: sub }));
-      } else {
-        ['공통국어2', '공통영어2', '공통수학2', '대수', '미적분I'].forEach(sub => subjectOptions.push({ id: sub, label: sub }));
-      }
-
-      subjectPills.innerHTML = subjectOptions.map(sOpt => {
-        const isActive = this.adminExamSubjectFilter === sOpt.id;
-        return `
-          <button type="button" onclick="AcademicManager.filterAdminExamScopeSubject('${sOpt.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-            isActive ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }">
-            ${sOpt.label}
-          </button>
-        `;
-      }).join('');
-    }
-
-    // 3. 시험범위 데이터 가져오기 (학기 + 과목 필터링)
-    let list = allScopes;
-    if (this.adminExamScopeTerm !== 'ALL') {
-      list = list.filter(s => s.term === this.adminExamScopeTerm);
-    }
-    if (this.adminExamSubjectFilter !== 'ALL') {
-      list = list.filter(s => {
-        if (s.subject === this.adminExamSubjectFilter) return true;
-        const cleanFilter = (this.adminExamSubjectFilter || '').replace(/\s+/g, '');
-        const cleanScope = (s.subject || '').replace(/\s+/g, '');
-        if (cleanFilter && cleanScope && (cleanScope.includes(cleanFilter) || cleanFilter.includes(cleanScope))) return true;
-        if (this.adminExamSubjectFilter === '수학' && (s.subject.includes('수학') || s.subject === '대수' || s.subject.includes('미적') || s.subject.includes('기하') || s.subject.includes('확률'))) return true;
-        return false;
-      });
-    }
-
-    const container = document.getElementById('adminExamScopeCardsContainer');
-    const emptyState = document.getElementById('adminExamScopeEmptyState');
-    if (!container) return;
-
-    if (list.length === 0) {
-      container.innerHTML = '';
-      container.classList.add('hidden');
-      if (emptyState) {
-        emptyState.classList.remove('hidden');
-        if (allScopes.length > 0) {
-          emptyState.innerHTML = `
-            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto shadow-inner">
-              <i class="fa-solid fa-filter-circle-xmark"></i>
-            </div>
-            <h4 class="font-bold text-slate-800 text-sm">선택한 필터 조건에 해당하는 시험범위가 없습니다.</h4>
-            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-              현재 필터: <strong class="text-amber-600">${this.adminExamScopeTerm === 'ALL' ? '전체 학기' : this.adminExamScopeTerm + ' 학기'}</strong> / 
-              <strong>${this.adminExamSubjectFilter === 'ALL' ? '전체 과목' : this.adminExamSubjectFilter}</strong><br/>
-              (해당 학생의 다른 학기/과목에 등록된 시험범위가 총 <strong class="text-indigo-600">${allScopes.length}개</strong> 있습니다.)
-            </p>
-            <div class="flex items-center justify-center gap-2 flex-wrap pt-2">
-              <button onclick="AcademicManager.resetAdminExamScopeFilters()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
-                <i class="fa-solid fa-rotate-left text-[10px]"></i>
-                <span>전체 시험범위 모아보기 (${allScopes.length}개)</span>
-              </button>
-              <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm">
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>새 시험범위 등록</span>
-              </button>
-            </div>
-          `;
-        } else {
-          // 다른 학생에게 등록된 시험범위가 있는지 확인
-          const totalExistingScopes = this.getExamScopes();
-          const otherStudentWithScopes = totalExistingScopes.find(sc => Number(sc.studentId) !== studentId);
-          let otherStudentHintHtml = '';
-          if (otherStudentWithScopes && typeof AppData !== 'undefined') {
-            const otherSt = AppData.getStudentById(otherStudentWithScopes.studentId);
-            const otherCount = totalExistingScopes.filter(sc => Number(sc.studentId) === otherStudentWithScopes.studentId).length;
-            if (otherSt) {
-              otherStudentHintHtml = `
-                <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl max-w-md mx-auto text-xs text-indigo-900 flex items-center justify-between gap-3">
-                  <div class="text-left">
-                    <strong class="font-bold text-indigo-950">${otherSt.name} 학생</strong>에게 등록된 시험범위가 <strong>${otherCount}개</strong> 있습니다.
-                  </div>
-                  <button type="button" onclick="AcademicManager.selectAdminStudent(${otherSt.id})" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs whitespace-nowrap shadow-xs cursor-pointer">
-                    ${otherSt.name} 시험범위 보기
-                  </button>
-                </div>
-              `;
-            }
-          }
-
-          emptyState.innerHTML = `
-            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl mx-auto">
-              <i class="fa-solid fa-book-open"></i>
-            </div>
-            <h4 class="font-bold text-slate-800 text-sm">${student ? student.name + ' 학생' : '해당 학생'}의 등록된 지필고사 시험범위가 없습니다.</h4>
-            <p class="text-xs text-slate-400">교과서 출판사별 목차 및 국어·영어 모의고사 범위를 등록해보세요.</p>
-            ${otherStudentHintHtml}
-            <div class="flex items-center justify-center gap-2 flex-wrap pt-2">
-              <button onclick="AcademicManager.loadGyuinSampleExamScopes()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
-                <i class="fa-solid fa-cloud-arrow-down text-[10px]"></i>
-                <span>기본 시험범위(비상 국어·신사고 수학) 불러오기</span>
-              </button>
-              <button onclick="AcademicManager.openExamScopeModal(null, true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>새 시험범위 등록</span>
-              </button>
-            </div>
-          `;
-        }
-      }
-      return;
-    }
-
-    if (emptyState) emptyState.classList.add('hidden');
-    container.classList.remove('hidden');
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    container.innerHTML = list.map(scope => {
-      const color = this.getSubjectTheme(scope.subject);
-      const sections = scope.sections || [];
-
-      // 과목별 통계
-      let subTotal = 0;
-      let subPass1 = 0;
-      let subPass2 = 0;
-      let subPass3 = 0;
-      sections.forEach(sec => {
-        (sec.items || []).forEach(it => {
-          subTotal++;
-          if (it.passes?.pass1) subPass1++;
-          if (it.passes?.pass2) subPass2++;
-          if (it.passes?.pass3) subPass3++;
-        });
-      });
-      const subPct = subTotal > 0 ? Math.round(((subPass1 * 0.3) + (subPass2 * 0.3) + (subPass3 * 0.4)) / subTotal * 100) : 0;
-
-      // D-Day 계산 & 원클릭 설정 뱃지
-      let dDayBadge = '';
-      if (scope.examDate) {
-        const d = new Date(scope.examDate);
-        d.setHours(0, 0, 0, 0);
-        const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-        let badgeStyle = diff > 0 ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : (diff === 0 ? 'bg-rose-600 text-white animate-bounce' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 border-slate-200');
-        let text = diff > 0 ? `D-${diff} (${scope.examDate})` : (diff === 0 ? `D-DAY (${scope.examDate})` : `${scope.examDate} (종료)`);
-        dDayBadge = `
-          <button type="button" onclick="AcademicManager.openExamDateModal('${scope.id}')" title="클릭하여 시험일 변경" class="px-2.5 py-1.5 rounded-xl ${badgeStyle} border font-extrabold text-xs shadow-3xs cursor-pointer flex items-center gap-1 group transition">
-            <i class="fa-regular fa-clock text-[11px] mr-0.5"></i>
-            <span>${text}</span>
-            <i class="fa-solid fa-pen text-[9px] opacity-60 group-hover:opacity-100 ml-0.5"></i>
-          </button>
-        `;
-      } else {
-        dDayBadge = `
-          <button type="button" onclick="AcademicManager.openExamDateModal('${scope.id}')" title="지필고사 시험일 설정하기" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-dashed border-amber-300 font-bold text-xs transition flex items-center gap-1 shadow-3xs cursor-pointer">
-            <i class="fa-regular fa-calendar-plus text-amber-600"></i>
-            <span>시험일 설정</span>
-          </button>
-        `;
-      }
-
-      // 한 범위 회독 묶음 상태 계산
-      const bundleState = scope.bundlePassState || {
-        pass1: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass1)),
-        pass2: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass2)),
-        pass3: sections.length > 0 && sections.every(s => (s.items || []).every(it => it.passes?.pass3))
-      };
-      const bp1 = bundleState.pass1;
-      const bp2 = bundleState.pass2;
-      const bp3 = bundleState.pass3;
-
-      let bundleStatusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">미시작</span>`;
-      if (bp3) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-black text-xs shadow-3xs border border-amber-300"><i class="fa-solid fa-crown text-[10px] mr-1 text-amber-600"></i>마스터 완료</span>`;
-      else if (bp2) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold text-xs border border-blue-200">2회독 완료</span>`;
-      else if (bp1) bundleStatusBadge = `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200">1회독 완료</span>`;
-
-      return `
-        <div class="glass-card rounded-3xl p-5 sm:p-6 border ${scope.bundlePasses ? 'border-amber-300/80 bg-gradient-to-b from-white via-amber-50/15 to-white' : 'border-slate-200/90'} shadow-sm space-y-4">
-          <!-- 헤더 바 -->
-          <div class="flex items-start sm:items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-100">
-            <div class="flex items-center space-x-3 min-w-0">
-              <div class="w-11 h-11 rounded-2xl ${color.bg} ${color.text} border ${color.border} flex items-center justify-center text-lg flex-shrink-0 shadow-2xs">
-                <i class="fa-solid ${color.icon}"></i>
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h4 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">${this.escapeHtml(scope.subject)}</h4>
-                  <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">${scope.term} 학기</span>
-                  <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800">${scope.examType}</span>
-                  ${scope.bundlePasses ? `
-                    <span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-3xs">
-                      <i class="fa-solid fa-layer-group text-[10px] text-amber-600"></i>
-                      <span>한 범위 묶음</span>
-                    </span>
-                  ` : ''}
-                  ${scope.teacherName ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/70"><i class="fa-solid fa-chalkboard-user text-[10px] mr-1 text-amber-600"></i>${this.escapeHtml(scope.teacherName)}</span>` : ''}
-                  ${scope.targetScore ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/70"><i class="fa-solid fa-bullseye text-[10px] mr-1 text-rose-500"></i>목표: ${this.escapeHtml(scope.targetScore)}</span>` : ''}
-                </div>
-                ${scope.memo ? `<p class="text-xs text-slate-500 mt-0.5 font-medium truncate">${this.escapeHtml(scope.memo)}</p>` : ''}
-              </div>
-            </div>
-
-            <!-- 우측 액션 및 D-Day -->
-            <div class="flex items-center gap-2 flex-wrap">
-              ${dDayBadge}
-              <button type="button" onclick="AcademicManager.toggleScopeBundleMode('${scope.id}')" title="회독 관리 방식 변경 (한 범위 묶음 ↔ 문항별 개별)" class="px-2.5 py-1.5 rounded-xl ${scope.bundlePasses ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200' : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'} font-bold text-xs transition flex items-center gap-1 shadow-3xs cursor-pointer">
-                <i class="fa-solid fa-layer-group text-[10px] ${scope.bundlePasses ? 'text-amber-700' : 'text-slate-400'}"></i>
-                <span>${scope.bundlePasses ? '묶음 회독' : '개별 회독'}</span>
-              </button>
-              <button type="button" onclick="AcademicManager.openExamScopeModal('${scope.id}', true)" class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
-                <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
-                <span>범위 수정</span>
-              </button>
-              <button type="button" onclick="AcademicManager.deleteExamScope('${scope.id}')" class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 transition flex items-center gap-1 shadow-3xs cursor-pointer">
-                <i class="fa-solid fa-trash-can text-[10px]"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- 진도율 바 -->
-          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/70 flex items-center justify-between flex-wrap gap-3">
-            <div class="flex items-center gap-3 flex-1 min-w-[200px]">
-              <span class="text-xs font-extrabold text-slate-700 whitespace-nowrap">과목 달성률</span>
-              <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                <div class="bg-gradient-to-r from-amber-500 to-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: ${subPct}%"></div>
-              </div>
-              <span class="text-xs font-black text-emerald-600 whitespace-nowrap">${subPct}%</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs font-bold text-slate-500 flex-shrink-0">
-              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>1회독: ${subPass1}/${subTotal}</span>
-              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>2회독: ${subPass2}/${subTotal}</span>
-              <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>3회독: ${subPass3}/${subTotal}</span>
-            </div>
-          </div>
-
-          <!-- 한 범위 회독 묶음 바 (bundlePasses 활성화 시 선명하게 노출) -->
-          ${scope.bundlePasses ? `
-            <div class="p-3.5 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 rounded-2xl border border-amber-300 shadow-2xs flex items-center justify-between flex-wrap gap-3">
-              <div class="flex items-center gap-2.5 min-w-0">
-                <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-xs flex-shrink-0">
-                  <i class="fa-solid fa-layer-group"></i>
-                </span>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs sm:text-sm font-black text-slate-900">한 범위 통합 회독 관리</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900">묶음 모드</span>
-                  </div>
-                  <p class="text-[11px] text-slate-600 truncate mt-0.5">이 시험범위 전체를 한 묶음으로 1·2·3회독 진행합니다.</p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2 flex-shrink-0">
-                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 1)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  bp1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }">
-                  <i class="fa-solid fa-check text-[11px]"></i>
-                  <span>1회독</span>
-                </button>
-                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 2)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  bp2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }">
-                  <i class="fa-solid fa-check-double text-[11px]"></i>
-                  <span>2회독</span>
-                </button>
-                <button type="button" onclick="AcademicManager.toggleScopeBundlePass('${scope.id}', 3)" class="px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                  bp3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }">
-                  <i class="fa-solid fa-crown text-[11px]"></i>
-                  <span>3회독 마스터</span>
-                </button>
-                ${bundleStatusBadge}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- 섹션 목록 (교과서 / 모의고사 / 부교재) -->
-          <div class="space-y-3 pt-1">
-            ${sections.length === 0 ? `
-              <div class="p-6 text-center text-xs text-slate-400">등록된 범위 세부 항목이 없습니다. [범위 수정]에서 단원이나 모의고사 범위를 추가해보세요.</div>
-            ` : sections.map(sec => {
-              const secItems = sec.items || [];
-              const secDone = secItems.filter(it => it.passes?.pass3).length;
-
-              let typeIcon = 'fa-book-open';
-              let typeClass = 'text-indigo-600 bg-indigo-50 border-indigo-200';
-              if (sec.type === 'mock_exam') {
-                typeIcon = 'fa-file-circle-check';
-                typeClass = 'text-sky-600 bg-sky-50 border-sky-200';
-              } else if (sec.type === 'custom') {
-                typeIcon = 'fa-paperclip';
-                typeClass = 'text-emerald-600 bg-emerald-50 border-emerald-200';
-              }
-
-              return `
-                <div class="rounded-2xl border border-slate-200/90 overflow-hidden bg-white shadow-2xs">
-                  <div class="p-3 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2">
-                    <div class="flex items-center gap-2 min-w-0">
-                      <span class="w-7 h-7 rounded-lg ${typeClass} border flex items-center justify-center text-xs flex-shrink-0">
-                        <i class="fa-solid ${typeIcon}"></i>
-                      </span>
-                      <span class="font-bold text-xs sm:text-sm text-slate-800 truncate">${this.escapeHtml(sec.title)}</span>
-                      ${sec.teacherName ? `
-                        <span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-black flex items-center gap-1 border border-amber-200/80 shadow-3xs flex-shrink-0">
-                          <i class="fa-solid fa-chalkboard-user text-[10px] text-amber-600"></i>
-                          <span>담당: ${this.escapeHtml(sec.teacherName)}</span>
-                        </span>
-                      ` : ''}
-                    </div>
-                    <span class="text-xs font-bold text-slate-500">완료 ${secDone} / ${secItems.length}</span>
-                  </div>
-
-                  <div class="divide-y divide-slate-100">
-                    ${secItems.map(it => {
-                      const p1 = it.passes?.pass1;
-                      const p2 = it.passes?.pass2;
-                      const p3 = it.passes?.pass3;
-
-                      let statusBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium text-[10px]">미시작</span>`;
-                      if (p3) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-black text-[10px] shadow-3xs"><i class="fa-solid fa-crown text-[9px] mr-1 text-amber-600"></i>마스터</span>`;
-                      else if (p2) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">2회독 완료</span>`;
-                      else if (p1) statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">1회독 완료</span>`;
-
-                      const itemTeacherBadge = (it.teacherName && it.teacherName !== sec.teacherName)
-                        ? `<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">[${this.escapeHtml(it.teacherName)}]</span>`
-                        : '';
-
-                      return `
-                        <div class="p-3 sm:py-2.5 sm:px-4 flex items-center justify-between flex-wrap gap-2 hover:bg-slate-50/60 transition-colors">
-                          <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <span class="w-2 h-2 rounded-full ${p3 ? 'bg-amber-500' : (p2 ? 'bg-blue-500' : (p1 ? 'bg-emerald-500' : 'bg-slate-300'))} flex-shrink-0"></span>
-                            <div class="min-w-0">
-                              <div class="text-xs sm:text-sm font-bold text-slate-800 truncate flex items-center gap-1.5">
-                                <span>${this.escapeHtml(it.name)}</span>
-                                ${itemTeacherBadge}
-                              </div>
-                              ${it.subTitle ? `<p class="text-[11px] text-slate-400 truncate">${this.escapeHtml(it.subTitle)}</p>` : ''}
-                            </div>
-                          </div>
-
-                          <!-- 1·2·3회독 원클릭 버튼 및 상태 뱃지 -->
-                          ${scope.bundlePasses ? `
-                            <div class="flex items-center gap-1.5 flex-shrink-0">
-                              ${statusBadge}
-                            </div>
-                          ` : `
-                            <div class="flex items-center gap-1.5 flex-shrink-0">
-                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 1)" title="1회독: 본문/지문 분석 및 기본 개념" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                                p1 ? 'bg-emerald-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                              }">
-                                <i class="fa-solid fa-check text-[10px]"></i>
-                                <span>1회독</span>
-                              </button>
-
-                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 2)" title="2회독: 변형 문제 풀이 및 서술형 대비" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                                p2 ? 'bg-blue-600 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                              }">
-                                <i class="fa-solid fa-check-double text-[10px]"></i>
-                                <span>2회독</span>
-                              </button>
-
-                              <button type="button" onclick="AcademicManager.toggleScopeItemPass('${scope.id}', '${sec.id}', '${it.id}', 3)" title="3회독: 핵심 암기 및 실전 완벽 마스터" class="px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${
-                                p3 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-3xs' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                              }">
-                                <i class="fa-solid fa-crown text-[10px]"></i>
-                                <span>3회독</span>
-                              </button>
-
-                              ${statusBadge}
-                            </div>
-                          `}
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      `;
-    }).join('');
   },
 
   renderAdminAssessmentsTab() {
@@ -11280,72 +10748,6 @@ const AcademicManager = {
   adminSelectGradeTerm(term) {
     this.adminSelectedGradeTerm = term;
     this.renderAdminSchoolGradeTab();
-  },
-
-  renderAdminMockExamTab() {
-    const studentId = this.getAdminSelectedStudentId();
-    const student = typeof AppData !== 'undefined' ? AppData.getStudentById(studentId) : null;
-    const nameEl = document.getElementById('adminMockSelectedStudentName');
-    if (nameEl) nameEl.textContent = student ? `${student.name} 학생` : '학생 선택';
-
-    this.renderAdminPills('adminMockStudentPills');
-
-    let list = this.getMockExams().filter(m => Number(m.studentId) === studentId);
-    if (this.adminMockFilter !== 'ALL') {
-      list = list.filter(m => m.category === this.adminMockFilter);
-    }
-    list.sort((a, b) => new Date(b.date || '1970-01-01') - new Date(a.date || '1970-01-01'));
-
-    const container = document.getElementById('adminMockExamListContent');
-    if (!container) return;
-
-    if (list.length === 0) {
-      container.innerHTML = `<div class="glass-card rounded-2xl p-8 text-center text-slate-400">등록된 모의고사 성적이 없습니다.</div>`;
-      return;
-    }
-
-    container.innerHTML = list.map(item => {
-      const sc = item.scores || {};
-      const isPrivate = (item.category === 'PRIVATE');
-      const isEval = (item.category === 'EVAL');
-      let catBadge = '';
-      if (isPrivate) {
-        catBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">사설 · ${this.escapeHtml(item.provider || '사설')}</span>`;
-      } else if (isEval) {
-        catBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">평가원 / 수능</span>`;
-      } else {
-        catBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">교육청 학평</span>`;
-      }
-
-      return `
-        <div class="glass-card rounded-2xl p-5 shadow-sm space-y-3">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <div class="flex items-center gap-2">
-              ${catBadge}
-              <h4 class="text-base font-extrabold text-slate-900">${this.escapeHtml(item.title)}</h4>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-400">${item.date}</span>
-              <button onclick="AcademicManager.openMockExamModal('${item.id}', true)" class="px-2 py-1 rounded text-xs font-bold text-blue-600 hover:bg-blue-50">수정</button>
-              <button onclick="AcademicManager.deleteMockExam('${item.id}')" class="px-2 py-1 rounded text-xs font-bold text-rose-500 hover:bg-rose-50">삭제</button>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
-            <div class="p-2 rounded-xl bg-slate-50"><span class="text-[10px] text-slate-400">국어</span><div class="font-bold">${sc.korGrd || '-'}등급 (${sc.korRaw || '-'})</div></div>
-            <div class="p-2 rounded-xl bg-slate-50"><span class="text-[10px] text-slate-400">수학</span><div class="font-bold">${sc.mathGrd || '-'}등급 (${sc.mathRaw || '-'})</div></div>
-            <div class="p-2 rounded-xl bg-indigo-50/70"><span class="text-[10px] text-indigo-500">영어</span><div class="font-bold text-indigo-900">${sc.engGrd || '-'}등급 (${sc.engRaw || '-'})</div></div>
-            <div class="p-2 rounded-xl bg-slate-50"><span class="text-[10px] text-slate-400">한국사</span><div class="font-bold">${sc.hisGrd || '-'}등급 (${sc.hisRaw || '-'})</div></div>
-            <div class="p-2 rounded-xl bg-slate-50"><span class="text-[10px] text-slate-400 truncate block">${sc.inq1Name || '탐구1'}</span><div class="font-bold">${sc.inq1Grd || '-'}등급 (${sc.inq1Raw || '-'})</div></div>
-            <div class="p-2 rounded-xl bg-slate-50"><span class="text-[10px] text-slate-400 truncate block">${sc.inq2Name || '탐구2'}</span><div class="font-bold">${sc.inq2Grd || '-'}등급 (${sc.inq2Raw || '-'})</div></div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  },
-
-  filterAdminMockExams(category) {
-    this.adminMockFilter = category;
-    this.renderAdminMockExamTab();
   },
 
   renderAdminTargetUnivTab() {
