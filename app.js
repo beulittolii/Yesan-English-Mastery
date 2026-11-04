@@ -33,6 +33,15 @@ const App = {
     }
   },
 
+  // 최초 클라우드 데이터가 준비될 때까지 보이는 전체 화면 스켈레톤을 닫습니다.
+  finishInitialLoading() {
+    const skeleton = document.getElementById('initialLoadingSkeleton');
+    if (!skeleton) return;
+
+    skeleton.classList.add('initial-loading-skeleton--leaving');
+    setTimeout(() => skeleton.remove(), 220);
+  },
+
   // 클라우드 동기화 상태 및 데이터 로딩 안내 배너 표시
   updateSyncStatus(status, text) {
     const badge = document.getElementById('cloudSyncStatusBadge');
@@ -42,27 +51,15 @@ const App = {
     let badgeHtml = '';
     let noticeHtml = '';
 
-    if (status === 'syncing') {
-      badgeHtml = `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-semibold shadow-xs animate-pulse">
-          <i class="fa-solid fa-cloud-arrow-down fa-spin text-indigo-500"></i>
-          <span>${text || '데이터 동기화 중...'}</span>
-        </span>
-      `;
-      noticeHtml = `
-        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50/95 to-blue-50/95 border border-indigo-200 text-indigo-900 flex items-center justify-between text-xs sm:text-sm font-medium shadow-xs">
-          <div class="flex items-center gap-2.5">
-            <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-              <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-            </div>
-            <div>
-              <span class="font-extrabold text-indigo-950">${text || '클라우드에서 최신 학습 데이터를 불러오는 중입니다.'}</span>
-              <span class="text-indigo-700 text-xs block sm:inline sm:ml-2">데이터는 안전하게 보관되어 있으며, 잠시 후 최신 상태로 자동 동기화됩니다.</span>
-            </div>
-          </div>
-          <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 border border-indigo-200 hidden sm:inline-block">로딩 중</span>
-        </div>
-      `;
+    if (status === 'syncing' || status === 'synced') {
+      // 최초 동기화와 완료 안내는 별도 배너 대신 스켈레톤 전환으로 처리합니다.
+      if (badge) {
+        badge.innerHTML = '';
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      }
+      [notice, adminNotice].forEach(el => el?.classList.add('hidden'));
+      return;
     } else if (status === 'synced') {
       badgeHtml = `
         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold shadow-xs">
@@ -542,6 +539,16 @@ const App = {
 
   },
 
+  isCalendarOnlyStudent() {
+    const student = AppData.getStudentById(this.state.selectedStudentId);
+    return Boolean(
+      this.state.isStudentLoggedIn &&
+      !this.state.isAdminLoggedIn &&
+      student &&
+      student.accessMode === 'CALENDAR_ONLY'
+    );
+  },
+
   async showAdminDashboard() {
     if (!(await this.checkAndConfirmVocabTestExit())) return;
     this.clearVocabQuestionTimer();
@@ -590,9 +597,10 @@ const App = {
     // 모바일 햄버거 토글 버튼 표시 여부 갱신 (학생 대시보드 뷰 활성 시 노출, 데스크톱 lg: 화면에서는 항상 숨김)
     const stuDashboard = document.getElementById('studentDashboardView');
     const isStudentActive = stuDashboard && !stuDashboard.classList.contains('hidden');
+    const hideStudentMenu = this.isCalendarOnlyStudent();
 
     if (mobileToggleBtn) {
-      if (isStudentActive) {
+      if (isStudentActive && !hideStudentMenu) {
         mobileToggleBtn.classList.remove('hidden');
         mobileToggleBtn.classList.add('flex', 'lg:hidden');
       } else {
@@ -605,7 +613,7 @@ const App = {
     // 학생 사이드바 표시 여부 제어 (학생 대시보드 뷰 활성 시 노출, 그 외 뷰에서는 숨김)
     const studentSidebar = document.getElementById('studentSidebar');
     if (studentSidebar) {
-      if (isStudentActive) {
+      if (isStudentActive && !hideStudentMenu) {
         studentSidebar.classList.remove('hidden');
       } else {
         studentSidebar.classList.add('hidden');
@@ -631,8 +639,15 @@ const App = {
         </div>
       `;
     } else if (this.state.isStudentLoggedIn) {
+      const profileButton = this.isCalendarOnlyStudent() ? `
+        <button onclick="AcademicManager.openTargetUnivModal(App.state.selectedStudentId)" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition flex items-center gap-1.5 border border-indigo-200 cursor-pointer" title="목표 대학 설정">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>프로필 설정</span>
+        </button>
+      ` : '';
       container.innerHTML = `
         <div class="flex items-center gap-2">
+          ${profileButton}
           <button onclick="App.logoutStudent()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>로그아웃</span>
@@ -3888,6 +3903,13 @@ const App = {
             <label class="block font-bold text-slate-600 mb-0.5">학습 목표</label>
             <input type="text" id="newStudentTarget" placeholder="예: 내신 영어 1등급" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
           </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-0.5">사용 권한</label>
+            <select id="newStudentAccessMode" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white">
+              <option value="FULL">전체 기능 사용</option>
+              <option value="CALENDAR_ONLY">영어 학습 캘린더만 사용</option>
+            </select>
+          </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block font-bold text-slate-600 mb-0.5">로그인 아이디</label>
@@ -3927,6 +3949,13 @@ const App = {
               <label class="block font-bold text-slate-600 mb-0.5">학습 목표</label>
               <input type="text" id="editStudentTarget_${student.id}" value="${this.escapeHtml(student.target)}" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white" />
             </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-0.5">사용 권한</label>
+              <select id="editStudentAccessMode_${student.id}" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white">
+                <option value="FULL" ${student.accessMode === 'CALENDAR_ONLY' ? '' : 'selected'}>전체 기능 사용</option>
+                <option value="CALENDAR_ONLY" ${student.accessMode === 'CALENDAR_ONLY' ? 'selected' : ''}>영어 학습 캘린더만 사용</option>
+              </select>
+            </div>
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block font-bold text-slate-600 mb-0.5">로그인 아이디</label>
@@ -3956,6 +3985,7 @@ const App = {
   async handleSaveStudentProfile(studentId) {
     const name = document.getElementById(`editStudentName_${studentId}`).value.trim();
     const target = document.getElementById(`editStudentTarget_${studentId}`).value.trim();
+    const accessMode = document.getElementById(`editStudentAccessMode_${studentId}`).value;
     const loginId = document.getElementById(`editStudentLoginId_${studentId}`).value.trim();
     const password = document.getElementById(`editStudentPassword_${studentId}`).value;
 
@@ -3964,7 +3994,7 @@ const App = {
     }
 
     try {
-      await AppData.updateStudent({ id: studentId, name, target, loginId, password });
+      await AppData.updateStudent({ id: studentId, name, target, loginId, password, accessMode });
       this.toast(`학생 #${studentId} 프로필이 저장되었습니다.`, 'success');
     } catch (error) {
       console.error(error);
@@ -4000,12 +4030,13 @@ const App = {
   async handleAddStudentProfile() {
     const name = document.getElementById('newStudentName').value.trim();
     const target = document.getElementById('newStudentTarget').value.trim();
+    const accessMode = document.getElementById('newStudentAccessMode').value;
     const loginId = document.getElementById('newStudentLoginId').value.trim();
     const password = document.getElementById('newStudentPassword').value;
     if (!this.validateStudentAccount({ name, loginId, password })) return;
 
     try {
-      const student = await AppData.addStudent({ name, target, loginId, password });
+      const student = await AppData.addStudent({ name, target, loginId, password, accessMode });
       this.state.adminSelectedStudentId = student.id;
       this.toast(`${student.name} 학생 계정이 추가되었습니다.`, 'success');
       this.renderAdminStudentsTab();
@@ -12575,15 +12606,9 @@ const App = {
 
 };
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 사이트 초기화 시작 (즉시 UI 렌더링)');
+  console.log('🚀 사이트 초기화 시작 (클라우드 동기화 후 UI 렌더링)');
 
-  // 1. 즉시 UI 렌더링: 로컬 캐시 / 기본 데이터로 대기 시간 0초 만에 화면 표출
-  App.init();
-
-  // 2. 동기화 상태 표시
-  App.updateSyncStatus('syncing', '데이터를 불러오는 중입니다...');
-
-  // 3. 백그라운드 비동기 클라우드 동기화 (화면 블로킹 없음)
+  // 클라우드 데이터가 준비되기 전에는 실제 화면 대신 스켈레톤만 노출합니다.
   (async () => {
     try {
       const isReady = await AppData.waitForFirebase(3000);
@@ -12593,14 +12618,15 @@ document.addEventListener('DOMContentLoaded', () => {
         AppData.startStudentListener();
         AppData.startCloudListeners();
         console.log('사이트 초기화 및 클라우드 동기화 완료');
-        App.updateSyncStatus('synced', '최신 데이터 동기화 완료');
       } else {
         console.warn('Firebase 오프라인 모드로 실행');
-        App.updateSyncStatus('offline', '로컬 안전 모드 (저장됨)');
       }
     } catch (error) {
       console.error('클라우드 동기화 중 오류 (로컬 모드로 전환):', error);
-      App.updateSyncStatus('offline', '로컬 모드로 동작 중');
+    } finally {
+      // 동기화 완료 또는 연결 실패 후에만 실제 앱을 렌더링합니다.
+      App.init();
+      App.finishInitialLoading();
     }
   })();
 });

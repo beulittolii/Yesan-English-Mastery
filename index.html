@@ -75,6 +75,85 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
+  <!-- Cloud data is loaded before the application UI is rendered. -->
+  <div id="initialLoadingSkeleton" class="initial-loading-skeleton" role="status" aria-label="데이터를 준비하고 있습니다">
+    <div class="initial-loading-skeleton__header">
+      <div class="initial-loading-skeleton__brand">
+        <div class="initial-loading-skeleton__logo skeleton-shimmer"></div>
+        <div class="space-y-2">
+          <div class="h-5 w-14 rounded skeleton-shimmer"></div>
+          <div class="h-2.5 w-36 rounded skeleton-shimmer"></div>
+        </div>
+      </div>
+      <div class="initial-loading-skeleton__header-actions">
+        <div class="h-9 w-20 rounded-xl skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__menu-button skeleton-shimmer"></div>
+      </div>
+    </div>
+    <div class="initial-loading-skeleton__content" aria-hidden="true">
+      <div class="initial-loading-skeleton__login-card">
+        <div class="initial-loading-skeleton__login-icon skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__title skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__subtitle skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__description skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__field-label skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__field skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__field-label skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__field skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__login-button skeleton-shimmer"></div>
+        <div class="initial-loading-skeleton__admin-link skeleton-shimmer"></div>
+      </div>
+
+      <div class="initial-loading-skeleton__dashboard">
+        <div class="initial-loading-skeleton__profile-card">
+          <div class="initial-loading-skeleton__avatar skeleton-shimmer"></div>
+          <div class="initial-loading-skeleton__profile-copy">
+            <div class="initial-loading-skeleton__profile-title skeleton-shimmer"></div>
+            <div class="initial-loading-skeleton__profile-subtitle skeleton-shimmer"></div>
+          </div>
+          <div class="initial-loading-skeleton__profile-action skeleton-shimmer"></div>
+        </div>
+        <div class="initial-loading-skeleton__tabs">
+          <div class="initial-loading-skeleton__tab skeleton-shimmer"></div>
+          <div class="initial-loading-skeleton__tab skeleton-shimmer"></div>
+          <div class="initial-loading-skeleton__toolbar-action skeleton-shimmer"></div>
+        </div>
+        <div class="initial-loading-skeleton__calendar-card">
+          <div class="initial-loading-skeleton__calendar-heading">
+            <div class="initial-loading-skeleton__month skeleton-shimmer"></div>
+            <div class="initial-loading-skeleton__month-controls">
+              <div class="initial-loading-skeleton__month-control skeleton-shimmer"></div>
+              <div class="initial-loading-skeleton__month-control skeleton-shimmer"></div>
+            </div>
+          </div>
+          <div class="initial-loading-skeleton__weekdays">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div class="initial-loading-skeleton__calendar-grid">
+            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
+            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
+            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
+            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
+            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Cloud data arrives later, but the previous session is available immediately.
+    try {
+      const session = JSON.parse(localStorage.getItem('yem_auth_session') || 'null');
+      const isStudentSession = session?.role === 'student' && session.studentId;
+      const isAdminSession = session?.role === 'admin';
+      if (isStudentSession || isAdminSession) {
+        document.getElementById('initialLoadingSkeleton')?.classList.add('initial-loading-skeleton--authenticated');
+      }
+    } catch (_) {
+      // Invalid or unavailable local storage intentionally falls back to login skeleton.
+    }
+  </script>
+
   <!-- Top Global Navigation Bar -->
   <header class="sticky top-0 z-40 glass-nav shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -5449,6 +5528,8 @@ const AcademicManager = {
   switchStudentTab(tabName) {
     // 삭제된 탭으로 전환 시도 시 기본 탭으로 리다이렉트
     if (tabName === 'examPrep' || tabName === 'mockExam') tabName = 'schedule';
+    const isCalendarOnly = typeof App?.isCalendarOnlyStudent === 'function' && App.isCalendarOnlyStudent();
+    if (isCalendarOnly) tabName = 'schedule';
     this.studentTab = tabName;
     const tabs = ['schedule', 'examPrep', 'assessment', 'schoolGrade', 'mockExam', 'targetUniv', 'notice'];
 
@@ -5471,7 +5552,7 @@ const AcademicManager = {
 
       if (btn) {
         // 삭제된 탭은 항상 hidden 유지
-        if (permanentlyHidden.includes(t)) {
+        if (permanentlyHidden.includes(t) || (isCalendarOnly && t !== 'schedule')) {
           btn.classList.add('hidden');
           if (content) content.classList.add('hidden');
           return;

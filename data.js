@@ -2614,7 +2614,8 @@ const AppData = {
       name: studentData.name,
       target: studentData.target || '',
       loginId: studentData.loginId,
-      password: studentData.password
+      password: studentData.password,
+      accessMode: studentData.accessMode === 'CALENDAR_ONLY' ? 'CALENDAR_ONLY' : 'FULL'
     };
 
     await this.saveStudents([...students, newStudent]);
