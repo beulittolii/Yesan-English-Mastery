@@ -40,9 +40,10 @@ async function loadApp(page) {
         const pending = [];
         const result = await update({
           get: async ref => ({ exists: () => testDocuments.has(ref), data: () => testDocuments.has(ref) ? structuredClone(testDocuments.get(ref)) : undefined }),
+          delete: ref => pending.push([ref, null]),
           set: (ref, data) => pending.push([ref, structuredClone(data)])
         });
-        pending.forEach(([ref, data]) => testDocuments.set(ref, data));
+        pending.forEach(([ref, data]) => data === null ? testDocuments.delete(ref) : testDocuments.set(ref, data));
         localStorage.setItem('test_documents', JSON.stringify([...testDocuments]));
         return result;
       }
@@ -165,7 +166,9 @@ async function loadApp(page) {
   assert.equal(await page.evaluate(() => App.state.grammarTest.test.grammarStage), 'practice');
   await page.getByRole('button', { name: /답안 최종 제출하기/ }).click();
   await page.waitForSelector('#grammarResultModal:not(.hidden)');
-  assert.match(await page.locator('#grammarResultTitle').innerText(), /80점 · 통과/);
+  assert.match(await page.locator('.grammar-completion-concept').innerText(), /채점 대기 중/);
+  assert.equal(await page.locator('.grammar-completion-verdict').innerText(), 'PASS');
+  assert.equal(await page.locator('.grammar-completion-score').innerText(), '80점');
   assert.equal(await page.evaluate(() => App.isGrammarExamActive()), false);
   assert.ok(await page.locator('#headerNavActions button').count() > 0);
   assert.equal(await page.evaluate(id => App.grammarTestById(id).grammarResults.concept.waitingGrading, rootId), true);
@@ -214,6 +217,11 @@ async function loadApp(page) {
   assert.equal(legacy.completedLabels, 1, 'only the large vocabulary completion label must remain');
   assert.equal(legacy.scoreKept, true);
   assert.equal(legacy.practice, '응시 완료', 'existing practice completion behavior must stay unchanged');
+  await page.evaluate(async () => { App.closeAllModals(); App.state.isAdminLoggedIn = true; App.state.isStudentLoggedIn = false; await App.showAdminDashboard(); });
+  page.once('dialog', dialog => dialog.accept());
+  await page.evaluate(id => App.deleteGrammarTest(id), rootId);
+  assert.equal(await page.evaluate(() => FirebaseStore.tests.length), 0);
+  assert.equal(await page.evaluate(() => testDocuments.size), 0);
   assert.deepEqual(errors, []);
   console.log(`Browser checks passed: ${totalBlanks} blanks, missing-answer confirmation/cancel, failed-submit retry, navigation/refresh guards, no draft saves, 10-answer submit gate, 80-point pass, manual grading, failed-area-only retest, mobile layout.`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => { await browser?.close(); server.close(); });

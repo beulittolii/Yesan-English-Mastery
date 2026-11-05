@@ -25,6 +25,36 @@ Object.assign(AppData, {
     return saved;
   },
 
+  async deleteGrammarTest(id) {
+    if (!App.state.isAdminLoggedIn) throw new Error('선생님만 삭제할 수 있습니다.');
+    if (!this.isFirebaseReady()) throw new Error('클라우드 연결 후 다시 시도해주세요.');
+    const target = this.getTests().find(t => t.id === id && t.type === 'GRAMMAR');
+    if (!target) throw new Error('시험을 찾을 수 없습니다.');
+    const related = this.getTests().filter(t => t.type === 'GRAMMAR' && t.grammarRootId === target.grammarRootId);
+    const root = related.find(t => t.id === target.grammarRootId);
+    if (!root) throw new Error('최초 시험을 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.');
+    const deleting = id === root.id ? related : [target];
+    const { doc, runTransaction } = window.firebaseFns;
+    const updatedRoot = await runTransaction(window.firebaseDB, async transaction => {
+      const snapshots = await Promise.all(related.map(t => transaction.get(doc(window.firebaseDB, 'tests', t.id))));
+      const current = snapshots.filter(s => s.exists()).map(s => s.data());
+      const currentRoot = current.find(t => t.id === root.id);
+      if (!currentRoot || currentRoot.grammarLastSequence !== root.grammarLastSequence) throw new Error('시험 목록이 변경되었습니다. 새로고침 후 다시 시도해주세요.');
+      const remaining = current.filter(t => !deleting.some(d => d.id === t.id));
+      let nextRoot = null;
+      if (id !== root.id) {
+        const latest = GrammarLogic.latest(remaining, root.studentId, root.grammarUnitId);
+        nextRoot = { ...currentRoot, grammarLatest: Object.fromEntries(GrammarLogic.parts.map(p => [p, latest[p]?.id || root.id])) };
+        transaction.set(doc(window.firebaseDB, 'tests', root.id), nextRoot);
+      }
+      deleting.forEach(t => transaction.delete(doc(window.firebaseDB, 'tests', t.id)));
+      return nextRoot;
+    });
+    FirebaseStore.tests = this.getTests().filter(t => !deleting.some(d => d.id === t.id));
+    if (updatedRoot) this.cacheGrammarTests([updatedRoot]);
+    else { setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests); this.refreshCloudScreens(); }
+  },
+
   async assignGrammarTest({ studentId, date, time, endTime, parts, note }) {
     if (!this.isFirebaseReady()) throw new Error('클라우드 연결 후 다시 배정해주세요.');
     if (!App.state.isAdminLoggedIn) throw new Error('선생님만 배정할 수 있습니다.');

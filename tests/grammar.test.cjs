@@ -26,9 +26,10 @@ function fixture() {
       const pending = [];
       const value = await callback({
         get: async ref => ({ exists: () => documents.has(ref), data: () => documents.has(ref) ? JSON.parse(JSON.stringify(documents.get(ref))) : undefined }),
+        delete: ref => pending.push([ref, null]),
         set: (ref, data) => pending.push([ref, JSON.parse(JSON.stringify(data))])
       });
-      pending.forEach(([ref, data]) => documents.set(ref, data));
+      pending.forEach(([ref, data]) => data === null ? documents.delete(ref) : documents.set(ref, data));
       return value;
     }
   };
@@ -145,4 +146,21 @@ test('manual score conversion rounds scores and preserves the 80-point inclusive
     assert.equal(result.score, Math.round(count / result.totalCount * 100));
     assert.equal(result.passed, result.score >= 80);
   }
+});
+
+test('deleting a retest restores the previous result and deleting the first test removes its chain', async () => {
+  const f = fixture();
+  const first = await f.run(`AppData.assignGrammarTest(${assignment})`);
+  f.context.rootId = first.id;
+  await f.run("AppData.updateGrammarTest(rootId, t => { t.grammarResults.concept = { passed: false, score: 70 }; t.grammarStage = 'done'; })");
+  const retest = await f.run(`AppData.assignGrammarTest({ ...${assignment}, parts: ['concept'] })`);
+  f.context.retestId = retest.id;
+  await f.run('AppData.deleteGrammarTest(retestId)');
+  assert.equal(f.run('AppData.getTests().length'), 1);
+  assert.equal(f.run('AppData.getTests()[0].grammarLatest.concept'), first.id);
+  assert.deepEqual(f.plain("GrammarLogic.eligible(AppData.getTests(), 1, 'subjunctive')"), ['concept']);
+  await f.run(`AppData.assignGrammarTest({ ...${assignment}, parts: ['concept'] })`);
+  await f.run('AppData.deleteGrammarTest(rootId)');
+  assert.equal(f.run('AppData.getTests().length'), 0);
+  assert.equal(f.documents.size, 0);
 });

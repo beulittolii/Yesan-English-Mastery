@@ -738,3 +738,10 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-review-correct { background:#ecfdf5; border-color:#10b981; color:#065f46; }
 .grammar-review-wrong { background:#fff1f2; border-color:#fb7185; color:#9f1239; }
 .grammar-review-blank small { display:block; font-size:.7rem; }
+
+.grammar-completion-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.grammar-completion-card { border:1px solid #e2e8f0; border-radius:1rem; padding:2rem .75rem; text-align:center; }
+.grammar-completion-card h3 { font-size:.9rem; font-weight:700; margin-bottom:1.5rem; }
+.grammar-completion-verdict { display:block; font-size:clamp(2rem,8vw,3.5rem); font-weight:900; line-height:1.2; }
+.grammar-completion-concept { display:block; font-size:1.2rem; color:#b45309; margin-top:2rem; }
+.grammar-completion-score { font-size:2rem; font-weight:800; margin-top:1rem; }
