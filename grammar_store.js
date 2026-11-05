@@ -80,7 +80,7 @@ Object.assign(AppData, {
       const sequence = root ? (root.grammarLastSequence || 0) + 1 : 0;
       const test = {
         id, studentId: Number(studentId), type: 'GRAMMAR', title: `가정법 문법 테스트${root ? ' · 재시험' : ''}`,
-        date, time, endTime, scope: parts.map(p => GrammarLogic.label(p)).join(' + '), cutoff: '개념·실전 문제 각각 80점 이상', cutoffScore: 80,
+        date, time, endTime, scope: parts.map(p => GrammarLogic.label(p)).join(' + '), cutoff: '개념·실전 각각 80점 이상', cutoffScore: 80,
         status: 'SCHEDULED', score: '', retestStatus: 'NONE', retestDate: '', teacherNote: note || '',
         grammarUnitId: GRAMMAR_UNIT.id, grammarVersion: root?.grammarVersion || GRAMMAR_UNIT.version,
         grammarContent: GrammarLogic.clone(root?.grammarContent || GRAMMAR_UNIT),

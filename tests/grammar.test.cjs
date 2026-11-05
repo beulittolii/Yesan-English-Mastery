@@ -62,7 +62,8 @@ test('practical has ten five-choice questions and correctly grades 70/80/100', (
     assert.equal(result.score, count * 10);
     assert.equal(result.passed, count >= 8);
   }
-  assert.throws(() => f.run('GrammarLogic.gradePractice(GRAMMAR_UNIT, {})'), /10문제/);
+  assert.equal(f.plain('GrammarLogic.gradePractice(GRAMMAR_UNIT, {})').score, 0);
+  assert.equal(f.plain('GrammarLogic.gradePractice(GRAMMAR_UNIT, {})').answers[0], null);
   assert.throws(() => f.run('GrammarLogic.gradePractice(GRAMMAR_UNIT, Object.fromEntries(GRAMMAR_UNIT.questions.map((q, i) => [i, "1"])))'), /10문제/);
 });
 

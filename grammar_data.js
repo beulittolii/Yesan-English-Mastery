@@ -36,7 +36,7 @@ const GRAMMAR_UNIT = {
 
 const GrammarLogic = {
   parts: ['concept', 'practice'],
-  label(part) { return part === 'concept' ? '개념' : '실전 문제'; },
+  label(part) { return part === 'concept' ? '개념' : '실전'; },
   clone(value) { return JSON.parse(JSON.stringify(value)); },
   blanks(content) {
     const fields = [{ key: 'definition', text: content.definition }];
@@ -66,9 +66,9 @@ const GrammarLogic = {
   },
   gradePractice(content, answers) {
     const questions = content.questions;
-    if (questions.length !== 10 || questions.some((q, i) => !Number.isInteger(answers[i]) || answers[i] < 1 || answers[i] > 5)) throw new Error('10문제에 모두 답한 뒤 제출해주세요.');
+    if (questions.length !== 10 || questions.some((q, i) => answers[i] != null && answers[i] !== '' && (!Number.isInteger(answers[i]) || answers[i] < 1 || answers[i] > 5))) throw new Error('10문제의 답안을 확인해주세요.');
     const correctCount = questions.filter((q, i) => answers[i] === q.answer).length;
-    return { score: correctCount * 10, passed: correctCount >= 8, correctCount, totalCount: 10, cutoffScore: 80, answers: this.clone(answers), completedAt: new Date().toISOString() };
+    return { score: correctCount * 10, passed: correctCount >= 8, correctCount, totalCount: 10, cutoffScore: 80, answers: Object.fromEntries(questions.map((_, i) => [i, answers[i] || null])), completedAt: new Date().toISOString() };
   },
   exactConceptAnswer(value, answer) { return String(value || '').trim() === String(answer).trim(); },
   gradeConcept(content, answers, marks) {

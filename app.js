@@ -1262,7 +1262,7 @@ const App = {
 
           <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
             <div class="text-left sm:text-right">
-              <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.cutoff)}</strong></div>
+              <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.type === 'GRAMMAR' ? '개념·실전 각각 80점 이상' : test.cutoff)}</strong></div>
               <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.type === 'GRAMMAR' ? this.grammarSummary(test) : test.score || '미응시'}</strong></div>
             </div>
             ${test.type === 'PRACTICE' ? (test.practiceResult ? `
@@ -2901,9 +2901,9 @@ const App = {
     document.getElementById(pt.isGrammar ? 'grammarTestContent' : 'practiceTestContent').innerHTML = `
       <div class="space-y-6 max-w-3xl mx-auto">
         <!-- Question Progress Bar -->
-        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+        ${!pt.isGrammar ? `<div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
           <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${Math.round(((index + 1) / total) * 100)}%"></div>
-        </div>
+        </div>` : ''}
 
         <!-- Question Card -->
         <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
@@ -2944,14 +2944,14 @@ const App = {
               >
                 다음 문제 <i class="fa-solid fa-arrow-right"></i>
               </button>
-            ` : (!pt.isGrammar || answeredCount === total) ? `
+            ` : `
               <button
                 onclick="App.submitPracticeTest()"
                 class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-200"
               >
                 <i class="fa-solid fa-check"></i> 답안 최종 제출하기
               </button>
-            ` : '<span class="text-xs text-slate-400">모든 문제에 답하면 제출할 수 있습니다.</span>'}
+            `}
           </div>
         </div>
       </div>
