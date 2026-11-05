@@ -2184,6 +2184,7 @@ const AppData = {
       const testsList = FirebaseStore.tests || [];
 
       testsList.forEach(t => {
+        if (t.type === 'GRAMMAR') return;
         // 본문 암기(TEXT_MEMORIZE)는 절대로 다른 시험으로 변환하지 않고 유지
         if (t.type === 'TEXT_MEMORIZE' || (t.id && String(t.id).startsWith('tm_')) || (t.title && t.title.includes('본문')) || (Array.isArray(t.passageIds) && t.passageIds.length > 0)) {
           t.type = 'TEXT_MEMORIZE';
@@ -2395,7 +2396,7 @@ const AppData = {
 
   getTestsByStudentId(studentId) {
     const tests = this.getTests();
-    const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
+    const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4, 'GRAMMAR': 5 };
     return tests
       .filter(t => Number(t.studentId) === Number(studentId))
       .sort((a, b) => {

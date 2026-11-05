@@ -695,3 +695,46 @@ u, .font-exam u, .passage-text u, .underline {
 }
 
 
+/* 문법 시험: 원문 순서를 유지하는 반응형 개념 시험지와 문제풀이 UI */
+.grammar-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .7rem 1rem; border: 1px solid transparent; border-radius: .8rem; background: #4f46e5; color: white; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.grammar-button:hover { background: #4338ca; }
+.grammar-button:disabled { opacity: .45; cursor: not-allowed; }
+.grammar-button-secondary { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+.grammar-button-secondary:hover { background: #eef2ff; }
+.grammar-notice { padding: 1rem; border-radius: 1rem; border: 1px solid #ddd6fe; background: #f5f3ff; color: #4c1d95; font-size: .8rem; line-height: 1.8; }
+.grammar-field { display: flex; flex-direction: column; gap: .4rem; font-size: .8rem; font-weight: 700; }
+.grammar-field input, .grammar-field select, .grammar-field textarea { padding: .75rem; border: 1px solid #cbd5e1; border-radius: .6rem; background: white; color: #0f172a; width: 100%; }
+.grammar-history { padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #fff; overflow-wrap: anywhere; }
+#testDetailModal.grammar-detail-modal > .modal-content > div:first-child { background: linear-gradient(to right, #0f172a, #581c87); }
+#testDetailModal.grammar-detail-modal #detailModalStudentBadge { background: rgb(168 85 247 / .25); border-color: rgb(192 132 252 / .3); color: #e9d5ff; }
+#testDetailModal.grammar-detail-modal > .modal-content > div:first-child .w-10 { color: #d8b4fe; }
+.grammar-pass { border-color: #a7f3d0; background: #ecfdf5; color: #065f46; }
+.grammar-fail { border-color: #fecdd3; background: #fff1f2; color: #9f1239; }
+.grammar-paper { max-width: 980px; margin: auto; color: #111827; line-height: 2.1; word-break: keep-all; overflow-wrap: anywhere; }
+.grammar-paper h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem; }
+.grammar-paper h2 { font-size: 1.2rem; font-weight: 800; margin: 2rem 0 .5rem; }
+.grammar-paper h3 { font-size: 1rem; font-weight: 800; }
+.grammar-definition { display: flex; gap: 1rem; padding-bottom: 2rem; border-bottom: 1px solid #64748b; }
+.grammar-definition > strong { white-space: nowrap; }
+.grammar-section { padding: 1.5rem 0; border-bottom: 1px solid #64748b; }
+.grammar-section:last-of-type { border: 0; }
+.grammar-muted { color: #64748b; font-size: .9rem; }
+.grammar-example { margin-top: 1rem; }
+.grammar-blank { display: inline-block; max-width: 100%; min-width: 5rem; margin: .2rem .2rem; padding: .1rem .35rem; border: 0; border-bottom: 2px solid #6366f1; border-radius: .3rem .3rem 0 0; background: #eef2ff; color: #312e81; text-align: center; font-family: inherit; font-size: .9rem; vertical-align: baseline; }
+.grammar-blank:focus { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+.grammar-table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .9rem; }
+.grammar-table th, .grammar-table td { border: 1px solid #475569; padding: .6rem; text-align: left; }
+.grammar-table th { min-width: 110px; }
+.grammar-table td:nth-last-child(2) { min-width: 140px; }
+.grammar-number { width: 2.3rem; height: 2.3rem; border: 1px solid #cbd5e1; border-radius: .6rem; background: #fff; font-size: .8rem; font-weight: 700; }
+.grammar-number.grammar-answered { background: #eef2ff; border-color: #a5b4fc; }
+.grammar-number.grammar-current { background: #4f46e5; color: white; border-color: #4f46e5; }
+.grammar-choice { display: flex; align-items: flex-start; gap: .7rem; padding: 1rem; border: 2px solid #e2e8f0; border-radius: .8rem; cursor: pointer; font-size: .9rem; }
+.grammar-choice input { margin-top: .3rem; flex-shrink: 0; }
+.grammar-selected { border-color: #6366f1; background: #eef2ff; color: #312e81; }
+@media (max-width: 640px) { .grammar-definition { flex-direction: column; gap: .5rem; } .grammar-paper { line-height: 2.2; } .grammar-paper h1 { font-size: 2rem; } }
+
+.grammar-review-blank { display:inline-block; vertical-align:middle; min-width:5rem; margin:.2rem; padding:.1rem .4rem; border-bottom:2px solid #94a3b8; background:#f1f5f9; text-align:center; font-size:.9rem; }
+.grammar-review-correct { background:#ecfdf5; border-color:#10b981; color:#065f46; }
+.grammar-review-wrong { background:#fff1f2; border-color:#fb7185; color:#9f1239; }
+.grammar-review-blank small { display:block; font-size:.7rem; }

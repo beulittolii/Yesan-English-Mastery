@@ -28,7 +28,7 @@
   <!-- Font Awesome Icons CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css?v=20261105_01" />
+  <link rel="stylesheet" href="style.css?v=20261106_03" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -872,10 +872,13 @@
           <div class="flex items-center gap-2 overflow-x-auto" id="adminStudentPills">
             <!-- Populated by JS -->
           </div>
+          <div class="flex flex-wrap gap-2">
+          <button onclick="App.openGrammarAssignmentModal()" class="px-4 py-2 rounded-xl bg-violet-600 text-white font-semibold text-xs sm:text-sm hover:bg-violet-700 transition whitespace-nowrap">문법 테스트 추가</button>
           <button onclick="App.openAddTestModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center gap-2 whitespace-nowrap">
             <i class="fa-solid fa-plus"></i>
             <span>새 시험 일정 추가</span>
           </button>
+          </div>
         </div>
 
         <!-- Selected Student Summary Card -->
@@ -1349,6 +1352,14 @@
       <!-- Paper Content -->
       <div id="textMemorizePaperContent" class="space-y-6"><!-- JS --></div>
     </section>
+    <section id="grammarTestView" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-4 flex flex-wrap items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-lock"></i></div>
+        <div><h2 id="grammarTestHeading" class="font-bold"></h2><p class="text-xs text-slate-500 mt-1">최종 답안을 제출할 때까지 시험 화면을 나갈 수 없습니다.</p><p id="grammarSubmissionStatus" class="text-xs text-violet-700 mt-1" role="status" aria-live="polite"></p></div>
+      </div>
+      <div id="grammarPracticeTopInfo" class="hidden glass-card rounded-2xl p-4"></div>
+      <div id="grammarTestContent"></div>
+    </section>
   </main>
 
   <!-- ========================================== -->
@@ -1372,6 +1383,32 @@
   <!-- ========================================== -->
 
   <!-- 1. Test Details Modal (시험 상세 보기 모달) -->
+  <div id="grammarAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="grammarAssignmentTitle" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content max-h-[92vh] overflow-y-auto">
+      <div class="p-5 bg-slate-900 text-white flex justify-between items-center"><h3 id="grammarAssignmentTitle" class="font-bold">문법 테스트 배정</h3><button type="button" onclick="App.hideModal('grammarAssignmentModal')" aria-label="닫기" class="p-2">✕</button></div>
+      <form onsubmit="App.saveGrammarAssignment(event)" class="p-5 space-y-4">
+        <label class="grammar-field">학생<select id="grammarAssignmentStudent" onchange="App.renderGrammarAssignmentParts()" required></select></label>
+        <div id="grammarAssignmentParts" class="grammar-notice"></div>
+        <label class="grammar-field">시험 날짜<input id="grammarAssignmentDate" type="date" min="2026-11-01" required></label>
+        <div class="grid grid-cols-2 gap-3"><label class="grammar-field">시작 시간<input id="grammarAssignmentTime" type="time" required></label><label class="grammar-field">마감 시간<input id="grammarAssignmentEndTime" type="time" required></label></div>
+        <label class="grammar-field">선생님 안내<textarea id="grammarAssignmentNote" rows="3"></textarea></label>
+        <button id="grammarAssignmentSave" type="submit" class="grammar-button w-full">시험 일정 저장</button>
+      </form>
+    </div>
+  </div>
+  <div id="grammarGradingModal" role="dialog" aria-modal="true" aria-labelledby="grammarGradingTitle" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="p-5 bg-slate-900 text-white flex justify-between gap-3"><div><h3 id="grammarGradingTitle" class="font-bold">개념 답안 수동 채점</h3><p id="grammarGradingSummary" class="text-xs mt-2" aria-live="polite"></p></div><button type="button" onclick="App.hideModal('grammarGradingModal')" aria-label="닫기">✕</button></div>
+      <div id="grammarGradingItems" class="p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
+      <div class="p-4 border-t"><button id="grammarGradingSave" type="button" onclick="App.saveGrammarGrading()" class="grammar-button w-full">채점 결과 저장</button></div>
+    </div>
+  </div>
+  <div id="grammarResultModal" role="dialog" aria-modal="true" aria-labelledby="grammarResultTitle" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="p-5 bg-slate-900 text-white flex justify-between gap-3"><h3 id="grammarResultTitle" class="font-bold">문법 테스트 결과</h3><button type="button" onclick="App.hideModal('grammarResultModal')" aria-label="닫기">✕</button></div>
+      <div id="grammarResultBody" class="p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
+    </div>
+  </div>
   <div id="testDetailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
     <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden">
       <!-- Modal Header -->
@@ -1526,6 +1563,7 @@
             <label class="flex items-center justify-center p-2.5 rounded-xl border border-indigo-300 bg-indigo-50 cursor-pointer text-xs font-bold text-indigo-800">
               <input type="radio" name="formTestType" value="TEXT_MEMORIZE" class="mr-1.5" onchange="App.toggleTestFormType()" /> 본문암기
             </label>
+            <button type="button" onclick="App.openGrammarAssignmentModal()" class="p-2.5 rounded-xl border border-violet-300 bg-violet-50 text-xs font-bold text-violet-800">문법 테스트</button>
           </div>
         </div>
 
@@ -4216,6 +4254,7 @@
     getDocs,
     setDoc,
     deleteDoc,
+    runTransaction,
     onSnapshot
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
@@ -4253,6 +4292,7 @@
     getDocs,
     setDoc,
     deleteDoc,
+    runTransaction,
     onSnapshot
   };
 
@@ -4272,8 +4312,11 @@
 <script src="mock_202509_memorize_data.js?v=20261012_07"></script>
 <script src="mock_202510_insert_data.js?v=20261012_01"></script>
 <script src="science_questions.js?v=20261012_07"></script>
-<script src="data.js?v=20261105_01"></script>
-<script src="app.js?v=20261105_03"></script>
+<script src="grammar_data.js?v=20261106_03"></script>
+<script src="data.js?v=20261106_01"></script>
+<script src="grammar_store.js?v=20261106_03"></script>
+<script src="app.js?v=20261106_03"></script>
+<script src="grammar.js?v=20261106_03"></script>
 
 <!-- ========================================== -->
 <!-- YEM ACADEMIC MANAGEMENT PLATFORM JAVASCRIPT -->

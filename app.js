@@ -455,6 +455,7 @@ const App = {
   // 1. 네비게이션 & 뷰 전환 (Navigation & Views)
   // ========================================================
   async checkAndConfirmVocabTestExit() {
+    if (this.blockGrammarExit?.()) return false;
     const vt = this.state.vocabTest;
     if (this.state.view === 'vocabTest' && vt && !vt.isCompleted) {
       const confirmExit = confirm('시험 진행 중에 나가면 0점(불합격) 처리되며 10분 동안 다시 응시할 수 없습니다.\n\n정말 시험을 종료하고 나가시겠습니까?');
@@ -508,6 +509,7 @@ const App = {
   },
 
   async selectStudent(studentId) {
+    if (this.blockGrammarExit?.()) return;
     const normalizedStudentId = Number(studentId);
     if (!this.state.isAdminLoggedIn && !this.state.isStudentLoggedIn) {
       this.toast('로그인한 후 이용해주세요.', 'info');
@@ -566,6 +568,7 @@ const App = {
   },
 
   showVocabTestView() {
+    if (this.blockGrammarExit?.()) return;
     this.state.view = 'vocabTest';
     document.getElementById('landingView').classList.add('hidden');
     document.getElementById('studentDashboardView').classList.add('hidden');
@@ -578,6 +581,7 @@ const App = {
   },
 
   showPracticeTestView() {
+    if (this.blockGrammarExit?.()) return;
     this.clearVocabQuestionTimer();
     this.state.view = 'practiceTest';
     document.getElementById('landingView').classList.add('hidden');
@@ -591,6 +595,7 @@ const App = {
   },
 
   updateHeaderActions() {
+    document.getElementById('grammarTestView')?.classList.toggle('hidden', this.state.view !== 'grammarTest');
     const container = document.getElementById('headerNavActions');
     const mobileToggleBtn = document.getElementById('mobileSidebarToggleBtn');
 
@@ -627,6 +632,11 @@ const App = {
     }
 
     if (!container) return;
+
+    if (this.isGrammarExamActive?.()) {
+      container.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-xs font-bold"><i class="fa-solid fa-lock"></i>문법 시험 응시 중</span>';
+      return;
+    }
 
     if (this.state.isAdminLoggedIn) {
       container.innerHTML = `
@@ -839,14 +849,15 @@ const App = {
     `;
 
     // 2. 통계 위젯 렌더링
-    const totalTests = tests.length;
-    const passedTests = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' || (t.type === 'PRACTICE' && t.practiceResult)).length;
-    const retestNeeded = tests.filter(t => t.type !== 'PRACTICE' && (t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS'))).length;
+    const grammarStats = this.grammarStatistics(tests);
+    const totalTests = tests.filter(t => t.type !== 'GRAMMAR').length + grammarStats.total;
+    const passedTests = tests.filter(t => t.type !== 'GRAMMAR' && (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' || (t.type === 'PRACTICE' && t.practiceResult))).length + grammarStats.passed;
+    const retestNeeded = tests.filter(t => t.type !== 'GRAMMAR' && t.type !== 'PRACTICE' && (t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS'))).length + grammarStats.failed;
     const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
 
     const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
     const upcomingTests = tests
-      .filter(t => t.date >= todayStr && t.status === 'SCHEDULED')
+      .filter(t => t.date >= todayStr && (t.type === 'GRAMMAR' ? t.grammarStage !== 'done' : t.status === 'SCHEDULED'))
       .sort((a, b) => {
         const dateDiff = new Date(a.date) - new Date(b.date);
         if (dateDiff !== 0) return dateDiff;
@@ -905,7 +916,7 @@ const App = {
         </div>
         <div class="mt-1.5">
           <div class="text-lg font-black text-slate-800 leading-tight">${totalTests}회</div>
-          <p class="text-[10px] text-slate-500 mt-0.5">누적 기록</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">${grammarStats.total ? '문법은 영역별 집계' : '누적 기록'}</p>
         </div>
       </div>
     `;
@@ -1037,6 +1048,10 @@ const App = {
 
     let testsHtml = '';
     dayTests.forEach(test => {
+      if (test.type === 'GRAMMAR') {
+        if (test.date === dateStr) testsHtml += `<div onclick="App.openGrammarTestModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold bg-violet-50 text-violet-800 border border-violet-200" title="${this.escapeHtml(this.grammarSummary(test))}"><span class="block truncate">문법 · ${this.escapeHtml(test.grammarContent.title)}</span><span class="block text-[9px] leading-snug">${this.grammarSummary(test)}</span></div>`;
+        return;
+      }
       if (test.type === 'VOCAB') {
         if (test.date === dateStr) {
           const isMockSpecial = Boolean(test.isMockSpecial || (test.title && (test.title.includes('6모') || test.title.includes('9모') || test.title.includes('모의고사'))));
@@ -1133,6 +1148,7 @@ const App = {
 
   // 시험 상태에 따른 스타일/배지 반환
   getTestBadgeStyle(test, isRetestDay = false) {
+    if (test.type === 'GRAMMAR') return this.grammarBadge(test);
     if (isRetestDay) {
       if (test.retestStatus === 'RETEST_PASS') {
         return { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', icon: '', tag: '재시험 통과' };
@@ -1200,11 +1216,11 @@ const App = {
     const filter = this.state.studentListFilter;
 
     if (filter === 'SCHEDULED') {
-      tests = tests.filter(t => t.status === 'SCHEDULED' && (!t.practiceResult || t.type !== 'PRACTICE'));
+      tests = tests.filter(t => t.type === 'GRAMMAR' ? t.grammarStage !== 'done' : t.status === 'SCHEDULED' && (!t.practiceResult || t.type !== 'PRACTICE'));
     } else if (filter === 'PASS') {
-      tests = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' || (t.type === 'PRACTICE' && t.practiceResult));
+      tests = tests.filter(t => t.type === 'GRAMMAR' ? t.grammarParts.some(part => GrammarLogic.partState(t, part) === 'PASS') : t.status === 'PASS' || t.retestStatus === 'RETEST_PASS' || (t.type === 'PRACTICE' && t.practiceResult));
     } else if (filter === 'RETEST') {
-      tests = tests.filter(t => t.type !== 'PRACTICE' && (t.status === 'FAIL' || t.retestStatus === 'RETEST_PENDING'));
+      tests = tests.filter(t => t.type === 'GRAMMAR' ? t.grammarParts.some(part => GrammarLogic.partState(t, part) === 'FAIL') : t.type !== 'PRACTICE' && (t.status === 'FAIL' || t.retestStatus === 'RETEST_PENDING'));
     }
 
     if (tests.length === 0) {
@@ -1247,7 +1263,7 @@ const App = {
           <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
             <div class="text-left sm:text-right">
               <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.cutoff)}</strong></div>
-              <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.score || '미응시'}</strong></div>
+              <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.type === 'GRAMMAR' ? this.grammarSummary(test) : test.score || '미응시'}</strong></div>
             </div>
             ${test.type === 'PRACTICE' ? (test.practiceResult ? `
               <button type="button" onclick="event.stopPropagation(); App.viewPracticeTestResultDetail('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
@@ -1278,6 +1294,8 @@ const App = {
     const allTests = AppData.getTests();
     const test = allTests.find(t => String(t.id) === String(testId) || t.id === testId);
     if (!test) return;
+
+    if (test.type === 'GRAMMAR') { this.openGrammarTestModal(testId); return; }
 
     if (test.type === 'VOCAB') {
       this.openVocabTestScheduleModal(testId);
@@ -1492,19 +1510,6 @@ const App = {
     const isAdmin = Boolean(this.state.isAdminLoggedIn);
     const student = AppData.getStudentById(test.studentId);
     const timeStatus = this.getTestTimeStatus(test);
-    const isPassed = test.status === 'PASS';
-    const isFailed = test.status === 'FAIL';
-    const statusBadge = isPassed
-      ? { class: 'bg-emerald-100 text-emerald-800 border border-emerald-300', label: '완료' }
-      : (isFailed
-          ? null
-          : (timeStatus.status === 'NOT_STARTED'
-              ? { class: 'bg-blue-100 text-blue-800 border border-blue-200', label: timeStatus.label || '시작 전' }
-              : (timeStatus.status === 'EXPIRED'
-                  ? null
-                  : (test.allowLate
-                      ? { class: 'bg-amber-100 text-amber-800 border border-amber-200', label: '지각 응시 허용됨' }
-                      : (test.extendedDate ? { class: 'bg-emerald-100 text-emerald-800', label: '연장 진행 중' } : null)))));
     const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
     const scheduleSummary = isAllDay
       ? `총 ${set.words.length}개 단어${test.extendedDate ? ' · 연장됨' : ''}`
@@ -1541,7 +1546,6 @@ const App = {
             ` : ''}
             <p class="text-xs sm:text-sm font-black text-violet-950">${this.escapeHtml(cleanCardTitle)}</p>
           </div>
-          ${statusBadge && statusBadge.label !== '응시 가능' ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${statusBadge.class}">${statusBadge.label}</span>` : ''}
         </div>
         <p class="text-xs text-slate-600 mt-1 ${!isMockExamTest ? 'pr-28' : ''}">
           시험일: <strong>${test.date}</strong> · ${scheduleSummary}
@@ -2742,12 +2746,13 @@ const App = {
   },
 
   renderPracticeQuestion(index) {
-    const pt = this.state.practiceTest;
+    const pt = this.state.view === 'grammarTest' ? this.state.grammarPractice : this.state.practiceTest;
     if (!pt || !pt.questions || pt.questions.length === 0) return;
 
     if (index < 0) index = 0;
     if (index >= pt.questions.length) index = pt.questions.length - 1;
     pt.currentIndex = index;
+    if (pt.isGrammar) this.state.grammarTest.index = index;
 
     const total = pt.questions.length;
     const q = pt.questions[index];
@@ -2757,7 +2762,7 @@ const App = {
     const choiceLabels = ['①', '②', '③', '④', '⑤'];
     const answeredCount = Object.keys(pt.answers).filter(k => pt.answers[k] != null && (Array.isArray(pt.answers[k]) ? pt.answers[k].length > 0 : String(pt.answers[k]).trim() !== '')).length;
 
-    document.getElementById('practiceTestTopInfo').innerHTML = `
+    document.getElementById(pt.isGrammar ? 'grammarPracticeTopInfo' : 'practiceTestTopInfo').innerHTML = `
       <div class="flex items-center justify-between gap-4 flex-wrap w-full">
         <div>
           <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(pt.title)}</span>
@@ -2893,7 +2898,7 @@ const App = {
     }
 
     // 문제 뷰 본문
-    document.getElementById('practiceTestContent').innerHTML = `
+    document.getElementById(pt.isGrammar ? 'grammarTestContent' : 'practiceTestContent').innerHTML = `
       <div class="space-y-6 max-w-3xl mx-auto">
         <!-- Question Progress Bar -->
         <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
@@ -2939,14 +2944,14 @@ const App = {
               >
                 다음 문제 <i class="fa-solid fa-arrow-right"></i>
               </button>
-            ` : `
+            ` : (!pt.isGrammar || answeredCount === total) ? `
               <button
                 onclick="App.submitPracticeTest()"
                 class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-200"
               >
                 <i class="fa-solid fa-check"></i> 답안 최종 제출하기
               </button>
-            `}
+            ` : '<span class="text-xs text-slate-400">모든 문제에 답하면 제출할 수 있습니다.</span>'}
           </div>
         </div>
       </div>
@@ -2954,6 +2959,7 @@ const App = {
   },
 
   selectPracticeChoice(choiceNum) {
+    if (this.state.view === 'grammarTest') { this.updateGrammarChoice(this.state.grammarPractice.currentIndex, choiceNum); return; }
     const pt = this.state.practiceTest;
     if (!pt) return;
     pt.answers[pt.currentIndex] = choiceNum;
@@ -3073,6 +3079,7 @@ const App = {
   },
 
   async submitPracticeTest() {
+    if (this.state.view === 'grammarTest') return this.submitGrammarPractice();
     const pt = this.state.practiceTest;
     if (!pt) return;
 
@@ -3497,6 +3504,7 @@ const App = {
   // 5. 관리자 대시보드 (Admin Management)
   // ========================================================
   logoutAdmin() {
+    if (this.blockGrammarExit?.()) return;
     this.clearSession();
     this.state.isAdminLoggedIn = false;
     this.toast('관리자 모드를 종료했습니다.', 'info');
@@ -3598,6 +3606,7 @@ const App = {
     }
 
     tbody.innerHTML = tests.map(test => {
+      if (test.type === 'GRAMMAR') return this.renderGrammarAdminRow(test);
       const timeStatus = this.getTestTimeStatus(test);
       const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
       const timeStr = isAllDay ? '하루종일' : (test.time ? (test.endTime ? `${test.time}~${test.endTime}` : `${test.time}`) : (test.endTime ? `~${test.endTime}` : ''));
@@ -3806,14 +3815,15 @@ const App = {
 
     container.innerHTML = students.map(student => {
       const tests = allTests.filter(t => t.studentId === student.id);
-      const total = tests.length;
-      const passed = tests.filter(t => t.status === 'PASS' || t.retestStatus === 'RETEST_PASS').length;
-      const pendingRetests = tests.filter(t => t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS')).length;
+      const grammarStats = this.grammarStatistics(tests);
+      const total = tests.filter(t => t.type !== 'GRAMMAR').length + grammarStats.total;
+      const passed = tests.filter(t => t.type !== 'GRAMMAR' && (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS')).length + grammarStats.passed;
+      const pendingRetests = tests.filter(t => t.type !== 'GRAMMAR' && (t.retestStatus === 'RETEST_PENDING' || (t.status === 'FAIL' && t.retestStatus !== 'RETEST_PASS'))).length + grammarStats.failed;
       const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
 
       const typeOrder = { 'PRACTICE': 1, 'TEXT_MEMORIZE': 2, 'REGULAR': 3, 'VOCAB': 4 };
       const upcoming = tests
-        .filter(t => t.date >= todayStr && t.status === 'SCHEDULED')
+        .filter(t => t.date >= todayStr && (t.type === 'GRAMMAR' ? t.grammarStage !== 'done' : t.status === 'SCHEDULED'))
         .sort((a, b) => {
           const dateDiff = new Date(a.date) - new Date(b.date);
           if (dateDiff !== 0) return dateDiff;
@@ -3841,7 +3851,7 @@ const App = {
             <!-- Stats Mini Grid -->
             <div class="grid grid-cols-3 gap-2 mt-4 text-center">
               <div class="p-2 rounded-xl bg-slate-50">
-                <span class="text-[11px] text-slate-400 block">전체</span>
+                <span class="text-[11px] text-slate-400 block">전체${grammarStats.total ? ' (문법 영역별)' : ''}</span>
                 <span class="text-xs font-bold text-slate-800">${total}회</span>
               </div>
               <div class="p-2 rounded-xl bg-emerald-50">
@@ -4186,6 +4196,7 @@ const App = {
   openEditTestModal(testId) {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
+    if (test?.type === 'GRAMMAR') { this.openGrammarAssignmentModal(testId); return; }
     if (!test) {
       this.toast('수정할 시험을 찾을 수 없습니다.', 'error');
       return;
@@ -5663,6 +5674,7 @@ const App = {
   showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
+    if (modalId === 'testDetailModal') modal.classList.toggle('grammar-detail-modal', Boolean(modal.querySelector('[data-grammar-summary]')));
     this._activeModals.add(modalId);
     modal.classList.remove('hidden');
     this.updateBodyScrollLock();
@@ -5690,7 +5702,7 @@ const App = {
 
   closeAllModals() {
     this._activeModals.clear();
-    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal', 'vocabStudyModal', 'textMemorizeExamModal', 'textMemorizeResultModal', 'textMemorizeScheduleModal', 'extendTestModal'].forEach(id => {
+    ['testDetailModal', 'adminTestFormModal', 'vocabSetModal', 'vocabStudyModal', 'textMemorizeExamModal', 'textMemorizeResultModal', 'textMemorizeScheduleModal', 'extendTestModal', 'grammarAssignmentModal', 'grammarGradingModal', 'grammarResultModal'].forEach(id => {
       const modal = document.getElementById(id);
       if (modal) modal.classList.add('hidden');
     });
@@ -5746,6 +5758,7 @@ const App = {
 
   getTestDDayBadge(test) {
     if (!test || !test.date) return { text: '-', class: 'bg-slate-100 text-slate-600' };
+    if (test.type === 'GRAMMAR' && test.grammarStartedAt) return { text: test.grammarStage === 'done' ? '응시 완료' : '응시 중', class: 'bg-violet-100 text-violet-800' };
 
     const target = new Date(test.date + 'T00:00:00');
     const today = new Date();
@@ -6796,9 +6809,6 @@ const App = {
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-emerald-950 truncate">${label}</span>
-              <span class="text-[10px] font-bold text-emerald-700 bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs whitespace-nowrap flex-shrink-0">
-                통과 완료
-              </span>
             </div>
             <div class="text-[11px] text-emerald-800 font-semibold flex items-center justify-between gap-1 min-w-0">
               <span class="truncate">취득 점수</span>

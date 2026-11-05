@@ -1,0 +1,219 @@
+// Run with NODE_PATH pointing to a Playwright installation. All cloud writes are
+// replaced by an in-memory transaction store; no production Firebase is loaded.
+const fs = require('node:fs');
+const path = require('node:path');
+const http = require('node:http');
+const assert = require('node:assert/strict');
+const { chromium } = require('playwright');
+const root = path.resolve(__dirname, '..');
+const errors = [];
+let browser;
+const server = http.createServer((req, res) => {
+  const pathname = new URL(req.url, 'http://localhost').pathname;
+  if (pathname === '/') {
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.end(html);
+  } else if (pathname === '/style.css') {
+    res.setHeader('Content-Type', 'text/css');
+    res.end(fs.readFileSync(path.join(root, 'style.css')));
+  } else { res.statusCode = 404; res.end(); }
+});
+
+async function loadApp(page) {
+  for (const file of ['grammar_data.js', 'data.js', 'grammar_store.js', 'app.js', 'grammar.js']) await page.addScriptTag({ content: fs.readFileSync(path.join(root, file), 'utf8') });
+  await page.evaluate(() => {
+    document.getElementById('initialLoadingSkeleton')?.remove();
+    window.testDocuments = new Map(JSON.parse(localStorage.getItem('test_documents') || '[]'));
+    window.failNextTransaction = false;
+    window.transactionCount = 0;
+    window.firebaseDB = {};
+    window.firebaseFns = {
+      doc: (_, collection, id) => `${collection}/${id}`,
+      runTransaction: async (_, update) => {
+        window.transactionCount++;
+        if (window.holdNextTransaction) {
+          window.holdNextTransaction = false;
+          await new Promise(resolve => { window.releaseTestTransaction = resolve; });
+        }
+        if (window.failNextTransaction) { window.failNextTransaction = false; throw new Error('테스트 저장 실패'); }
+        const pending = [];
+        const result = await update({
+          get: async ref => ({ exists: () => testDocuments.has(ref), data: () => testDocuments.has(ref) ? structuredClone(testDocuments.get(ref)) : undefined }),
+          set: (ref, data) => pending.push([ref, structuredClone(data)])
+        });
+        pending.forEach(([ref, data]) => testDocuments.set(ref, data));
+        localStorage.setItem('test_documents', JSON.stringify([...testDocuments]));
+        return result;
+      }
+    };
+    FirebaseStore.students = [{ id: 501, name: '문법 테스트 학생', target: '가정법 이해' }];
+    FirebaseStore.tests = [...testDocuments.values()];
+    App.state.isAdminLoggedIn = true;
+    App.state.isStudentLoggedIn = false;
+    App.state.adminSelectedStudentId = 501;
+    App.state.selectedStudentId = 501;
+    App.bindEvents();
+  });
+}
+
+(async () => {
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 950 } });
+  page.on('pageerror', error => errors.push(error.message));
+  // Firebase and every external script except the styling CDN are blocked.
+  await page.route('**/*', async route => {
+    const url = route.request().url();
+    if (url.includes('firebase') || url.includes('firestore') || url.includes('googleapis.com/google.firestore')) return route.abort();
+    if (!url.startsWith('http://127.0.0.1:')) {
+      try { return await route.fulfill({ response: await route.fetch({ timeout: 8000 }) }); } catch (_) { return route.abort(); }
+    }
+    return route.continue();
+  });
+  await page.goto(`http://127.0.0.1:${server.address().port}`, { waitUntil: 'domcontentloaded' });
+  await page.addStyleTag({ content: '.hidden { display:none!important }' });
+  try { await page.addScriptTag({ url: 'https://cdn.tailwindcss.com' }); } catch (_) { /* Tests still work offline. */ }
+  await loadApp(page);
+  await page.evaluate(() => App.showAdminDashboard());
+  await page.getByRole('button', { name: '문법 테스트 추가', exact: true }).click();
+  assert.equal(await page.locator('[name="grammarPart"]:checked').count(), 2);
+  assert.equal(await page.locator('[name="grammarPart"]:disabled').count(), 2);
+  await page.locator('#grammarAssignmentSave').click();
+  await page.waitForFunction(() => FirebaseStore.tests.length === 1);
+  const rootId = await page.evaluate(() => FirebaseStore.tests[0].id);
+  await page.waitForFunction(() => document.getElementById('grammarAssignmentModal').classList.contains('hidden'));
+  await page.evaluate(async id => {
+    App.state.isAdminLoggedIn = false; App.state.isStudentLoggedIn = true;
+    await App.selectStudent(501); App.openTestDetailModal(id);
+  }, rootId);
+  assert.equal(await page.locator('#testDetailModal').evaluate(el => el.classList.contains('grammar-detail-modal')), true);
+  assert.equal(await page.locator('#detailModalBody [data-grammar-summary]').count(), 1);
+  assert.equal(await page.locator('#detailModalBody > .grid.grid-cols-2').count(), 1);
+  await page.screenshot({ path: '/tmp/yem-grammar-detail-desktop.png', fullPage: true });
+  await page.evaluate(() => { window.failNextTransaction = true; });
+  await page.getByRole('button', { name: '테스트 응시', exact: true }).click();
+  await page.waitForFunction(() => !App._grammarStarting);
+  assert.equal(await page.evaluate(() => App.isGrammarExamActive()), false, 'a failed start must release navigation');
+  assert.equal(await page.locator('.grammar-blank').count(), 0);
+  await page.evaluate(() => { window.holdNextTransaction = true; });
+  await page.getByRole('button', { name: '테스트 응시', exact: true }).click();
+  await page.waitForFunction(() => typeof window.releaseTestTransaction === 'function');
+  assert.equal(await page.evaluate(() => App.isGrammarExamActive()), true, 'the exam must lock immediately, even while starting');
+  await page.evaluate(() => App.logoutStudent());
+  assert.equal(await page.evaluate(() => App.state.isStudentLoggedIn), true);
+  await page.evaluate(() => window.releaseTestTransaction());
+  await page.waitForSelector('.grammar-blank');
+  assert.equal(await page.getByRole('button', { name: '학습공간으로 돌아가기', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: '저장 재시도', exact: true }).count(), 0);
+  assert.equal(await page.locator('#headerNavActions button').count(), 0);
+  const afterStartTransactions = await page.evaluate(() => window.transactionCount);
+  const totalBlanks = await page.locator('.grammar-blank').count();
+  await page.locator('.grammar-blank').nth(0).fill('실제 사실');
+  await page.locator('.grammar-blank').nth(1).fill('검토할 답안');
+  await page.waitForTimeout(850);
+  assert.equal(await page.evaluate(() => window.transactionCount), afterStartTransactions, 'typing must not autosave');
+  assert.equal(await page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('yem_grammar_draft_')).length), 0);
+  await page.locator('header [onclick="App.handleLogoClick()"]', { hasText: 'YEM' }).click();
+  await page.evaluate(async () => { await App.selectStudent(999); await App.showLanding(); await App.logoutStudent(); await App.exitGrammarTest(); App.showPracticeTestView(); });
+  assert.equal(await page.evaluate(() => App.state.view), 'grammarTest');
+  assert.equal(await page.evaluate(() => App.state.selectedStudentId), 501);
+  assert.equal(await page.evaluate(() => App.state.isStudentLoggedIn), true);
+  await page.evaluate(() => { window.backWasBlocked = false; window.addEventListener('popstate', () => { window.backWasBlocked = true; }, { once: true }); history.back(); });
+  await page.waitForFunction(() => window.backWasBlocked);
+  assert.equal(await page.evaluate(() => history.state.grammarExamGuard === App._grammarHistoryGuard), true);
+  assert.equal(await page.locator('.grammar-blank').nth(0).inputValue(), '실제 사실');
+  let unloadWarning = false;
+  page.once('dialog', async dialog => { unloadWarning = dialog.type() === 'beforeunload'; await dialog.dismiss(); });
+  await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+  assert.equal(unloadWarning, true);
+  assert.equal(await page.locator('.grammar-blank').nth(0).inputValue(), '실제 사실');
+  let message = '';
+  page.once('dialog', async dialog => { message = dialog.message(); await dialog.dismiss(); });
+  await page.getByRole('button', { name: '실전 문제로 넘어가기', exact: true }).click();
+  assert.ok(message.includes(`${totalBlanks - 2}개`));
+  assert.equal(await page.locator('.grammar-blank').count(), totalBlanks);
+  assert.equal(await page.locator('.grammar-blank').nth(0).inputValue(), '실제 사실');
+  await page.evaluate(() => { window.failNextTransaction = true; });
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '실전 문제로 넘어가기', exact: true }).click();
+  await page.waitForFunction(() => document.getElementById('grammarSubmissionStatus').textContent.includes('제출 실패'));
+  assert.equal(await page.locator('.grammar-blank').nth(0).inputValue(), '실제 사실');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '실전 문제로 넘어가기', exact: true }).click();
+  await page.waitForFunction(() => App.state.grammarTest.test.grammarStage === 'practice');
+  assert.equal(await page.locator('.grammar-blank').count(), 0);
+  assert.equal(await page.getByRole('button', { name: '제출', exact: true }).count(), 0);
+  assert.ok(await page.locator('#grammarPracticeTopInfo').innerText().then(s => s.includes('실전 문제')));
+  assert.equal(await page.evaluate(() => App.isGrammarExamActive()), true);
+  await page.evaluate(() => App.exitGrammarTest());
+  assert.equal(await page.evaluate(() => App.state.grammarTest.test.grammarStage), 'practice');
+  assert.equal(await page.evaluate(id => Boolean(App.grammarTestById(id).grammarDraft), rootId), false);
+  const answers = await page.evaluate(() => App.state.grammarTest.test.grammarContent.questions.map(q => q.answer));
+  for (let i = 0; i < 10; i++) {
+    await page.evaluate(index => App.renderGrammarPractice(index), i);
+    await page.locator(`#grammarTestContent button[onclick="App.selectPracticeChoice(${i < 8 ? answers[i] : answers[i] % 5 + 1})"]`).click();
+    if (i === 8) assert.equal(await page.getByRole('button', { name: /답안 최종 제출하기/ }).count(), 0);
+  }
+  assert.equal(await page.getByRole('button', { name: /답안 최종 제출하기/ }).count(), 1);
+  await page.evaluate(() => document.getElementById('toastContainer').replaceChildren());
+  await page.screenshot({ path: '/tmp/yem-grammar-practice-desktop.png', fullPage: true });
+  await page.evaluate(() => { window.failNextTransaction = true; });
+  await page.getByRole('button', { name: /답안 최종 제출하기/ }).click();
+  await page.waitForFunction(() => document.getElementById('grammarSubmissionStatus').textContent.includes('제출 실패'));
+  assert.equal(await page.evaluate(() => App.isGrammarExamActive()), true, 'a failed final submission must retain the lock');
+  assert.equal(await page.evaluate(() => App.state.grammarTest.test.grammarStage), 'practice');
+  await page.getByRole('button', { name: /답안 최종 제출하기/ }).click();
+  await page.waitForSelector('#grammarResultModal:not(.hidden)');
+  assert.match(await page.locator('#grammarResultTitle').innerText(), /80점 · 통과/);
+  assert.equal(await page.evaluate(() => App.isGrammarExamActive()), false);
+  assert.ok(await page.locator('#headerNavActions button').count() > 0);
+  assert.equal(await page.evaluate(id => App.grammarTestById(id).grammarResults.concept.waitingGrading, rootId), true);
+  await page.evaluate(id => { App.closeAllModals(); App.openGrammarResult(id, 'concept'); }, rootId);
+  assert.equal(await page.locator('#grammarResultBody .grammar-paper').count(), 1);
+  assert.equal(await page.locator('#grammarResultBody .grammar-review-blank').count(), totalBlanks);
+  assert.equal(await page.locator('#grammarResultBody .grammar-table').count(), 1);
+  await page.evaluate(id => {
+    App.closeAllModals(); App.state.isAdminLoggedIn = true; App.state.isStudentLoggedIn = false;
+    App.openGrammarGrading(id);
+  }, rootId);
+  assert.equal(await page.locator('#grammarGradingSave').isDisabled(), true);
+  await page.locator('#grammarGradingItems input[type="radio"]').first().check();
+  assert.equal(await page.locator('#grammarGradingSave').isDisabled(), false);
+  await page.locator('#grammarGradingSave').click();
+  await page.waitForFunction(id => App.grammarTestById(id).grammarResults.concept.waitingGrading === false, rootId);
+  await page.evaluate(() => App.openGrammarAssignmentModal());
+  assert.equal(await page.locator('[name="grammarPart"][value="concept"]').isEnabled(), true);
+  assert.equal(await page.locator('[name="grammarPart"][value="practice"]').isEnabled(), false);
+  await page.locator('#grammarAssignmentSave').click();
+  await page.waitForFunction(() => FirebaseStore.tests.length === 2);
+  const retestId = await page.evaluate(() => FirebaseStore.tests.find(t => t.grammarSequence === 1).id);
+  await page.evaluate(async id => {
+    App.closeAllModals(); App.state.isAdminLoggedIn = false; App.state.isStudentLoggedIn = true;
+    await App.startGrammarTest(id);
+  }, retestId);
+  assert.equal(await page.getByRole('button', { name: '실전 문제로 넘어가기', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: '제출', exact: true }).count(), 1);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.getElementById('toastContainer').replaceChildren());
+  await page.screenshot({ path: '/tmp/yem-grammar-concept-mobile.png', fullPage: true });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  assert.equal(overflow, false, 'mobile page must not overflow horizontally');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '제출', exact: true }).click();
+  await page.waitForFunction(id => App.grammarTestById(id).grammarStage === 'done', retestId);
+  assert.equal(await page.evaluate(id => App.grammarTestById(id).grammarResults.concept.waitingGrading, retestId), true);
+  assert.equal(await page.evaluate(id => Boolean(App.grammarTestById(id).grammarResults.practice), retestId), false);
+  const legacy = await page.evaluate(() => {
+    const getResult = AppData.getVocabTestResult;
+    AppData.getVocabTestResult = () => ({ passed: true, score: 90, cutoffScore: 80 });
+    const vocabHtml = App.renderVocabTestButton({ id: 'fixture_vocab', words: [] }, 501, 2, '객관식', '');
+    AppData.getVocabTestResult = getResult;
+    return { completedLabels: (vocabHtml.match(/통과 완료/g) || []).length, scoreKept: vocabHtml.includes('90점'), practice: App.getTestBadgeStyle({ type: 'PRACTICE', practiceResult: { score: 70 } }).tag };
+  });
+  assert.equal(legacy.completedLabels, 1, 'only the large vocabulary completion label must remain');
+  assert.equal(legacy.scoreKept, true);
+  assert.equal(legacy.practice, '응시 완료', 'existing practice completion behavior must stay unchanged');
+  assert.deepEqual(errors, []);
+  console.log(`Browser checks passed: ${totalBlanks} blanks, missing-answer confirmation/cancel, failed-submit retry, navigation/refresh guards, no draft saves, 10-answer submit gate, 80-point pass, manual grading, failed-area-only retest, mobile layout.`);
+})().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => { await browser?.close(); server.close(); });
