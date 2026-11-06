@@ -22,9 +22,9 @@ Object.assign(AppData, {
         }
         for (const [id, group] of weeks) {
           if (tests.some(t => t.id === id && !WeeklyReviewLogic.mutable(t))) continue;
-          const proposal = WeeklyReviewLogic.prepare({ tests, results: this.getVocabTestResults(), sets: this.getVocabSets(), ...group });
-          if (!proposal) continue;
           const existing = tests.find(t => t.id === id);
+          const proposal = WeeklyReviewLogic.prepare({ tests, results: this.getVocabTestResults(), sets: this.getVocabSets(), ...group, excludedWeekdays: existing?.excludedWeekdays || [] });
+          if (!proposal) continue;
           if (existing && WeeklyReviewLogic.samePreparation(existing, proposal)) continue;
           await this.createWeeklyReview(group);
         }
@@ -35,10 +35,19 @@ Object.assign(AppData, {
       }
     }, 250);
   },
-  async createWeeklyReview({ studentId, monday }) {
+  async configureWeeklyReviewDays(id, excludedWeekdays) {
+    if (!App.state.isAdminLoggedIn) throw new Error('선생님만 제외 요일을 변경할 수 있습니다.');
+    const test = this.getTests().find(t => t.id === id && t.type === 'VOCAB_REVIEW');
+    if (!test) throw new Error('복습 시험을 찾을 수 없습니다.');
+    return this.createWeeklyReview({ studentId: test.studentId, monday: test.weekStart, reviewId: id, excludedWeekdays: WeeklyReviewLogic.normalizeExcludedWeekdays(excludedWeekdays) });
+  },
+  async createWeeklyReview({ studentId, monday, reviewId, excludedWeekdays }) {
     if (!this.isFirebaseReady()) throw new Error('클라우드 연결이 필요합니다.');
     const { doc, runTransaction } = window.firebaseFns;
-    const id = WeeklyReviewLogic.id(studentId, monday);
+    const configuring = excludedWeekdays !== undefined;
+    if (configuring && !App.state.isAdminLoggedIn) throw new Error('선생님만 제외 요일을 변경할 수 있습니다.');
+    if (configuring) excludedWeekdays = WeeklyReviewLogic.normalizeExcludedWeekdays(excludedWeekdays);
+    const id = reviewId || WeeklyReviewLogic.id(studentId, monday);
     const sourceTests = this.getTests().filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && WeeklyReviewLogic.monday(t.date) === monday);
     const sourceResults = this.getVocabTestResults().filter(r => sourceTests.some(t => t.id === r.testId) && Number(r.studentId) === Number(studentId));
     const availableSets = this.getVocabSets();
@@ -51,7 +60,12 @@ Object.assign(AppData, {
     const saved = await runTransaction(window.firebaseDB, async tx => {
       const ref = doc(window.firebaseDB, 'tests', id);
       const existing = await tx.get(ref);
-      if (existing.exists() && !WeeklyReviewLogic.mutable(existing.data())) return existing.data();
+      const current = existing.exists() ? existing.data() : null;
+      if (configuring) {
+        if (!current || current.type !== 'VOCAB_REVIEW' || Number(current.studentId) !== Number(studentId) || current.weekStart !== monday) throw new Error('복습 시험 정보를 확인해주세요.');
+        if (current.weeklyReviewResult?.rounds?.length) throw new Error('이미 제출한 복습은 응시 기록 보존을 위해 제외 요일을 변경할 수 없습니다.');
+        if (JSON.stringify(current.excludedWeekdays || []) === JSON.stringify(excludedWeekdays)) return current;
+      } else if (current && !WeeklyReviewLogic.mutable(current)) return current;
       // 서버의 최종 채점/통과 상태를 다시 읽으며 변경 충돌 시 Firestore가 재시도한다.
       const tests = [], results = [], liveSets = [];
       for (const test of sourceTests) {
@@ -67,8 +81,13 @@ Object.assign(AppData, {
         const snapshot = await tx.get(doc(window.firebaseDB, 'vocabSets', set.id));
         liveSets.push(snapshot.exists() ? { ...snapshot.data(), id: set.id } : set);
       }
-      const test = WeeklyReviewLogic.prepare({ tests, results, sets: liveSets, studentId, monday });
-      if (!test) return null;
+      const test = WeeklyReviewLogic.prepare({ tests, results, sets: liveSets, studentId, monday, excludedWeekdays: configuring ? excludedWeekdays : current?.excludedWeekdays || [] });
+      if (!test) {
+        if (configuring) throw new Error('원본 단어 일정이 없는 체험용 복습은 제외 요일을 변경할 수 없습니다.');
+        return null;
+      }
+      test.id = id;
+      test.reviewRevision = (current?.reviewRevision || 1) + (configuring ? 1 : 0);
       if (existing.exists()) {
         if (WeeklyReviewLogic.samePreparation(existing.data(), test)) return existing.data();
         test.createdAt = existing.data().createdAt || test.createdAt;
@@ -80,7 +99,7 @@ Object.assign(AppData, {
     if (saved) this.cacheWeeklyReview(saved);
     return saved;
   },
-  async submitWeeklyReviewRound(id, roundNumber, answers) {
+  async submitWeeklyReviewRound(id, roundNumber, answers, revision = 1) {
     if (!this.isFirebaseReady()) throw new Error('연결을 확인한 뒤 다시 제출해주세요.');
     const { doc, runTransaction } = window.firebaseFns;
     const saved = await runTransaction(window.firebaseDB, async tx => {
@@ -88,6 +107,7 @@ Object.assign(AppData, {
       const testSnapshot = await tx.get(testRef);
       if (!testSnapshot.exists()) throw new Error('복습 시험을 찾을 수 없습니다.');
       const test = testSnapshot.data(), previous = test.weeklyReviewResult || null;
+      if ((test.reviewRevision || 1) !== revision) throw new Error('선생님이 복습 범위를 변경했습니다. 복습을 다시 열어주세요.');
       if (test.type !== 'VOCAB_REVIEW' || !WeeklyReviewLogic.available(test) || test.status === 'REVIEW_DATA_NEEDED') throw new Error('아직 응시할 수 없습니다.');
       if (!App.state.isAdminLoggedIn && Number(App.state.selectedStudentId) !== Number(test.studentId)) throw new Error('본인의 복습만 제출할 수 있습니다.');
       if ((previous?.rounds.length || 0) >= roundNumber) return { test, result: previous }; // 재전송은 기존 결과를 반환

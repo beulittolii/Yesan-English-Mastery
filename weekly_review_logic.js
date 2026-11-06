@@ -6,12 +6,16 @@ const WeeklyReviewLogic = {
   dateOffset(date, offset) { return new Date(Date.parse(`${date}T00:00:00Z`) + offset * 86400000).toISOString().slice(0, 10); },
   monday(date) { const day = new Date(`${date}T00:00:00Z`).getUTCDay(); return this.dateOffset(date, -((day + 6) % 7)); },
   id(studentId, monday) { return `weekly_review_${Number(studentId)}_${monday}`; },
-  available(test, now = new Date()) { return !['LOCKED', 'NO_ERRORS'].includes(test.reviewStage) && test.status !== 'REVIEW_DATA_NEEDED' && Boolean(test.questions?.length) && now.getTime() >= Date.parse(`${test.date}T00:00:00+09:00`); },
+  available(test, now = new Date()) { return !['LOCKED', 'NO_ERRORS', 'EXCLUDED'].includes(test.reviewStage) && test.status !== 'REVIEW_DATA_NEEDED' && Boolean(test.questions?.length) && now.getTime() >= Date.parse(`${test.date}T00:00:00+09:00`); },
   mutable(test) { return test?.reviewStage === 'LOCKED' || test?.status === 'REVIEW_DATA_NEEDED'; },
-  samePreparation(a, b) { return JSON.stringify([a.reviewStage, a.status, a.sourceTestIds, a.completedDays, a.assignedDays, a.unresolvedCount, a.weekdayCompletion]) === JSON.stringify([b.reviewStage, b.status, b.sourceTestIds, b.completedDays, b.assignedDays, b.unresolvedCount, b.weekdayCompletion]); },
+  samePreparation(a, b) { return JSON.stringify([a.reviewStage, a.status, a.sourceTestIds, a.completedDays, a.assignedDays, a.unresolvedCount, a.weekdayCompletion, a.excludedWeekdays, a.requiredDays]) === JSON.stringify([b.reviewStage, b.status, b.sourceTestIds, b.completedDays, b.assignedDays, b.unresolvedCount, b.weekdayCompletion, b.excludedWeekdays, b.requiredDays]); },
   shuffle(values) { const shuffled = [...values]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } return shuffled; },
-  eligible(tests, results, studentId, monday) {
-    const weekdays = Array.from({ length: 5 }, (_, i) => this.dateOffset(monday, i));
+  normalizeExcludedWeekdays(days = []) {
+    if (!Array.isArray(days) || days.some(day => !Number.isInteger(day) || day < 0 || day > 4)) throw new Error('제외할 요일을 확인해주세요.');
+    return [...new Set(days)].sort((a,b) => a-b);
+  },
+  eligible(tests, results, studentId, monday, excludedWeekdays = []) {
+    const weekdays = Array.from({ length: 5 }, (_, i) => i).filter(i => !excludedWeekdays.includes(i)).map(i => this.dateOffset(monday, i));
     const sources = tests.filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && weekdays.includes(t.date));
     if (!weekdays.every(date => sources.some(t => t.date === date))) return null;
     if (!sources.every(t => (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS') && !results.some(r => r.testId === t.id && Number(r.direction) === 4 && (!r.passed || !r.gradedByAdmin)))) return null;
@@ -24,25 +28,28 @@ const WeeklyReviewLogic = {
       return daily.length > 0 && daily.every(t => (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS') && !results.some(r => r.testId === t.id && Number(r.direction) === 4 && (!r.passed || !r.gradedByAdmin)));
     });
   },
-  prepare({ tests, results, sets, studentId, monday }) {
+  prepare({ tests, results, sets, studentId, monday, excludedWeekdays = [] }) {
+    excludedWeekdays = this.normalizeExcludedWeekdays(excludedWeekdays);
+    const requiredDays = 5 - excludedWeekdays.length;
     const scheduled = tests.filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && this.monday(t.date) === monday);
     if (!scheduled.length) return null;
     const weekdays = Array.from({ length: 5 }, (_, i) => this.dateOffset(monday, i));
-    const assignedDays = weekdays.filter(date => scheduled.some(t => t.date === date)).length;
+    const assignedDays = weekdays.filter((date, i) => !excludedWeekdays.includes(i) && scheduled.some(t => t.date === date)).length;
     const weekdayCompletion = this.weekdayCompletion(tests, results, studentId, monday);
-    const completedDays = weekdayCompletion.filter(Boolean).length;
+    const completedDays = weekdayCompletion.filter((complete, i) => complete && !excludedWeekdays.includes(i)).length;
     const placeholder = {
       id: this.id(studentId, monday), type: 'VOCAB_REVIEW', studentId: Number(studentId), title: '주간 복습',
       date: this.dateOffset(monday, 5), time: '00:00', endTime: '23:59', allowLate: true,
       status: 'SCHEDULED', reviewStage: 'LOCKED', weekStart: monday, weekEnd: this.dateOffset(monday, 4),
       scope: `${monday} ~ ${this.dateOffset(monday, 4)}`, cutoff: '모든 오답 해결', questions: [],
-      sourceTestIds: scheduled.map(t => t.id).sort(), completedDays, assignedDays, weekdayCompletion, unresolvedCount: 0,
+      sourceTestIds: scheduled.map(t => t.id).sort(), completedDays, assignedDays, weekdayCompletion, excludedWeekdays, requiredDays, unresolvedCount: 0,
       reviewVersion: 1, createdAt: new Date().toISOString()
     };
-    if (completedDays < 5) return placeholder;
-    const generated = this.build({ tests, results, sets, studentId, monday });
+    if (!requiredDays) return { ...placeholder, status: 'PASS', reviewStage: 'EXCLUDED' };
+    if (completedDays < requiredDays) return placeholder;
+    const generated = this.build({ tests, results, sets, studentId, monday, excludedWeekdays });
     if (!generated) return { ...placeholder, status: 'PASS', reviewStage: 'NO_ERRORS' };
-    return { ...generated, sourceTestIds: [...generated.sourceTestIds].sort(), completedDays, assignedDays, weekdayCompletion, reviewStage: generated.status === 'REVIEW_DATA_NEEDED' ? 'DATA_NEEDED' : 'READY' };
+    return { ...generated, sourceTestIds: [...generated.sourceTestIds].sort(), completedDays, assignedDays, weekdayCompletion, excludedWeekdays, requiredDays, reviewStage: generated.status === 'REVIEW_DATA_NEEDED' ? 'DATA_NEEDED' : 'READY' };
   },
   // 동일 응시를 관리자 채점으로 여러 번 저장했으면 최종 스냅샷 한 번만 사용한다.
   attempts(result) {
@@ -63,8 +70,8 @@ const WeeklyReviewLogic = {
     const unique = [...new Map(found.map(w => [`${this.norm(w.en)}\u0000${this.norm(w.ko)}`, w])).values()];
     return unique.length === 1 ? unique[0] : null;
   },
-  build({ tests, results, sets, studentId, monday }) {
-    const sources = this.eligible(tests, results, studentId, monday);
+  build({ tests, results, sets, studentId, monday, excludedWeekdays = [] }) {
+    const sources = this.eligible(tests, results, studentId, monday, excludedWeekdays);
     if (!sources) return null;
     const candidates = new Map(), allWords = new Map(sets.flatMap(s => (s.words || []).filter(w => this.norm(w.en) && this.norm(w.ko)).map(w => [this.key(w), w])));
     let wrongEvents = 0, unresolved = 0;

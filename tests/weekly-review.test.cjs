@@ -185,3 +185,45 @@ test('weekday checks identify the exact completed days and refresh when days cha
   assert.deepEqual(f.plain('after.weekdayCompletion'),[false,true,true,false,false]);assert.equal(f.run('after.completedDays'),2);
   assert.equal(f.run('WeeklyReviewLogic.samePreparation(before,after)'),false);
 });
+test('excluded days need no assignment or pass and are omitted from both scope and required day count', () => {
+  const f=fixture();f.run("tests.splice(3);const p=WeeklyReviewLogic.prepare({tests,results,sets,studentId:1,monday:'2026-11-02',excludedWeekdays:[3,4]})");
+  assert.equal(f.run('p.reviewStage'),'READY');assert.equal(f.run('p.requiredDays'),3);assert.equal(f.run('p.completedDays'),3);
+  assert.deepEqual(f.plain('p.sourceTestIds'),['source0','source1','source2']);
+  f.run("results.push({...results[0],id:'wed',testId:'source2',questionDetails:[detail(44,false)]});const withoutWed=WeeklyReviewLogic.prepare({tests,results,sets,studentId:1,monday:'2026-11-02',excludedWeekdays:[2,3,4]})");
+  assert.equal(f.run("withoutWed.questions.some(q=>q.word.en==='word44')"),false);
+  assert.equal(f.run("withoutWed.questions.every(q=>q.sources.every(s=>s.testId!=='source2'))"),true);
+});
+test('excluding all weekdays removes the review requirement without producing an empty exam', () => {
+  const f=fixture();f.run("tests.forEach(t=>t.status='SCHEDULED');const p=WeeklyReviewLogic.prepare({tests,results,sets,studentId:1,monday:'2026-11-02',excludedWeekdays:[0,1,2,3,4]})");
+  assert.equal(f.run('p.requiredDays'),0);assert.equal(f.run('p.completedDays'),0);assert.equal(f.run('p.reviewStage'),'EXCLUDED');assert.equal(f.run('p.status'),'PASS');assert.equal(f.run('p.questions.length'),0);
+  assert.equal(f.run("WeeklyReviewLogic.available(p,new Date('2026-11-08T00:00:00Z'))"),false);
+});
+test('teacher can exclude a pending day to unlock, restore it to relock, and automatic sync keeps the saved exclusions', async () => {
+  const f=fixture();f.run("tests[4].status='SCHEDULED'");f.persist();
+  const review=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");f.run(`const id='${review.id}'`);
+  const ready=await f.run('AppData.configureWeeklyReviewDays(id,[4])');assert.equal(ready.reviewStage,'READY');assert.equal(ready.requiredDays,4);assert.equal(ready.completedDays,4);assert.deepEqual(JSON.parse(JSON.stringify(ready.excludedWeekdays)),[4]);
+  assert.equal(ready.reviewRevision,2);
+  const locked=await f.run('AppData.configureWeeklyReviewDays(id,[])');assert.equal(locked.reviewStage,'LOCKED');assert.equal(locked.requiredDays,5);assert.equal(locked.questions.length,0);assert.equal(locked.reviewRevision,3);
+  await f.run('AppData.configureWeeklyReviewDays(id,[4])');
+  const synced=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");assert.deepEqual(JSON.parse(JSON.stringify(synced.excludedWeekdays)),[4]);assert.equal(synced.reviewStage,'READY');
+  assert.equal(f.documents.get('tests/source4').status,'SCHEDULED','original vocabulary status unchanged');
+});
+test('students cannot configure excluded days, malformed days reject, and save failure preserves prior configuration', async () => {
+  const f=fixture();f.persist();const review=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");f.run(`const id='${review.id}';App.state.isAdminLoggedIn=false`);
+  await assert.rejects(f.run('AppData.configureWeeklyReviewDays(id,[4])'),/선생님/);
+  f.run('App.state.isAdminLoggedIn=true');
+  for(const invalid of ['[-1]','[5]','["1"]']) await assert.rejects(f.run(`AppData.configureWeeklyReviewDays(id,${invalid})`),/요일/);
+  f.run("window.firebaseFns.runTransaction=async()=>{throw new Error('저장 실패')}");
+  await assert.rejects(f.run('AppData.configureWeeklyReviewDays(id,[4])'),/저장 실패/);
+  assert.deepEqual(JSON.parse(JSON.stringify(f.documents.get('tests/'+review.id).excludedWeekdays)),[]);
+});
+test('changing exclusions rejects stale active papers and submitted history remains protected', async () => {
+  const f=fixture();f.persist();const review=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");f.run(`const id='${review.id}'`);
+  const changed=await f.run('AppData.configureWeeklyReviewDays(id,[4])');changed.date='2026-11-01';f.documents.set('tests/'+changed.id,structuredClone(changed));
+  await assert.rejects(f.run('AppData.submitWeeklyReviewRound(id,1,{},1)'),/범위를 변경/);
+  f.run(`const answers=Object.fromEntries(${JSON.stringify(changed.questions)}.map(q=>[q.id,q.mode==='CHOICE'?q.word.ko:q.word.en]))`);
+  const result=await f.run(`AppData.submitWeeklyReviewRound(id,1,answers,${changed.reviewRevision})`);assert.equal(result.completed,true);
+  const before=JSON.stringify(f.documents.get('tests/'+changed.id));
+  await assert.rejects(f.run('AppData.configureWeeklyReviewDays(id,[3,4])'),/이미 제출/);
+  assert.equal(JSON.stringify(f.documents.get('tests/'+changed.id)),before);
+});

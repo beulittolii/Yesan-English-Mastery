@@ -107,6 +107,30 @@ async function loadApp(page) {
     assert.ok(positions.every(p=>p.y===positions[0].y && p.width===36 && p.height===36));
     await page.screenshot({path:`/tmp/yem-weekly-review-weekdays-${width}.png`,fullPage:true});
   }
+  for(const day of ['화','목','금']) await page.getByRole('checkbox',{name:day+'요일 제외'}).check();
+  await page.evaluate(()=>AppData.refreshCloudScreens());
+  assert.equal(await page.locator('[name="weeklyReviewExcludedDay"]:checked').count(),3,'live refresh preserves unsaved selection');
+  await page.evaluate(()=>{window.failNextTransaction=true;});
+  await page.locator('#weeklyReviewDaysSave').click();
+  await page.waitForFunction(()=>!App._weeklyReviewDaysSaving);
+  assert.equal(await page.locator('[name="weeklyReviewExcludedDay"]:checked').count(),3,'failed save preserves selection');
+  assert.equal(await page.evaluate(id=>AppData.getTests().find(t=>t.id===id).excludedWeekdays.length,id),0);
+  await page.locator('#weeklyReviewDaysSave').click();
+  await page.waitForFunction(()=>document.querySelector('.weekly-review-weekday-count')?.textContent==='단어 테스트 2/2일 완료');
+  assert.equal(await page.evaluate(id=>AppData.getTests().find(t=>t.id===id).reviewStage,id),'READY');
+  assert.equal(await page.locator('.weekly-review-day-circle.is-excluded').count(),3);
+  await page.screenshot({path:'/tmp/yem-weekly-review-excluded-mobile.png',fullPage:true});
+  await page.evaluate(id=>{App.state.isAdminLoggedIn=false;App.openWeeklyReviewModal(id)},id);
+  assert.equal(await page.locator('[name="weeklyReviewExcludedDay"]').count(),0,'student cannot configure exclusions');
+  assert.equal(await page.locator('.weekly-review-day-circle.is-excluded').count(),3);
+  await page.evaluate(id=>{App.state.isAdminLoggedIn=true;App.openWeeklyReviewModal(id)},id);
+  await page.getByRole('checkbox',{name:'화요일 제외'}).uncheck();
+  await page.locator('#weeklyReviewDaysSave').click();
+  await page.waitForFunction(()=>document.querySelector('.weekly-review-weekday-count')?.textContent==='단어 테스트 2/3일 완료');
+  assert.equal(await page.evaluate(id=>AppData.getTests().find(t=>t.id===id).reviewStage,id),'LOCKED');
+  for(const day of ['목','금']) await page.getByRole('checkbox',{name:day+'요일 제외'}).uncheck();
+  await page.locator('#weeklyReviewDaysSave').click();
+  await page.waitForFunction(()=>document.querySelector('.weekly-review-weekday-count')?.textContent==='단어 테스트 2/5일 완료');
   await page.evaluate(()=>{
     FirebaseStore.tests.filter(t=>t.type==='VOCAB').forEach(t=>{t.status='PASS';testDocuments.set('tests/'+t.id,structuredClone(t));});
     AppData.queueWeeklyReviews();

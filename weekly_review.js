@@ -1,12 +1,18 @@
 /** 일반 단어 시험과 독립된 복습 화면. 미제출 회차에는 불합격/대기시간을 부여하지 않는다. */
 Object.assign(App, {
-  openWeeklyReviewModal(id) {
+  openWeeklyReviewModal(id, preserveDraft = false) {
     const test = AppData.getTests().find(t => t.id === id);
     if (!test || test.type !== 'VOCAB_REVIEW') return;
     const result = AppData.getWeeklyReviewResult(id), e = value => this.escapeHtml(String(value));
     const student = AppData.getStudentById(test.studentId);
     const blocked = test.status === 'REVIEW_DATA_NEEDED';
-    const locked = test.reviewStage === 'LOCKED', noErrors = test.reviewStage === 'NO_ERRORS';
+    const locked = test.reviewStage === 'LOCKED', noErrors = test.reviewStage === 'NO_ERRORS', allExcluded = test.reviewStage === 'EXCLUDED';
+    const isAdmin = Boolean(this.state.isAdminLoggedIn);
+    const excludedWeekdays = test.excludedWeekdays || [], requiredDays = 5 - excludedWeekdays.length;
+    if (!preserveDraft || this._weeklyReviewDaysDraft?.id !== id) this._weeklyReviewDaysDraft = { id, days: [...excludedWeekdays] };
+    const canEditDays = !result?.rounds?.length && !test.isPreview;
+    const savingDays = Boolean(this._weeklyReviewDaysSaving);
+
     const available = WeeklyReviewLogic.available(test);
     const weekdayCompletion = test.weekdayCompletion || WeeklyReviewLogic.weekdayCompletion(AppData.getTests(), AppData.getVocabTestResults(), test.studentId, test.weekStart);
     const actionClass = 'w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-violet-200 cursor-pointer';
@@ -21,20 +27,47 @@ Object.assign(App, {
       <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"><span class="text-slate-400 font-bold block mb-0.5">주간 복습 범위</span><strong class="text-slate-800 font-extrabold">${e(test.weekStart)} ~ ${e(test.weekEnd)}</strong></div>
       ${blocked ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-bold">자료 확인 필요 · ${e(test.blockedReason || '원본 단어장과 응시 기록을 확인해주세요.')}</div>` : `
       <div class="space-y-2"><h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5"><i aria-hidden="true" class="fa-solid fa-chart-simple text-violet-600"></i>최신 복습 결과</h4>
-        <div class="grammar-latest-card"><div><h5>주간 복습</h5></div><span class="grammar-latest-status ${result?.completed || noErrors ? 'bg-emerald-100 text-emerald-800' : 'bg-violet-100 text-violet-800'}">${noErrors ? '오답 없음 · 복습 완료' : locked ? '응시 잠김' : result?.completed ? '복습 완료' : result ? `${result.rounds.length}회차 · 복습 중` : '미응시'}</span>
-          <div class="weekly-review-modal-stats"><div><span>출제 단어</span><strong>${locked ? '완수 후 출제' : `${test.questions.length}개`}</strong></div><div><span>남은 단어</span><strong>${result ? `${result.remainingIds.length}개` : noErrors ? '0개' : '미응시'}</strong></div><div><span>현재 점수</span><strong>${result ? `${result.rounds[result.rounds.length - 1].score}점` : '—'}</strong></div></div>
+        <div class="grammar-latest-card"><div><h5>주간 복습</h5></div><span class="grammar-latest-status ${result?.completed || noErrors || allExcluded ? 'bg-emerald-100 text-emerald-800' : 'bg-violet-100 text-violet-800'}">${allExcluded ? '전체 요일 제외' : noErrors ? '오답 없음 · 복습 완료' : locked ? '응시 잠김' : result?.completed ? '복습 완료' : result ? `${result.rounds.length}회차 · 복습 중` : '미응시'}</span>
+          <div class="weekly-review-modal-stats"><div><span>출제 단어</span><strong>${locked ? '완수 후 출제' : `${test.questions.length}개`}</strong></div><div><span>남은 단어</span><strong>${result ? `${result.remainingIds.length}개` : noErrors || allExcluded ? '0개' : '미응시'}</strong></div><div><span>현재 점수</span><strong>${result ? `${result.rounds[result.rounds.length - 1].score}점` : '—'}</strong></div></div>
           ${result ? `<button type="button" onclick="App.showWeeklyReviewResult('${id}')" class="w-full py-2.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-bold transition flex items-center justify-center gap-2 border border-violet-200"><i aria-hidden="true" class="fa-solid fa-file-circle-check"></i>결과 확인</button>` : ''}
         </div>
       </div>
-      ${locked ? `<div class="weekly-review-weekday-card"><ol class="weekly-review-weekdays" aria-label="요일별 단어 테스트 완료 현황">${['월', '화', '수', '목', '금'].map((day, i) => `<li data-weekday="${i}" data-completed="${weekdayCompletion[i]}" aria-label="${day}요일 ${weekdayCompletion[i] ? '완료' : '미완료'}"><span class="weekly-review-day-circle ${weekdayCompletion[i] ? 'is-complete' : ''}" aria-hidden="true">${weekdayCompletion[i] ? '<svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span><span>${day}</span></li>`).join('')}</ol><p class="weekly-review-weekday-count">단어 테스트 ${weekdayCompletion.filter(Boolean).length}/5일 완료</p></div>` : noErrors ? '<div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">이번 주 오답이 없어 복습을 완료했습니다.</div>' : ''}
+      ${locked || excludedWeekdays.length || isAdmin ? `<div class="weekly-review-weekday-card"><ol class="weekly-review-weekdays" aria-label="요일별 단어 테스트 완료 현황">${['월', '화', '수', '목', '금'].map((day, i) => {
+        const excluded = excludedWeekdays.includes(i), complete = weekdayCompletion[i] && !excluded;
+        return `<li data-weekday="${i}" data-completed="${Boolean(complete)}" data-excluded="${excluded}" aria-label="${day}요일 ${excluded ? '제외' : complete ? '완료' : '미완료'}"><span class="weekly-review-day-circle ${excluded ? 'is-excluded' : complete ? 'is-complete' : ''}" aria-hidden="true">${excluded ? '−' : complete ? '<svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span><span>${day}${excluded ? '<small>제외</small>' : ''}</span></li>`;
+      }).join('')}</ol><p class="weekly-review-weekday-count">단어 테스트 ${weekdayCompletion.filter((complete, i) => complete && !excludedWeekdays.includes(i)).length}/${requiredDays}일 완료</p></div>` : ''}
+      ${allExcluded ? '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600">모든 요일이 제외되어 이번 주 복습이 없습니다.</div>' : noErrors ? '<div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">이번 주 오답이 없어 복습을 완료했습니다.</div>' : ''}
+
       ${test.unresolvedCount ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">원본을 확인할 수 없는 오답 ${test.unresolvedCount}건은 출제에서 제외했습니다.</div>` : ''}
-      <div class="space-y-2.5 pt-2">${!result?.completed && !noErrors ? available ? `<button type="button" onclick="App.startWeeklyReview('${id}')" class="${actionClass}"><i aria-hidden="true" class="fa-solid fa-pencil"></i>${result ? '오답 다시 풀기' : '테스트 응시'}</button>` : `<button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed"><i aria-hidden="true" class="fa-solid fa-clock"></i>${locked ? '월~금 5일치 단어 시험 완료 후 응시 가능' : `${e(test.date)} 00:00부터 응시 가능`}</button>` : ''}</div>`}`;
+      <div class="space-y-2.5 pt-2">${!result?.completed && !noErrors && !allExcluded ? available ? `<button type="button" onclick="App.startWeeklyReview('${id}')" class="${actionClass}"><i aria-hidden="true" class="fa-solid fa-pencil"></i>${result ? '오답 다시 풀기' : '테스트 응시'}</button>` : `<button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed"><i aria-hidden="true" class="fa-solid fa-clock"></i>${locked ? `대상 ${requiredDays}일치 단어 시험 완료 후 응시 가능` : `${e(test.date)} 00:00부터 응시 가능`}</button>` : ''}</div>`}`;
+    if (isAdmin) document.getElementById('detailModalBody').insertAdjacentHTML('beforeend', `
+      <section class="weekly-review-exclusions"><h4>복습에서 제외할 요일</h4><p>선택한 요일은 응시 조건과 출제 범위에서 제외합니다.</p>
+        <fieldset ${!canEditDays || savingDays ? 'disabled' : ''} class="weekly-review-exclusion-options">${['월', '화', '수', '목', '금'].map((day, i) => `<label><input type="checkbox" name="weeklyReviewExcludedDay" value="${i}" aria-label="${day}요일 제외" ${this._weeklyReviewDaysDraft.days.includes(i) ? 'checked' : ''} onchange="App.toggleWeeklyReviewExcludedDay(${i}, this.checked)"><span>${day}</span></label>`).join('')}</fieldset>
+        ${canEditDays ? `<button type="button" id="weeklyReviewDaysSave" onclick="App.saveWeeklyReviewExcludedDays('${id}')" ${savingDays ? 'disabled' : ''}>${savingDays ? '저장 중…' : '제외 요일 저장'}</button>` : `<p>${test.isPreview ? '체험용 복습은 요일 제외 설정을 사용하지 않습니다.' : '제출한 복습은 기존 응시 기록을 보존하기 위해 요일 설정을 유지합니다.'}</p>`}
+      </section>`);
     this.showModal('testDetailModal');
+  },
+  toggleWeeklyReviewExcludedDay(day, checked) {
+    if (!this.state.isAdminLoggedIn || this._weeklyReviewDaysSaving || !this._weeklyReviewDaysDraft) return;
+    const days = new Set(this._weeklyReviewDaysDraft.days);
+    if (checked) days.add(day); else days.delete(day);
+    this._weeklyReviewDaysDraft.days = [...days].sort((a,b) => a-b);
+  },
+  async saveWeeklyReviewExcludedDays(id) {
+    if (!this.state.isAdminLoggedIn || this._weeklyReviewDaysSaving || this._weeklyReviewDaysDraft?.id !== id) return;
+    this._weeklyReviewDaysSaving = true;
+    this.refreshWeeklyReviewModal();
+    try {
+      const saved = await AppData.configureWeeklyReviewDays(id, this._weeklyReviewDaysDraft.days);
+      this._weeklyReviewDaysDraft = { id, days: [...(saved.excludedWeekdays || [])] };
+      this.toast('제외 요일을 저장했습니다.', 'success');
+    } catch (error) { this.toast(error.message || '제외 요일 저장에 실패했습니다.', 'error'); }
+    finally { this._weeklyReviewDaysSaving = false; this.refreshWeeklyReviewModal(); }
   },
   refreshWeeklyReviewModal() {
     if (!this._activeModals?.has('testDetailModal')) return;
     const marker = document.querySelector('#detailModalBody [data-weekly-review-modal]');
-    if (marker) this.openWeeklyReviewModal(marker.dataset.weeklyReviewModal);
+    if (marker) this.openWeeklyReviewModal(marker.dataset.weeklyReviewModal, true);
   },
   showWeeklyReviewView() {
     this.hideModal('testDetailModal');
@@ -54,7 +87,7 @@ Object.assign(App, {
     if (!test || !WeeklyReviewLogic.available(test) || test.status === 'REVIEW_DATA_NEEDED') return;
     if (result?.completed) return this.showWeeklyReviewResult(id);
     const ids = result?.remainingIds || test.questions.map(q => q.id);
-    this.state.weeklyReview = { id, questions: WeeklyReviewLogic.shuffle(test.questions.filter(q => ids.includes(q.id))), answers: {}, round: (result?.rounds.length || 0) + 1 };
+    this.state.weeklyReview = { id, questions: WeeklyReviewLogic.shuffle(test.questions.filter(q => ids.includes(q.id))), answers: {}, revision: test.reviewRevision || 1, round: (result?.rounds.length || 0) + 1 };
     this.showWeeklyReviewView();
     this.renderWeeklyReviewPaper();
   },
@@ -93,7 +126,7 @@ Object.assign(App, {
     const button = document.getElementById('weeklyReviewSubmit');
     if (button) { button.disabled = true; button.textContent = '저장 중…'; }
     try {
-      await AppData.submitWeeklyReviewRound(state.id, state.round, state.answers);
+      await AppData.submitWeeklyReviewRound(state.id, state.round, state.answers, state.revision);
       if (this.state.view === 'weeklyReview' && this.state.weeklyReview === state) this.showWeeklyReviewResult(state.id);
     } catch (error) {
       this.toast(error.message || '저장에 실패했습니다. 다시 제출해주세요.', 'error');
@@ -117,6 +150,6 @@ Object.assign(App, {
   },
   renderWeeklyReviewAdminRow(test) {
     const result = AppData.getWeeklyReviewResult(test.id), blocked = test.status === 'REVIEW_DATA_NEEDED';
-    return `<tr class="border-b border-slate-100"><td class="p-4 text-xs">${this.escapeHtml(test.date)}</td><td class="p-4 font-bold">주간 복습<p class="text-xs font-normal text-slate-500">${this.escapeHtml(test.scope)}</p></td><td class="p-4 text-xs">${blocked ? '<span class="text-amber-700 font-bold">자료 확인 필요</span>' : test.reviewStage === 'LOCKED' ? `응시 잠김 (${test.completedDays || 0}/5일 완료)` : test.reviewStage === 'NO_ERRORS' ? '오답 없음 · 복습 완료' : result?.completed ? '복습 완료' : '복습 예정 / 진행 중'}</td><td class="p-4 text-xs">${result ? `현재 점수 ${result.rounds[result.rounds.length - 1].score}점 · 남은 ${result.remainingIds.length}개` : test.reviewStage === 'LOCKED' ? '완수 후 출제' : `${test.questions.length}개 단어`}</td><td class="p-4 text-xs">${result?.rounds.length || 0}회차</td><td class="p-4"><button class="text-indigo-600 text-xs font-bold" onclick="App.openWeeklyReviewModal('${test.id}')">상세 확인</button></td></tr>`;
+    return `<tr class="border-b border-slate-100"><td class="p-4 text-xs">${this.escapeHtml(test.date)}</td><td class="p-4 font-bold">주간 복습<p class="text-xs font-normal text-slate-500">${this.escapeHtml(test.scope)}</p></td><td class="p-4 text-xs">${blocked ? '<span class="text-amber-700 font-bold">자료 확인 필요</span>' : test.reviewStage === 'LOCKED' ? `응시 잠김 (${test.completedDays || 0}/${test.requiredDays ?? 5}일 완료)` : test.reviewStage === 'EXCLUDED' ? '전체 요일 제외' : test.reviewStage === 'NO_ERRORS' ? '오답 없음 · 복습 완료' : result?.completed ? '복습 완료' : '복습 예정 / 진행 중'}</td><td class="p-4 text-xs">${result ? `현재 점수 ${result.rounds[result.rounds.length - 1].score}점 · 남은 ${result.remainingIds.length}개` : test.reviewStage === 'LOCKED' ? '완수 후 출제' : `${test.questions.length}개 단어`}</td><td class="p-4 text-xs">${result?.rounds.length || 0}회차</td><td class="p-4"><button class="text-indigo-600 text-xs font-bold" onclick="App.openWeeklyReviewModal('${test.id}')">상세 확인</button></td></tr>`;
   }
 });
