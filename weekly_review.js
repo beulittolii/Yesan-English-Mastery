@@ -17,7 +17,7 @@ Object.assign(App, {
     const weekdayCompletion = test.weekdayCompletion || WeeklyReviewLogic.weekdayCompletion(AppData.getTests(), AppData.getVocabTestResults(), test.studentId, test.weekStart);
     const actionClass = 'w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-violet-200 cursor-pointer';
     document.getElementById('detailModalStudentBadge').textContent = `${student?.name || ''} 학생 · 주간 복습`;
-    document.getElementById('detailModalTitle').textContent = test.title;
+    document.getElementById('detailModalTitle').textContent = '이번 주 학습 점검';
     document.getElementById('detailModalBody').innerHTML = `
       <span hidden data-weekly-review-modal="${e(id)}"></span>
       ${blocked ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-bold">자료 확인 필요 · ${e(test.blockedReason || '원본 단어장과 응시 기록을 확인해주세요.')}</div>` : `
