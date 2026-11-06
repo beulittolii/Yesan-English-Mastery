@@ -8,7 +8,7 @@ const WeeklyReviewLogic = {
   id(studentId, monday) { return `weekly_review_${Number(studentId)}_${monday}`; },
   available(test, now = new Date()) { return !['LOCKED', 'NO_ERRORS'].includes(test.reviewStage) && test.status !== 'REVIEW_DATA_NEEDED' && Boolean(test.questions?.length) && now.getTime() >= Date.parse(`${test.date}T00:00:00+09:00`); },
   mutable(test) { return test?.reviewStage === 'LOCKED' || test?.status === 'REVIEW_DATA_NEEDED'; },
-  samePreparation(a, b) { return JSON.stringify([a.reviewStage, a.status, a.sourceTestIds, a.completedDays, a.assignedDays, a.unresolvedCount]) === JSON.stringify([b.reviewStage, b.status, b.sourceTestIds, b.completedDays, b.assignedDays, b.unresolvedCount]); },
+  samePreparation(a, b) { return JSON.stringify([a.reviewStage, a.status, a.sourceTestIds, a.completedDays, a.assignedDays, a.unresolvedCount, a.weekdayCompletion]) === JSON.stringify([b.reviewStage, b.status, b.sourceTestIds, b.completedDays, b.assignedDays, b.unresolvedCount, b.weekdayCompletion]); },
   shuffle(values) { const shuffled = [...values]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } return shuffled; },
   eligible(tests, results, studentId, monday) {
     const weekdays = Array.from({ length: 5 }, (_, i) => this.dateOffset(monday, i));
@@ -17,27 +17,32 @@ const WeeklyReviewLogic = {
     if (!sources.every(t => (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS') && !results.some(r => r.testId === t.id && Number(r.direction) === 4 && (!r.passed || !r.gradedByAdmin)))) return null;
     return sources;
   },
+  weekdayCompletion(tests, results, studentId, monday) {
+    return Array.from({ length: 5 }, (_, i) => {
+      const date = this.dateOffset(monday, i);
+      const daily = tests.filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && t.date === date);
+      return daily.length > 0 && daily.every(t => (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS') && !results.some(r => r.testId === t.id && Number(r.direction) === 4 && (!r.passed || !r.gradedByAdmin)));
+    });
+  },
   prepare({ tests, results, sets, studentId, monday }) {
     const scheduled = tests.filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && this.monday(t.date) === monday);
     if (!scheduled.length) return null;
     const weekdays = Array.from({ length: 5 }, (_, i) => this.dateOffset(monday, i));
     const assignedDays = weekdays.filter(date => scheduled.some(t => t.date === date)).length;
-    const completedDays = weekdays.filter(date => {
-      const daily = scheduled.filter(t => t.date === date);
-      return daily.length && daily.every(t => (t.status === 'PASS' || t.retestStatus === 'RETEST_PASS') && !results.some(r => r.testId === t.id && Number(r.direction) === 4 && (!r.passed || !r.gradedByAdmin)));
-    }).length;
+    const weekdayCompletion = this.weekdayCompletion(tests, results, studentId, monday);
+    const completedDays = weekdayCompletion.filter(Boolean).length;
     const placeholder = {
       id: this.id(studentId, monday), type: 'VOCAB_REVIEW', studentId: Number(studentId), title: '주간 복습',
       date: this.dateOffset(monday, 5), time: '00:00', endTime: '23:59', allowLate: true,
       status: 'SCHEDULED', reviewStage: 'LOCKED', weekStart: monday, weekEnd: this.dateOffset(monday, 4),
       scope: `${monday} ~ ${this.dateOffset(monday, 4)}`, cutoff: '모든 오답 해결', questions: [],
-      sourceTestIds: scheduled.map(t => t.id).sort(), completedDays, assignedDays, unresolvedCount: 0,
+      sourceTestIds: scheduled.map(t => t.id).sort(), completedDays, assignedDays, weekdayCompletion, unresolvedCount: 0,
       reviewVersion: 1, createdAt: new Date().toISOString()
     };
     if (completedDays < 5) return placeholder;
     const generated = this.build({ tests, results, sets, studentId, monday });
     if (!generated) return { ...placeholder, status: 'PASS', reviewStage: 'NO_ERRORS' };
-    return { ...generated, sourceTestIds: [...generated.sourceTestIds].sort(), completedDays, assignedDays, reviewStage: generated.status === 'REVIEW_DATA_NEEDED' ? 'DATA_NEEDED' : 'READY' };
+    return { ...generated, sourceTestIds: [...generated.sourceTestIds].sort(), completedDays, assignedDays, weekdayCompletion, reviewStage: generated.status === 'REVIEW_DATA_NEEDED' ? 'DATA_NEEDED' : 'READY' };
   },
   // 동일 응시를 관리자 채점으로 여러 번 저장했으면 최종 스냅샷 한 번만 사용한다.
   attempts(result) {

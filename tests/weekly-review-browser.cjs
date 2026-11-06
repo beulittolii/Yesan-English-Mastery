@@ -95,6 +95,19 @@ async function loadApp(page) {
   await page.evaluate(id=>App.startWeeklyReview(id),id);
   assert.notEqual(await page.evaluate(()=>App.state.view),'weeklyReview','placeholder cannot start');
   await page.evaluate(()=>{
+    FirebaseStore.tests.filter(t=>t.id==='source0'||t.id==='source2').forEach(t=>{t.status='PASS';testDocuments.set('tests/'+t.id,structuredClone(t));});
+    AppData.queueWeeklyReviews();
+  });
+  await page.waitForFunction(()=>document.querySelector('.weekly-review-weekday-count')?.textContent==='단어 테스트 2/5일 완료');
+  assert.deepEqual(await page.locator('.weekly-review-weekdays li').evaluateAll(items=>items.map(item=>item.dataset.completed)),['true','false','true','false','false']);
+  assert.equal(await page.locator('.weekly-review-day-circle svg').count(),2);
+  for(const width of [1280,390]) {
+    await page.setViewportSize({width,height:950});
+    const positions=await page.locator('.weekly-review-day-circle').evaluateAll(items=>items.map(item=>{const r=item.getBoundingClientRect();return {y:r.y,width:r.width,height:r.height};}));
+    assert.ok(positions.every(p=>p.y===positions[0].y && p.width===36 && p.height===36));
+    await page.screenshot({path:`/tmp/yem-weekly-review-weekdays-${width}.png`,fullPage:true});
+  }
+  await page.evaluate(()=>{
     FirebaseStore.tests.filter(t=>t.type==='VOCAB').forEach(t=>{t.status='PASS';testDocuments.set('tests/'+t.id,structuredClone(t));});
     AppData.queueWeeklyReviews();
   });

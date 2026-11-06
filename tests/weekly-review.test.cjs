@@ -178,3 +178,10 @@ test('no assignment creates nothing; a completed no-error week marks its precrea
   assert.equal(f.run("WeeklyReviewLogic.available(prepare(),new Date('2026-11-08T00:00:00Z'))"),false);
   f.run('tests.splice(0)');assert.equal(f.run('prepare()'),null);
 });
+test('weekday checks identify the exact completed days and refresh when days change without changing the count', () => {
+  const f=fixture();f.run("tests.forEach((t,i)=>t.status=(i===0||i===2)?'PASS':'SCHEDULED');const prepare=()=>WeeklyReviewLogic.prepare({tests,results,sets,studentId:1,monday:'2026-11-02'});const before=prepare()");
+  assert.deepEqual(f.plain('before.weekdayCompletion'),[true,false,true,false,false]);assert.equal(f.run('before.completedDays'),2);
+  f.run("tests[0].status='SCHEDULED';tests[1].status='PASS';const after=prepare()");
+  assert.deepEqual(f.plain('after.weekdayCompletion'),[false,true,true,false,false]);assert.equal(f.run('after.completedDays'),2);
+  assert.equal(f.run('WeeklyReviewLogic.samePreparation(before,after)'),false);
+});
