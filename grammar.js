@@ -21,7 +21,10 @@ Object.assign(App, {
     };
   },
   grammarBadge(test) {
-    return { class: 'bg-violet-50 text-violet-800 border border-violet-200', icon: '<i aria-hidden="true" class="fa-solid fa-book"></i>', tag: this.grammarSummary(test) };
+    const states = test.grammarParts.map(part => GrammarLogic.partState(test, part));
+    const status = states.every(state => state === 'PASS') ? 'PASS' : states.includes('FAIL') ? 'FAIL' : 'SCHEDULED';
+    const style = this.getTestBadgeStyle({ ...test, type: 'VOCAB', status }, false);
+    return { ...style, tag: this.grammarSummary(test) };
   },
   grammarButton(label, action, secondary = false) {
     return `<button type="button" onclick="${action}" class="grammar-button ${secondary ? 'grammar-button-secondary' : ''}">${label}</button>`;

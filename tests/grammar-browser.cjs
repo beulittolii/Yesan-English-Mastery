@@ -76,6 +76,25 @@ async function loadApp(page) {
   await page.addStyleTag({ content: '.hidden { display:none!important }' });
   try { await page.addScriptTag({ url: 'https://cdn.tailwindcss.com' }); } catch (_) { /* Tests still work offline. */ }
   await loadApp(page);
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 950 });
+    const comparison = await page.evaluate(() => {
+      const base = { id: 'layout_fixture', date: App.getTodayDateString(), time: '00:00', endTime: '23:59', status: 'SCHEDULED', retestStatus: 'NONE' };
+      const host = document.createElement('div');
+      host.className = 'calendar-day-cell';
+      host.style.cssText = 'width:180px;position:fixed;left:0;top:0;z-index:9999';
+      host.innerHTML = App.renderCalendarLearningTest({ ...base, type: 'GRAMMAR', grammarParts: ['concept', 'practice'], grammarResults: {} }, '문법 테스트', 'fa-book', 'openGrammarTestModal') + App.renderCalendarLearningTest({ ...base, type: 'VOCAB' }, '단어 테스트', 'fa-spell-check', 'openVocabTestScheduleModal');
+      document.body.appendChild(host);
+      const metrics = [...host.children].map(el => {
+        const rect = el.getBoundingClientRect(), icon = el.querySelector('i').getBoundingClientRect(), text = el.querySelector('span.truncate').getBoundingClientRect(), style = getComputedStyle(el);
+        return { width: rect.width, height: rect.height, iconWidth: icon.width, iconHeight: icon.height, iconX: icon.x - rect.x, iconY: icon.y - rect.y, textX: text.x - rect.x, color: style.color, background: style.backgroundColor, border: style.borderColor, font: style.fontSize };
+      });
+      host.remove();
+      return metrics;
+    });
+    assert.deepEqual(comparison[0], comparison[1], `grammar and vocabulary badges must match at ${width}px`);
+  }
+  await page.setViewportSize({ width: 1280, height: 950 });
   await page.evaluate(() => App.showAdminDashboard());
   await page.getByRole('button', { name: '문법 테스트 추가', exact: true }).click();
   assert.equal(await page.locator('[name="grammarPart"]:checked').count(), 2);

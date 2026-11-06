@@ -1031,6 +1031,11 @@ const App = {
     calGrid.innerHTML = gridHtml;
   },
 
+  renderCalendarLearningTest(test, label, icon, handler) {
+    const badgeStyle = this.getTestBadgeStyle(test, false);
+    return `<div onclick="App.${handler}('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="${this.escapeHtml(label)}"><div class="truncate flex items-center gap-1 min-w-0"><span class="inline-flex w-4 flex-shrink-0 items-center justify-center"><i aria-hidden="true" class="fa-solid fa-fw ${icon}"></i></span><span class="truncate">${this.escapeHtml(label)}</span></div></div>`;
+  },
+
   // 캘린더 개별 날짜 셀 생성 헬퍼
   buildCalendarCell(dayNum, dateStr, isOtherMonth, studentTests, todayStr) {
     const isToday = dateStr === todayStr;
@@ -1050,13 +1055,7 @@ const App = {
     let testsHtml = '';
     dayTests.forEach(test => {
       if (test.type === 'GRAMMAR') {
-        if (test.date === dateStr) {
-          const badgeStyle = this.getTestBadgeStyle(test, false);
-          testsHtml += `
-            <div onclick="App.openGrammarTestModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="문법 테스트">
-              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-book" aria-hidden="true"></i></span><span class="truncate">문법 테스트</span></div>
-            </div>`;
-        }
+        if (test.date === dateStr) testsHtml += this.renderCalendarLearningTest(test, '문법 테스트', 'fa-book', 'openGrammarTestModal');
         return;
       }
       if (test.type === 'VOCAB') {
@@ -1079,12 +1078,8 @@ const App = {
           } else {
             const isEngDef = Boolean(test.isEnglishDefTest);
             const vocabCalendarLabel = isEngDef ? '영영풀이 테스트' : '단어 테스트';
-            const pillClass = badgeStyle.class;
             const pillIcon = isEngDef ? 'fa-graduation-cap' : 'fa-spell-check';
-            testsHtml += `
-              <div onclick="App.openVocabTestScheduleModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${pillClass}" title="${vocabCalendarLabel}">
-                <div class="truncate flex items-center gap-1"><span><i class="fa-solid ${pillIcon}"></i></span><span class="truncate">${vocabCalendarLabel}</span></div>
-              </div>`;
+            testsHtml += this.renderCalendarLearningTest(test, vocabCalendarLabel, pillIcon, 'openVocabTestScheduleModal');
           }
         }
         return;
