@@ -1,3 +1,10 @@
 .DS_Store
 *.log
 auto_sync.log
+
+# Local source material and Mac-only sync utilities
+/2026_고1_9모대비_킬러반전다의어60선.pdf
+/auto_sync.py
+/start_auto_sync.command
+/start_background_service.command
+/stop_background_service.command
