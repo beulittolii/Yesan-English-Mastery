@@ -111,7 +111,7 @@ Object.assign(App, {
           const current = latest[part];
           const state = current ? GrammarLogic.partState(current, part) : 'UNASSIGNED';
           const statusClass = state === 'PASS' ? 'bg-emerald-100 text-emerald-800' : state === 'FAIL' ? 'bg-rose-100 text-rose-800' : state === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-violet-100 text-violet-800';
-          return `<div data-grammar-result-widget="${part}" class="grammar-latest-square"><div><h5>${GrammarLogic.label(part)}</h5></div><span class="grammar-latest-status ${statusClass}">${current ? this.grammarStatus(current, part) : '미배정'}</span>${current?.grammarResults?.[part] ? resultButton(current, part, true) : '<span></span>'}</div>`;
+          return `<div data-grammar-result-widget="${part}" class="grammar-latest-card"><div><h5>${GrammarLogic.label(part)}</h5></div><span class="grammar-latest-status ${statusClass}">${current ? this.grammarStatus(current, part) : '미배정'}</span>${current?.grammarResults?.[part] ? resultButton(current, part, true) : ''}</div>`;
         }).join('')}</div>
       </div>
       ${test.teacherNote ? `<div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 whitespace-pre-wrap">${this.escapeHtml(test.teacherNote)}</div>` : ''}
