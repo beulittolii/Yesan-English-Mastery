@@ -595,6 +595,7 @@ const App = {
   },
 
   updateHeaderActions() {
+    document.getElementById('vocabTestView')?.classList.toggle('vocab-result-active', this.state.view === 'vocabTest' && Boolean(this.state.vocabTest?.isCompleted));
     document.getElementById('grammarCompletionView')?.classList.toggle('hidden', this.state.view !== 'grammarResult');
     document.getElementById('grammarTestView')?.classList.toggle('hidden', this.state.view !== 'grammarTest');
     const container = document.getElementById('headerNavActions');
@@ -8746,116 +8747,34 @@ const App = {
       console.error('단어 테스트 결과 저장 오류:', error);
     }
 
-    document.getElementById('vocabTestTopInfo').innerHTML = `
-      <span class="font-bold text-slate-800 text-sm">${this.escapeHtml(vt.setTitle)} — ${currentRound}회차 결과</span>`;
-
-    let statusHeaderHtml = '';
-    let statusBannerHtml = '';
+    this.updateHeaderActions();
     const nextCutoff = this.getVocabCutoffScore(test, vt.direction, currentRound + 1);
-
-    if (waitingGrading) {
-      statusHeaderHtml = `
-        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-amber-100 text-amber-600 animate-pulse">
-          <i class="fa-solid fa-hourglass-half"></i>
-        </div>
-        <div>
-          <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-            채점 대기중 (${currentRound}회차)
-          </span>
-          <h3 class="text-2xl font-black text-slate-900 mt-2">선생님 채점 대기중</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · 스펠링 1차 정답 ${correctCount} / ${total}개 (커트라인 ${cutoffScore}점)</p>
-          <div class="text-4xl font-black text-indigo-600 mt-3">${score}점 <span class="text-xs font-bold text-slate-400 font-normal">(스펠링 1차 점수)</span></div>
-        </div>`;
-      statusBannerHtml = `
-        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm font-semibold space-y-1 text-left">
-          <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-amber-600"></i> 스펠링 1차 채점 통과 (기준: ${cutoffScore}점 이상)</p>
-          <p class="text-xs text-amber-700">선생님이 작성하신 한국어 뜻을 검토 및 채점한 후 최종 합격(PASS) 여부가 반영됩니다.</p>
-        </div>`;
-    } else if (passed) {
-      if (vt.isMockPart && vt.mockPartNumber === 2) {
-        // 🍀 파트2 시험 합격 시 행운을 빈다는 대박 축하 화면
-        statusHeaderHtml = `
-          <div class="mx-auto w-24 h-24 rounded-full flex items-center justify-center text-5xl bg-gradient-to-tr from-amber-400 via-rose-500 to-indigo-600 text-white shadow-xl shadow-amber-300/40">
-            🍀
-          </div>
-          <div class="space-y-2 mt-3">
-            <span class="px-3.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-400 to-rose-500 text-white shadow-xs">
-              🎉 9모 킬러 다의어 정복 완료!
-            </span>
-            <h3 class="text-3xl font-black text-slate-900 mt-2">수능·9모 대박을 기원합니다!</h3>
-            <p class="text-slate-600 text-sm font-semibold">Part 2 객관식 테스트 <strong>${score}점</strong>으로 완벽 합격 (기준: ${cutoffScore}점)</p>
-          </div>`;
-        statusBannerHtml = `
-          <div class="p-6 rounded-2xl bg-gradient-to-br from-amber-50 via-rose-50 to-indigo-50 border-2 border-amber-300 text-slate-800 text-center space-y-2.5 shadow-sm">
-            <div class="text-3xl">✨ 🍀 🎯 ✨</div>
-            <h4 class="text-base font-black text-rose-800">선생님이 여러분의 9월 모의고사 대박과 최고의 행운을 온 마음으로 빕니다!</h4>
-            <p class="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
-              수능·모의고사 1등급을 가르는 <strong>킬러 반전 다의어 60선</strong>을 모두 완벽하게 마스터했습니다.<br>
-              내일 시험지에서 오늘 배운 반전 뜻이 분명히 눈에 번쩍 띌 것입니다.<br>
-              자신감을 가지고 침착하게 끝까지 최선을 다하세요. <strong>반드시 1등급을 쟁취할 것입니다!</strong> 화이팅! 🍀💪
-            </p>
-          </div>`;
-      } else if (vt.isMockPart && vt.mockPartNumber === 1) {
-        statusHeaderHtml = `
-          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600">
-            <i class="fa-solid fa-circle-check"></i>
-          </div>
-          <div>
-            <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-              Part 1 합격 (${score}점)
-            </span>
-            <h3 class="text-2xl font-black text-emerald-700 mt-2">Part 1 통과 완료!</h3>
-            <p class="text-slate-500 text-sm mt-1">1~30번 킬러 다의어 정복 완료! 이제 Part 2에 도전하세요.</p>
-            <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
-          </div>`;
-        statusBannerHtml = `
-          <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm font-semibold text-center space-y-1">
-            <p class="font-black text-indigo-800 flex items-center justify-center gap-1.5"><i class="fa-solid fa-unlock text-indigo-600"></i> Part 2 시험이 잠금 해제되었습니다!</p>
-            <p class="text-xs text-indigo-700">Part 2 (31~60번) 객관식 시험을 이어서 응시하고 최종 행운의 대박 축하를 완성하세요.</p>
-          </div>`;
-      } else {
-        statusHeaderHtml = `
-          <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-emerald-100 text-emerald-600">
-            <i class="fa-solid fa-circle-check"></i>
-          </div>
-          <div>
-            <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-              ${currentRound}회차 합격
-            </span>
-            <h3 class="text-2xl font-black text-emerald-700 mt-2">테스트 통과 (PASS)</h3>
-            <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${correctCount} / ${total} 정답 (커트라인 ${cutoffScore}점)</p>
-            <div class="text-4xl font-black text-slate-900 mt-3">${score}점</div>
-          </div>`;
-        statusBannerHtml = `
-          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold">
-            축하합니다! ${currentRound}회차 커트라인(${cutoffScore}점)을 통과하여 ${directionLabel} 테스트가 완료되었습니다.
-          </div>`;
-      }
-    } else {
-      statusHeaderHtml = `
-        <div class="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-rose-100 text-rose-600">
-          <i class="fa-solid fa-circle-xmark"></i>
-        </div>
-        <div>
-          <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
-            ${currentRound}회차 불합격
-          </span>
-          <h3 class="text-2xl font-black text-rose-700 mt-2">불합격 (FAIL)</h3>
-          <p class="text-slate-500 text-sm mt-1">${directionLabel} · ${vt.direction === 4 ? `스펠링 ${correctCount} / ${total} 정답` : `${correctCount} / ${total} 정답`} (커트라인 ${cutoffScore}점)</p>
-          <div class="text-4xl font-black text-slate-900 mt-3">${score}점 ${vt.direction === 4 ? '<span class="text-xs font-normal text-slate-400">(스펠링 점수)</span>' : ''}</div>
-        </div>`;
-      statusBannerHtml = `
-        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm font-semibold text-left space-y-1">
-          <p class="font-bold text-rose-800 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> ${vt.isMockPart ? `Part ${vt.mockPartNumber}` : `${currentRound}회차`} 커트라인(${cutoffScore}점)에 미달하였습니다.</p>
-          <p class="text-xs text-rose-700">${vt.isMockPart ? '90점 이상(30문제 중 27개 이상) 득점해야 합격할 수 있습니다. 10분 후 다시 도전할 수 있습니다.' : `다음 <strong>${currentRound + 1}회차 재시험 커트라인은 ${nextCutoff}점</strong>으로 올라갑니다. 10분 후 다시 도전할 수 있습니다.`}</p>
-        </div>`;
-    }
-
+    const student = AppData.getStudentById(vt.studentId);
+    const verdict = waitingGrading ? 'REVIEW' : passed ? 'PASS' : 'FAIL';
+    const resultClass = waitingGrading ? 'is-pending' : passed ? 'is-pass' : 'is-fail';
+    const resultMessage = waitingGrading ? '선생님 채점 대기 중' : passed ? '통과 기준을 달성했어요!' : '틀린 단어를 확인하고 다시 준비해 보세요.';
+    const nextMessage = waitingGrading
+      ? '스펠링 1차 채점을 통과했습니다. 선생님이 한국어 뜻을 확인한 뒤 최종 통과 여부가 반영됩니다.'
+      : !passed
+        ? `10분 후 다시 도전할 수 있습니다. ${vt.isMockPart ? '재시험 통과 기준은 90점입니다.' : `다음 ${currentRound + 1}회차 통과 기준은 ${nextCutoff}점입니다.`}`
+        : vt.isMockPart && vt.mockPartNumber === 1
+          ? 'Part 1을 통과해 Part 2 시험이 잠금 해제되었습니다. 학습공간에서 다음 파트에 도전해 보세요.'
+          : vt.isMockPart && vt.mockPartNumber === 2
+            ? '킬러 반전 다의어 60선을 모두 마스터했습니다. 자신 있게 다음 시험에 도전하세요!'
+            : '이번 단계를 통과했습니다. 학습공간에서 다음 학습을 확인해 보세요.';
     document.getElementById('vocabTestContent').innerHTML = `
-      <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6 text-center max-w-2xl mx-auto">
-        ${statusHeaderHtml}
-        ${statusBannerHtml}
-
+      <div class="grammar-result-page vocab-result-page">
+        <header class="grammar-result-heading"><div><p class="grammar-result-eyebrow">VOCABULARY TEST · ${currentRound}회차</p><h1>단어 테스트를 마쳤어요.</h1><p class="grammar-result-subtitle">${this.escapeHtml(student?.name || '')} 학생 · ${this.escapeHtml(vt.setTitle)} · ${this.escapeHtml(directionLabel)}</p></div><button type="button" class="grammar-result-back" onclick="App.exitVocabTest()">학습공간으로 돌아가기 <span aria-hidden="true">→</span></button></header>
+        <section class="grammar-result-panel grammar-result-practice vocab-single-result ${resultClass}">
+          <div class="grammar-result-panel-top"><span class="grammar-result-eyebrow">${this.escapeHtml(directionLabel)} · ${currentRound}회차</span><span class="grammar-result-tag">${waitingGrading ? '채점 대기' : '채점 완료'}</span></div>
+          <div class="grammar-result-main"><h2 class="grammar-completion-verdict">${verdict}</h2><p>${resultMessage}</p><div class="grammar-completion-score vocab-score-value">${score}<span>점</span></div>${waitingGrading ? '<p>스펠링 1차 점수 · 최종 성적은 선생님 채점 후 확정</p>' : ''}
+            <div class="vocab-result-stats"><div><strong>${total}</strong><span>출제 단어</span></div><div><strong>${correctCount}</strong><span>${vt.direction === 4 ? '스펠링 정답' : '정답'}</span></div><div><strong>${wrongAnswers.length}</strong><span>${vt.direction === 4 ? '스펠링 오답' : '오답'}</span></div></div>
+            <div class="grammar-result-score-track"><div style="width:${score}%"></div><span style="left:${cutoffScore}%" title="통과 기준 ${cutoffScore}점"></span></div>
+          </div>
+          <p class="vocab-result-guidance">${nextMessage}</p>
+          <div class="grammar-result-panel-bottom"><span>${currentRound}회차 통과 기준 <strong>${cutoffScore}점 이상</strong></span>${wrongAnswers.length ? '<a href="#vocabWrongAnswers" class="grammar-result-action">오답 확인 <span aria-hidden="true">↓</span></a>' : '<span>답안 제출 완료</span>'}${!passed && retryAvailableAt ? '<span class="font-bold">10분 후 재응시 가능</span>' : ''}</div>
+        </section>
+        <section id="vocabWrongAnswers" class="vocab-result-review">
         <!-- 오답 노트 섹션 -->
         ${wrongAnswers.length > 0 ? `
           <div class="text-left space-y-3 pt-2">
@@ -8891,17 +8810,13 @@ const App = {
           </div>
         ` : `
           <div class="p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">
-            ${vt.direction === 3 ? '모든 스펠링 문제를 완벽하게 맞혔습니다! (100점)' : (vt.direction === 2 ? '모든 객관식 문제를 완벽하게 맞혔습니다! (100점)' : '모든 단어 문제를 완벽하게 맞혔습니다! (100점)')}
+            ${waitingGrading ? '스펠링 1차 채점이 끝났습니다. 한국어 뜻은 선생님 채점 후 최종 성적에 반영됩니다.' : vt.direction === 3 ? '모든 스펠링 문제를 완벽하게 맞혔습니다! (100점)' : (vt.direction === 2 ? '모든 객관식 문제를 완벽하게 맞혔습니다! (100점)' : '모든 단어 문제를 완벽하게 맞혔습니다! (100점)')}
           </div>
         `}
 
-        <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          ${!passed && retryAvailableAt ? `<button disabled class="px-6 py-3 rounded-xl bg-slate-200 text-slate-500 font-bold flex items-center justify-center gap-2 text-xs"><i class="fa-solid fa-clock"></i> 10분 후 재응시 가능</button>` : ''}
-          <button onclick="App.exitVocabTest()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-sm text-xs">
-            <i class="fa-solid fa-arrow-left"></i> 학습공간으로 돌아가기
-          </button>
-        </div>
+        </section>
       </div>`;
+    window.scrollTo({ top: 0 });
   },
 
   async exitVocabTest() {

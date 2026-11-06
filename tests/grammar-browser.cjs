@@ -252,6 +252,34 @@ async function loadApp(page) {
   await page.evaluate(id => App.deleteGrammarTest(id), rootId);
   assert.equal(await page.evaluate(() => FirebaseStore.tests.length), 0);
   assert.equal(await page.evaluate(() => testDocuments.size), 0);
+  for (const scenario of [{ direction: 2, correct: 8, verdict: 'PASS' }, { direction: 3, correct: 6, verdict: 'FAIL' }, { direction: 4, correct: 8, verdict: 'REVIEW' }, { direction: 4, correct: 10, verdict: 'REVIEW' }, { direction: 5, correct: 10, verdict: 'PASS' }]) {
+    await page.setViewportSize({ width: 1280, height: 950 });
+    await page.evaluate(async scenario => {
+      App.closeAllModals();
+      App.state.isAdminLoggedIn = false; App.state.isStudentLoggedIn = true;
+      AppData.saveVocabTestResult = async result => { window.lastVocabResult = result; };
+      const words = Array.from({ length: 10 }, (_, i) => ({ en: `word${i}`, ko: `뜻 ${i}`, defEn: `Definition ${i}` }));
+      App.state.vocabTest = { studentId: 501, setId: 'vocab_result_fixture', setTitle: '워드마스터 · Day 01', direction: scenario.direction, score: scenario.correct, cutoffScore: 80, currentRound: 1, allWords: words, questions: words.map((word, i) => ({ word, answered: i < scenario.correct ? word.en : 'wrong', spellingInput: i < scenario.correct ? word.en : 'wrong', spellingCorrect: i < scenario.correct, meaningInput: word.ko, isCorrect: i < scenario.correct })), isCompleted: false };
+      App.showVocabTestView();
+      await App.renderVocabResult();
+      document.getElementById('toastContainer').replaceChildren();
+    }, scenario);
+    assert.equal(await page.locator('#vocabTestContent .vocab-single-result').count(), 1);
+    assert.equal(await page.locator('#vocabTestContent .grammar-result-panels').count(), 0);
+    assert.equal(await page.locator('#vocabTestContent .grammar-completion-verdict').innerText(), scenario.verdict);
+    assert.equal((await page.locator('#vocabTestContent .vocab-score-value').innerText()).replace(/\s/g, ''), `${scenario.correct * 10}점`);
+    assert.equal(await page.locator('#vocabTestView > div:first-child').isVisible(), false);
+    assert.equal(await page.evaluate(() => lastVocabResult.waitingGrading), scenario.verdict === 'REVIEW');
+    assert.equal(await page.evaluate(() => lastVocabResult.passed), scenario.verdict === 'PASS');
+    if (scenario.verdict === 'FAIL') assert.ok((await page.locator('#vocabTestContent').innerText()).includes('10분 후 재응시 가능'));
+    if (scenario.verdict === 'REVIEW' && scenario.correct === 10) assert.ok((await page.locator('#vocabTestContent').innerText()).includes('최종 성적에 반영'));
+    if (scenario.direction === 2) await page.screenshot({ path: '/tmp/yem-vocab-result-desktop.png', fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    if (scenario.direction === 2) await page.screenshot({ path: '/tmp/yem-vocab-result-mobile.png', fullPage: true });
+    await page.locator('#vocabTestContent').getByRole('button', { name: /학습공간으로 돌아가기/ }).click();
+    assert.equal(await page.evaluate(() => App.state.view), 'student');
+  }
   assert.deepEqual(errors, []);
   console.log(`Browser checks passed: ${totalBlanks} blanks, missing-answer confirmation/cancel, failed-submit retry, navigation/refresh guards, no draft saves, unanswered-submit confirmation and unified progress, 80-point pass, manual grading, failed-area-only retest, mobile layout.`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => { await browser?.close(); server.close(); });

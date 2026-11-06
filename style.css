@@ -824,3 +824,20 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-latest-status { padding:.25rem .55rem; border-radius:999px; font-weight:800; font-size:.8rem; }
 .grammar-latest-card > button { width:100%; font-size:.75rem; padding:.35rem .25rem; gap:.35rem; }
 @media(max-width:400px) { .grammar-latest-card { padding:.65rem; } .grammar-latest-status { font-size:.7rem; padding:.3rem .45rem; } .grammar-latest-card > button { width:100%; font-size:.7rem; } }
+
+#vocabTestView.vocab-result-active > div:first-child { display:none; }
+.vocab-result-page .grammar-result-subtitle { overflow-wrap:anywhere; }
+.vocab-result-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; gap:1rem; margin:2rem 0; }
+.vocab-result-stats > div { display:flex; flex-direction:column; gap:.4rem; }
+.vocab-result-stats strong { font-size:2rem; font-weight:900; }
+.vocab-result-stats span { font-size:.75rem; opacity:.65; }
+.grammar-result-practice.is-pending { background:linear-gradient(140deg,#78350f,#b45309); color:#fffbeb; border-color:#92400e; }
+.vocab-result-review { margin-top:1.5rem; border:1px solid #e2e8f0; background:white; border-radius:1.5rem; padding:1.5rem; scroll-margin-top:90px; }
+@media(max-width:640px) { .vocab-result-stats { gap:.5rem; } .vocab-result-review { padding:1rem; } }
+
+.vocab-single-result { min-height:570px; }
+.vocab-single-result .grammar-result-main { padding:2rem 0 1.5rem; }
+.vocab-single-result .vocab-result-stats { max-width:420px; margin:1.5rem 0 0; }
+.vocab-single-result .grammar-result-score-track { max-width:420px; }
+.vocab-result-guidance { max-width:650px; margin:0 auto 1.5rem; text-align:center; font-size:.85rem; line-height:1.8; opacity:.8; }
+@media(max-width:640px) { .vocab-single-result { min-height:540px; } .vocab-single-result .grammar-result-panel-bottom { flex-wrap:wrap; } }
