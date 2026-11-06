@@ -80,12 +80,12 @@ async function loadApp(page) {
     FirebaseStore.tests=Array.from({length:5},(_,i)=>({id:'source'+i,type:'VOCAB',studentId:501,date:`2026-11-0${i+2}`,status:'PASS',vocabSetIds:['reviewset'],title:'평일 단어'}));
     FirebaseStore.vocabTestResults=[{id:'source_result',testId:'source0',studentId:501,direction:2,completedAt:'2026-11-06T01:00:00Z',questionDetails:FirebaseStore.vocabSets[0].words.slice(0,4).map((word,i)=>({word,isCorrect:i>=2}))}];
     for(const [collection,items] of [['tests',FirebaseStore.tests],['vocabSets',FirebaseStore.vocabSets],['vocabTestResults',FirebaseStore.vocabTestResults]]) items.forEach(item=>testDocuments.set(`${collection}/${item.id}`,structuredClone(item)));
-    FirebaseStore.reviewSourcesReady={tests:true,vocabSets:true,vocabTestResults:true,vocabReviewResults:false};
+    FirebaseStore.reviewSourcesReady={tests:true,vocabSets:true,vocabTestResults:false};
     AppData.queueWeeklyReviews();
   });
   await page.waitForTimeout(400);
   assert.equal(await page.evaluate(()=>AppData.getTests().some(t=>t.type==='VOCAB_REVIEW')),false,'partial cloud loading cannot create review');
-  await page.evaluate(()=>{ FirebaseStore.reviewSourcesReady.vocabReviewResults=true;AppData.queueWeeklyReviews(); });
+  await page.evaluate(()=>{ FirebaseStore.reviewSourcesReady.vocabTestResults=true;AppData.queueWeeklyReviews(); });
   await page.waitForFunction(()=>AppData.getTests().some(t=>t.type==='VOCAB_REVIEW'));
   const id=await page.evaluate(()=>AppData.getTests().find(t=>t.type==='VOCAB_REVIEW').id);
   await page.evaluate(id=>App.openWeeklyReviewModal(id),id);

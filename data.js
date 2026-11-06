@@ -1154,7 +1154,6 @@ const FirebaseStore = {
   vocabTestResults: [],
   vocabReviewResults: [],
   reviewSourcesReady: {},
-  vocabReviewResultsListenerStarted: false,
   textMemorizeResults: [],
   studentsLoaded: false,
   testsLoaded: false,
@@ -1712,6 +1711,7 @@ const AppData = {
         FirebaseStore.reviewSourcesReady[collectionName] = true;
       }
       if (cacheKey === 'tests') {
+        FirebaseStore.vocabReviewResults = items.filter(t => t.weeklyReviewResult).map(t => t.weeklyReviewResult);
         FirebaseStore.testsLoaded = true;
         if (typeof App !== 'undefined' && typeof App.updateSyncStatus === 'function') {
           App.updateSyncStatus('synced', '최신 데이터 동기화 완료');
@@ -1751,7 +1751,7 @@ const AppData = {
   async initializeCloudData() {
     await this.waitForFirebase();
 
-    const [loadedTests, vocabSets, vocabTestResults, vocabReviewResults] = await Promise.all([
+    const [loadedTests, vocabSets, vocabTestResults] = await Promise.all([
       this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })).catch(e => {
         console.warn('tests 로드 실패 (로컬 유지):', e);
         return [];
@@ -1771,8 +1771,7 @@ const AppData = {
       })).catch(e => {
         console.warn('vocabTestResults 로드 실패:', e);
         return [];
-      }),
-      this.loadCollection('vocabReviewResults').catch(e => { console.warn('주간 복습 결과 로드 실패:', e); return []; })
+      })
     ]);
 
     // 1. 10월 31일 이전 일정은 삭제하고, 기본/샘플 시험 자동 병합을 하지 않습니다.
@@ -1788,7 +1787,7 @@ const AppData = {
 
     FirebaseStore.vocabSets = vocabSets;
     FirebaseStore.vocabTestResults = vocabTestResults;
-    FirebaseStore.vocabReviewResults = vocabReviewResults;
+    FirebaseStore.vocabReviewResults = tests.filter(t => t.weeklyReviewResult).map(t => t.weeklyReviewResult);
 
     if (loadedTests.length === 0) {
       const legacyTests = this.getLegacyArray(LEGACY_STORAGE_KEYS.tests);
@@ -2285,7 +2284,6 @@ const AppData = {
       collectionName: 'textMemorizeResults', cacheKey: 'textMemorizeResults', listenerKey: 'textMemorizeResultsListenerStarted',
       normalize: result => ({ ...result, studentId: Number(result.studentId) })
     });
-    this.startCollectionListener({ collectionName: 'vocabReviewResults', cacheKey: 'vocabReviewResults', listenerKey: 'vocabReviewResultsListenerStarted', normalize: result => result });
     this.startSpecialScienceResultsListener();
   },
 
@@ -2655,7 +2653,7 @@ const AppData = {
 
       vocabTestResults:
         this.getVocabTestResults(),
-      vocabReviewResults: FirebaseStore.vocabReviewResults || []
+      vocabReviewResults: this.getTests().filter(t => t.weeklyReviewResult).map(t => t.weeklyReviewResult)
 
     };
 
@@ -2707,8 +2705,11 @@ const AppData = {
       }
 
       if (Array.isArray(importedObj.vocabReviewResults)) {
-        await this.replaceCollection('vocabReviewResults', importedObj.vocabReviewResults, result => result.id);
-        FirebaseStore.vocabReviewResults = importedObj.vocabReviewResults;
+        for (const result of importedObj.vocabReviewResults) {
+          const test = this.getTests().find(t => t.id === result.id && t.type === 'VOCAB_REVIEW');
+          if (test && !test.weeklyReviewResult) await this.saveOrUpdateTest({ ...test, weeklyReviewResult: result });
+        }
+        FirebaseStore.vocabReviewResults = this.getTests().filter(t => t.weeklyReviewResult).map(t => t.weeklyReviewResult);
       }
       return true;
 

@@ -134,7 +134,7 @@ test('actual vocabulary save preserves pre-rollout detailed history without chan
   await run(`AppData.saveVocabTestResult({...old,score:100,passed:true,startedAt:'new',completedAt:'newend',questionDetails:[{word:{en:'apple',ko:'사과'},isCorrect:true}]})`);
   assert.equal(run('FirebaseStore.vocabTestResults[0].attempts.length'),1,'legacy attempt counter behavior retained');
   assert.equal(run('WeeklyReviewLogic.attempts(FirebaseStore.vocabTestResults[0]).length'),2,'legacy detailed result still available for review');
-  run("FirebaseStore.vocabReviewResults=[{id:'review',firstScore:70}]");
+  run("FirebaseStore.tests=[{id:'review',type:'VOCAB_REVIEW',date:'2026-11-07',weeklyReviewResult:{id:'review',firstScore:70}}]");
   assert.equal(run('AppData.exportData().vocabReviewResults[0].firstScore'),70);
 });
 test('same legacy word repeated across sets is restored once; equal mistake counts rank by recency', () => {

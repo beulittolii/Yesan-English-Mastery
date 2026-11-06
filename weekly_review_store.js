@@ -1,13 +1,13 @@
 /** 주차별 고정 문서와 제출 회차 번호로 중복 생성·중복 제출을 방지한다. */
 Object.assign(AppData, {
-  getWeeklyReviewResult(id) { return (FirebaseStore.vocabReviewResults || []).find(r => r.id === id) || null; },
+  getWeeklyReviewResult(id) { return this.getTests().find(t => t.id === id)?.weeklyReviewResult || (FirebaseStore.vocabReviewResults || []).find(r => r.id === id) || null; },
   cacheWeeklyReview(test, result) {
     if (result) FirebaseStore.vocabReviewResults = [...(FirebaseStore.vocabReviewResults || []).filter(r => r.id !== result.id), result];
     this.cacheGrammarTests([test]);
   },
   queueWeeklyReviews() {
     if (this._weeklyReviewTimer || this._weeklyReviewRunning || !this.isFirebaseReady()) return;
-    if (!['tests','vocabSets','vocabTestResults','vocabReviewResults'].every(key => FirebaseStore.reviewSourcesReady?.[key])) return;
+    if (!['tests','vocabSets','vocabTestResults'].every(key => FirebaseStore.reviewSourcesReady?.[key])) return;
     this._weeklyReviewTimer = setTimeout(async () => {
       this._weeklyReviewTimer = null;
       this._weeklyReviewRunning = true;
@@ -75,10 +75,10 @@ Object.assign(AppData, {
     if (!this.isFirebaseReady()) throw new Error('연결을 확인한 뒤 다시 제출해주세요.');
     const { doc, runTransaction } = window.firebaseFns;
     const saved = await runTransaction(window.firebaseDB, async tx => {
-      const testRef = doc(window.firebaseDB, 'tests', id), resultRef = doc(window.firebaseDB, 'vocabReviewResults', id);
-      const testSnapshot = await tx.get(testRef), resultSnapshot = await tx.get(resultRef);
+      const testRef = doc(window.firebaseDB, 'tests', id);
+      const testSnapshot = await tx.get(testRef);
       if (!testSnapshot.exists()) throw new Error('복습 시험을 찾을 수 없습니다.');
-      const test = testSnapshot.data(), previous = resultSnapshot.exists() ? resultSnapshot.data() : null;
+      const test = testSnapshot.data(), previous = test.weeklyReviewResult || null;
       if (test.type !== 'VOCAB_REVIEW' || !WeeklyReviewLogic.available(test) || test.status === 'REVIEW_DATA_NEEDED') throw new Error('아직 응시할 수 없습니다.');
       if (!App.state.isAdminLoggedIn && Number(App.state.selectedStudentId) !== Number(test.studentId)) throw new Error('본인의 복습만 제출할 수 있습니다.');
       if ((previous?.rounds.length || 0) >= roundNumber) return { test, result: previous }; // 재전송은 기존 결과를 반환
@@ -89,7 +89,8 @@ Object.assign(AppData, {
       const result = { id, studentId: test.studentId, firstScore: previous?.firstScore ?? grade.score, initialWrongCount: previous?.initialWrongCount ?? grade.remainingIds.length, remainingIds: grade.remainingIds, completed: !grade.remainingIds.length, rounds: [...(previous?.rounds || []), { number: roundNumber, ...grade, submittedAt: new Date().toISOString() }] };
       test.status = result.completed ? 'PASS' : 'SCHEDULED';
       test.score = result.firstScore;
-      tx.set(testRef, test); tx.set(resultRef, result);
+      test.weeklyReviewResult = result;
+      tx.set(testRef, test);
       return { test, result };
     });
     this.cacheWeeklyReview(saved.test, saved.result);
