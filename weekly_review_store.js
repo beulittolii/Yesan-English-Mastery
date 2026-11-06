@@ -6,7 +6,8 @@ Object.assign(AppData, {
     this.cacheGrammarTests([test]);
   },
   queueWeeklyReviews() {
-    if (this._weeklyReviewTimer || this._weeklyReviewRunning || !this.isFirebaseReady()) return;
+    if (this._weeklyReviewRunning) { this._weeklyReviewDirty = true; return; }
+    if (this._weeklyReviewTimer || !this.isFirebaseReady()) return;
     if (!['tests','vocabSets','vocabTestResults'].every(key => FirebaseStore.reviewSourcesReady?.[key])) return;
     this._weeklyReviewTimer = setTimeout(async () => {
       this._weeklyReviewTimer = null;
@@ -20,15 +21,18 @@ Object.assign(AppData, {
           weeks.set(WeeklyReviewLogic.id(t.studentId, monday), { studentId: t.studentId, monday });
         }
         for (const [id, group] of weeks) {
-          if (tests.some(t => t.id === id && t.status !== 'REVIEW_DATA_NEEDED')) continue;
-          const proposal = WeeklyReviewLogic.build({ tests, results: this.getVocabTestResults(), sets: this.getVocabSets(), ...group });
+          if (tests.some(t => t.id === id && !WeeklyReviewLogic.mutable(t))) continue;
+          const proposal = WeeklyReviewLogic.prepare({ tests, results: this.getVocabTestResults(), sets: this.getVocabSets(), ...group });
           if (!proposal) continue;
           const existing = tests.find(t => t.id === id);
-          if (existing?.status === 'REVIEW_DATA_NEEDED' && proposal.status === existing.status && existing.unresolvedCount === proposal.unresolvedCount) continue;
+          if (existing && WeeklyReviewLogic.samePreparation(existing, proposal)) continue;
           await this.createWeeklyReview(group);
         }
       } catch (error) { console.warn('주간 복습 생성 실패. 다음 동기화 시 다시 확인합니다.', error); }
-      finally { this._weeklyReviewRunning = false; }
+      finally {
+        this._weeklyReviewRunning = false;
+        if (this._weeklyReviewDirty) { this._weeklyReviewDirty = false; this.queueWeeklyReviews(); }
+      }
     }, 250);
   },
   async createWeeklyReview({ studentId, monday }) {
@@ -47,7 +51,7 @@ Object.assign(AppData, {
     const saved = await runTransaction(window.firebaseDB, async tx => {
       const ref = doc(window.firebaseDB, 'tests', id);
       const existing = await tx.get(ref);
-      if (existing.exists() && existing.data().status !== 'REVIEW_DATA_NEEDED') return existing.data();
+      if (existing.exists() && !WeeklyReviewLogic.mutable(existing.data())) return existing.data();
       // 서버의 최종 채점/통과 상태를 다시 읽으며 변경 충돌 시 Firestore가 재시도한다.
       const tests = [], results = [], liveSets = [];
       for (const test of sourceTests) {
@@ -63,8 +67,13 @@ Object.assign(AppData, {
         const snapshot = await tx.get(doc(window.firebaseDB, 'vocabSets', set.id));
         liveSets.push(snapshot.exists() ? { ...snapshot.data(), id: set.id } : set);
       }
-      const test = WeeklyReviewLogic.build({ tests, results, sets: liveSets, studentId, monday });
+      const test = WeeklyReviewLogic.prepare({ tests, results, sets: liveSets, studentId, monday });
       if (!test) return null;
+      if (existing.exists()) {
+        if (WeeklyReviewLogic.samePreparation(existing.data(), test)) return existing.data();
+        test.createdAt = existing.data().createdAt || test.createdAt;
+        if (test.reviewStage === 'READY') test.unlockedAt = new Date().toISOString();
+      }
       tx.set(ref, test);
       return test;
     });

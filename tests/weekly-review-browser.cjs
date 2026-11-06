@@ -77,7 +77,7 @@ async function loadApp(page) {
   await setup();
   await page.evaluate(() => {
     FirebaseStore.vocabSets=[{id:'reviewset',title:'복습 원본',words:[{en:'apple',ko:'사과'},{en:'banana',ko:'바나나'},{en:'orange',ko:'오렌지'},{en:'grape',ko:'포도'},{en:'melon',ko:'멜론'},{en:'peach',ko:'복숭아'}]}];
-    FirebaseStore.tests=Array.from({length:5},(_,i)=>({id:'source'+i,type:'VOCAB',studentId:501,date:`2026-11-0${i+2}`,status:'PASS',vocabSetIds:['reviewset'],title:'평일 단어'}));
+    FirebaseStore.tests=Array.from({length:5},(_,i)=>({id:'source'+i,type:'VOCAB',studentId:501,date:`2026-11-0${i+2}`,status:'SCHEDULED',vocabSetIds:['reviewset'],title:'평일 단어'}));
     FirebaseStore.vocabTestResults=[{id:'source_result',testId:'source0',studentId:501,direction:2,completedAt:'2026-11-06T01:00:00Z',questionDetails:FirebaseStore.vocabSets[0].words.slice(0,4).map((word,i)=>({word,isCorrect:i>=2}))}];
     for(const [collection,items] of [['tests',FirebaseStore.tests],['vocabSets',FirebaseStore.vocabSets],['vocabTestResults',FirebaseStore.vocabTestResults]]) items.forEach(item=>testDocuments.set(`${collection}/${item.id}`,structuredClone(item)));
     FirebaseStore.reviewSourcesReady={tests:true,vocabSets:true,vocabTestResults:false};
@@ -90,7 +90,17 @@ async function loadApp(page) {
   const id=await page.evaluate(()=>AppData.getTests().find(t=>t.type==='VOCAB_REVIEW').id);
   await page.evaluate(id=>App.openWeeklyReviewModal(id),id);
   await page.waitForTimeout(250);
-  assert.ok(await page.locator('#detailModalBody').innerText().then(t=>t.includes('2026-11-07 00:00부터')));
+  assert.ok(await page.locator('#detailModalBody').innerText().then(t=>t.includes('5일치 단어 시험 완료 후')));
+  assert.equal(await page.evaluate(id=>AppData.getTests().find(t=>t.id===id).reviewStage,id),'LOCKED');
+  await page.evaluate(id=>App.startWeeklyReview(id),id);
+  assert.notEqual(await page.evaluate(()=>App.state.view),'weeklyReview','placeholder cannot start');
+  await page.evaluate(()=>{
+    FirebaseStore.tests.filter(t=>t.type==='VOCAB').forEach(t=>{t.status='PASS';testDocuments.set('tests/'+t.id,structuredClone(t));});
+    AppData.queueWeeklyReviews();
+  });
+  await page.waitForFunction(id=>AppData.getTests().find(t=>t.id===id).reviewStage==='READY',id);
+  await page.waitForFunction(()=>document.getElementById('detailModalBody').innerText.includes('2026-11-07 00:00부터'));
+
   // Calendar badge is the exact same renderer and dimensions as regular vocabulary.
   for(const width of [1280,390]) {
     await page.setViewportSize({width,height:950});

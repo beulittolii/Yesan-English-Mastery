@@ -1729,6 +1729,7 @@ const AppData = {
     if (typeof App === 'undefined' || !App.state) return;
 
     this.queueWeeklyReviews?.();
+    App.refreshWeeklyReviewModal?.();
     if (App.state.view === 'landing') App.renderLanding?.();
     if (App.state.view === 'student') App.renderStudentDashboard?.();
     if (App.state.view === 'admin') App.renderAdminDashboard?.();

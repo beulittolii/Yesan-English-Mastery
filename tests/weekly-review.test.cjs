@@ -100,7 +100,7 @@ test('concurrent generation uses one frozen student/week document; live server p
   f.run('results[0].questionDetails=[]'); f.persist();
   const frozen=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})"); assert.deepEqual(JSON.parse(JSON.stringify(frozen.questions)),JSON.parse(JSON.stringify(a.questions)));
   const g=fixture();g.persist();g.documents.get('tests/source4').status='SCHEDULED';
-  assert.equal(await g.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})"),null);
+  assert.equal((await g.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})")).reviewStage,'LOCKED');
 });
 test('round transaction retains initial score, resumes only errors, dedupes double submit, never writes source grades', async () => {
   const f=fixture();f.persist(); const original=JSON.stringify(f.documents.get('vocabTestResults/result'));
@@ -146,4 +146,35 @@ test('same legacy word repeated across sets is restored once; equal mistake coun
   assert.equal(f.run('build().questions.length'),2);
   assert.equal(f.run('build().questions[0].word.en'),'word1');
   assert.equal(f.run('build().questions[1].word.en'),'apple');
+});
+test('first weekly vocabulary assignment creates a Saturday placeholder without questions and cannot start', async () => {
+  const f=fixture();f.run("tests.splice(1);tests[0].status='SCHEDULED';results.splice(0)");f.persist();
+  const locked=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");
+  assert.equal(locked.date,'2026-11-07');assert.equal(locked.reviewStage,'LOCKED');assert.equal(locked.questions.length,0);
+  assert.equal(locked.assignedDays,1);assert.equal(locked.completedDays,0);
+  f.run(`const locked=${JSON.stringify(locked)}`);
+  assert.equal(f.run("WeeklyReviewLogic.available(locked,new Date('2026-11-08T00:00:00Z'))"),false);
+  await assert.rejects(f.run(`AppData.submitWeeklyReviewRound('${locked.id}',1,{})`),/응시/);
+});
+test('same placeholder unlocks after every weekday passes, preserves creation time, and freezes content exactly once', async () => {
+  const f=fixture();f.run("tests[4].status='SCHEDULED'");f.persist();
+  const first=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");assert.equal(first.reviewStage,'LOCKED');assert.equal(first.completedDays,4);
+  f.run("tests[4].status='PASS'");f.persist();
+  const ready=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");
+  assert.equal(ready.id,first.id);assert.equal(ready.createdAt,first.createdAt);assert.equal(ready.reviewStage,'READY');assert.ok(ready.questions.length);
+  f.run('results[0].questionDetails=[]');f.persist();
+  const frozen=await f.run("AppData.createWeeklyReview({studentId:1,monday:'2026-11-02'})");assert.equal(JSON.stringify(frozen.questions),JSON.stringify(ready.questions));
+});
+test('pending integrated grading and multiple daily tests keep the precreated review locked', () => {
+  const f=fixture();f.run("const prepare=()=>WeeklyReviewLogic.prepare({tests,results,sets,studentId:1,monday:'2026-11-02'});results.push({...results[0],id:'admin',direction:4,passed:true,waitingGrading:true})");
+  assert.equal(f.run('prepare().reviewStage'),'LOCKED');assert.equal(f.run('prepare().completedDays'),4);
+  f.run('results[1].gradedByAdmin=true;results[1].waitingGrading=false');assert.equal(f.run('prepare().reviewStage'),'READY');
+  f.run("tests.push({...tests[0],id:'extra',status:'SCHEDULED'})");assert.equal(f.run('prepare().reviewStage'),'LOCKED');
+  f.run("tests[5].status='PASS'");assert.equal(f.run('prepare().reviewStage'),'READY');
+});
+test('no assignment creates nothing; a completed no-error week marks its precreated review complete without an empty exam', () => {
+  const f=fixture();f.run("const prepare=()=>WeeklyReviewLogic.prepare({tests,results,sets,studentId:1,monday:'2026-11-02'});results[0].questionDetails=[detail(0,true)]");
+  assert.equal(f.run('prepare().reviewStage'),'NO_ERRORS');assert.equal(f.run('prepare().status'),'PASS');assert.equal(f.run('prepare().questions.length'),0);
+  assert.equal(f.run("WeeklyReviewLogic.available(prepare(),new Date('2026-11-08T00:00:00Z'))"),false);
+  f.run('tests.splice(0)');assert.equal(f.run('prepare()'),null);
 });
