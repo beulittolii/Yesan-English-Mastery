@@ -595,7 +595,9 @@ const App = {
   },
 
   updateHeaderActions() {
+    AppData.queueWeeklyReviews?.();
     document.getElementById('vocabTestView')?.classList.toggle('vocab-result-active', this.state.view === 'vocabTest' && Boolean(this.state.vocabTest?.isCompleted));
+    document.getElementById('weeklyReviewView')?.classList.toggle('hidden', this.state.view !== 'weeklyReview');
     document.getElementById('grammarCompletionView')?.classList.toggle('hidden', this.state.view !== 'grammarResult');
     document.getElementById('grammarTestView')?.classList.toggle('hidden', this.state.view !== 'grammarTest');
     const container = document.getElementById('headerNavActions');
@@ -1055,6 +1057,10 @@ const App = {
 
     let testsHtml = '';
     dayTests.forEach(test => {
+      if (test.type === 'VOCAB_REVIEW') {
+        if (test.status !== 'REVIEW_DATA_NEEDED') testsHtml += this.renderCalendarLearningTest(test, '주간 복습', 'fa-rotate', 'openWeeklyReviewModal');
+        return;
+      }
       if (test.type === 'GRAMMAR') {
         if (test.date === dateStr) testsHtml += this.renderCalendarLearningTest(test, '문법 테스트', 'fa-book', 'openGrammarTestModal');
         return;
@@ -1215,7 +1221,7 @@ const App = {
     const container = document.getElementById('studentTestsListContent');
     if (!container) return;
 
-    let tests = AppData.getTestsByStudentId(this.state.selectedStudentId);
+    let tests = AppData.getTestsByStudentId(this.state.selectedStudentId).filter(t => t.status !== 'REVIEW_DATA_NEEDED');
     const filter = this.state.studentListFilter;
 
     if (filter === 'SCHEDULED') {
@@ -1265,8 +1271,8 @@ const App = {
 
           <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
             <div class="text-left sm:text-right">
-              <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.type === 'GRAMMAR' ? '개념·실전 각각 80점 이상' : test.cutoff)}</strong></div>
-              <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.type === 'GRAMMAR' ? this.grammarSummary(test) : test.score || '미응시'}</strong></div>
+              <div class="text-xs text-slate-400">커트라인: <strong class="text-slate-700">${this.escapeHtml(test.type === 'VOCAB_REVIEW' ? '모든 오답 해결' : test.type === 'GRAMMAR' ? '개념·실전 각각 80점 이상' : test.cutoff)}</strong></div>
+              <div class="text-xs text-slate-400">본인 점수: <strong class="${test.score ? 'text-indigo-600 font-bold' : 'text-slate-400'}">${test.type === 'GRAMMAR' ? this.grammarSummary(test) : (test.score === 0 ? '0' : test.score) || '미응시'}</strong></div>
             </div>
             ${test.type === 'PRACTICE' ? (test.practiceResult ? `
               <button type="button" onclick="event.stopPropagation(); App.viewPracticeTestResultDetail('${test.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap">
@@ -1298,6 +1304,7 @@ const App = {
     const test = allTests.find(t => String(t.id) === String(testId) || t.id === testId);
     if (!test) return;
 
+    if (test.type === 'VOCAB_REVIEW') { this.openWeeklyReviewModal(testId); return; }
     if (test.type === 'GRAMMAR') { this.openGrammarTestModal(testId); return; }
 
     if (test.type === 'VOCAB') {
@@ -3609,6 +3616,7 @@ const App = {
     }
 
     tbody.innerHTML = tests.map(test => {
+      if (test.type === 'VOCAB_REVIEW') return this.renderWeeklyReviewAdminRow(test);
       if (test.type === 'GRAMMAR') return this.renderGrammarAdminRow(test);
       const timeStatus = this.getTestTimeStatus(test);
       const isAllDay = !test.time || test.time === '00:00' || test.time === '18:00' || (test.endTime && test.endTime.startsWith('23:59'));
@@ -4199,6 +4207,7 @@ const App = {
   openEditTestModal(testId) {
     const allTests = AppData.getTests();
     const test = allTests.find(t => t.id === testId);
+    if (test?.type === 'VOCAB_REVIEW') { this.openWeeklyReviewModal(testId); return; }
     if (test?.type === 'GRAMMAR') { this.openGrammarAssignmentModal(testId); return; }
     if (!test) {
       this.toast('수정할 시험을 찾을 수 없습니다.', 'error');

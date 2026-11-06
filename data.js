@@ -1152,6 +1152,9 @@ const FirebaseStore = {
     return cachedVocabSets;
   })(),
   vocabTestResults: [],
+  vocabReviewResults: [],
+  reviewSourcesReady: {},
+  vocabReviewResultsListenerStarted: false,
   textMemorizeResults: [],
   studentsLoaded: false,
   testsLoaded: false,
@@ -1586,6 +1589,10 @@ const AppData = {
       getDocs(collection(window.firebaseDB, collectionName)),
       `${collectionName} 클라우드 읽기`
     );
+    if (!snapshot.metadata?.fromCache) {
+      FirebaseStore.reviewSourcesReady ||= {};
+      FirebaseStore.reviewSourcesReady[collectionName] = true;
+    }
     return snapshot.docs.map(document => normalize({
       ...document.data(),
       id: document.data().id || document.id
@@ -1641,7 +1648,7 @@ const AppData = {
     if (FirebaseStore[listenerKey] || !this.isFirebaseReady()) return;
 
     const { collection, onSnapshot } = window.firebaseFns;
-    onSnapshot(collection(window.firebaseDB, collectionName), snapshot => {
+    onSnapshot(collection(window.firebaseDB, collectionName), { includeMetadataChanges: true }, snapshot => {
       let items = snapshot.docs.map(document => normalize({
         ...document.data(),
         id: document.data().id || document.id
@@ -1700,6 +1707,10 @@ const AppData = {
       }
 
       FirebaseStore[cacheKey] = items;
+      if (!snapshot.metadata?.fromCache) {
+        FirebaseStore.reviewSourcesReady ||= {};
+        FirebaseStore.reviewSourcesReady[collectionName] = true;
+      }
       if (cacheKey === 'tests') {
         FirebaseStore.testsLoaded = true;
         if (typeof App !== 'undefined' && typeof App.updateSyncStatus === 'function') {
@@ -1717,6 +1728,7 @@ const AppData = {
   refreshCloudScreens() {
     if (typeof App === 'undefined' || !App.state) return;
 
+    this.queueWeeklyReviews?.();
     if (App.state.view === 'landing') App.renderLanding?.();
     if (App.state.view === 'student') App.renderStudentDashboard?.();
     if (App.state.view === 'admin') App.renderAdminDashboard?.();
@@ -1739,7 +1751,7 @@ const AppData = {
   async initializeCloudData() {
     await this.waitForFirebase();
 
-    const [loadedTests, vocabSets, vocabTestResults] = await Promise.all([
+    const [loadedTests, vocabSets, vocabTestResults, vocabReviewResults] = await Promise.all([
       this.loadCollection('tests', test => ({ ...test, studentId: Number(test.studentId) })).catch(e => {
         console.warn('tests 로드 실패 (로컬 유지):', e);
         return [];
@@ -1759,7 +1771,8 @@ const AppData = {
       })).catch(e => {
         console.warn('vocabTestResults 로드 실패:', e);
         return [];
-      })
+      }),
+      this.loadCollection('vocabReviewResults').catch(e => { console.warn('주간 복습 결과 로드 실패:', e); return []; })
     ]);
 
     // 1. 10월 31일 이전 일정은 삭제하고, 기본/샘플 시험 자동 병합을 하지 않습니다.
@@ -1775,6 +1788,7 @@ const AppData = {
 
     FirebaseStore.vocabSets = vocabSets;
     FirebaseStore.vocabTestResults = vocabTestResults;
+    FirebaseStore.vocabReviewResults = vocabReviewResults;
 
     if (loadedTests.length === 0) {
       const legacyTests = this.getLegacyArray(LEGACY_STORAGE_KEYS.tests);
@@ -2186,7 +2200,7 @@ const AppData = {
       const testsList = FirebaseStore.tests || [];
 
       testsList.forEach(t => {
-        if (t.type === 'GRAMMAR') return;
+        if (t.type === 'GRAMMAR' || t.type === 'VOCAB_REVIEW') return;
         // 본문 암기(TEXT_MEMORIZE)는 절대로 다른 시험으로 변환하지 않고 유지
         if (t.type === 'TEXT_MEMORIZE' || (t.id && String(t.id).startsWith('tm_')) || (t.title && t.title.includes('본문')) || (Array.isArray(t.passageIds) && t.passageIds.length > 0)) {
           t.type = 'TEXT_MEMORIZE';
@@ -2271,6 +2285,7 @@ const AppData = {
       collectionName: 'textMemorizeResults', cacheKey: 'textMemorizeResults', listenerKey: 'textMemorizeResultsListenerStarted',
       normalize: result => ({ ...result, studentId: Number(result.studentId) })
     });
+    this.startCollectionListener({ collectionName: 'vocabReviewResults', cacheKey: 'vocabReviewResults', listenerKey: 'vocabReviewResultsListenerStarted', normalize: result => result });
     this.startSpecialScienceResultsListener();
   },
 
@@ -2471,6 +2486,7 @@ const AppData = {
       throw error;
     }
 
+    this.queueWeeklyReviews?.();
     return testData;
   },
 
@@ -2638,7 +2654,8 @@ const AppData = {
         this.getVocabSets(),
 
       vocabTestResults:
-        this.getVocabTestResults()
+        this.getVocabTestResults(),
+      vocabReviewResults: FirebaseStore.vocabReviewResults || []
 
     };
 
@@ -2689,6 +2706,10 @@ const AppData = {
 
       }
 
+      if (Array.isArray(importedObj.vocabReviewResults)) {
+        await this.replaceCollection('vocabReviewResults', importedObj.vocabReviewResults, result => result.id);
+        FirebaseStore.vocabReviewResults = importedObj.vocabReviewResults;
+      }
       return true;
 
     }
@@ -2995,6 +3016,9 @@ const AppData = {
       );
 
     const attempt = {
+      questionDetails: resultData.questionDetails || [],
+      waitingGrading: Boolean(resultData.waitingGrading),
+      gradedByAdmin: Boolean(resultData.gradedByAdmin),
 
       score:
         resultData.score,
@@ -3026,15 +3050,31 @@ const AppData = {
       const previous =
         results[index];
 
+      // 배포 전 기록도 다음 응시가 덮어쓰기 전에 마지막 상세 답안을 과거 회차에 보존한다.
+      const history = (previous.attempts || []).map(item => ({ ...item }));
+      const reviewHistory = [...(previous.reviewHistory || [])];
+      if (previous.completedAt) {
+        const previousIndex = history.findLastIndex(item => item.completedAt === previous.completedAt && (item.startedAt || item.completedAt) === (previous.startedAt || previous.completedAt));
+        const previousSnapshot = {
+          score: previous.score ?? 0, correctCount: previous.correctCount ?? 0, total: previous.total ?? 0,
+          passed: Boolean(previous.passed), waitingGrading: Boolean(previous.waitingGrading), gradedByAdmin: Boolean(previous.gradedByAdmin),
+          wrongAnswers: previous.wrongAnswers || [], questionDetails: previous.questionDetails || [],
+          startedAt: previous.startedAt || previous.completedAt, completedAt: previous.completedAt
+        };
+        if (previousIndex >= 0) history[previousIndex] = { ...history[previousIndex], ...previousSnapshot };
+        else if (previous.questionDetails?.length) reviewHistory.push(previousSnapshot);
+      }
+
       results[index] = {
 
         ...previous,
 
         ...resultData,
+        reviewHistory,
 
         attempts: [
 
-          ...(previous.attempts || []),
+          ...history,
 
           attempt
 

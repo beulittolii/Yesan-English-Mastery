@@ -841,3 +841,25 @@ u, .font-exam u, .passage-text u, .underline {
 .vocab-single-result .grammar-result-score-track { max-width:420px; }
 .vocab-result-guidance { max-width:650px; margin:0 auto 1.5rem; text-align:center; font-size:.85rem; line-height:1.8; opacity:.8; }
 @media(max-width:640px) { .vocab-single-result { min-height:540px; } .vocab-single-result .grammar-result-panel-bottom { flex-wrap:wrap; } }
+
+/* 주간 복습: 기존 단어 성적표와 같은 전체 화면 구성 */
+.weekly-review-exam { max-width:840px; margin:1rem auto 3rem; }
+.weekly-review-progress { height:8px; overflow:hidden; background:#e2e8f0; border-radius:20px; margin-bottom:2rem; }
+.weekly-review-progress > div { height:100%; background:#6366f1; border-radius:inherit; transition:width .2s; }
+.weekly-review-question { padding:clamp(1.25rem,4vw,3rem); border:1px solid #e2e8f0; border-radius:1.5rem; background:white; }
+.weekly-review-question h2 { font-size:clamp(1.7rem,4vw,2.5rem); font-weight:900; margin:1.2rem 0 2rem; overflow-wrap:anywhere; }
+.weekly-review-choice { display:flex; text-align:left; gap:1rem; padding:1rem; width:100%; border:2px solid #e2e8f0; border-radius:1rem; font-weight:700; }
+.weekly-review-choice.selected { border-color:#6366f1; color:#4338ca; background:#eef2ff; }
+.weekly-review-input { width:100%; padding:1.2rem; border:2px solid #cbd5e1; border-radius:1rem; font-size:1.2rem; }
+.weekly-review-input:focus { outline:2px solid #6366f1; border-color:transparent; }
+.weekly-review-secondary { padding:.9rem 1.3rem; border:1px solid #cbd5e1; border-radius:.85rem; font-weight:700; }
+.weekly-review-secondary:disabled { opacity:.35; }
+.weekly-review-nav { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:2rem; }
+.weekly-review-nav button { width:38px; height:38px; border-radius:.6rem; background:#f1f5f9; font-weight:700; }
+.weekly-review-nav .answered { background:#e0e7ff; color:#4338ca; }
+.weekly-review-nav .current { outline:2px solid #6366f1; outline-offset:2px; }
+.weekly-review-in-progress { background:linear-gradient(140deg,#1e1b4b,#4338ca); color:#eef2ff; }
+.grammar-result-main .weekly-review-verdict { font-size:clamp(2.4rem,7vw,5.5rem); }
+.weekly-review-answer { border-bottom:1px solid #e2e8f0; padding:1rem 0; overflow-wrap:anywhere; font-size:.875rem; line-height:1.9; }
+.weekly-review-answer strong { display:block; font-size:1rem; }
+.weekly-review-answer strong span { font-weight:500; color:#64748b; margin-left:.6rem; }

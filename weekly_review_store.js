@@ -1,0 +1,98 @@
+/** 주차별 고정 문서와 제출 회차 번호로 중복 생성·중복 제출을 방지한다. */
+Object.assign(AppData, {
+  getWeeklyReviewResult(id) { return (FirebaseStore.vocabReviewResults || []).find(r => r.id === id) || null; },
+  cacheWeeklyReview(test, result) {
+    if (result) FirebaseStore.vocabReviewResults = [...(FirebaseStore.vocabReviewResults || []).filter(r => r.id !== result.id), result];
+    this.cacheGrammarTests([test]);
+  },
+  queueWeeklyReviews() {
+    if (this._weeklyReviewTimer || this._weeklyReviewRunning || !this.isFirebaseReady()) return;
+    if (!['tests','vocabSets','vocabTestResults','vocabReviewResults'].every(key => FirebaseStore.reviewSourcesReady?.[key])) return;
+    this._weeklyReviewTimer = setTimeout(async () => {
+      this._weeklyReviewTimer = null;
+      this._weeklyReviewRunning = true;
+      try {
+        const tests = this.getTests();
+        const weeks = new Map();
+        for (const t of tests.filter(t => t.type === 'VOCAB')) {
+          if (!App.state.isAdminLoggedIn && Number(t.studentId) !== Number(App.state.selectedStudentId)) continue;
+          const monday = WeeklyReviewLogic.monday(t.date);
+          weeks.set(WeeklyReviewLogic.id(t.studentId, monday), { studentId: t.studentId, monday });
+        }
+        for (const [id, group] of weeks) {
+          if (tests.some(t => t.id === id && t.status !== 'REVIEW_DATA_NEEDED')) continue;
+          const proposal = WeeklyReviewLogic.build({ tests, results: this.getVocabTestResults(), sets: this.getVocabSets(), ...group });
+          if (!proposal) continue;
+          const existing = tests.find(t => t.id === id);
+          if (existing?.status === 'REVIEW_DATA_NEEDED' && proposal.status === existing.status && existing.unresolvedCount === proposal.unresolvedCount) continue;
+          await this.createWeeklyReview(group);
+        }
+      } catch (error) { console.warn('주간 복습 생성 실패. 다음 동기화 시 다시 확인합니다.', error); }
+      finally { this._weeklyReviewRunning = false; }
+    }, 250);
+  },
+  async createWeeklyReview({ studentId, monday }) {
+    if (!this.isFirebaseReady()) throw new Error('클라우드 연결이 필요합니다.');
+    const { doc, runTransaction } = window.firebaseFns;
+    const id = WeeklyReviewLogic.id(studentId, monday);
+    const sourceTests = this.getTests().filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && WeeklyReviewLogic.monday(t.date) === monday);
+    const sourceResults = this.getVocabTestResults().filter(r => sourceTests.some(t => t.id === r.testId) && Number(r.studentId) === Number(studentId));
+    const availableSets = this.getVocabSets();
+    const sets = availableSets.filter(s => sourceTests.some(t => (t.vocabSetIds?.length ? t.vocabSetIds : [t.vocabSetId]).includes(s.id)));
+    // 원본 세트가 작아도 뜻 오답의 5지선다 형식을 유지할 수 있도록 선택지 자료만 보충한다.
+    if (new Set(sets.flatMap(s => (s.words || []).map(w => w.ko))).size < 5) {
+      const supplemental = availableSets.find(s => !sets.some(source => source.id === s.id) && new Set((s.words || []).map(w => w.ko)).size >= 5);
+      if (supplemental) sets.push(supplemental);
+    }
+    const saved = await runTransaction(window.firebaseDB, async tx => {
+      const ref = doc(window.firebaseDB, 'tests', id);
+      const existing = await tx.get(ref);
+      if (existing.exists() && existing.data().status !== 'REVIEW_DATA_NEEDED') return existing.data();
+      // 서버의 최종 채점/통과 상태를 다시 읽으며 변경 충돌 시 Firestore가 재시도한다.
+      const tests = [], results = [], liveSets = [];
+      for (const test of sourceTests) {
+        const snapshot = await tx.get(doc(window.firebaseDB, 'tests', test.id));
+        if (snapshot.exists()) tests.push({ ...snapshot.data(), id: test.id });
+      }
+      for (const result of sourceResults) {
+        const rid = result.id || this.getVocabTestResultDocumentId(result);
+        const snapshot = await tx.get(doc(window.firebaseDB, 'vocabTestResults', rid));
+        if (snapshot.exists()) results.push({ ...snapshot.data(), id: rid });
+      }
+      for (const set of sets) {
+        const snapshot = await tx.get(doc(window.firebaseDB, 'vocabSets', set.id));
+        liveSets.push(snapshot.exists() ? { ...snapshot.data(), id: set.id } : set);
+      }
+      const test = WeeklyReviewLogic.build({ tests, results, sets: liveSets, studentId, monday });
+      if (!test) return null;
+      tx.set(ref, test);
+      return test;
+    });
+    if (saved) this.cacheWeeklyReview(saved);
+    return saved;
+  },
+  async submitWeeklyReviewRound(id, roundNumber, answers) {
+    if (!this.isFirebaseReady()) throw new Error('연결을 확인한 뒤 다시 제출해주세요.');
+    const { doc, runTransaction } = window.firebaseFns;
+    const saved = await runTransaction(window.firebaseDB, async tx => {
+      const testRef = doc(window.firebaseDB, 'tests', id), resultRef = doc(window.firebaseDB, 'vocabReviewResults', id);
+      const testSnapshot = await tx.get(testRef), resultSnapshot = await tx.get(resultRef);
+      if (!testSnapshot.exists()) throw new Error('복습 시험을 찾을 수 없습니다.');
+      const test = testSnapshot.data(), previous = resultSnapshot.exists() ? resultSnapshot.data() : null;
+      if (test.type !== 'VOCAB_REVIEW' || !WeeklyReviewLogic.available(test) || test.status === 'REVIEW_DATA_NEEDED') throw new Error('아직 응시할 수 없습니다.');
+      if (!App.state.isAdminLoggedIn && Number(App.state.selectedStudentId) !== Number(test.studentId)) throw new Error('본인의 복습만 제출할 수 있습니다.');
+      if ((previous?.rounds.length || 0) >= roundNumber) return { test, result: previous }; // 재전송은 기존 결과를 반환
+      if (roundNumber !== (previous?.rounds.length || 0) + 1 || previous?.completed) throw new Error('복습 진행 정보가 변경되었습니다. 다시 열어주세요.');
+      const ids = previous?.remainingIds || test.questions.map(q => q.id);
+      const questions = test.questions.filter(q => ids.includes(q.id));
+      const grade = WeeklyReviewLogic.grade(questions, answers, value => App.convertKorToEng(value));
+      const result = { id, studentId: test.studentId, firstScore: previous?.firstScore ?? grade.score, initialWrongCount: previous?.initialWrongCount ?? grade.remainingIds.length, remainingIds: grade.remainingIds, completed: !grade.remainingIds.length, rounds: [...(previous?.rounds || []), { number: roundNumber, ...grade, submittedAt: new Date().toISOString() }] };
+      test.status = result.completed ? 'PASS' : 'SCHEDULED';
+      test.score = result.firstScore;
+      tx.set(testRef, test); tx.set(resultRef, result);
+      return { test, result };
+    });
+    this.cacheWeeklyReview(saved.test, saved.result);
+    return saved.result;
+  }
+});
