@@ -5686,6 +5686,9 @@ const App = {
   showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
+    this._modalHideTimers ||= new Map();
+    clearTimeout(this._modalHideTimers.get(modalId));
+    this._modalHideTimers.delete(modalId);
     if (modalId === 'testDetailModal') modal.classList.toggle('grammar-detail-modal', Boolean(modal.querySelector('[data-grammar-summary]')));
     this._activeModals.add(modalId);
     modal.classList.remove('hidden');
@@ -5706,13 +5709,18 @@ const App = {
       content.classList.remove('scale-100', 'opacity-100');
       content.classList.add('scale-95', 'opacity-0');
     }
-    setTimeout(() => {
+    this._modalHideTimers ||= new Map();
+    clearTimeout(this._modalHideTimers.get(modalId));
+    this._modalHideTimers.set(modalId, setTimeout(() => {
+      this._modalHideTimers.delete(modalId);
       modal.classList.add('hidden');
       this.updateBodyScrollLock();
-    }, 200);
+    }, 200));
   },
 
   closeAllModals() {
+    this._modalHideTimers?.forEach(timer => clearTimeout(timer));
+    this._modalHideTimers?.clear();
     this._activeModals.clear();
     ['testDetailModal', 'adminTestFormModal', 'vocabSetModal', 'vocabStudyModal', 'textMemorizeExamModal', 'textMemorizeResultModal', 'textMemorizeScheduleModal', 'extendTestModal', 'grammarAssignmentModal', 'grammarGradingModal', 'grammarResultModal'].forEach(id => {
       const modal = document.getElementById(id);

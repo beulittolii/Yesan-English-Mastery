@@ -10,7 +10,7 @@ Object.assign(App, {
     const isAdmin = Boolean(this.state.isAdminLoggedIn);
     const excludedWeekdays = test.excludedWeekdays || [], requiredDays = 5 - excludedWeekdays.length;
     if (!preserveDraft || this._weeklyReviewDaysDraft?.id !== id) this._weeklyReviewDaysDraft = { id, days: [...excludedWeekdays] };
-    const canEditDays = !result?.rounds?.length && !test.isPreview;
+    const canEditDays = Boolean(test.isPreview) || !result?.rounds?.length;
     const savingDays = Boolean(this._weeklyReviewDaysSaving);
 
     const available = WeeklyReviewLogic.available(test);
@@ -41,9 +41,9 @@ Object.assign(App, {
       ${test.unresolvedCount ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">원본을 확인할 수 없는 오답 ${test.unresolvedCount}건은 출제에서 제외했습니다.</div>` : ''}
       <div class="space-y-2.5 pt-2">${!result?.completed && !noErrors && !allExcluded ? available ? `<button type="button" onclick="App.startWeeklyReview('${id}')" class="${actionClass}"><i aria-hidden="true" class="fa-solid fa-pencil"></i>${result ? '오답 다시 풀기' : '테스트 응시'}</button>` : `<button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed"><i aria-hidden="true" class="fa-solid fa-clock"></i>${locked ? `대상 ${requiredDays}일치 단어 시험 완료 후 응시 가능` : `${e(test.date)} 00:00부터 응시 가능`}</button>` : ''}</div>`}`;
     if (isAdmin) document.getElementById('detailModalBody').insertAdjacentHTML('beforeend', `
-      <section class="weekly-review-exclusions"><h4>복습에서 제외할 요일</h4><p>선택한 요일은 응시 조건과 출제 범위에서 제외합니다.</p>
+      <section class="weekly-review-exclusions"><h4>복습에서 제외할 요일</h4><p>${test.isPreview ? '체험용은 문항과 성적을 유지한 채 제외 요일을 선택할 수 있습니다.' : '선택한 요일은 응시 조건과 출제 범위에서 제외합니다.'}</p>
         <fieldset ${!canEditDays || savingDays ? 'disabled' : ''} class="weekly-review-exclusion-options">${['월', '화', '수', '목', '금'].map((day, i) => `<label><input type="checkbox" name="weeklyReviewExcludedDay" value="${i}" aria-label="${day}요일 제외" ${this._weeklyReviewDaysDraft.days.includes(i) ? 'checked' : ''} onchange="App.toggleWeeklyReviewExcludedDay(${i}, this.checked)"><span>${day}</span></label>`).join('')}</fieldset>
-        ${canEditDays ? `<button type="button" id="weeklyReviewDaysSave" onclick="App.saveWeeklyReviewExcludedDays('${id}')" ${savingDays ? 'disabled' : ''}>${savingDays ? '저장 중…' : '제외 요일 저장'}</button>` : `<p>${test.isPreview ? '체험용 복습은 요일 제외 설정을 사용하지 않습니다.' : '제출한 복습은 기존 응시 기록을 보존하기 위해 요일 설정을 유지합니다.'}</p>`}
+        ${canEditDays ? `<button type="button" id="weeklyReviewDaysSave" onclick="App.saveWeeklyReviewExcludedDays('${id}')" ${savingDays ? 'disabled' : ''}>${savingDays ? '저장 중…' : '제외 요일 저장'}</button>` : `<p>제출한 복습은 기존 응시 기록을 보존하기 위해 요일 설정을 유지합니다.</p>`}
       </section>`);
     this.showModal('testDetailModal');
   },

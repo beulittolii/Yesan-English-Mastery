@@ -63,6 +63,18 @@ Object.assign(AppData, {
       const current = existing.exists() ? existing.data() : null;
       if (configuring) {
         if (!current || current.type !== 'VOCAB_REVIEW' || Number(current.studentId) !== Number(studentId) || current.weekStart !== monday) throw new Error('복습 시험 정보를 확인해주세요.');
+        if (current.isPreview) {
+          // 체험판은 원본 평일 시험이 없어도 설정을 확인할 수 있다. 문항과 제출 성적은 그대로 보존한다.
+          const weekdayCompletion = current.weekdayCompletion || WeeklyReviewLogic.weekdayCompletion(this.getTests(), this.getVocabTestResults(), studentId, monday);
+          const updated = {
+            ...current, excludedWeekdays, requiredDays: 5 - excludedWeekdays.length, weekdayCompletion,
+            completedDays: weekdayCompletion.filter((complete, i) => complete && !excludedWeekdays.includes(i)).length,
+            reviewStage: excludedWeekdays.length === 5 ? 'EXCLUDED' : current.reviewStage === 'EXCLUDED' ? 'READY' : current.reviewStage || 'READY',
+            status: excludedWeekdays.length === 5 || current.weeklyReviewResult?.completed ? 'PASS' : 'SCHEDULED'
+          };
+          tx.set(ref, updated);
+          return updated;
+        }
         if (current.weeklyReviewResult?.rounds?.length) throw new Error('이미 제출한 복습은 응시 기록 보존을 위해 제외 요일을 변경할 수 없습니다.');
         if (JSON.stringify(current.excludedWeekdays || []) === JSON.stringify(excludedWeekdays)) return current;
       } else if (current && !WeeklyReviewLogic.mutable(current)) return current;

@@ -220,6 +220,28 @@ async function loadApp(page) {
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
     await page.screenshot({path:`/tmp/yem-weekly-review-complete-${width}.png`,fullPage:true});
   }
+  // Submitted standalone previews must keep their day controls enabled and preserve grades.
+  const previewBefore=await page.evaluate(id=>{
+    const original=AppData.getTests().find(t=>t.id===id), preview=structuredClone(original);
+    preview.id='completed_preview';preview.isPreview=true;preview.sourceTestIds=[];
+    preview.weeklyReviewResult.id=preview.id;
+    testDocuments.set('tests/'+preview.id,structuredClone(preview));
+    AppData.cacheGrammarTests([preview]);App.hideModal('testDetailModal');App.openWeeklyReviewModal(preview.id);
+    return {questions:JSON.stringify(preview.questions),result:JSON.stringify(preview.weeklyReviewResult)};
+  },id);
+  await page.waitForTimeout(250);
+  assert.equal(await page.locator('#testDetailModal').isVisible(),true,'pending close cannot hide a reopened modal');
+  assert.equal(await page.getByRole('checkbox',{name:'금요일 제외'}).isEnabled(),true);
+  await page.getByRole('checkbox',{name:'금요일 제외'}).check();
+  await page.locator('#weeklyReviewDaysSave').click();
+  await page.waitForFunction(()=>!App._weeklyReviewDaysSaving && AppData.getTests().find(t=>t.id==='completed_preview').requiredDays===4);
+  await setup();
+  await page.evaluate(()=>App.openWeeklyReviewModal('completed_preview'));
+  assert.equal(await page.getByRole('checkbox',{name:'금요일 제외'}).isChecked(),true,'saved preview exclusions survive reload');
+  assert.equal(await page.getByRole('checkbox',{name:'금요일 제외'}).isEnabled(),true);
+  const previewAfter=await page.evaluate(()=>{const t=AppData.getTests().find(t=>t.id==='completed_preview');return {questions:JSON.stringify(t.questions),result:JSON.stringify(t.weeklyReviewResult)}});
+  assert.deepEqual(previewAfter,previewBefore,'preview questions and submitted grades are unchanged');
+  await page.screenshot({path:'/tmp/yem-completed-preview-day-controls.png',fullPage:true});
   assert.deepEqual(errors,[]);
   console.log('Weekly review browser checks passed: readiness, generation, KST opening, unified modal, all questions on one page, progress counter, blank confirmation/cancel, save retry, reload, 3 rounds, score preservation, mobile/desktop.');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{if(browser) await browser.close();server.close();});

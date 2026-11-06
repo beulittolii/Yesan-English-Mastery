@@ -227,3 +227,16 @@ test('changing exclusions rejects stale active papers and submitted history rema
   await assert.rejects(f.run('AppData.configureWeeklyReviewDays(id,[3,4])'),/이미 제출/);
   assert.equal(JSON.stringify(f.documents.get('tests/'+changed.id)),before);
 });
+test('completed standalone preview permits excluding and restoring weekdays without altering questions or grades', async () => {
+  const f=fixture();const preview=f.plain('build()');preview.id='preview';preview.isPreview=true;
+  preview.weeklyReviewResult={id:'preview',studentId:1,completed:true,firstScore:50,remainingIds:[],rounds:[{number:1,score:50,details:[],remainingIds:[]}]};
+  preview.status='PASS';f.documents.set('tests/preview',structuredClone(preview));
+  f.run(`tests.splice(0);tests.push(${JSON.stringify(preview)});results.splice(0)`);
+  const originalQuestions=JSON.stringify(preview.questions), originalResult=JSON.stringify(preview.weeklyReviewResult);
+  const saved=await f.run("AppData.configureWeeklyReviewDays('preview',[1,4])");
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.excludedWeekdays)),[1,4]);assert.equal(saved.requiredDays,3);
+  assert.equal(JSON.stringify(saved.questions),originalQuestions);assert.equal(JSON.stringify(saved.weeklyReviewResult),originalResult);
+  const excluded=await f.run("AppData.configureWeeklyReviewDays('preview',[0,1,2,3,4])");assert.equal(excluded.reviewStage,'EXCLUDED');
+  const restored=await f.run("AppData.configureWeeklyReviewDays('preview',[])");assert.equal(restored.reviewStage,'READY');assert.equal(restored.status,'PASS');assert.equal(restored.requiredDays,5);
+  assert.equal(JSON.stringify(restored.weeklyReviewResult),originalResult);
+});
