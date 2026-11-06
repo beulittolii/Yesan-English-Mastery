@@ -213,7 +213,6 @@ Object.assign(App, {
     const { test, answers } = session;
     const content = test.grammarContent;
     const concept = test.grammarStage === 'concept';
-    document.getElementById('grammarTestHeading').textContent = `${content.title} · ${concept ? '개념' : '실전'} 테스트`;
     document.getElementById('grammarSubmissionStatus').textContent = '';
     this.renderGrammarProgress();
     if (concept) {

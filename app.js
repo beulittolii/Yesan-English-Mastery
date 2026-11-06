@@ -634,7 +634,7 @@ const App = {
     if (!container) return;
 
     if (this.isGrammarExamActive?.()) {
-      container.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-xs font-bold"><i class="fa-solid fa-lock"></i>문법 시험 응시 중</span>';
+      container.innerHTML = '';
       return;
     }
 

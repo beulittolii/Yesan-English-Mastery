@@ -746,8 +746,13 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-completion-concept { display:block; font-size:1.2rem; color:#b45309; margin-top:2rem; }
 .grammar-completion-score { font-size:2rem; font-weight:800; margin-top:1rem; }
 
-.grammar-unified-progress { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
-.grammar-stage-progress { height:4rem; position:relative; overflow:hidden; background:#ede9fe; border:2px solid transparent; border-radius:1rem; }
-.grammar-stage-active { border-color:#7c3aed; }
-.grammar-stage-fill { height:100%; background:#c4b5fd; transition:width .2s; }
-.grammar-stage-progress > span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#4c1d95; font-weight:900; font-size:1.1rem; }
+/* 개념과 실전을 같은 선 위의 두 구간으로 표시한다. */
+.grammar-unified-progress { display:grid; grid-template-columns:1fr 1fr; gap:0; padding-top:1.6rem; }
+.grammar-stage-progress { height:.625rem; position:relative; background:#e2e8f0; }
+.grammar-stage-progress:first-child { border-radius:999px 0 0 999px; }
+.grammar-stage-progress:last-child { border-radius:0 999px 999px 0; border-left:2px solid #fff; }
+.grammar-stage-fill { height:100%; max-width:100%; background:#8b5cf6; border-radius:inherit; transition:width .2s; }
+.grammar-stage-progress > span { position:absolute; left:0; right:0; bottom:1rem; text-align:center; color:#64748b; font-weight:600; font-size:.8rem; }
+.grammar-stage-active > span { color:#7c3aed; font-weight:800; }
+.grammar-submission-status { font-size:.8rem; color:#6d28d9; }
+.grammar-submission-status:empty { display:none; }
