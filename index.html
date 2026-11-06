@@ -1370,7 +1370,7 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>v1.0.5</p>
+      <p>v1.0.6</p>
       <p class="flex items-center gap-2">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
         <span>Firebase 실시간 클라우드 동기화 지원</span>
@@ -1698,7 +1698,6 @@
             <label class="block text-xs font-bold text-indigo-900 mb-1">출제 교재</label>
             <select id="formTextMemorizeBookSelect" onchange="App.onTextMemorizeBookChange(this.value)" class="w-full py-2 px-3 rounded-xl border border-indigo-200 bg-white focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-bold text-slate-800">
               <option value="YBM(박준언) 공통영어 2">YBM(박준언) 공통영어 2 (1·2과 본문)</option>
-              <option value="2025년 9월 인천학평 고1 (29~40번)">2025년 9월 인천학평 고1 (29~40번)</option>
             </select>
           </div>
 
@@ -3104,7 +3103,7 @@
           <!-- 모의고사 직접 입력 (선택 시 노출) -->
           <div id="formExamScopeMockCustomWrap" class="hidden">
             <label class="block text-xs font-bold text-slate-700 mb-1">모의고사명 직접 입력</label>
-            <input type="text" id="formExamScopeMockCustom" placeholder="예: 2025년 9월 고1 사설 모의고사" class="w-full py-2 px-3 rounded-xl border border-sky-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
+            <input type="text" id="formExamScopeMockCustom" placeholder="예: 2026년 11월 고1 사설 모의고사" class="w-full py-2 px-3 rounded-xl border border-sky-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
           </div>
 
           <!-- 문항 번호 설정 -->
@@ -4305,19 +4304,15 @@
 <!-- Scripts -->
 <script src="wordmaster2000_data.js?v=20261012_07"></script>
 <script src="wordmaster_basic_data.js?v=20261102_01"></script>
-<script src="mock_vocab_data.js?v=20261012_07"></script>
 <script src="ybm_english2_data.js?v=20261012_07"></script>
-<script src="exam_scope_data.js?v=20261012_07"></script>
-<script src="mock_202509_practice_data.js?v=20261012_07"></script>
-<script src="mock_202509_memorize_data.js?v=20261012_07"></script>
-<script src="mock_202510_insert_data.js?v=20261012_01"></script>
+<script src="exam_scope_data.js?v=20261106_cleanup02"></script>
 <script src="science_questions.js?v=20261012_07"></script>
 <script src="weekly_review_logic.js?v=20261106_07"></script>
 <script src="grammar_data.js?v=20261106_07"></script>
-<script src="data.js?v=20261106_cleanup01"></script>
+<script src="data.js?v=20261106_cleanup02"></script>
 <script src="grammar_store.js?v=20261106_07"></script>
 <script src="weekly_review_store.js?v=20261106_08"></script>
-<script src="app.js?v=20261106_cleanup01"></script>
+<script src="app.js?v=20261106_cleanup02"></script>
 <script src="grammar.js?v=20261106_18"></script>
 
 <script src="weekly_review.js?v=20261106_09"></script>
@@ -4707,7 +4702,7 @@ const AcademicManager = {
         targetScore: '98점 (1등급)',
         textbookPublisher: '비상(박영민)',
         teacherName: '김국어 선생님',
-        memo: '비상 박영민 1·2·4단원 본문 분석 및 9월 모의고사 문학·독서 연계',
+        memo: '비상 박영민 1·2·4단원 본문 분석',
         sections: [
           {
             id: 'sec_sample_kor_tb',
@@ -4720,17 +4715,7 @@ const AcademicManager = {
               { id: 'it_kor_tb_3', name: '4단원. 삶 속에 흐르는 문학 - (1) 사랑, 그 속에 담긴 아픔', subTitle: '서경별곡 / 제망매가 / 진달래꽃 (전통적 서정)', teacherName: '최문법 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
             ]
           },
-          {
-            id: 'sec_sample_kor_mock',
-            type: 'mock_exam',
-            title: '모의고사: 2026년 9월 고1 학력평가 (22~34번)',
-            teacherName: '김국어 선생님',
-            items: [
-              { id: 'it_kor_mock_22', name: '[2026년 9월 고1 학력평가] 22번 (문학 (현대소설 인물/갈등))', subTitle: '22번 지문', teacherName: '김국어 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' },
-              { id: 'it_kor_mock_23', name: '[2026년 9월 고1 학력평가] 23번 (문학 (현대시 감상))', subTitle: '23번 지문', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
-              { id: 'it_kor_mock_30', name: '[2026년 9월 고1 학력평가] 30번 (독서 (과학/기술 지문))', subTitle: '30번 지문', teacherName: '최문법 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
-            ]
-          }
+
         ]
       },
       {

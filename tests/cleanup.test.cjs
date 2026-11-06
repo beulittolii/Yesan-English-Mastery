@@ -27,3 +27,17 @@ test('orphan cleanup never deletes using unverified source cache', async () => {
   run(`FirebaseStore.tests=[]; FirebaseStore.vocabTestResults=[{testId:'live'}]; AppData.removeDocument=async()=>{throw Error('must not delete')};`);
   assert.equal(await run('AppData.cleanupOrphanVocabTestResults()'), 0);
 });
+test('default vocabulary retains Wordmaster but never restores retired special sets', () => {
+  const run = fixture();
+  run(`const WORDMASTER_2000_SETS=[{id:'wm2000_day_01',words:[]}];
+    const MOCK_EXAM_VOCAB_SETS=[{id:'retired-special',words:[]}];`);
+  assert.equal(run(`getDefaultVocabSets().some(s=>s.id==='wm2000_day_01')`), true);
+  assert.equal(run(`getDefaultVocabSets().some(s=>s.id==='retired-special')`), false);
+});
+test('vocabulary cutoffs respect teacher settings for ordinary mock exam titles', () => {
+  const run = fixture();
+  run(`const window={}; const document={addEventListener(){}};`);
+  run(fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8'));
+  assert.equal(run(`App.getBaseVocabCutoffScore({title:'모의고사 단어',vocabCutoffs:{2:75}},2)`), 75);
+  assert.equal(run(`App.getAllTextMemorizePassages().length`), 0);
+});

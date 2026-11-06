@@ -349,21 +349,6 @@ function generateDefaultTests() {
     },
 
     {
-      id: 'test_1_3',
-      studentId: 1,
-      title: '9월 모의고사 대비 실전 빈칸추론 5개년',
-      date: getDateStr(4),
-      time: '18:30',
-      scope: '2021-2025 평가원 고난도 빈칸 31~34번 유형 10지문',
-      cutoff: '80점 이상 (8/10)',
-      score: '',
-      status: 'SCHEDULED',
-      retestStatus: 'NONE',
-      retestDate: '',
-      teacherNote: '패러프레이징 원리와 연결사 전후 논리 관계를 집중적으로 점검할 예정입니다.'
-    },
-
-    {
       id: 'practice_20260904_student_1',
       studentId: 1,
       title: '9/4(금) 문제풀이 테스트',
@@ -615,7 +600,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d14_15_student_11',
@@ -638,7 +622,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d16_17_student_11',
@@ -661,7 +644,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d18_19_student_11',
@@ -684,7 +666,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d20_21_student_11',
@@ -707,7 +688,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d22_23_student_11',
@@ -730,7 +710,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d24_25_student_11',
@@ -753,7 +732,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d26_27_student_11',
@@ -776,7 +754,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d28_29_student_11',
@@ -799,7 +776,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d30_31_student_11',
@@ -822,7 +798,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d32_33_student_11',
@@ -845,7 +820,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d34_35_student_11',
@@ -868,7 +842,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d36_37_student_11',
@@ -891,7 +864,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d38_39_student_11',
@@ -914,7 +886,6 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     },
     {
       id: 'vocab_wm2000_d40_student_11',
@@ -937,65 +908,21 @@ function generateDefaultTests() {
       teacherNote: '워드마스터 수능 2000 단어 테스트입니다. 객관식, 스펠링, 통합 테스트 중 선택하여 응시하세요.',
       type: 'VOCAB',
       allowLate: false,
-      isMockSpecial: false
     }
   ];
-
-  // 2025년 9월 고1 학평 (29~40번) 유형별 실전 문제풀이 테스트 (Day 1 ~ Day 11: 9/29 ~ 10/9) 기본 데이터 추가
-  if (typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202509_PRACTICE_TEST_PLANS)) {
-    const studentList = typeof DEFAULT_STUDENTS !== 'undefined' ? DEFAULT_STUDENTS : [];
-    studentList.forEach(student => {
-      MOCK_202509_PRACTICE_TEST_PLANS.forEach(plan => {
-        const questions = typeof getMock202509QuestionsByPlanId === 'function' ? getMock202509QuestionsByPlanId(plan.planId) : [];
-        allTests.push({
-          id: `${plan.planId}_student_${student.id}`,
-          studentId: Number(student.id),
-          title: plan.title,
-          date: plan.date,
-          time: plan.time || '00:00',
-          endTime: plan.endTime || '23:59',
-          scope: plan.scope,
-          cutoff: plan.cutoff || '80점 이상',
-          cutoffScore: plan.cutoffScore || 80,
-          practiceCutoff: plan.practiceCutoff || 80,
-          score: '',
-          status: 'SCHEDULED',
-          retestStatus: 'NONE',
-          retestDate: '',
-          teacherNote: plan.teacherNote || '',
-          type: 'PRACTICE',
-          questions: questions,
-          practiceResult: null,
-          allowLate: true
-        });
-      });
-    });
-  }
 
   return allTests;
 }
 
 
 // ========================================================
-// 단어 세트 기본 데이터 (워드마스터 2000 전체 50개 Day + 2026 고1 9모 대비 특별단어)
+// 단어 세트 기본 데이터 (워드마스터 2000 전체 50개 Day)
 // 브라우저 초기 로딩 즉시 모든 학생에게 100% 가용 보장
 // ========================================================
 
 function getDefaultVocabSets() {
   const allSets = [];
   const allStudentIds = DEFAULT_STUDENTS.map(s => Number(s.id));
-
-  // 1. 2026 고1 9모 대비 특별 단어 세트
-  if (typeof MOCK_EXAM_VOCAB_SETS !== 'undefined' && Array.isArray(MOCK_EXAM_VOCAB_SETS)) {
-    MOCK_EXAM_VOCAB_SETS.forEach(set => {
-      allSets.push({
-        ...set,
-        isMockSpecial: true,
-        book: (set.book || '2026 고1 9모 대비').trim(),
-        studentIds: [...allStudentIds]
-      });
-    });
-  }
 
   // 2. 워드마스터 수능 2000 전체 50개 Day 세트
   if (typeof WORDMASTER_2000_SETS !== 'undefined' && Array.isArray(WORDMASTER_2000_SETS)) {
@@ -1664,7 +1591,7 @@ const AppData = {
         });
       }
 
-      // vocabSets 컬렉션 보호: Firestore에서 빈 배열이 오거나 워드마스터/9모가 누락된 경우 기본 세트를 자동 병합하여 절대 소실되지 않도록 함
+      // vocabSets 컬렉션 보호: Firestore에서 빈 배열이 오거나 워드마스터가 누락된 경우 기본 세트를 자동 병합하여 절대 소실되지 않도록 함
       if (cacheKey === 'vocabSets') {
         const defSets = getDefaultVocabSets();
         const defMap = new Map(defSets.map(s => [s.id, s]));
@@ -1693,7 +1620,7 @@ const AppData = {
         const currentStudentIds = (FirebaseStore.students || DEFAULT_STUDENTS).map(s => Number(s.id));
         items.forEach(s => {
           s.studentIds = (s.studentIds || []).filter(id => currentStudentIds.includes(Number(id)));
-          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
+          if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
             if (!Array.isArray(s.studentIds)) s.studentIds = [];
             currentStudentIds.forEach(sid => {
               if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
@@ -1800,7 +1727,7 @@ const AppData = {
       localStorage.removeItem(LEGACY_STORAGE_KEYS.tests);
     }
 
-    // 기본 단어 세트(워드마스터 2000 50개 Day + 워드마스터 고등 Basic 30개 Day + 2026 고1 9모 대비 특별단어) 전체 복원 및 학생 권한 보장
+    // 기본 단어 세트(워드마스터 2000 50개 Day + 워드마스터 고등 Basic 30개 Day) 전체 복원 및 학생 권한 보장
     try {
       const defSets = getDefaultVocabSets();
       const currentSets = FirebaseStore.vocabSets || [];
@@ -1824,11 +1751,11 @@ const AppData = {
         }
       });
 
-      // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터/9모 단어 세트 권한 보장
+      // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터 단어 세트 권한 보장
       const allStudentIds = this.getStudents().map(s => Number(s.id));
       setMap.forEach(s => {
         s.studentIds = (s.studentIds || []).filter(id => allStudentIds.includes(Number(id)));
-        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
+        if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
           if (!Array.isArray(s.studentIds)) s.studentIds = [];
           allStudentIds.forEach(sid => {
             if (!s.studentIds.includes(sid)) s.studentIds.push(sid);
@@ -1836,8 +1763,8 @@ const AppData = {
         }
       });
 
-      // 구형 6모/9모 분할 세트 ID 정리
-      const fullSets = Array.from(setMap.values()).filter(s => !s.id.startsWith('mock2026_g1_sep_part') && s.id !== 'mock2026_g1_sep_all');
+      // 현재 단어 세트 목록
+      const fullSets = Array.from(setMap.values());
 
       // 발음기호(IPA) 누락 자동 보강
       const wmIpaLookup = new Map();
@@ -1876,304 +1803,6 @@ const AppData = {
       console.warn('단어 세트 자동 복원 동기화 안내:', vocabSyncErr);
     }
 
-    // 기존 실습용 일정은 관리자만 직접 등록합니다. 앱 시작 시 모든 학생에게
-    // 자동으로 시험을 추가하거나 기존 일정을 바꾸지 않습니다.
-    const autoCreateTestsForAllStudents = false;
-
-    // 9/2 모의고사 D-Day: 기존 9/2 단어 시험 일정을 삭제하고, 모든 학생에게 [9모 킬러] 시험 일괄 등록
-    if (autoCreateTestsForAllStudents) {
-    try {
-      const targetExamDate = '2026-09-02';
-      const students = this.getStudents();
-      let currentTests = this.getTests();
-      let testsModified = false;
-
-      // 1. 9/2 날짜에 있던 기존 단어 시험(VOCAB) 또는 'VOCA' 관련 구형 시험 삭제
-      const filteredTests = currentTests.filter(t => {
-        const isTargetDate = t.date === targetExamDate;
-        const isOldVocab = isTargetDate && (t.type === 'VOCAB' || (t.title && t.title.includes('VOCA'))) && !t.id.startsWith('mock2026_final_student_');
-        if (isOldVocab) {
-          testsModified = true;
-          return false;
-        }
-        return true;
-      });
-
-      // 2. 모든 학생(1번~6번 및 추가 등록된 전체 학생)에게 9/2 파이널 단어 시험 일괄 등록/갱신
-      students.forEach(student => {
-        const existingFinal = filteredTests.find(t => t.studentId === student.id && t.date === targetExamDate && t.id.startsWith('mock2026_final_student_'));
-        const mockTestConfig = {
-          id: `mock2026_final_student_${student.id}`,
-          studentId: student.id,
-          title: '[9모 킬러] 반전 다의어 60선',
-          date: targetExamDate,
-          time: '08:00',
-          endTime: '23:59',
-          scope: '2026 고1 9모 대비 1등급 필수 반전 다의어 60선 (Part 1 통과 후 ➔ Part 2 최종 합격)',
-          cutoff: '객관식 90점 이상',
-          cutoffScore: 90,
-          vocabCutoff: 90,
-          vocabCutoffs: { 2: 90 },
-          vocabSetId: 'mock2026_g1_sep_9mo',
-          vocabSetIds: ['mock2026_g1_sep_9mo'],
-          score: existingFinal?.score || '',
-          status: existingFinal?.status || 'SCHEDULED',
-          retestStatus: 'NONE',
-          retestDate: '',
-          teacherNote: '🔥 9모 직전 필출 다의어 60선! Part 1 합격 후 Part 2까지 통과하여 1등급 대박 행운을 잡으세요!',
-          isMockSpecial: true,
-          type: 'VOCAB',
-          allowLate: true,
-          mockPart1Passed: existingFinal?.mockPart1Passed || false,
-          mockPart1Score: existingFinal?.mockPart1Score || null,
-          mockPart2Passed: existingFinal?.mockPart2Passed || false,
-          mockPart2Score: existingFinal?.mockPart2Score || null
-        };
-
-        if (!existingFinal) {
-          filteredTests.push(mockTestConfig);
-          testsModified = true;
-        } else if (existingFinal.title !== mockTestConfig.title || existingFinal.vocabSetId !== mockTestConfig.vocabSetId || existingFinal.cutoffScore !== 90 || existingFinal.vocabCutoff !== 90) {
-          existingFinal.title = mockTestConfig.title;
-          existingFinal.cutoff = '객관식 90점 이상';
-          existingFinal.cutoffScore = 90;
-          existingFinal.vocabCutoff = 90;
-          existingFinal.vocabCutoffs = { 2: 90 };
-          testsModified = true;
-        }
-      });
-
-      if (testsModified) {
-        FirebaseStore.tests = filteredTests;
-        await this.replaceCollection('tests', FirebaseStore.tests, t => t.id).catch(e => console.warn('Tests sync notice:', e));
-        console.log('9/2 기존 단어세트 정리 완료 및 전체 학생 대상 [9모 킬러] 시험 일정이 성공적으로 일괄 등록되었습니다.');
-      }
-    } catch (err) {
-      console.warn('9/2 파이널 시험 일괄 등록 동기화 안내:', err);
-    }
-    }
-
-    // 9/4(금) 문제풀이 테스트: 전체 학생 대상 일괄 등록 및 동기화 (13:10 ~ 13:30)
-    if (autoCreateTestsForAllStudents) {
-    try {
-      const practiceExamDate = '2026-09-04';
-      const students = this.getStudents();
-      let currentTests = this.getTests();
-      let practiceModified = false;
-
-      students.forEach(student => {
-        const existingTest = currentTests.find(t => t.studentId === student.id && t.date === practiceExamDate && (t.id === `practice_20260904_student_${student.id}` || (t.type === 'PRACTICE' && t.title && t.title.includes('문제풀이'))));
-        const practiceTestConfig = {
-          id: `practice_20260904_student_${student.id}`,
-          studentId: student.id,
-          title: '9/4(금) 문제풀이 테스트',
-          date: practiceExamDate,
-          time: '13:10',
-          endTime: '13:30',
-          scope: 'YBM(박준언) 공통영어 2 - Lesson 1 (1~4문단) 실전 내신 킬러 문제풀이 (총 10문항)',
-          cutoff: '80점 이상',
-          cutoffScore: 80,
-          practiceCutoff: 80,
-          score: existingTest?.score || '',
-          status: existingTest?.status || 'SCHEDULED',
-          retestStatus: existingTest?.retestStatus || 'NONE',
-          retestDate: existingTest?.retestDate || '',
-          teacherNote: 'YBM(박준언) 공통영어 2 본문 1과 1~4문단 실전 내신 대비 테스트입니다. 어법, 어휘, 빈칸, 내용일치, 순서배열, 영영풀이 단답형 및 조건부 영작 서술형 2문항이 포함되어 있습니다. 제한시간(13:10~13:30) 내에 집중하여 풀어보세요!',
-          type: 'PRACTICE',
-          questions: YBM2_L1_PRACTICE_QUESTIONS,
-          practiceResult: existingTest?.practiceResult || null,
-          allowLate: false
-        };
-
-        if (!existingTest) {
-          currentTests.push(practiceTestConfig);
-          practiceModified = true;
-        } else {
-          existingTest.title = practiceTestConfig.title;
-          existingTest.time = '13:10';
-          existingTest.endTime = '13:30';
-          existingTest.scope = practiceTestConfig.scope;
-          existingTest.questions = practiceTestConfig.questions;
-          existingTest.type = 'PRACTICE';
-          existingTest.cutoff = '80점 이상';
-          existingTest.cutoffScore = 80;
-          existingTest.practiceCutoff = 80;
-          existingTest.teacherNote = practiceTestConfig.teacherNote;
-          existingTest.allowLate = false;
-          practiceModified = true;
-        }
-      });
-
-      if (practiceModified) {
-        FirebaseStore.tests = currentTests;
-        setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
-      }
-    } catch (err) {
-      console.warn('9/4 문제풀이 테스트 일괄 등록 동기화 안내:', err);
-    }
-    }
-
-    // 2025년 9월 고1 학평 (29~40번) 유형별 실전 문제풀이 테스트 (Day 1 ~ Day 11: 9/29 ~ 10/9) 전체 학생 대상 일괄 등록 및 동기화
-    if (autoCreateTestsForAllStudents) {
-    try {
-      if (typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202509_PRACTICE_TEST_PLANS)) {
-        const students = this.getStudents();
-        let currentTests = this.getTests();
-        let mockPracticeModified = false;
-
-        students.forEach(student => {
-          MOCK_202509_PRACTICE_TEST_PLANS.forEach(plan => {
-            const testId = `${plan.planId}_student_${student.id}`;
-            const questions = typeof getMock202509QuestionsByPlanId === 'function' ? getMock202509QuestionsByPlanId(plan.planId) : [];
-            const existingTest = currentTests.find(t => 
-              t.id === testId || 
-              (Number(t.studentId) === Number(student.id) && t.date === plan.date && t.title && (t.title.includes('Day ' + plan.dayNum) || t.title.includes(plan.title) || t.title.includes('[9모 기출]')))
-            );
-
-            const testConfig = {
-              id: testId,
-              studentId: Number(student.id),
-              title: plan.title,
-              date: plan.date,
-              time: plan.time || '00:00',
-              endTime: plan.endTime || '23:59',
-              scope: plan.scope,
-              cutoff: plan.cutoff || '80점 이상',
-              cutoffScore: plan.cutoffScore || 80,
-              practiceCutoff: plan.practiceCutoff || 80,
-              score: existingTest?.score || '',
-              status: existingTest?.status || 'SCHEDULED',
-              retestStatus: existingTest?.retestStatus || 'NONE',
-              retestDate: existingTest?.retestDate || '',
-              teacherNote: plan.teacherNote || '',
-              type: 'PRACTICE',
-              questions: questions,
-              practiceResult: existingTest?.practiceResult || null,
-              allowLate: true
-            };
-
-            if (!existingTest) {
-              currentTests.push(testConfig);
-              mockPracticeModified = true;
-            } else {
-              existingTest.id = testId;
-              existingTest.title = testConfig.title;
-              existingTest.date = testConfig.date;
-              existingTest.time = testConfig.time;
-              existingTest.endTime = testConfig.endTime;
-              existingTest.scope = testConfig.scope;
-              existingTest.type = 'PRACTICE';
-              delete existingTest.vocabSetId;
-              delete existingTest.vocabSetIds;
-              existingTest.cutoff = testConfig.cutoff;
-              existingTest.cutoffScore = testConfig.cutoffScore;
-              existingTest.practiceCutoff = testConfig.practiceCutoff;
-              existingTest.teacherNote = testConfig.teacherNote;
-              existingTest.allowLate = true;
-              // 순수 어법 & 독해 & 서술형 최신 118문항으로 갱신 (단어 문제 완벽 배제)
-              if (existingTest.status !== 'SUBMITTED' || !existingTest.questions || existingTest.questions.length === 0) {
-                existingTest.questions = testConfig.questions;
-              }
-              mockPracticeModified = true;
-            }
-
-            // 동일 학생, 동일 날짜에 생성된 중복/구형 9모 테스트 정리
-            currentTests = currentTests.filter(t => {
-              if (Number(t.studentId) === Number(student.id) && t.date === plan.date && t.id !== testId && t.title && t.title.includes('[9모 기출]')) {
-                mockPracticeModified = true;
-                return false;
-              }
-              return true;
-            });
-          });
-        });
-
-        if (mockPracticeModified) {
-          FirebaseStore.tests = currentTests;
-          setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
-          console.log('2025년 9월 학평(29~40번) 유형별 11일 실전 문제풀이 테스트(순수 어법·독해)가 로컬/캐시에 성공적으로 반영되었습니다.');
-        }
-      }
-    } catch (err) {
-      console.warn('2025년 9월 학평 실전 문제풀이 테스트 일괄 등록 동기화 안내:', err);
-    }
-    }
-
-    // 10/12 문장 삽입 3세트 실전 테스트 전체 학생 대상 일괄 등록 및 동기화
-    if (autoCreateTestsForAllStudents) {
-    try {
-      if (typeof MOCK_202510_INSERT_TEST_PLANS !== 'undefined' && Array.isArray(MOCK_202510_INSERT_TEST_PLANS)) {
-        const students = this.getStudents();
-        let currentTests = this.getTests();
-        let insertModified = false;
-
-        students.forEach(student => {
-          MOCK_202510_INSERT_TEST_PLANS.forEach(plan => {
-            const testId = `${plan.planId}_student_${student.id}`;
-            const questions = typeof getMock202510InsertQuestionsByPlanId === 'function'
-              ? getMock202510InsertQuestionsByPlanId(plan.planId)
-              : [];
-            const existingTest = currentTests.find(t =>
-              t.id === testId ||
-              (Number(t.studentId) === Number(student.id) && t.date === plan.date && t.title === plan.title)
-            );
-
-            const testConfig = {
-              id: testId,
-              studentId: Number(student.id),
-              title: plan.title,
-              date: plan.date,
-              time: plan.time || '00:00',
-              endTime: plan.endTime || '23:59',
-              scope: plan.scope,
-              cutoff: plan.cutoff || '80점 이상',
-              cutoffScore: plan.cutoffScore || 80,
-              practiceCutoff: plan.practiceCutoff || 80,
-              score: existingTest?.score || '',
-              status: existingTest?.status || 'SCHEDULED',
-              retestStatus: existingTest?.retestStatus || 'NONE',
-              retestDate: existingTest?.retestDate || '',
-              teacherNote: plan.teacherNote || '',
-              type: 'PRACTICE',
-              questions: questions,
-              practiceResult: existingTest?.practiceResult || null,
-              allowLate: true
-            };
-
-            if (!existingTest) {
-              currentTests.push(testConfig);
-              insertModified = true;
-            } else {
-              existingTest.id = testId;
-              existingTest.title = testConfig.title;
-              existingTest.date = testConfig.date;
-              existingTest.time = testConfig.time;
-              existingTest.endTime = testConfig.endTime;
-              existingTest.scope = testConfig.scope;
-              existingTest.type = 'PRACTICE';
-              existingTest.cutoff = testConfig.cutoff;
-              existingTest.cutoffScore = testConfig.cutoffScore;
-              existingTest.practiceCutoff = testConfig.practiceCutoff;
-              existingTest.teacherNote = testConfig.teacherNote;
-              existingTest.allowLate = true;
-              // JS 파일이 수정되면 항상 최신 문제로 강제 갱신 (캐시 무시)
-              existingTest.questions = testConfig.questions;
-              insertModified = true;
-            }
-          });
-        });
-
-        if (insertModified) {
-          FirebaseStore.tests = currentTests;
-          setLocalCache(LOCAL_CACHE_KEYS.tests, currentTests);
-          console.log('10/12 문장 삽입 3세트 실전 테스트가 전체 학생에게 성공적으로 등록되었습니다.');
-        }
-      }
-    } catch (err) {
-      console.warn('10/12 문장 삽입 테스트 일괄 등록 동기화 안내:', err);
-    }
-    }
-
     // 모든 학생의 단어 시험(VOCAB)에 대해 vocabSetId / vocabSetIds 누락 자동 탐지 및 원래 일정대로 완벽 자동 재연동
     try {
       const allVocabSets = this.getVocabSets();
@@ -2191,7 +1820,7 @@ const AppData = {
         }
 
         // 문제풀이 시험(PRACTICE)은 절대로 단어 시험으로 변환하지 않음
-        if (t.type === 'PRACTICE' || (t.id && String(t.id).startsWith('mock2509_')) || (t.title && t.title.includes('문제풀이'))) {
+        if (t.type === 'PRACTICE' || (t.title && t.title.includes('문제풀이'))) {
           t.type = 'PRACTICE';
           delete t.vocabSetId;
           delete t.vocabSetIds;
@@ -2202,7 +1831,7 @@ const AppData = {
         if (isVocab) {
           const currentSetIds = Array.isArray(t.vocabSetIds) && t.vocabSetIds.length > 0 ? t.vocabSetIds : (t.vocabSetId ? [t.vocabSetId] : []);
           const hasValidMatching = currentSetIds.length > 0 && currentSetIds.every(id => allVocabSets.some(s => s.id === id));
-          
+
           if (!hasValidMatching) {
             const textToSearch = `${t.title || ''} ${t.scope || ''} ${t.id || ''}`;
             const dayMatches = [...textToSearch.matchAll(/Day\s*(\d+)/gi)];
@@ -2210,11 +1839,6 @@ const AppData = {
               const extractedSetIds = [...new Set(dayMatches.map(m => `wm2000_day_${String(m[1]).padStart(2, '0')}`))];
               t.vocabSetIds = extractedSetIds;
               t.vocabSetId = extractedSetIds[0];
-              t.type = 'VOCAB';
-              testsRelinked = true;
-            } else if (t.isMockSpecial || (textToSearch.includes('9모') && textToSearch.includes('단어')) || textToSearch.includes('다의어')) {
-              t.vocabSetIds = ['mock2026_g1_sep_9mo'];
-              t.vocabSetId = 'mock2026_g1_sep_9mo';
               t.type = 'VOCAB';
               testsRelinked = true;
             }
@@ -2285,54 +1909,11 @@ const AppData = {
 
 
   // ======================================================
-  // 시험 목록 가져오기 (11일간 9모 실전 시험 및 기본 시험 100% 가용 보장)
+  // 시험 목록 가져오기 (현재 시험)
   // ======================================================
 
   getTests() {
     let current = retainFutureTests(FirebaseStore.tests);
-
-    // 9모 실전 시험 118문항 데이터 및 단어 제외 무결성 동기화
-    if (typeof getMock202509QuestionsByPlanId === 'function' && typeof MOCK_202509_PRACTICE_TEST_PLANS !== 'undefined') {
-      current.forEach(t => {
-        if (t.id && String(t.id).startsWith('mock2509_')) {
-          t.type = 'PRACTICE';
-          delete t.vocabSetId;
-          delete t.vocabSetIds;
-          const planIdMatch = String(t.id).match(/^(mock2509_d\d+)/);
-          if (planIdMatch) {
-            const plan = MOCK_202509_PRACTICE_TEST_PLANS.find(p => p.planId === planIdMatch[1]);
-            if (plan) {
-              if (t.title !== plan.title) t.title = plan.title;
-              if (t.scope !== plan.scope) t.scope = plan.scope;
-              t.time = '00:00';
-              t.endTime = '23:59';
-              if (t.status !== 'SUBMITTED') {
-                const latestQs = getMock202509QuestionsByPlanId(plan.planId);
-                if (latestQs && latestQs.length > 0) {
-                  if (!t.questions || t.questions.length !== latestQs.length || (t.questions[0] && latestQs[0] && t.questions[0].id !== latestQs[0].id)) {
-                    t.questions = latestQs;
-                  }
-                }
-              }
-            }
-          }
-        }
-        // 문제풀이 시험은 시작 시간 제한 없이 당일 하루종일(00:00~23:59) 응시 가능 및 재시험 없이 응시 시 완료(초록색) 동기화
-        if (t.type === 'PRACTICE' || (t.time === '18:00' && !t.extendedEndTime && (t.id && String(t.id).startsWith('mock2509_')))) {
-          t.time = '00:00';
-          t.endTime = '23:59';
-          t.allowRetest = false;
-          if (t.practiceResult) {
-            t.status = 'PASS';
-            t.retestStatus = 'NONE';
-            if (t.practiceResult.passed === false) {
-              t.practiceResult.passed = true;
-            }
-          }
-        }
-
-      });
-    }
 
     if (current.length !== (FirebaseStore.tests || []).length) {
       FirebaseStore.tests = current;
@@ -2719,7 +2300,7 @@ const AppData = {
       }
     });
 
-    // 기본 세트(50개 Day + 9모 + Basic 30개 Day) 중 하나라도 누락되어 있다면 자동 보강
+    // 기본 세트(50개 Day + Basic 30개 Day) 중 하나라도 누락되어 있다면 자동 보강
     const currentIds = new Set(current.map(s => s.id));
     defSets.forEach(defSet => {
       if (!currentIds.has(defSet.id)) {
@@ -2827,8 +2408,8 @@ const AppData = {
       if (Array.isArray(s.studentIds) && s.studentIds.includes(numId)) {
         return true;
       }
-      // 2. 워드마스터 2000 및 9모 특별단어, YBM 공통영어 2는 전교생 공통 교재이므로 무조건 접근 보장
-      if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
+      // 2. 워드마스터 2000, YBM 공통영어 2는 전교생 공통 교재이므로 무조건 접근 보장
+      if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
         if (!Array.isArray(s.studentIds)) s.studentIds = [];
         if (!s.studentIds.includes(numId)) s.studentIds.push(numId);
         return true;
