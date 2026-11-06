@@ -992,7 +992,7 @@ function getDefaultVocabSets() {
         ...set,
         isMockSpecial: true,
         book: (set.book || '2026 고1 9모 대비').trim(),
-        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+        studentIds: [...allStudentIds]
       });
     });
   }
@@ -1003,7 +1003,7 @@ function getDefaultVocabSets() {
       allSets.push({
         ...set,
         book: (set.book || '워드마스터 수능 2000').trim(),
-        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+        studentIds: [...allStudentIds]
       });
     });
   }
@@ -1014,7 +1014,7 @@ function getDefaultVocabSets() {
       allSets.push({
         ...set,
         book: (set.book || '워드마스터 고등 Basic').trim(),
-        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+        studentIds: [...allStudentIds]
       });
     });
   }
@@ -1025,7 +1025,7 @@ function getDefaultVocabSets() {
       allSets.push({
         ...set,
         book: (set.book || '백발백중 공통영어 2').trim(),
-        studentIds: Array.from(new Set([...(set.studentIds || []).map(Number), ...allStudentIds]))
+        studentIds: [...allStudentIds]
       });
     });
   }
@@ -1692,6 +1692,7 @@ const AppData = {
         // 모든 학생 ID 매핑 보장
         const currentStudentIds = (FirebaseStore.students || DEFAULT_STUDENTS).map(s => Number(s.id));
         items.forEach(s => {
+          s.studentIds = (s.studentIds || []).filter(id => currentStudentIds.includes(Number(id)));
           if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
             if (!Array.isArray(s.studentIds)) s.studentIds = [];
             currentStudentIds.forEach(sid => {
@@ -1826,6 +1827,7 @@ const AppData = {
       // 모든 등록 학생(1~6, 11~14 및 전체 등록 학생)에 대해 워드마스터/9모 단어 세트 권한 보장
       const allStudentIds = this.getStudents().map(s => Number(s.id));
       setMap.forEach(s => {
+        s.studentIds = (s.studentIds || []).filter(id => allStudentIds.includes(Number(id)));
         if (s.book === '워드마스터 수능 2000' || (s.id && s.id.startsWith('wm2000_')) || s.book === '워드마스터 고등 Basic' || (s.id && s.id.startsWith('wm_basic_')) || s.isMockSpecial || (s.id && s.id.startsWith('ybm2_')) || s.book === '백발백중 공통영어 2') {
           if (!Array.isArray(s.studentIds)) s.studentIds = [];
           allStudentIds.forEach(sid => {
@@ -2172,27 +2174,6 @@ const AppData = {
     }
     }
 
-    // 송규인(id: 11) 학생에게 워드마스터 2000 단어 세트 권한 부여
-    try {
-      let vocabSetsModified = false;
-      const currentVocabSets = FirebaseStore.vocabSets || [];
-      currentVocabSets.forEach(set => {
-        if (set.book === '워드마스터 수능 2000' || (set.id && set.id.startsWith('wm2000_'))) {
-          if (!Array.isArray(set.studentIds)) set.studentIds = [];
-          if (!set.studentIds.includes(11)) {
-            set.studentIds.push(11);
-            vocabSetsModified = true;
-          }
-        }
-      });
-      if (vocabSetsModified) {
-        FirebaseStore.vocabSets = currentVocabSets;
-        this.replaceCollection('vocabSets', FirebaseStore.vocabSets, set => set.id).catch(e => console.warn('Vocab studentIds sync notice:', e));
-      }
-    } catch (err) {
-      console.warn('워드마스터 학생 권한 동기화 안내:', err);
-    }
-
     // 모든 학생의 단어 시험(VOCAB)에 대해 vocabSetId / vocabSetIds 누락 자동 탐지 및 원래 일정대로 완벽 자동 재연동
     try {
       const allVocabSets = this.getVocabSets();
@@ -2263,8 +2244,6 @@ const AppData = {
     setLocalCache(LOCAL_CACHE_KEYS.tests, FirebaseStore.tests);
     this.refreshCloudScreens();
 
-    // 백그라운드 선별 동기화: Firestore에 미등록된 시험만 조용히 비동기 저장 (UI 대기 0초!)
-    this.syncMissingTestsToCloudInBackground(FirebaseStore.tests);
   },
 
   startCloudListeners() {
@@ -2302,38 +2281,6 @@ const AppData = {
     });
 
     FirebaseStore.specialScienceResultsListenerStarted = true;
-  },
-
-
-  // ======================================================
-  // 백그라운드 선별 클라우드 동기화 (기존 저장 문서 제외, 미등록 신규 시험만 비동기 저장)
-  // ======================================================
-
-  async syncMissingTestsToCloudInBackground(tests) {
-    if (!this.isFirebaseReady()) return;
-    try {
-      const { collection, doc, getDocs, setDoc } = window.firebaseFns;
-      const db = window.firebaseDB;
-      const existingSnapshot = await getDocs(collection(db, 'tests'));
-      const existingIds = new Set(existingSnapshot.docs.map(d => d.id));
-
-      const missing = tests.filter(t => !existingIds.has(String(t.id)));
-      if (missing.length === 0) {
-        return;
-      }
-
-      console.log(`☁️ 클라우드 미등록 시험 ${missing.length}건을 백그라운드에서 동기화합니다...`);
-      for (let i = 0; i < missing.length; i += 5) {
-        const chunk = missing.slice(i, i + 5);
-        await Promise.all(chunk.map(t => {
-          const cleanItem = JSON.parse(JSON.stringify(t, (k, v) => v === undefined ? null : v));
-          return setDoc(doc(collection(db, 'tests'), String(t.id)), cleanItem).catch(e => console.warn(`시험 ${t.id} 저장 알림:`, e));
-        }));
-      }
-      console.log(`✅ 클라우드 미등록 시험 ${missing.length}건 백그라운드 동기화 완료!`);
-    } catch (e) {
-      console.warn('백그라운드 시험 동기화 알림:', e);
-    }
   },
 
 
@@ -2508,6 +2455,7 @@ const AppData = {
     // 같은 단어 세트를 사용하는 다른 시험의 결과는 건드리지 않습니다.
     try {
       await this.deleteVocabTestResultsByTestId(testId);
+      await this.deleteTextMemorizeResultsByTestId(testId);
       await this.removeDocument('tests', testId);
     } catch (error) {
       this.reportCloudWriteError('시험 일정 또는 단어 테스트 결과', error);
@@ -2585,28 +2533,48 @@ const AppData = {
       return false;
     }
 
-    const remainingStudents = students.filter(
-      student => student.id !== normalizedStudentId
-    );
-    const remainingTests = this.getTests().filter(
-      test => Number(test.studentId) !== normalizedStudentId
-    );
-    const remainingVocabSets = this.getVocabSets().map(set => ({
-      ...set,
-      studentIds: (set.studentIds || []).filter(
-        id => Number(id) !== normalizedStudentId
-      )
+    // 클라우드의 최신 문서로 정리합니다. 캐시 전체 덮어쓰기는 다른 학생의 변경을 유실시킬 수 있습니다.
+    const { collection, getDocs, runTransaction } = window.firebaseFns;
+    const db = window.firebaseDB;
+    const collections = ['tests', 'vocabTestResults', 'textMemorizeResults', 'vocabSets', 'academicData'];
+    const snapshots = await Promise.all(collections.map(name => getDocs(collection(db, name))));
+    for (let i = 0; i < collections.length; i++) {
+      const name = collections[i];
+      for (const document of snapshots[i].docs) {
+        await runTransaction(db, async tx => {
+          const latest = await tx.get(document.ref);
+          if (!latest.exists()) return;
+          const value = latest.data();
+          if (['tests', 'vocabTestResults', 'textMemorizeResults'].includes(name)) {
+            if (Number(value.studentId) === normalizedStudentId) tx.delete(document.ref);
+          } else if (name === 'vocabSets') {
+            const ids = value.studentIds || [];
+            const kept = ids.filter(id => Number(id) !== normalizedStudentId);
+            if (kept.length !== ids.length) tx.update(document.ref, { studentIds: kept });
+          } else if (value.items) {
+            const isArray = Array.isArray(value.items);
+            const entries = Object.entries(value.items).filter(([key, item]) =>
+              !(item && typeof item === 'object' && Number(item.studentId) === normalizedStudentId) &&
+              !(document.id === 'academicTargetUnivs' && Number(key) === normalizedStudentId));
+            if (entries.length !== Object.keys(value.items).length) {
+              const items = isArray ? entries.map(([, item]) => item) : Object.fromEntries(entries);
+              const update = { items };
+              if ('count' in value) update.count = entries.length;
+              tx.update(document.ref, update);
+            }
+          }
+        });
+      }
+    }
+    // 종속 기록 정리가 실패하면 계정은 남겨 재시도할 수 있게 합니다.
+    await this.removeDocument('students', normalizedStudentId);
+    FirebaseStore.students = students.filter(student => student.id !== normalizedStudentId);
+    for (const key of ['tests', 'vocabTestResults', 'textMemorizeResults']) {
+      FirebaseStore[key] = (FirebaseStore[key] || []).filter(item => Number(item.studentId) !== normalizedStudentId);
+    }
+    FirebaseStore.vocabSets = this.getVocabSets().map(set => ({
+      ...set, studentIds: (set.studentIds || []).filter(id => Number(id) !== normalizedStudentId)
     }));
-    const remainingVocabResults = this.getVocabTestResults().filter(
-      result => Number(result.studentId) !== normalizedStudentId
-    );
-
-    await Promise.all([
-      this.saveStudents(remainingStudents),
-      this.saveTests(remainingTests),
-      this.saveVocabSets(remainingVocabSets),
-      this.saveVocabTestResults(remainingVocabResults)
-    ]);
     return true;
   },
 
@@ -2964,6 +2932,7 @@ const AppData = {
   },
 
   async cleanupOrphanVocabTestResults() {
+    if (!FirebaseStore.reviewSourcesReady?.tests || !FirebaseStore.reviewSourcesReady?.vocabTestResults) return 0;
     const tests = this.getTests();
     const results = this.getVocabTestResults();
     const validTestIds = new Set(tests.map(test => test.id));
@@ -3181,9 +3150,11 @@ const AppData = {
   },
 
   async deleteTextMemorizeResultsByTestId(testId) {
-    const results = this.getTextMemorizeResults().filter(r => r.testId !== testId);
-    FirebaseStore.textMemorizeResults = results;
-    // Firestore doc deletion handled elsewhere when test is deleted
+    const results = await this.loadCollection('textMemorizeResults');
+    await Promise.all(results.filter(r => r.testId === testId).map(result =>
+      this.removeDocument('textMemorizeResults', result.id || this.getTextMemorizeResultDocId(result))
+    ));
+    FirebaseStore.textMemorizeResults = results.filter(r => r.testId !== testId);
   },
 
   // ── 지구과학 특별 테스트 결과 ───────────────────────────

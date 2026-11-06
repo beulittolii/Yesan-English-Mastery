@@ -75,3 +75,7 @@
 
 - **로컬 실행**: `index.html` 더블 클릭
 - **데이터 저장**: Firebase Cloud Firestore에 자동 저장되어 기기와 브라우저가 달라도 같은 데이터를 실시간으로 확인할 수 있습니다.
+
+DB 잔여 기록 점검: `python3 scripts/cleanup_database.py`. 삭제된 학생의 기록·단어장 권한과 삭제된 시험의 응시 결과를 점검합니다. `--apply`는 원본 백업 후 변경 시각 조건을 붙인 단일 커밋으로 반영합니다. 기본 백업 위치는 `/private/tmp/english-mastery-cleanup`이며 `--backup-dir`로 변경할 수 있습니다. 계정 비밀번호가 포함될 수 있으므로 백업을 공개 저장소에 올리지 마세요.
+
+삭제 경로 회귀 테스트: `node --test tests/cleanup.test.cjs`.

@@ -60,22 +60,6 @@ const App = {
       }
       [notice, adminNotice].forEach(el => el?.classList.add('hidden'));
       return;
-    } else if (status === 'synced') {
-      badgeHtml = `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold shadow-xs">
-          <i class="fa-solid fa-cloud-check text-emerald-500"></i>
-          <span>${text || '동기화 완료'}</span>
-        </span>
-      `;
-      noticeHtml = `
-        <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between text-xs sm:text-sm font-medium shadow-xs transition-opacity duration-500">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-emerald-600"></i>
-            <span class="font-bold">모든 시험 및 학습 데이터가 성공적으로 동기화되었습니다.</span>
-          </div>
-          <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200 hidden sm:inline-block">완료</span>
-        </div>
-      `;
     } else if (status === 'offline') {
       badgeHtml = `
         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold shadow-xs">
@@ -4072,7 +4056,7 @@ const App = {
   async confirmDeleteStudentProfile(studentId) {
     const student = AppData.getStudentById(studentId);
     if (!student) return;
-    if (!confirm(`'${student.name}' 학생 계정을 삭제할까요?\n해당 학생의 시험 일정과 단어 시험 결과도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+    if (!confirm(`'${student.name}' 학생 계정을 삭제할까요?\n해당 학생의 시험 일정, 응시 결과와 학업관리 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
 
     try {
       await AppData.deleteStudent(studentId);
