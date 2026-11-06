@@ -14,9 +14,9 @@ const server = http.createServer((req, res) => {
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.end(html);
-  } else if (pathname === '/style.css') {
+  } else if (['/style.css', '/pace.css'].includes(pathname)) {
     res.setHeader('Content-Type', 'text/css');
-    res.end(fs.readFileSync(path.join(root, 'style.css')));
+    res.end(fs.readFileSync(path.join(root, pathname.slice(1))));
   } else { res.statusCode = 404; res.end(); }
 });
 
@@ -63,6 +63,7 @@ async function loadApp(page) {
   await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
   browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless:true });
   const page = await browser.newPage({ viewport:{width:1280,height:950} });
+  await page.clock.install({time:new Date('2026-11-06T12:00:00Z')});
   page.on('pageerror',error=>errors.push(error.message));
   await page.route('**/*',route => route.request().url().startsWith('http://127.0.0.1:') ? route.continue() : route.abort());
   const url = `http://127.0.0.1:${server.address().port}`;
@@ -151,7 +152,7 @@ async function loadApp(page) {
     await page.screenshot({path:`/tmp/yem-weekly-review-modal-${width}.png`,fullPage:true});
   }
   // Open after Saturday, exercising actual transaction grading against frozen questions.
-  await page.clock.install({time:new Date('2026-11-07T03:00:00Z')});
+  await page.clock.setFixedTime(new Date('2026-11-07T03:00:00Z'));
   await page.evaluate(id=>App.startWeeklyReview(id),id);
   assert.equal(await page.locator('#weeklyReviewView').isVisible(),true);
   assert.equal(await page.evaluate(()=>App.state.weeklyReview.questions.length),4);

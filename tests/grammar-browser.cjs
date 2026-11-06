@@ -14,9 +14,9 @@ const server = http.createServer((req, res) => {
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.end(html);
-  } else if (pathname === '/style.css') {
+  } else if (['/style.css', '/pace.css'].includes(pathname)) {
     res.setHeader('Content-Type', 'text/css');
-    res.end(fs.readFileSync(path.join(root, 'style.css')));
+    res.end(fs.readFileSync(path.join(root, pathname.slice(1))));
   } else { res.statusCode = 404; res.end(); }
 });
 
@@ -137,7 +137,7 @@ async function loadApp(page) {
   await page.waitForTimeout(850);
   assert.equal(await page.evaluate(() => window.transactionCount), afterStartTransactions, 'typing must not autosave');
   assert.equal(await page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('yem_grammar_draft_')).length), 0);
-  await page.locator('header [onclick="App.handleLogoClick()"]', { hasText: 'YEM' }).click();
+  await page.locator('header [onclick="App.handleLogoClick()"]', { hasText: 'PACE' }).click();
   await page.evaluate(async () => { await App.selectStudent(999); await App.showLanding(); await App.logoutStudent(); await App.exitGrammarTest(); App.showPracticeTestView(); });
   assert.equal(await page.evaluate(() => App.state.view), 'grammarTest');
   assert.equal(await page.evaluate(() => App.state.selectedStudentId), 501);

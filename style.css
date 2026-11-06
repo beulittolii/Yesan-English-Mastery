@@ -5,8 +5,8 @@
 
 :root {
   --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
+  --primary: #176b65;
+  --primary-hover: #12564f;
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
@@ -14,8 +14,8 @@
 
 body {
   font-family: var(--font-family);
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: #f7f8f5;
+  color: #202925;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -26,7 +26,7 @@ body {
   inset: 0;
   z-index: 100;
   overflow: auto;
-  background: #f8fafc;
+  background: #f7f8f5;
   transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
@@ -80,7 +80,7 @@ body {
 .initial-loading-skeleton__login-card {
   padding: 1.5rem;
   background: #fff;
-  border: 1px solid #e0e7ff;
+  border: 1px solid #e8f2ef;
   border-radius: 1.5rem;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
@@ -516,7 +516,7 @@ body {
 }
 
 .calendar-day-cell:hover {
-  background-color: #f8fafc;
+  background-color: #f7f8f5;
 }
 
 .calendar-day-cell.other-month {
@@ -666,7 +666,7 @@ body {
 .font-exam {
   font-family: "Times New Roman", Times, "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", serif;
   line-height: 1.85;
-  color: #1e293b;
+  color: #202925;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -725,18 +725,18 @@ u, .font-exam u, .passage-text u, .underline {
 
 
 /* 문법 시험: 원문 순서를 유지하는 반응형 개념 시험지와 문제풀이 UI */
-.grammar-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .7rem 1rem; border: 1px solid transparent; border-radius: .8rem; background: #4f46e5; color: white; font-size: .8rem; font-weight: 700; cursor: pointer; }
-.grammar-button:hover { background: #4338ca; }
+.grammar-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .7rem 1rem; border: 1px solid transparent; border-radius: .8rem; background: #176b65; color: white; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.grammar-button:hover { background: #12564f; }
 .grammar-button:disabled { opacity: .45; cursor: not-allowed; }
-.grammar-button-secondary { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
-.grammar-button-secondary:hover { background: #eef2ff; }
-.grammar-notice { padding: 1rem; border-radius: 1rem; border: 1px solid #ddd6fe; background: #f5f3ff; color: #4c1d95; font-size: .8rem; line-height: 1.8; }
+.grammar-button-secondary { background: #f7f8f5; border-color: #cbd5e1; color: #334155; }
+.grammar-button-secondary:hover { background: #f1f7f5; }
+.grammar-notice { padding: 1rem; border-radius: 1rem; border: 1px solid #cce2dc; background: #f1f7f5; color: #123b36; font-size: .8rem; line-height: 1.8; }
 .grammar-field { display: flex; flex-direction: column; gap: .4rem; font-size: .8rem; font-weight: 700; }
 .grammar-field input, .grammar-field select, .grammar-field textarea { padding: .75rem; border: 1px solid #cbd5e1; border-radius: .6rem; background: white; color: #0f172a; width: 100%; }
 .grammar-history { padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #fff; overflow-wrap: anywhere; }
-#testDetailModal.grammar-detail-modal > .modal-content > div:first-child { background: linear-gradient(to right, #0f172a, #581c87); }
-#testDetailModal.grammar-detail-modal #detailModalStudentBadge { background: rgb(168 85 247 / .25); border-color: rgb(192 132 252 / .3); color: #e9d5ff; }
-#testDetailModal.grammar-detail-modal > .modal-content > div:first-child .w-10 { color: #d8b4fe; }
+#testDetailModal.grammar-detail-modal > .modal-content > div:first-child { background: linear-gradient(to right, #0f172a, #123b36); }
+#testDetailModal.grammar-detail-modal #detailModalStudentBadge { background: rgb(168 85 247 / .25); border-color: rgb(192 132 252 / .3); color: #cce2dc; }
+#testDetailModal.grammar-detail-modal > .modal-content > div:first-child .w-10 { color: #a0c9be; }
 .grammar-pass { border-color: #a7f3d0; background: #ecfdf5; color: #065f46; }
 .grammar-fail { border-color: #fecdd3; background: #fff1f2; color: #9f1239; }
 .grammar-paper { max-width: 980px; margin: auto; color: #111827; line-height: 2.1; word-break: keep-all; overflow-wrap: anywhere; }
@@ -749,18 +749,18 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-section:last-of-type { border: 0; }
 .grammar-muted { color: #64748b; font-size: .9rem; }
 .grammar-example { margin-top: 1rem; }
-.grammar-blank { display: inline-block; max-width: 100%; min-width: 5rem; margin: .2rem .2rem; padding: .1rem .35rem; border: 0; border-bottom: 2px solid #6366f1; border-radius: .3rem .3rem 0 0; background: #eef2ff; color: #312e81; text-align: center; font-family: inherit; font-size: .9rem; vertical-align: baseline; }
-.grammar-blank:focus { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+.grammar-blank { display: inline-block; max-width: 100%; min-width: 5rem; margin: .2rem .2rem; padding: .1rem .35rem; border: 0; border-bottom: 2px solid #378878; border-radius: .3rem .3rem 0 0; background: #f1f7f5; color: #123b36; text-align: center; font-family: inherit; font-size: .9rem; vertical-align: baseline; }
+.grammar-blank:focus { outline: 2px solid #a0c9be; outline-offset: 2px; }
 .grammar-table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .9rem; }
 .grammar-table th, .grammar-table td { border: 1px solid #475569; padding: .6rem; text-align: left; }
 .grammar-table th { min-width: 110px; }
 .grammar-table td:nth-last-child(2) { min-width: 140px; }
 .grammar-number { width: 2.3rem; height: 2.3rem; border: 1px solid #cbd5e1; border-radius: .6rem; background: #fff; font-size: .8rem; font-weight: 700; }
-.grammar-number.grammar-answered { background: #eef2ff; border-color: #a5b4fc; }
-.grammar-number.grammar-current { background: #4f46e5; color: white; border-color: #4f46e5; }
+.grammar-number.grammar-answered { background: #f1f7f5; border-color: #a0c9be; }
+.grammar-number.grammar-current { background: #176b65; color: white; border-color: #176b65; }
 .grammar-choice { display: flex; align-items: flex-start; gap: .7rem; padding: 1rem; border: 2px solid #e2e8f0; border-radius: .8rem; cursor: pointer; font-size: .9rem; }
 .grammar-choice input { margin-top: .3rem; flex-shrink: 0; }
-.grammar-selected { border-color: #6366f1; background: #eef2ff; color: #312e81; }
+.grammar-selected { border-color: #378878; background: #f1f7f5; color: #123b36; }
 @media (max-width: 640px) { .grammar-definition { flex-direction: column; gap: .5rem; } .grammar-paper { line-height: 2.2; } .grammar-paper h1 { font-size: 2rem; } }
 
 .grammar-review-blank { display:inline-block; vertical-align:middle; min-width:5rem; margin:.2rem; padding:.1rem .4rem; border-bottom:2px solid #94a3b8; background:#f1f5f9; text-align:center; font-size:.9rem; }
@@ -780,10 +780,10 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-stage-progress { height:.625rem; position:relative; background:#e2e8f0; }
 .grammar-stage-progress:first-child { border-radius:999px 0 0 999px; }
 .grammar-stage-progress:last-child { border-radius:0 999px 999px 0; border-left:2px solid #fff; }
-.grammar-stage-fill { height:100%; max-width:100%; background:#8b5cf6; border-radius:inherit; transition:width .2s; }
+.grammar-stage-fill { height:100%; max-width:100%; background:#378878; border-radius:inherit; transition:width .2s; }
 .grammar-stage-progress > span { position:absolute; left:0; right:0; bottom:1rem; text-align:center; color:#64748b; font-weight:600; font-size:.8rem; }
-.grammar-stage-active > span { color:#7c3aed; font-weight:800; }
-.grammar-submission-status { font-size:.8rem; color:#6d28d9; }
+.grammar-stage-active > span { color:#176b65; font-weight:800; }
+.grammar-submission-status { font-size:.8rem; color:#12564f; }
 .grammar-submission-status:empty { display:none; }
 
 /* 전체 화면 성적표 */
@@ -795,14 +795,14 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-result-back { padding:.9rem 1.2rem; background:#0f172a; color:white; border-radius:.85rem; font-size:.8rem; font-weight:700; white-space:nowrap; }
 .grammar-result-panels { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
 .grammar-result-panel { display:flex; flex-direction:column; padding:2rem; border-radius:1.75rem; min-height:530px; border:1px solid #e2e8f0; }
-.grammar-result-concept { background:linear-gradient(145deg,#fff,#f5f3ff); color:#312e81; }
+.grammar-result-concept { background:linear-gradient(145deg,#fff,#f1f7f5); color:#123b36; }
 .grammar-result-practice.is-pass { background:linear-gradient(140deg,#064e3b,#047857); color:#ecfdf5; border-color:#065f46; }
 .grammar-result-practice.is-fail { background:linear-gradient(140deg,#881337,#be123c); color:#fff1f2; border-color:#9f1239; }
 .grammar-result-practice.is-unassigned { background:#f1f5f9; color:#475569; }
 .grammar-result-panel-top { display:flex; justify-content:space-between; align-items:center; }
 .grammar-result-tag { padding:.4rem .8rem; border:1px solid currentColor; border-radius:999px; font-size:.75rem; font-weight:700; opacity:.8; }
 .grammar-result-main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2.5rem 0; }
-.grammar-result-symbol { display:flex; align-items:center; justify-content:center; flex:0 0 64px; width:64px; height:64px; border-radius:50%; background:#ede9fe; color:#7c3aed; font-size:2.5rem; margin-bottom:1.5rem; line-height:1; }
+.grammar-result-symbol { display:flex; align-items:center; justify-content:center; flex:0 0 64px; width:64px; height:64px; border-radius:50%; background:#e8f2ef; color:#176b65; font-size:2.5rem; margin-bottom:1.5rem; line-height:1; }
 .grammar-result-main .grammar-completion-concept { color:inherit; margin:0 0 1rem; font-size:clamp(1.5rem,3vw,2rem); font-weight:900; }
 .grammar-result-main > p { font-size:.85rem; line-height:1.8; opacity:.8; }
 .grammar-result-main .grammar-completion-verdict { font-size:clamp(3.5rem,7vw,6rem); font-weight:900; letter-spacing:-.06em; }
@@ -818,7 +818,7 @@ u, .font-exam u, .passage-text u, .underline {
 @media(max-width:640px) { .grammar-result-heading { align-items:flex-start; flex-direction:column; margin-bottom:1.5rem; } .grammar-result-panels { grid-template-columns:1fr; gap:1rem; } .grammar-result-panel { min-height:420px; padding:1.5rem; } .grammar-result-page { padding-top:.25rem; } }
 
 .grammar-latest-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:stretch; gap:.75rem; }
-.grammar-latest-card { box-sizing:border-box; width:100%; height:auto; min-width:0; min-height:0; align-self:stretch; padding:.7rem; gap:.45rem; display:flex; flex-direction:column; align-items:center; justify-content:space-between; text-align:center; border:1px solid #e2e8f0; border-radius:1rem; background:#f8fafc; }
+.grammar-latest-card { box-sizing:border-box; width:100%; height:auto; min-width:0; min-height:0; align-self:stretch; padding:.7rem; gap:.45rem; display:flex; flex-direction:column; align-items:center; justify-content:space-between; text-align:center; border:1px solid #e2e8f0; border-radius:1rem; background:#f7f8f5; }
 .grammar-latest-card h5 { font-size:.875rem; font-weight:800; color:#334155; }
 .grammar-latest-date { margin-top:.25rem; font-size:.7rem; color:#94a3b8; }
 .grammar-latest-status { padding:.25rem .55rem; border-radius:999px; font-weight:800; font-size:.8rem; }
@@ -845,24 +845,24 @@ u, .font-exam u, .passage-text u, .underline {
 /* 주간 복습: 기존 단어 성적표와 같은 전체 화면 구성 */
 .weekly-review-exam { max-width:840px; margin:1rem auto 3rem; }
 .weekly-review-progress { height:8px; overflow:hidden; background:#e2e8f0; border-radius:20px; margin-bottom:2rem; }
-.weekly-review-progress > div { height:100%; background:#6366f1; border-radius:inherit; transition:width .2s; }
+.weekly-review-progress > div { height:100%; background:#378878; border-radius:inherit; transition:width .2s; }
 .weekly-review-question { padding:clamp(1.25rem,4vw,3rem); border:1px solid #e2e8f0; border-radius:1.5rem; background:white; }
 .weekly-review-question h2 { font-size:clamp(1.7rem,4vw,2.5rem); font-weight:900; margin:1.2rem 0 2rem; overflow-wrap:anywhere; }
 .weekly-review-choice { display:flex; text-align:left; gap:1rem; padding:1rem; width:100%; border:2px solid #e2e8f0; border-radius:1rem; font-weight:700; }
-.weekly-review-choice.selected { border-color:#6366f1; color:#4338ca; background:#eef2ff; }
+.weekly-review-choice.selected { border-color:#378878; color:#12564f; background:#f1f7f5; }
 .weekly-review-input { width:100%; padding:1.2rem; border:2px solid #cbd5e1; border-radius:1rem; font-size:1.2rem; }
-.weekly-review-input:focus { outline:2px solid #6366f1; border-color:transparent; }
+.weekly-review-input:focus { outline:2px solid #378878; border-color:transparent; }
 .weekly-review-paper { display:flex; flex-direction:column; gap:1.5rem; }
 .weekly-review-question { min-width:0; }
-.weekly-review-question-number { padding:.35rem .7rem; border-radius:.6rem; background:#eef2ff; color:#4338ca; font-size:.8rem; font-weight:900; }
+.weekly-review-question-number { padding:.35rem .7rem; border-radius:.6rem; background:#f1f7f5; color:#12564f; font-size:.8rem; font-weight:900; }
 .weekly-review-option { display:block; position:relative; cursor:pointer; }
 .weekly-review-option > input { position:absolute; opacity:0; width:1px; height:1px; }
-.weekly-review-option > input:checked + .weekly-review-choice { border-color:#6366f1; color:#4338ca; background:#eef2ff; }
-.weekly-review-option > input:focus-visible + .weekly-review-choice { outline:2px solid #4338ca; outline-offset:3px; }
+.weekly-review-option > input:checked + .weekly-review-choice { border-color:#378878; color:#12564f; background:#f1f7f5; }
+.weekly-review-option > input:focus-visible + .weekly-review-choice { outline:2px solid #12564f; outline-offset:3px; }
 .weekly-review-question:disabled .weekly-review-option { cursor:wait; }
 .weekly-review-paper-progress > span { display:block; color:#64748b; font-size:.8rem; font-weight:700; margin-bottom:.65rem; }
 .weekly-review-paper-submit { display:flex; justify-content:flex-end; padding-top:.5rem; }
-.weekly-review-paper-submit button { min-width:180px; background:#4f46e5; }
+.weekly-review-paper-submit button { min-width:180px; background:#176b65; }
 .weekly-review-paper-submit button:disabled { opacity:.6; cursor:wait; }
 .weekly-review-summary { padding:1rem; gap:1rem; }
 .weekly-review-modal-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; width:100%; }
@@ -870,7 +870,7 @@ u, .font-exam u, .passage-text u, .underline {
 .weekly-review-modal-stats span { color:#94a3b8; font-weight:700; }
 .weekly-review-modal-stats strong { color:#334155; font-weight:900; }
 @media(max-width:640px) { .weekly-review-paper-submit button { width:100%; } }
-.weekly-review-in-progress { background:linear-gradient(140deg,#1e1b4b,#4338ca); color:#eef2ff; }
+.weekly-review-in-progress { background:linear-gradient(140deg,#092521,#12564f); color:#f1f7f5; }
 .grammar-result-main .weekly-review-verdict { font-size:clamp(2.4rem,7vw,5.5rem); }
 
 .vocab-wrong-answer-list { max-height:20rem; }
@@ -880,20 +880,20 @@ u, .font-exam u, .passage-text u, .underline {
 .weekly-review-weekdays { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0; width:100%; max-width:360px; margin:0 auto; padding:0; list-style:none; }
 .weekly-review-weekdays li { display:flex; flex-direction:column; align-items:center; gap:.5rem; color:#64748b; font-size:.8rem; font-weight:700; }
 .weekly-review-day-circle { box-sizing:border-box; flex-shrink:0; width:36px; height:36px; line-height:1; display:flex; align-items:center; justify-content:center; border:2px solid #cbd5e1; border-radius:50%; background:#fff; }
-.weekly-review-day-circle.is-complete { background:#7c3aed; border-color:#7c3aed; color:#fff; }
+.weekly-review-day-circle.is-complete { background:#176b65; border-color:#176b65; color:#fff; }
 .weekly-review-day-circle svg { width:22px; height:22px; }
-.weekly-review-weekday-count { margin:.85rem 0 0; text-align:center; color:#6d28d9; font-size:.8rem; font-weight:800; }
+.weekly-review-weekday-count { margin:.85rem 0 0; text-align:center; color:#12564f; font-size:.8rem; font-weight:800; }
 
 .weekly-review-day-circle.is-excluded { color:#94a3b8; background:#f1f5f9; border-color:#cbd5e1; border-style:dashed; }
 .weekly-review-day-label { display:flex; flex-direction:column; align-items:center; gap:.2rem; line-height:1.1rem; }
 .weekly-review-weekdays small { display:block; text-align:center; font-size:.6rem; line-height:.9rem; color:#94a3b8; }
 .weekly-review-weekdays .is-placeholder { visibility:hidden; }
-.weekly-review-exclusions { padding:1rem; border:1px solid #ddd6fe; border-radius:1rem; background:#faf5ff; }
+.weekly-review-exclusions { padding:1rem; border:1px solid #cce2dc; border-radius:1rem; background:#f1f7f5; }
 .weekly-review-exclusions h4 { font-size:.8rem; font-weight:800; color:#334155; }
 .weekly-review-exclusions p { margin-top:.45rem; font-size:.7rem; line-height:1.6; color:#64748b; }
 .weekly-review-exclusion-options { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.5rem; margin:1rem 0; }
-.weekly-review-exclusion-options label { display:flex; justify-content:center; align-items:center; gap:.35rem; padding:.6rem .25rem; border:1px solid #ddd6fe; border-radius:.6rem; background:white; font-size:.75rem; font-weight:700; color:#6d28d9; cursor:pointer; }
-.weekly-review-exclusion-options input { accent-color:#7c3aed; }
+.weekly-review-exclusion-options label { display:flex; justify-content:center; align-items:center; gap:.35rem; padding:.6rem .25rem; border:1px solid #cce2dc; border-radius:.6rem; background:white; font-size:.75rem; font-weight:700; color:#12564f; cursor:pointer; }
+.weekly-review-exclusion-options input { accent-color:#176b65; }
 .weekly-review-exclusion-options:disabled { opacity:.55; }
-.weekly-review-exclusions button { width:100%; padding:.7rem; border-radius:.7rem; background:#7c3aed; color:white; font-size:.75rem; font-weight:800; }
+.weekly-review-exclusions button { width:100%; padding:.7rem; border-radius:.7rem; background:#176b65; color:white; font-size:.75rem; font-weight:800; }
 .weekly-review-exclusions button:disabled { opacity:.55; cursor:wait; }

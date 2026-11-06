@@ -1663,6 +1663,7 @@ const AppData = {
     if (App.state.view === 'admin') App.renderAdminDashboard?.();
     if (App.state.view === 'grammarTest') App.syncGrammarResults?.();
     if (App.state.view === 'grammarResult') App.refreshGrammarCompletion?.();
+    if (App.state.view === 'paceReport') App.renderPaceReport?.();
   },
 
   reportCloudWriteError(label, error) {

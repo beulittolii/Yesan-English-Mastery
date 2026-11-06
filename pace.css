@@ -1,0 +1,105 @@
+:root{--primary:#176b65;--primary-hover:#12564f;--pace-ink:#202925;--pace-paper:#f7f8f5;}
+body{background:var(--pace-paper)!important;color:var(--pace-ink);}
+.glass-card{background:#fff!important;box-shadow:0 4px 18px rgba(32,41,37,.025)!important;border-color:#e3e8e2!important;}
+.glass-nav{background:rgba(255,255,255,.96)!important;box-shadow:none!important;border-bottom:1px solid #e3e8e2;}
+#landingView>.glass-card{margin-top:clamp(1rem,6vh,4rem);padding:2rem;border-radius:24px;}
+#landingView h2{font-size:2rem;letter-spacing:.13em;font-weight:800;color:#143f39;}
+[class*="shadow-indigo"],[class*="shadow-violet"],[class*="shadow-purple"]{--tw-shadow-color:transparent!important;}
+[class*="bg-gradient"][class*="from-indigo"],[class*="bg-gradient"][class*="from-violet"]{background-image:none!important;background-color:#176b65!important;}
+.weekly-review-summary{background:#f7f8f5!important;border-color:#dce6df;}
+.weekly-review-day-circle.is-complete{background:#176b65;border-color:#176b65;}
+.weekly-review-weekday-count{color:#176b65;}
+.weekly-review-exclusions{background:#f1f7f5;border-color:#cce2dc;}
+.weekly-review-exclusion-options label{color:#176b65;border-color:#cce2dc;}
+.weekly-review-exclusion-options input{accent-color:#176b65;}
+.weekly-review-exclusions>button{background:#176b65;}
+.weekly-review-exclusions>button:hover{background:#12564f;}
+@media(max-width:640px){#landingView>.glass-card{padding:1.5rem;}}
+/* PACE / editorial study space */
+:root{--pace-paper:#f5f5ef;--pace-ink:#192e29;--pace-deep:#143e35;--pace-line:#dce1d8;}
+body{color:var(--pace-ink);}
+.pace-kicker{display:block;font-size:10px;font-weight:700;letter-spacing:.15em;color:#577368;}
+.glass-nav{background:#f5f5ef!important;border-bottom:1px solid var(--pace-line);backdrop-filter:none!important;}
+.glass-nav svg{width:38px;height:38px;flex:none;color:#15584f;}
+.glass-nav .bg-indigo-600:has(svg){background:transparent!important;box-shadow:none!important;}
+.glass-nav h1>span:first-child{font-size:24px;letter-spacing:-.055em;font-weight:900;color:#193f35;}
+.glass-nav h1>span:nth-child(2){display:none!important;}
+.glass-nav p{font-weight:500!important;color:#687b70!important;}
+.pace-landing{display:grid;grid-template-columns:1.15fr 1fr;max-width:1120px;margin:2.5rem auto 3rem;min-height:650px;gap:0;border:1px solid var(--pace-line);border-radius:24px;overflow:hidden;background:#fff;}
+.pace-intro{display:flex;flex-direction:column;padding:3.5rem;background:#143e35;color:#f3f3e8;}
+.pace-intro>.pace-kicker{color:#a5c4ae;}
+.pace-intro h1{font-size:clamp(3rem,5.2vw,5rem);font-weight:800;line-height:1.15;letter-spacing:-.065em;margin:3rem 0 1.5rem;}
+.pace-intro h1 em{font-style:normal;color:#c1dbb4;}
+.pace-intro>p{font-size:13px;line-height:1.9;color:#b7c8bd;font-weight:400;}
+.pace-intro-foot{margin-top:auto;padding-top:3rem;display:flex;justify-content:space-between;gap:1rem;font-size:9px;letter-spacing:.13em;color:#a8beb0;}
+#landingView>.glass-card{border:0!important;border-radius:0!important;box-shadow:none!important;margin:0;width:100%;max-width:none;padding:3.5rem;background:#fff!important;display:flex;flex-direction:column;justify-content:center;}
+#landingView>.glass-card>div:first-child:has(svg){margin:0 0 1.7rem;background:transparent!important;color:#15584f;width:60px;height:60px;box-shadow:none;}
+#landingView svg{width:60px;height:60px;}
+#landingView .text-center{text-align:left;}
+#landingView h2.pace-login-title{font-size:2.2rem;line-height:1.25;letter-spacing:-.055em;margin:.8rem 0;color:#193c32;}
+#landingView h2+p{display:none;}
+#landingView input{border-radius:6px!important;border-color:#dce1d8!important;font-size:13px;box-shadow:none;}
+#landingView form>button{border-radius:7px!important;background:#174e42!important;box-shadow:none!important;}
+#studentBanner{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important;}
+.pace-home-heading{display:flex;justify-content:space-between;align-items:flex-end;margin:1rem 0 2.3rem;gap:2rem;}
+.pace-home-heading h2{font-size:clamp(2rem,3.5vw,3.6rem);letter-spacing:-.06em;font-weight:800;line-height:1.15;margin:.8rem 0;}
+.pace-home-heading p{font-size:13px;color:#718075;}
+.pace-home-date{text-align:right;display:flex;flex-direction:column;gap:.6rem;}
+.pace-home-date>span{font-size:18px;letter-spacing:-.035em;font-weight:600;}
+.pace-home-date small{font-size:9px;letter-spacing:.13em;color:#7c8b80;}
+.pace-home-panels{display:grid;grid-template-columns:1.25fr 1fr;gap:1.25rem;margin-bottom:2.5rem;}
+.pace-home-panels section{border-radius:20px;padding:1.7rem 2rem;min-height:310px;display:flex;flex-direction:column;}
+.pace-focus{background:#143e35;color:#f5f5ed;}
+.pace-progress{background:#e7ecdf;color:#294235;}
+.pace-panel-top{display:flex;justify-content:space-between;gap:1rem;font-size:10px;font-weight:600;letter-spacing:.08em;opacity:.7;}
+.pace-panel-top>span:last-child{letter-spacing:0;}
+.pace-focus-body{padding:2rem 0;flex:1;}
+.pace-focus h3{font-size:clamp(1.7rem,2.9vw,2.65rem);line-height:1.2;letter-spacing:-.05em;font-weight:700;}
+.pace-focus p{font-size:12px;color:#a8c1af;margin-top:1rem;}
+.pace-home-panels button{border-top:1px solid #ffffff30;padding-top:1rem;display:flex;justify-content:space-between;align-items:center;font-size:12px;text-align:left;}
+.pace-progress button{border-color:#b9c8b6;}
+.pace-progress-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:1.5rem 0;}
+.pace-progress-body>strong{font-size:5.5rem;line-height:1;letter-spacing:-.075em;font-weight:700;font-variant-numeric:tabular-nums;}
+.pace-progress-body strong small{font-size:1.5rem;font-weight:400;color:#7d927b;letter-spacing:-.03em;}
+.pace-progress-body p{font-size:11px;margin-top:1rem;color:#657961;}
+#studentCalendarContainer>.glass-card{border-radius:14px!important;box-shadow:none!important;}
+#studentSidebar{background:#f5f5ef!important;border-color:#dce1d8!important;box-shadow:none!important;}
+#studentSidebar button:not([class*="bg-indigo-600"]) i{color:#687d70!important;}
+#studentSidebar button{border-radius:8px!important;}
+#adminDashboardView .glass-card,#adminDashboardView [class*="shadow"]{box-shadow:none!important;}
+#adminDashboardView table{font-size:12px;}
+#adminDashboardView th{font-weight:600;letter-spacing:.02em;background:#eef1e9;}
+#adminDashboardView td{border-color:#e5e9df;}
+#adminDashboardView [class*="bg-gradient"]{background-image:none!important;background-color:#143e35!important;}
+.grammar-result-heading h1{font-weight:800;letter-spacing:-.065em;line-height:1.12;}
+.grammar-result-panel{border-radius:20px;padding:2rem;box-shadow:none;}
+.grammar-result-practice.is-pass,.pace-report-primary{background:#143e35!important;color:#f3f4e9!important;border-color:#143e35!important;}
+.grammar-result-practice.is-fail{background:#733a3b!important;}
+.grammar-result-concept,.pace-report-history{background:#e7ecdf!important;border-color:#e7ecdf!important;color:#294235!important;}
+.pace-report .grammar-result-panels{grid-template-columns:1.05fr 1fr;}
+.pace-report .grammar-result-panel{min-height:490px;}
+.pace-report-primary h2{font-size:clamp(2rem,4vw,3.5rem);letter-spacing:-.055em;font-weight:800;}
+.pace-report-score{font-size:clamp(5rem,10vw,9rem);font-weight:700;letter-spacing:-.09em;line-height:1.15;margin:.3rem 0;}
+.pace-report-score span{font-size:18px;letter-spacing:0;margin-left:14px;font-weight:400;}
+.pace-history{flex:1;display:flex;flex-direction:column;justify-content:center;}
+.pace-history>div{display:flex;align-items:center;gap:1rem;padding:1.4rem 0;border-bottom:1px solid #c8d2c1;}
+.pace-history>div:last-child{border:0;}
+.pace-history-index{font-size:10px;color:#82937b;}
+.pace-history h3{font-size:13px;font-weight:700;}
+.pace-history p{font-size:10px;margin-top:.4rem;color:#7c8e76;}
+.pace-history strong{margin-left:auto;font-size:2rem;font-weight:600;letter-spacing:-.06em;}
+.pace-history strong small{font-size:11px;margin-left:6px;font-weight:400;}
+.grammar-result-back{background:#193f35;border-radius:7px;}
+@media(max-width:760px){.pace-landing{grid-template-columns:1fr;margin:.7rem auto 1.5rem;border-radius:16px;}.pace-intro{padding:2rem;}.pace-intro h1{font-size:2.7rem;margin:1.6rem 0 1rem;}.pace-intro h1 br:nth-child(2){display:none;}.pace-intro>p{font-size:11px;}.pace-intro-foot{padding-top:1.5rem;}#landingView>.glass-card{padding:2rem;}#landingView h2.pace-login-title{font-size:1.8rem;}.pace-home-heading{margin:.5rem 0 1.5rem;gap:.5rem;}.pace-home-heading h2{font-size:2.2rem;}.pace-home-date>span{font-size:13px;}.pace-home-date small{display:none;}.pace-home-panels{grid-template-columns:1fr;gap:.75rem;margin-bottom:1.5rem;}.pace-home-panels section{min-height:240px;padding:1.5rem;border-radius:16px;}.pace-progress-body>strong{font-size:4rem;}.pace-progress{min-height:220px!important;}.pace-panel-top{font-size:9px;}.pace-focus-body{padding:1.5rem 0;}.pace-report .grammar-result-panels{grid-template-columns:1fr;}.pace-report .grammar-result-panel{min-height:400px;}.pace-report .grammar-result-heading h1{font-size:2.4rem;}}
+
+body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
+
+.pace-landing.hidden{display:none!important;}
+.pace-focus button:disabled{opacity:.6;cursor:default;}
+.pace-history{max-height:580px;overflow:auto;}
+.pace-report-empty{font-size:14px;line-height:1.8;color:#61775f;padding:2rem 0;}
+.pace-profile-action{color:#617267;font-size:11px;margin-top:.65rem;text-decoration:underline;text-underline-offset:4px;}
+.pace-history>div>div{min-width:0;}
+.pace-history h3{overflow-wrap:anywhere;}
+.pace-history strong{flex-shrink:0;}
+@media(max-width:640px){.pace-report .grammar-result-panel-bottom{flex-direction:column;align-items:flex-start;gap:.5rem;}.pace-report .grammar-result-panel-bottom>span:last-child{white-space:nowrap;}}

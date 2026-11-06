@@ -581,6 +581,7 @@ const App = {
   updateHeaderActions() {
     AppData.queueWeeklyReviews?.();
     document.getElementById('vocabTestView')?.classList.toggle('vocab-result-active', this.state.view === 'vocabTest' && Boolean(this.state.vocabTest?.isCompleted));
+    document.getElementById('paceReportView')?.classList.toggle('hidden', this.state.view !== 'paceReport');
     document.getElementById('weeklyReviewView')?.classList.toggle('hidden', this.state.view !== 'weeklyReview');
     document.getElementById('grammarCompletionView')?.classList.toggle('hidden', this.state.view !== 'grammarResult');
     document.getElementById('grammarTestView')?.classList.toggle('hidden', this.state.view !== 'grammarTest');
@@ -10189,7 +10190,7 @@ const App = {
           <div class="space-y-2">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-black tracking-wider uppercase">
-                YEM English Mastery Exam Paper
+                PACE English Exam Paper
               </span>
               <span class="px-2.5 py-1 rounded-md text-xs font-bold ${isFullSentence ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'}">
                 ${isFullSentence ? '서술형 영작 평가' : '빈칸 암기 평가'}

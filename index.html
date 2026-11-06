@@ -3,22 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YEM | 올인원 학업관리 플랫폼</title>
+  <title>PACE | 나만의 학습 페이스</title>
   <!-- Browser Favicon & Apple Touch Icon (iOS Home Screen) -->
-  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="./apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-180x180.png" />
-  <link rel="apple-touch-icon" sizes="152x152" href="./apple-touch-icon-152x152.png" />
-  <link rel="apple-touch-icon" sizes="120x120" href="./apple-touch-icon-120x120.png" />
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
-  <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon.png" />
-  <link rel="manifest" href="./manifest.json" />
-  <meta name="apple-mobile-web-app-title" content="YEM" />
+  <link rel="icon" type="image/svg+xml" href="./pace-symbol.svg?v=1" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./pace-icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./pace-icon-180.png" />
+  <link rel="manifest" href="./manifest.json?v=20261107_pace01" />
+  <meta name="apple-mobile-web-app-title" content="PACE" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="theme-color" content="#4f46e5" />
+  <meta name="theme-color" content="#143e35" />
   <!-- Google Fonts: Gentium Plus (IPA 발음기호 특화 폰트) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +22,8 @@
   <!-- Font Awesome Icons CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css?v=20261106_review12" />
+  <link rel="stylesheet" href="style.css?v=20261107_pace01" />
+  <link rel="stylesheet" href="pace.css?v=20261107_pace01" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -56,21 +51,7 @@
     }
   </style>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            }
-          }
-        }
-      }
-    }
+    tailwind.config = {"theme": {"extend": {"colors": {"brand": {"50": "#f1f7f5", "100": "#e8f2ef", "200": "#cce2dc", "300": "#a0c9be", "400": "#6ba999", "500": "#378878", "600": "#176b65", "700": "#12564f", "800": "#10463f", "900": "#123b36", "950": "#092521"}, "indigo": {"50": "#f1f7f5", "100": "#e8f2ef", "200": "#cce2dc", "300": "#a0c9be", "400": "#6ba999", "500": "#378878", "600": "#176b65", "700": "#12564f", "800": "#10463f", "900": "#123b36", "950": "#092521"}, "violet": {"50": "#f1f7f5", "100": "#e8f2ef", "200": "#cce2dc", "300": "#a0c9be", "400": "#6ba999", "500": "#378878", "600": "#176b65", "700": "#12564f", "800": "#10463f", "900": "#123b36", "950": "#092521"}, "purple": {"50": "#f1f7f5", "100": "#e8f2ef", "200": "#cce2dc", "300": "#a0c9be", "400": "#6ba999", "500": "#378878", "600": "#176b65", "700": "#12564f", "800": "#10463f", "900": "#123b36", "950": "#092521"}}}}};
   </script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -158,15 +139,15 @@
   <header class="sticky top-0 z-40 glass-nav shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex min-w-0 items-center space-x-2 sm:space-x-3 cursor-pointer" onclick="App.handleLogoClick()">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 flex-shrink-0">
-          <i class="fa-solid fa-graduation-cap text-lg"></i>
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200 flex-shrink-0">
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><path fill="currentColor" fill-rule="evenodd" d="M18 82V14h33c20 0 31 11 31 28S71 70 51 70H38V82H18zm20-32h13c7 0 11-3 11-8s-4-8-11-8H38v16z"/><path fill="currentColor" d="M18 14h20v20H18z"/><path fill="#bfe4d0" d="M18 60h20v10H18z"/></svg>
         </div>
         <div class="min-w-0">
           <h1 class="font-black text-base sm:text-xl text-slate-900 tracking-tight flex items-center gap-2">
-            <span class="truncate tracking-wider text-indigo-900 font-extrabold">YEM</span>
+            <span class="truncate tracking-wider text-indigo-900 font-extrabold">PACE</span>
             <span class="hidden sm:inline text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">학업관리 플랫폼</span>
           </h1>
-          <p class="hidden sm:block text-[11px] text-indigo-600 font-bold tracking-tight">All-in-One 학업관리 플랫폼</p>
+          <p class="hidden sm:block text-[11px] text-indigo-600 font-bold tracking-tight">나만의 학습 페이스</p>
         </div>
       </div>
 
@@ -301,14 +282,14 @@
     <!-- ========================================== -->
     <!-- 1. LANDING VIEW: UNIFIED LOGIN (통합 로그인) -->
     <!-- ========================================== -->
-    <section id="landingView" class="space-y-8">
+    <section id="landingView" class="pace-landing"><div class="pace-intro"><span class="pace-kicker">A LITTLE, EVERY DAY.</span><h1>배움의 속도는<br>달라도,<br><em>앞으로.</em></h1><p>하루의 공부가 내일의 자신감이 되도록.<br>나의 리듬을 만들어가는 학습 공간, PACE.</p><div class="pace-intro-foot"><span>YOUR OWN PACE.</span><span>01 — 시작하기</span></div></div>
       <div class="max-w-sm mx-auto glass-card rounded-3xl p-6 sm:p-8 shadow-sm border border-indigo-100 mt-8">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xl mx-auto mb-3 shadow-md shadow-indigo-200">
-          <i class="fa-solid fa-graduation-cap"></i>
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl mx-auto mb-3 shadow-md shadow-indigo-200">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><path fill="currentColor" fill-rule="evenodd" d="M18 82V14h33c20 0 31 11 31 28S71 70 51 70H38V82H18zm20-32h13c7 0 11-3 11-8s-4-8-11-8H38v16z"/><path fill="currentColor" d="M18 14h20v20H18z"/><path fill="#bfe4d0" d="M18 60h20v10H18z"/></svg>
         </div>
         <div class="text-center mb-6">
-          <h2 class="text-2xl font-black text-slate-900 tracking-wider">YEM</h2>
-          <p class="text-xs text-indigo-600 font-bold mt-0.5">올인원 학업관리 플랫폼</p>
+          <span class="pace-kicker">WELCOME TO PACE</span><h2 class="pace-login-title">나의 페이스로<br>시작해볼까요.</h2>
+          <p class="text-xs text-indigo-600 font-bold mt-0.5">나만의 학습 페이스</p>
         </div>
         <form onsubmit="App.handleLogin(event); return false;" class="space-y-4">
           <div>
@@ -1352,6 +1333,7 @@
       <!-- Paper Content -->
       <div id="textMemorizePaperContent" class="space-y-6"><!-- JS --></div>
     </section>
+    <section id="paceReportView" class="hidden grammar-result-page" aria-label="단어 학습 기록"></section>
     <section id="grammarCompletionView" class="hidden grammar-result-page" aria-label="문법 테스트 성적"></section>
     <section id="grammarTestView" class="hidden space-y-6">
       <div id="grammarProgress" class="grammar-unified-progress"></div>
@@ -1370,10 +1352,10 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>v1.0.11</p>
+      <p>v1.0.12</p>
       <p class="flex items-center gap-2">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span>Firebase 실시간 클라우드 동기화 지원</span>
+        <span>나만의 학습 페이스</span>
       </p>
     </div>
   </footer>
@@ -4309,13 +4291,13 @@
 <script src="science_questions.js?v=20261012_07"></script>
 <script src="weekly_review_logic.js?v=20261106_07"></script>
 <script src="grammar_data.js?v=20261106_07"></script>
-<script src="data.js?v=20261106_cleanup02"></script>
+<script src="data.js?v=20261107_pace01"></script>
 <script src="grammar_store.js?v=20261106_07"></script>
 <script src="weekly_review_store.js?v=20261106_08"></script>
-<script src="app.js?v=20261106_cleanup02"></script>
-<script src="grammar.js?v=20261106_18"></script>
+<script src="app.js?v=20261107_pace01"></script>
+<script src="grammar.js?v=20261107_pace01"></script>
 
-<script src="weekly_review.js?v=20261106_13"></script>
+<script src="weekly_review.js?v=20261107_pace01"></script>
 
 <!-- ========================================== -->
 <!-- YEM ACADEMIC MANAGEMENT PLATFORM JAVASCRIPT -->
@@ -4808,7 +4790,7 @@ const AcademicManager = {
       <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="dynGrad_${this.escapeHtml(short)}" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1e293b"/>
+            <stop offset="0%" stop-color="#202925"/>
             <stop offset="100%" stop-color="#0f172a"/>
           </linearGradient>
         </defs>
@@ -5732,6 +5714,7 @@ const AcademicManager = {
 
     // 3. 현재 열려 있는 탭 갱신 (사이드바 메뉴 활성 상태 동기화)
     this.switchStudentTab(this.studentTab || 'schedule');
+    App.renderPaceHome?.();
   },
 
   // ----------------------------------------------------
@@ -11289,5 +11272,6 @@ document.addEventListener('DOMContentLoaded', () => {
   AcademicManager.init();
 });
 </script>
+<script src="pace.js?v=20261107_pace01"></script>
 </body>
 </html>
