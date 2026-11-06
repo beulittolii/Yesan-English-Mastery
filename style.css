@@ -756,3 +756,34 @@ u, .font-exam u, .passage-text u, .underline {
 .grammar-stage-active > span { color:#7c3aed; font-weight:800; }
 .grammar-submission-status { font-size:.8rem; color:#6d28d9; }
 .grammar-submission-status:empty { display:none; }
+
+/* 전체 화면 성적표 */
+.grammar-result-page { min-height:calc(100svh - 200px); padding:1rem 0 2rem; }
+.grammar-result-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; margin-bottom:2.5rem; }
+.grammar-result-eyebrow { font-size:.7rem; font-weight:800; letter-spacing:.16em; opacity:.65; }
+.grammar-result-heading h1 { font-size:clamp(2rem,4vw,3.5rem); font-weight:900; letter-spacing:-.06em; margin:.6rem 0; }
+.grammar-result-subtitle { font-size:.95rem; color:#64748b; }
+.grammar-result-back { padding:.9rem 1.2rem; background:#0f172a; color:white; border-radius:.85rem; font-size:.8rem; font-weight:700; white-space:nowrap; }
+.grammar-result-panels { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+.grammar-result-panel { display:flex; flex-direction:column; padding:2rem; border-radius:1.75rem; min-height:530px; border:1px solid #e2e8f0; }
+.grammar-result-concept { background:linear-gradient(145deg,#fff,#f5f3ff); color:#312e81; }
+.grammar-result-practice.is-pass { background:linear-gradient(140deg,#064e3b,#047857); color:#ecfdf5; border-color:#065f46; }
+.grammar-result-practice.is-fail { background:linear-gradient(140deg,#881337,#be123c); color:#fff1f2; border-color:#9f1239; }
+.grammar-result-practice.is-unassigned { background:#f1f5f9; color:#475569; }
+.grammar-result-panel-top { display:flex; justify-content:space-between; align-items:center; }
+.grammar-result-tag { padding:.4rem .8rem; border:1px solid currentColor; border-radius:999px; font-size:.75rem; font-weight:700; opacity:.8; }
+.grammar-result-main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2.5rem 0; }
+.grammar-result-symbol { width:64px; height:64px; border-radius:50%; background:#ede9fe; color:#7c3aed; font-size:2.5rem; margin-bottom:1.5rem; line-height:64px; }
+.grammar-result-main .grammar-completion-concept { color:inherit; margin:0 0 1rem; font-size:clamp(1.5rem,3vw,2rem); font-weight:900; }
+.grammar-result-main > p { font-size:.85rem; line-height:1.8; opacity:.8; }
+.grammar-result-main .grammar-completion-verdict { font-size:clamp(3.5rem,7vw,6rem); font-weight:900; letter-spacing:-.06em; }
+.grammar-result-main .grammar-completion-score { font-size:clamp(3rem,6vw,5rem); line-height:1.1; margin:1.5rem 0 .5rem; letter-spacing:-.05em; }
+.grammar-completion-score > span,.grammar-result-concept-score > span { font-size:1.2rem; margin-left:.4rem; font-weight:600; }
+.grammar-result-concept-score { font-size:3.5rem; font-weight:900; margin-top:1rem; }
+.grammar-result-score-track { width:70%; height:6px; border-radius:99px; background:#ffffff30; position:relative; margin-top:1.5rem; }
+.grammar-result-score-track > div { height:100%; background:currentColor; border-radius:inherit; }
+.grammar-result-score-track > span { position:absolute; height:14px; width:2px; top:-4px; background:currentColor; }
+.grammar-result-panel-bottom { border-top:1px solid #8883; padding-top:1.2rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; font-size:.75rem; }
+.grammar-result-panel-bottom > span { opacity:.75; }
+.grammar-result-action { display:flex; gap:.75rem; align-items:center; font-size:.8rem; font-weight:800; padding:.6rem 0; }
+@media(max-width:640px) { .grammar-result-heading { align-items:flex-start; flex-direction:column; margin-bottom:1.5rem; } .grammar-result-panels { grid-template-columns:1fr; gap:1rem; } .grammar-result-panel { min-height:420px; padding:1.5rem; } .grammar-result-page { padding-top:.25rem; } }

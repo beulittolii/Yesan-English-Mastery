@@ -595,6 +595,7 @@ const App = {
   },
 
   updateHeaderActions() {
+    document.getElementById('grammarCompletionView')?.classList.toggle('hidden', this.state.view !== 'grammarResult');
     document.getElementById('grammarTestView')?.classList.toggle('hidden', this.state.view !== 'grammarTest');
     const container = document.getElementById('headerNavActions');
     const mobileToggleBtn = document.getElementById('mobileSidebarToggleBtn');

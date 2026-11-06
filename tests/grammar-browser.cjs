@@ -174,10 +174,12 @@ async function loadApp(page) {
   assert.equal(await page.evaluate(() => App.state.grammarTest.test.grammarStage), 'practice');
   page.once('dialog', d => d.accept());
   await page.getByRole('button', { name: /답안 최종 제출하기/ }).click();
-  await page.waitForSelector('#grammarResultModal:not(.hidden)');
+  await page.waitForSelector('#grammarCompletionView:not(.hidden)');
+  assert.equal(await page.locator('#grammarResultModal').isVisible(), false);
+  await page.screenshot({ path: '/tmp/yem-grammar-completion-desktop.png', fullPage: true });
   assert.match(await page.locator('.grammar-completion-concept').innerText(), /채점 대기 중/);
   assert.equal(await page.locator('.grammar-completion-verdict').innerText(), 'PASS');
-  assert.equal(await page.locator('.grammar-completion-score').innerText(), '80점');
+  assert.equal((await page.locator('.grammar-completion-score').innerText()).replace(/\s/g, ''), '80점');
   assert.equal(await page.evaluate(() => App.isGrammarExamActive()), false);
   assert.ok(await page.locator('#headerNavActions button').count() > 0);
   assert.equal(await page.evaluate(id => App.grammarTestById(id).grammarResults.concept.waitingGrading, rootId), true);
