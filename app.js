@@ -1053,11 +1053,8 @@ const App = {
         if (test.date === dateStr) {
           const badgeStyle = this.getTestBadgeStyle(test, false);
           testsHtml += `
-            <div onclick="App.openGrammarTestModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="${this.escapeHtml(this.grammarSummary(test))}">
-              <div class="truncate flex items-center gap-1">
-                <span><i class="fa-solid fa-book" aria-hidden="true"></i></span>
-                <span class="truncate">${this.escapeHtml(test.title || '문법 테스트')}</span>
-              </div>
+            <div onclick="App.openGrammarTestModal('${test.id}')" class="test-event-pill px-1.5 py-1 rounded-md mb-1 font-semibold flex items-center gap-1 shadow-xs ${badgeStyle.class}" title="문법 테스트">
+              <div class="truncate flex items-center gap-1"><span><i class="fa-solid fa-book" aria-hidden="true"></i></span><span class="truncate">문법 테스트</span></div>
             </div>`;
         }
         return;
