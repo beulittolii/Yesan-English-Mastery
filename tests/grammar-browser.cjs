@@ -74,7 +74,10 @@ async function loadApp(page) {
   });
   await page.goto(`http://127.0.0.1:${server.address().port}`, { waitUntil: 'domcontentloaded' });
   await page.addStyleTag({ content: '.hidden { display:none!important }' });
-  try { await page.addScriptTag({ url: 'https://cdn.tailwindcss.com' }); } catch (_) { /* Tests still work offline. */ }
+  if (process.env.TAILWIND_SCRIPT_PATH) await page.addScriptTag({ content: fs.readFileSync(process.env.TAILWIND_SCRIPT_PATH, 'utf8') });
+  else await page.addScriptTag({ url: 'https://cdn.tailwindcss.com' });
+  await page.evaluate(() => document.body.classList.add('tailwind-test-ready'));
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('header')).position === 'sticky');
   await loadApp(page);
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 950 });
@@ -197,6 +200,12 @@ async function loadApp(page) {
   assert.equal(await page.locator('#grammarResultModal').isVisible(), false);
   await page.screenshot({ path: '/tmp/yem-grammar-completion-desktop.png', fullPage: true });
   assert.match(await page.locator('.grammar-completion-concept').innerText(), /채점 대기 중/);
+  const clockCentered = await page.locator('.grammar-result-symbol').evaluate(el => {
+    const parent = el.getBoundingClientRect(), icon = el.querySelector('svg').getBoundingClientRect();
+    return Math.abs(parent.x + parent.width / 2 - icon.x - icon.width / 2) < 1 && Math.abs(parent.y + parent.height / 2 - icon.y - icon.height / 2) < 1;
+  });
+  assert.equal(clockCentered, true);
+
   assert.equal(await page.locator('.grammar-completion-verdict').innerText(), 'PASS');
   assert.equal((await page.locator('.grammar-completion-score').innerText()).replace(/\s/g, ''), '80점');
   assert.equal(await page.evaluate(() => App.isGrammarExamActive()), false);
@@ -280,6 +289,40 @@ async function loadApp(page) {
     await page.locator('#vocabTestContent').getByRole('button', { name: /학습공간으로 돌아가기/ }).click();
     assert.equal(await page.evaluate(() => App.state.view), 'student');
   }
+  await page.setViewportSize({ width: 1280, height: 950 });
+  await page.evaluate(async () => {
+    App.state.isAdminLoggedIn = true;
+    const test = await AppData.assignGrammarTest({ studentId: 501, date: App.getTodayDateString(), time: '00:00', endTime: '23:59', parts: ['concept', 'practice'] });
+    window.lateGradingTestId = test.id;
+    await AppData.updateGrammarTest(test.id, current => {
+      current.grammarStage = 'practice';
+      current.grammarResults.concept = { answers: {}, waitingGrading: true, score: null };
+    });
+    App.state.isAdminLoggedIn = false; App.state.isStudentLoggedIn = true;
+    await App.startGrammarTest(test.id);
+    // 별도의 관리자 채점이 실전 응시 도중 서버에 도착한 상황.
+    await AppData.updateGrammarTest(test.id, current => {
+      const answers = Object.fromEntries(GrammarLogic.blanks(current.grammarContent).map(b => [b.id, b.answer]));
+      current.grammarResults.concept = GrammarLogic.gradeConcept(current.grammarContent, answers, {});
+    });
+    window.assertPendingSession = App.state.grammarTest.test.grammarResults.concept.waitingGrading;
+    App.state.grammarTest.answers.practice = Object.fromEntries(test.grammarContent.questions.map((q, i) => [i, q.answer]));
+    await App.submitGrammarPractice();
+  });
+  assert.equal(await page.evaluate(() => assertPendingSession), true);
+  assert.equal(await page.locator('[data-grammar-score-part="concept"] .grammar-completion-verdict').innerText(), 'PASS');
+  assert.equal((await page.locator('[data-grammar-score-part="concept"] .grammar-completion-score').innerText()).replace(/\s/g, ''), '100점');
+  assert.equal(await page.locator('[data-grammar-score-part="concept"]').evaluate(el => el.classList.contains('is-pass')), true);
+  await page.screenshot({ path: '/tmp/yem-grammar-graded-completion.png', fullPage: true });
+  await page.evaluate(async () => {
+    await AppData.updateGrammarTest(lateGradingTestId, current => {
+      current.grammarResults.concept = GrammarLogic.gradeConcept(current.grammarContent, {}, {});
+    });
+    App.openGrammarCompletion(lateGradingTestId);
+  });
+  assert.equal(await page.locator('[data-grammar-score-part="concept"] .grammar-completion-verdict').innerText(), 'FAIL');
+  assert.equal((await page.locator('[data-grammar-score-part="concept"] .grammar-completion-score').innerText()).replace(/\s/g, ''), '0점');
+  assert.equal(await page.locator('[data-grammar-score-part="concept"]').evaluate(el => el.classList.contains('is-fail')), true);
   assert.deepEqual(errors, []);
   console.log(`Browser checks passed: ${totalBlanks} blanks, missing-answer confirmation/cancel, failed-submit retry, navigation/refresh guards, no draft saves, unanswered-submit confirmation and unified progress, 80-point pass, manual grading, failed-area-only retest, mobile layout.`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => { await browser?.close(); server.close(); });
