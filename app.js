@@ -8635,6 +8635,18 @@ const App = {
     }, 120);
   },
 
+  renderVocabWrongAnswerList(items) {
+    return `<div class="vocab-wrong-answer-list overflow-y-auto rounded-xl border border-rose-100 divide-y divide-slate-100 bg-rose-50/30 text-xs">${items.map((item, index) => `
+      <div class="p-3 space-y-1.5">
+        <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
+          <span class="font-bold text-slate-400 w-6">${index + 1}</span>
+          <div><span class="font-bold text-slate-800">${this.escapeHtml(item.question)}</span><div class="text-[11px] text-rose-600 mt-0.5">내가 적은 답: <strong>${this.escapeHtml(item.answer)}</strong></div></div>
+          <div class="text-left sm:text-right"><span class="text-[11px] text-slate-500">정답:</span><span class="font-bold text-emerald-700 ml-1">${this.escapeHtml(item.correct)}</span></div>
+        </div>
+        ${item.desc ? `<div class="ml-8 p-2 rounded-lg bg-amber-50/90 border border-amber-200 text-[11px] text-amber-950 leading-relaxed font-medium text-left">${this.escapeHtml(item.desc)}</div>` : ''}
+      </div>`).join('')}</div>`;
+  },
+
   // ── 단어 테스트 결과 렌더링 ──────────────────────────────
   async renderVocabResult() {
     const vt = this.state.vocabTest;
@@ -8791,31 +8803,10 @@ const App = {
               <i class="fa-solid fa-triangle-exclamation"></i>
               <span>${vt.direction === 4 ? '틀린 단어 목록' : '틀린 단어 오답 노트'} (${wrongAnswers.length}개)</span>
             </h4>
-            <div class="max-h-60 overflow-y-auto rounded-xl border border-rose-100 divide-y divide-slate-100 bg-rose-50/30 text-xs">
-              ${wrongAnswers.map((item, idx) => {
-                const matchedWord = vt.questions.find(q => q.word?.en === item.question || q.word?.ko === item.question || q.word?.en === item.correct || q.word?.ko === item.correct)?.word;
-                const desc = item.desc || matchedWord?.desc;
-                return `
-                <div class="p-3 space-y-1.5">
-                  <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
-                    <span class="font-bold text-slate-400 w-6">${idx + 1}</span>
-                    <div>
-                      <span class="font-bold text-slate-800">${this.escapeHtml(item.question)}</span>
-                      <div class="text-[11px] text-rose-600 mt-0.5">내가 적은 답: <strong>${this.escapeHtml(item.answer)}</strong></div>
-                    </div>
-                    <div class="text-left sm:text-right">
-                      <span class="text-[11px] text-slate-500">정답:</span>
-                      <span class="font-bold text-emerald-700 ml-1">${this.escapeHtml(item.correct)}</span>
-                    </div>
-                  </div>
-                  ${desc ? `
-                    <div class="ml-8 p-2 rounded-lg bg-amber-50/90 border border-amber-200 text-[11px] text-amber-950 leading-relaxed font-medium text-left">
-                      ${this.escapeHtml(desc)}
-                    </div>
-                  ` : ''}
-                </div>`;
-              }).join('')}
-            </div>
+            ${this.renderVocabWrongAnswerList(wrongAnswers.map(item => {
+              const word = vt.questions.find(q => q.word?.en === item.question || q.word?.ko === item.question || q.word?.en === item.correct || q.word?.ko === item.correct)?.word;
+              return { ...item, desc: item.desc || word?.desc };
+            }))}
           </div>
         ` : `
           <div class="p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">

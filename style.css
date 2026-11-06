@@ -871,6 +871,5 @@ u, .font-exam u, .passage-text u, .underline {
 @media(max-width:640px) { .weekly-review-paper-submit button { width:100%; } }
 .weekly-review-in-progress { background:linear-gradient(140deg,#1e1b4b,#4338ca); color:#eef2ff; }
 .grammar-result-main .weekly-review-verdict { font-size:clamp(2.4rem,7vw,5.5rem); }
-.weekly-review-answer { border-bottom:1px solid #e2e8f0; padding:1rem 0; overflow-wrap:anywhere; font-size:.875rem; line-height:1.9; }
-.weekly-review-answer strong { display:block; font-size:1rem; }
-.weekly-review-answer strong span { font-weight:500; color:#64748b; margin-left:.6rem; }
+
+.vocab-wrong-answer-list { max-height:20rem; }

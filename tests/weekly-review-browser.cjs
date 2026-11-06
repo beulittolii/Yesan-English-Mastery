@@ -140,6 +140,11 @@ async function loadApp(page) {
   await page.waitForSelector('#weeklyReviewRetry');
   let result=await page.evaluate(id=>AppData.getWeeklyReviewResult(id),id);
   assert.equal(result.firstScore,50);assert.equal(result.remainingIds.length,2);
+  assert.equal(await page.locator('.weekly-review-current-score').innerText(),'50점');
+  assert.equal(await page.locator('.vocab-wrong-answer-list').evaluate(el=>getComputedStyle(el).maxHeight),'320px');
+  assert.match(await page.locator('.vocab-wrong-answer-list').innerText(),/내가 적은 답:.*|정답:/);
+  assert.equal(await page.locator('#weeklyReviewView').innerText().then(text=>text.includes('모범답안') || text.includes('틀렸던 단어가 익숙해지는 시간')),false);
+  assert.match(await page.locator('.grammar-result-back').innerText(),/학습공간으로 돌아가기/);
   await page.screenshot({path:'/tmp/yem-weekly-review-mobile.png',fullPage:true});
   // Real reload discards unfinished round answers and restores last committed result.
   await setup();
@@ -160,6 +165,7 @@ async function loadApp(page) {
   await page.waitForFunction(()=>document.getElementById('weeklyReviewView').innerText.includes('COMPLETE'));
   result=await page.evaluate(id=>AppData.getWeeklyReviewResult(id),id);
   assert.equal(result.completed,true);assert.equal(result.firstScore,50);assert.equal(result.rounds.length,3);
+  assert.equal(await page.locator('.weekly-review-current-score').innerText(),'100점','latest score shown while first score stays in history');
   assert.equal(await page.evaluate(()=>testDocuments.get('vocabTestResults/source_result').questionDetails.filter(q=>!q.isCorrect).length),2,'original score unchanged');
   for(const width of [390,1280]) {
     await page.setViewportSize({width,height:950});
