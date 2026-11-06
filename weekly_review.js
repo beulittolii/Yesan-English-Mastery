@@ -15,19 +15,20 @@ Object.assign(App, {
 
     const available = WeeklyReviewLogic.available(test);
     const weekdayCompletion = test.weekdayCompletion || WeeklyReviewLogic.weekdayCompletion(AppData.getTests(), AppData.getVocabTestResults(), test.studentId, test.weekStart);
+    const reviewInfo = `<dl class="weekly-review-modal-info">
+      <div class="weekly-review-modal-range"><dt>주간 복습 범위</dt><dd>${e(test.weekStart)} ~ ${e(test.weekEnd)}</dd></div>
+      <div><dt>응시 가능 일자</dt><dd>${e(test.date)}부터</dd></div>
+      <div><dt>복습 완료 기준</dt><dd>모든 오답 해결</dd></div>
+    </dl>`;
     const actionClass = 'w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-violet-200 cursor-pointer';
     document.getElementById('detailModalStudentBadge').textContent = `${student?.name || ''} 학생 · 주간 복습`;
     document.getElementById('detailModalTitle').textContent = test.title;
     document.getElementById('detailModalBody').innerHTML = `
       <span hidden data-weekly-review-modal="${e(id)}"></span>
-      <div class="grid grid-cols-2 gap-3 text-xs">
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><span class="text-slate-400 font-bold block mb-0.5">응시 가능 일자</span><strong class="text-slate-800 font-extrabold">${e(test.date)}부터</strong></div>
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><span class="text-slate-400 font-bold block mb-0.5">복습 완료 기준</span><strong class="text-slate-800 font-extrabold">모든 오답 해결</strong></div>
-      </div>
-      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"><span class="text-slate-400 font-bold block mb-0.5">주간 복습 범위</span><strong class="text-slate-800 font-extrabold">${e(test.weekStart)} ~ ${e(test.weekEnd)}</strong></div>
-      ${blocked ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-bold">자료 확인 필요 · ${e(test.blockedReason || '원본 단어장과 응시 기록을 확인해주세요.')}</div>` : `
+      ${blocked ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-bold">자료 확인 필요 · ${e(test.blockedReason || '원본 단어장과 응시 기록을 확인해주세요.')}</div><div class="grammar-latest-card">${reviewInfo}</div>` : `
       <div class="space-y-2"><h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5"><i aria-hidden="true" class="fa-solid fa-chart-simple text-violet-600"></i>최신 복습 결과</h4>
         <div class="grammar-latest-card"><div><h5>주간 복습</h5></div><span class="grammar-latest-status ${result?.completed || noErrors || allExcluded ? 'bg-emerald-100 text-emerald-800' : 'bg-violet-100 text-violet-800'}">${allExcluded ? '전체 요일 제외' : noErrors ? '오답 없음 · 복습 완료' : locked ? '응시 잠김' : result?.completed ? '복습 완료' : result ? `${result.rounds.length}회차 · 복습 중` : '미응시'}</span>
+          ${reviewInfo}
           <div class="weekly-review-modal-stats"><div><span>출제 단어</span><strong>${locked ? '완수 후 출제' : `${test.questions.length}개`}</strong></div><div><span>남은 단어</span><strong>${result ? `${result.remainingIds.length}개` : noErrors || allExcluded ? '0개' : '미응시'}</strong></div><div><span>현재 점수</span><strong>${result ? `${result.rounds[result.rounds.length - 1].score}점` : '—'}</strong></div></div>
           ${result ? `<button type="button" onclick="App.showWeeklyReviewResult('${id}')" class="w-full py-2.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-bold transition flex items-center justify-center gap-2 border border-violet-200"><i aria-hidden="true" class="fa-solid fa-file-circle-check"></i>결과 확인</button>` : ''}
         </div>

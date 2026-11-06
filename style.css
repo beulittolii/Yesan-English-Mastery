@@ -864,6 +864,11 @@ u, .font-exam u, .passage-text u, .underline {
 .weekly-review-paper-submit { display:flex; justify-content:flex-end; padding-top:.5rem; }
 .weekly-review-paper-submit button { min-width:180px; background:#4f46e5; }
 .weekly-review-paper-submit button:disabled { opacity:.6; cursor:wait; }
+.weekly-review-modal-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem 1rem; width:100%; margin:.35rem 0; padding:.85rem 0; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; text-align:left; }
+.weekly-review-modal-info > div { min-width:0; }
+.weekly-review-modal-info .weekly-review-modal-range { grid-column:1 / -1; }
+.weekly-review-modal-info dt { margin-bottom:.2rem; color:#94a3b8; font-size:.7rem; font-weight:700; }
+.weekly-review-modal-info dd { margin:0; color:#334155; font-size:.75rem; font-weight:800; overflow-wrap:anywhere; }
 .weekly-review-modal-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; width:100%; }
 .weekly-review-modal-stats > div { display:flex; flex-direction:column; gap:.35rem; font-size:.75rem; }
 .weekly-review-modal-stats span { color:#94a3b8; font-weight:700; }
