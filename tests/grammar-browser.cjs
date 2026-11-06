@@ -309,7 +309,7 @@ async function loadApp(page) {
     App.state.grammarTest.answers.practice = Object.fromEntries(test.grammarContent.questions.map((q, i) => [i, q.answer]));
     await App.submitGrammarPractice();
   });
-  assert.equal(await page.evaluate(() => assertPendingSession), true);
+  assert.equal(await page.evaluate(() => assertPendingSession), false);
   assert.equal(await page.locator('[data-grammar-score-part="concept"] .grammar-completion-verdict').innerText(), 'PASS');
   assert.equal((await page.locator('[data-grammar-score-part="concept"] .grammar-completion-score').innerText()).replace(/\s/g, ''), '100점');
   assert.equal(await page.locator('[data-grammar-score-part="concept"]').evaluate(el => el.classList.contains('is-pass')), true);
@@ -318,7 +318,7 @@ async function loadApp(page) {
     await AppData.updateGrammarTest(lateGradingTestId, current => {
       current.grammarResults.concept = GrammarLogic.gradeConcept(current.grammarContent, {}, {});
     });
-    App.openGrammarCompletion(lateGradingTestId);
+    // 수동으로 결과 화면을 다시 열지 않아도 갱신되어야 한다.
   });
   assert.equal(await page.locator('[data-grammar-score-part="concept"] .grammar-completion-verdict').innerText(), 'FAIL');
   assert.equal((await page.locator('[data-grammar-score-part="concept"] .grammar-completion-score').innerText()).replace(/\s/g, ''), '0점');

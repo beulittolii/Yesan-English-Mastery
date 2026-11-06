@@ -1720,6 +1720,8 @@ const AppData = {
     if (App.state.view === 'landing') App.renderLanding?.();
     if (App.state.view === 'student') App.renderStudentDashboard?.();
     if (App.state.view === 'admin') App.renderAdminDashboard?.();
+    if (App.state.view === 'grammarTest') App.syncGrammarResults?.();
+    if (App.state.view === 'grammarResult') App.refreshGrammarCompletion?.();
   },
 
   reportCloudWriteError(label, error) {

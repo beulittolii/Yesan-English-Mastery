@@ -374,12 +374,25 @@ Object.assign(App, {
     } catch (error) { this.toast(error.message || '채점 결과를 저장하지 못했습니다.', 'error'); }
     finally { this._grammarGradingSaving = false; document.getElementById('grammarGradingSave').disabled = false; }
   },
-  openGrammarCompletion(id) {
+  syncGrammarResults() {
+    const session = this.state.grammarTest;
+    if (!session || session.saving || session.test.grammarStage !== 'practice') return;
+    const latest = this.grammarTestById(session.test.id)?.grammarResults?.concept;
+    if (latest) session.test.grammarResults.concept = GrammarLogic.clone(latest);
+  },
+  refreshGrammarCompletion() {
+    if (this.state.view !== 'grammarResult' || !this._grammarCompletionId) return;
+    const test = this.grammarTestById(this._grammarCompletionId);
+    if (test && JSON.stringify(test.grammarResults) !== this._grammarCompletionSignature) this.openGrammarCompletion(test.id, { refresh: true });
+  },
+  openGrammarCompletion(id, { refresh = false } = {}) {
     const test = this.grammarTestById(id);
     if (!this.grammarCanRead(test)) return;
     const concept = test.grammarResults?.concept;
     const practice = test.grammarResults?.practice;
-    this.closeAllModals();
+    this._grammarCompletionId = id;
+    this._grammarCompletionSignature = JSON.stringify(test.grammarResults);
+    if (!refresh) this.closeAllModals();
     this.state.view = 'grammarResult';
     ['landingView', 'studentDashboardView', 'adminDashboardView', 'vocabTestView', 'practiceTestView', 'textMemorizePaperView', 'grammarTestView'].forEach(view => document.getElementById(view)?.classList.add('hidden'));
     const student = AppData.getStudentById(test.studentId);
@@ -398,8 +411,10 @@ Object.assign(App, {
         ${scoredPanel('practice', practice, '02 / PRACTICE')}
       </div>`;
     document.getElementById('grammarCompletionView').classList.remove('hidden');
-    this.updateHeaderActions();
-    window.scrollTo({ top: 0 });
+    if (!refresh) {
+      this.updateHeaderActions();
+      window.scrollTo({ top: 0 });
+    }
   },
 
   async deleteGrammarTest(id) {
