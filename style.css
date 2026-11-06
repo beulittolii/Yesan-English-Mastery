@@ -864,11 +864,7 @@ u, .font-exam u, .passage-text u, .underline {
 .weekly-review-paper-submit { display:flex; justify-content:flex-end; padding-top:.5rem; }
 .weekly-review-paper-submit button { min-width:180px; background:#4f46e5; }
 .weekly-review-paper-submit button:disabled { opacity:.6; cursor:wait; }
-.weekly-review-modal-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem 1rem; width:100%; margin:.35rem 0; padding:.85rem 0; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; text-align:left; }
-.weekly-review-modal-info > div { min-width:0; }
-.weekly-review-modal-info .weekly-review-modal-range { grid-column:1 / -1; }
-.weekly-review-modal-info dt { margin-bottom:.2rem; color:#94a3b8; font-size:.7rem; font-weight:700; }
-.weekly-review-modal-info dd { margin:0; color:#334155; font-size:.75rem; font-weight:800; overflow-wrap:anywhere; }
+.weekly-review-summary { padding:1rem; gap:1rem; }
 .weekly-review-modal-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; width:100%; }
 .weekly-review-modal-stats > div { display:flex; flex-direction:column; gap:.35rem; font-size:.75rem; }
 .weekly-review-modal-stats span { color:#94a3b8; font-weight:700; }
@@ -880,7 +876,7 @@ u, .font-exam u, .passage-text u, .underline {
 .vocab-wrong-answer-list { max-height:20rem; }
 
 /* 주간 복습의 월~금 완료 표시 */
-.weekly-review-weekday-card { padding:1.25rem; border:1px solid #ddd6fe; border-radius:1rem; background:#f5f3ff; }
+.weekly-review-weekday-card { box-sizing:border-box; width:100%; padding:1rem 0 0; border-top:1px solid #e2e8f0; }
 .weekly-review-weekdays { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0; width:100%; max-width:360px; margin:0 auto; padding:0; list-style:none; }
 .weekly-review-weekdays li { display:flex; flex-direction:column; align-items:center; gap:.5rem; color:#64748b; font-size:.8rem; font-weight:700; }
 .weekly-review-day-circle { box-sizing:border-box; flex-shrink:0; width:36px; height:36px; line-height:1; display:flex; align-items:center; justify-content:center; border:2px solid #cbd5e1; border-radius:50%; background:#fff; }
