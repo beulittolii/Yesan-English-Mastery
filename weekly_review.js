@@ -4,9 +4,27 @@ Object.assign(App, {
     const test = AppData.getTests().find(t => t.id === id);
     if (!test || test.type !== 'VOCAB_REVIEW') return;
     const result = AppData.getWeeklyReviewResult(id), e = value => this.escapeHtml(String(value));
-    document.getElementById('detailModalStudentBadge').textContent = 'WEEKLY REVIEW · 주간 복습';
-    document.getElementById('detailModalTitle').textContent = '이번 주 단어, 확실하게 마무리';
-    document.getElementById('detailModalBody').innerHTML = `<div class="space-y-4"><p class="text-sm text-slate-500">${e(test.weekStart)} ~ ${e(test.weekEnd)}</p>${test.status === 'REVIEW_DATA_NEEDED' ? `<div class="p-4 rounded-xl bg-amber-50 text-amber-800 font-bold">자료 확인 필요 · ${e(test.blockedReason || '원본 단어장과 응시 기록을 확인해주세요.')}</div>` : `<div class="grid grid-cols-2 gap-3"><div class="p-4 bg-slate-50 rounded-xl">출제 단어<strong class="block text-2xl">${test.questions.length}개</strong></div><div class="p-4 bg-slate-50 rounded-xl">남은 단어<strong class="block text-2xl">${result ? result.remainingIds.length : test.questions.length}개</strong></div></div><p class="text-sm text-slate-500">${result?.completed ? '모든 오답을 해결했습니다.' : '오답만 다시 풀며 모든 단어를 익히는 복습입니다. 제한시간과 통과 커트라인이 없습니다.'}</p>${test.unresolvedCount ? `<p class="text-xs text-amber-700">원본을 확인할 수 없는 오답 ${test.unresolvedCount}건은 출제에서 제외했습니다.</p>` : ''}<button ${!result && !WeeklyReviewLogic.available(test) ? 'disabled' : ''} onclick="App.${result ? 'showWeeklyReviewResult' : 'startWeeklyReview'}('${id}')" class="w-full py-4 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white font-bold">${result ? '복습 결과 확인' : WeeklyReviewLogic.available(test) ? '복습 시작' : `${e(test.date)} 00:00부터 응시 가능`}</button>`}</div>`;
+    const student = AppData.getStudentById(test.studentId);
+    const blocked = test.status === 'REVIEW_DATA_NEEDED';
+    const available = WeeklyReviewLogic.available(test);
+    const actionClass = 'w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-violet-200 cursor-pointer';
+    document.getElementById('detailModalStudentBadge').textContent = `${student?.name || ''} 학생 · 주간 복습`;
+    document.getElementById('detailModalTitle').textContent = test.title;
+    document.getElementById('detailModalBody').innerHTML = `
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><span class="text-slate-400 font-bold block mb-0.5">응시 가능 일자</span><strong class="text-slate-800 font-extrabold">${e(test.date)}부터</strong></div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><span class="text-slate-400 font-bold block mb-0.5">복습 완료 기준</span><strong class="text-slate-800 font-extrabold">모든 오답 해결</strong></div>
+      </div>
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"><span class="text-slate-400 font-bold block mb-0.5">주간 복습 범위</span><strong class="text-slate-800 font-extrabold">${e(test.weekStart)} ~ ${e(test.weekEnd)}</strong></div>
+      ${blocked ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-bold">자료 확인 필요 · ${e(test.blockedReason || '원본 단어장과 응시 기록을 확인해주세요.')}</div>` : `
+      <div class="space-y-2"><h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5"><i aria-hidden="true" class="fa-solid fa-chart-simple text-violet-600"></i>최신 복습 결과</h4>
+        <div class="grammar-latest-card"><div><h5>주간 복습</h5></div><span class="grammar-latest-status ${result?.completed ? 'bg-emerald-100 text-emerald-800' : 'bg-violet-100 text-violet-800'}">${result?.completed ? '복습 완료' : result ? `${result.rounds.length}회차 · 복습 중` : '미응시'}</span>
+          <div class="weekly-review-modal-stats"><div><span>출제 단어</span><strong>${test.questions.length}개</strong></div><div><span>남은 단어</span><strong>${result ? `${result.remainingIds.length}개` : '미응시'}</strong></div><div><span>첫 점수</span><strong>${result ? `${result.firstScore}점` : '—'}</strong></div></div>
+          ${result ? `<button type="button" onclick="App.showWeeklyReviewResult('${id}')" class="w-full py-2.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-bold transition flex items-center justify-center gap-2 border border-violet-200"><i aria-hidden="true" class="fa-solid fa-file-circle-check"></i>결과 확인</button>` : ''}
+        </div>
+      </div>
+      ${test.unresolvedCount ? `<div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">원본을 확인할 수 없는 오답 ${test.unresolvedCount}건은 출제에서 제외했습니다.</div>` : ''}
+      <div class="space-y-2.5 pt-2">${!result?.completed ? available ? `<button type="button" onclick="App.startWeeklyReview('${id}')" class="${actionClass}"><i aria-hidden="true" class="fa-solid fa-pencil"></i>${result ? '오답 다시 풀기' : '테스트 응시'}</button>` : `<button disabled class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed"><i aria-hidden="true" class="fa-solid fa-clock"></i>${e(test.date)} 00:00부터 응시 가능</button>` : ''}</div>`}`;
     this.showModal('testDetailModal');
   },
   showWeeklyReviewView() {
@@ -27,20 +45,33 @@ Object.assign(App, {
     if (!test || !WeeklyReviewLogic.available(test) || test.status === 'REVIEW_DATA_NEEDED') return;
     if (result?.completed) return this.showWeeklyReviewResult(id);
     const ids = result?.remainingIds || test.questions.map(q => q.id);
-    this.state.weeklyReview = { id, questions: WeeklyReviewLogic.shuffle(test.questions.filter(q => ids.includes(q.id))), answers: {}, index: 0, round: (result?.rounds.length || 0) + 1 };
+    this.state.weeklyReview = { id, questions: WeeklyReviewLogic.shuffle(test.questions.filter(q => ids.includes(q.id))), answers: {}, round: (result?.rounds.length || 0) + 1 };
     this.showWeeklyReviewView();
-    this.renderWeeklyReviewQuestion();
+    this.renderWeeklyReviewPaper();
   },
-  setWeeklyReviewAnswer(id, value) { if (!this._weeklyReviewSubmitting) this.state.weeklyReview.answers[id] = value; },
-  moveWeeklyReview(index) {
-    if (this._weeklyReviewSubmitting) return;
-    this.state.weeklyReview.index = index;
-    this.renderWeeklyReviewQuestion();
+  setWeeklyReviewAnswer(id, value) {
+    const state = this.state.weeklyReview;
+    if (this._weeklyReviewSubmitting || !state?.answers) return;
+    state.answers[id] = value;
+    const count = state.questions.filter(q => String(state.answers[q.id] || '').trim()).length;
+    const counter = document.getElementById('weeklyReviewAnsweredCount');
+    if (counter) counter.textContent = `${count} / ${state.questions.length}문항 작성`;
+    const progress = document.getElementById('weeklyReviewProgressFill');
+    if (progress) progress.style.width = `${count / state.questions.length * 100}%`;
   },
-  renderWeeklyReviewQuestion() {
-    const state = this.state.weeklyReview, q = state.questions[state.index], e = v => this.escapeHtml(String(v));
-    const answer = state.answers[q.id] || '';
-    document.getElementById('weeklyReviewView').innerHTML = `<div class="weekly-review-exam"><div class="grammar-result-heading"><div><div class="grammar-result-eyebrow">WEEKLY REVIEW · ROUND ${state.round}</div><h1>단어 복습</h1><p class="grammar-result-subtitle">${state.index + 1} / ${state.questions.length} 문항</p></div><button onclick="App.leaveWeeklyReview()" class="grammar-result-back">나가기</button></div><div class="weekly-review-progress"><div style="width:${(state.index + 1) / state.questions.length * 100}%"></div></div><div class="weekly-review-question"><span class="text-xs font-bold text-indigo-500">${q.mode === 'CHOICE' ? '알맞은 뜻을 선택하세요' : '영어 단어를 입력하세요'}</span><h2>${e(q.mode === 'CHOICE' ? q.word.en : q.word.ko)}</h2>${q.mode === 'CHOICE' ? `<div class="space-y-3">${q.choices.map((choice,i) => `<button data-review-choice="${i}" onclick="App.setWeeklyReviewAnswer('${q.id}', App.state.weeklyReview.questions[App.state.weeklyReview.index].choices[${i}]); App.renderWeeklyReviewQuestion()" class="weekly-review-choice ${answer === choice ? 'selected' : ''}"><span>${['①','②','③','④','⑤'][i]}</span> ${e(choice)}</button>`).join('')}</div>` : `<input id="weeklyReviewInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="영어 입력" value="${e(answer)}" oninput="App.setWeeklyReviewAnswer('${q.id}', this.value)" class="weekly-review-input">`}</div><div class="flex justify-between gap-3 mt-5"><button ${!state.index ? 'disabled' : ''} onclick="App.moveWeeklyReview(${state.index - 1})" class="weekly-review-secondary">이전</button>${state.index < state.questions.length - 1 ? `<button onclick="App.moveWeeklyReview(${state.index + 1})" class="grammar-result-back">다음</button>` : `<button id="weeklyReviewSubmit" onclick="App.submitWeeklyReview()" class="grammar-result-back">회차 제출</button>`}</div><nav class="weekly-review-nav" aria-label="복습 문항 이동">${state.questions.map((item,i) => `<button class="${String(state.answers[item.id] || '').trim() ? 'answered' : ''} ${state.index === i ? 'current' : ''}" onclick="App.moveWeeklyReview(${i})" aria-label="${i+1}번 문항">${i+1}</button>`).join('')}</nav></div>`;
+  renderWeeklyReviewPaper() {
+    const state = this.state.weeklyReview, e = value => this.escapeHtml(String(value));
+    document.getElementById('weeklyReviewView').innerHTML = `
+      <div class="weekly-review-exam">
+        <div class="grammar-result-heading"><div><div class="grammar-result-eyebrow">WEEKLY REVIEW · ROUND ${state.round}</div><h1>단어 복습</h1><p class="grammar-result-subtitle">총 ${state.questions.length}문항</p></div><button type="button" onclick="App.leaveWeeklyReview()" class="grammar-result-back">나가기</button></div>
+        <div class="weekly-review-paper-progress"><span id="weeklyReviewAnsweredCount" aria-live="polite">0 / ${state.questions.length}문항 작성</span><div class="weekly-review-progress"><div id="weeklyReviewProgressFill" style="width:0%"></div></div></div>
+        <form data-review-paper onsubmit="event.preventDefault()" class="weekly-review-paper">
+          ${state.questions.map((q, index) => `<fieldset class="weekly-review-question" id="weeklyReviewQuestion_${e(q.id)}"><legend class="weekly-review-question-number">${String(index + 1).padStart(2, '0')}</legend><span class="text-xs font-bold text-indigo-500">${q.mode === 'CHOICE' ? '알맞은 뜻을 선택하세요' : '영어 단어를 입력하세요'}</span><h2 id="weeklyReviewPrompt_${e(q.id)}">${e(q.mode === 'CHOICE' ? q.word.en : q.word.ko)}</h2>
+            ${q.mode === 'CHOICE' ? `<div class="space-y-3">${q.choices.map((choice, i) => `<label class="weekly-review-option"><input type="radio" name="weeklyReview_${e(q.id)}" value="${e(choice)}" data-review-choice="${i}" onchange="App.setWeeklyReviewAnswer('${e(q.id)}', this.value)"><span class="weekly-review-choice"><span>${['①','②','③','④','⑤'][i]}</span> ${e(choice)}</span></label>`).join('')}</div>` : `<input id="weeklyReviewInput_${e(q.id)}" aria-labelledby="weeklyReviewPrompt_${e(q.id)}" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="영어 입력" oninput="App.setWeeklyReviewAnswer('${e(q.id)}', this.value)" class="weekly-review-input">`}
+          </fieldset>`).join('')}
+          <div class="weekly-review-paper-submit"><button type="button" id="weeklyReviewSubmit" onclick="App.submitWeeklyReview()" class="grammar-result-back">답안 제출</button></div>
+        </form>
+      </div>`;
   },
   async submitWeeklyReview() {
     if (this._weeklyReviewSubmitting) return;
@@ -48,6 +79,8 @@ Object.assign(App, {
     const blanks = state.questions.filter(q => !String(state.answers[q.id] || '').trim()).length;
     if (blanks && !window.confirm(`아직 풀지 않은 문제가 ${blanks}문제 있습니다. 제출하시겠습니까?`)) return;
     this._weeklyReviewSubmitting = true;
+    const fields = [...document.querySelectorAll('[data-review-paper] fieldset')];
+    fields.forEach(field => { field.disabled = true; });
     const button = document.getElementById('weeklyReviewSubmit');
     if (button) { button.disabled = true; button.textContent = '저장 중…'; }
     try {
@@ -56,7 +89,7 @@ Object.assign(App, {
     } catch (error) {
       this.toast(error.message || '저장에 실패했습니다. 다시 제출해주세요.', 'error');
       if (button) { button.disabled = false; button.textContent = '다시 제출'; }
-    } finally { this._weeklyReviewSubmitting = false; }
+    } finally { this._weeklyReviewSubmitting = false; fields.forEach(field => { field.disabled = false; }); }
   },
   showWeeklyReviewResult(id) {
     const test = AppData.getTests().find(t => t.id === id), result = AppData.getWeeklyReviewResult(id);

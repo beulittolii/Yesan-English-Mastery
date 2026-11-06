@@ -89,6 +89,7 @@ async function loadApp(page) {
   await page.waitForFunction(()=>AppData.getTests().some(t=>t.type==='VOCAB_REVIEW'));
   const id=await page.evaluate(()=>AppData.getTests().find(t=>t.type==='VOCAB_REVIEW').id);
   await page.evaluate(id=>App.openWeeklyReviewModal(id),id);
+  await page.waitForTimeout(250);
   assert.ok(await page.locator('#detailModalBody').innerText().then(t=>t.includes('2026-11-07 00:00부터')));
   // Calendar badge is the exact same renderer and dimensions as regular vocabulary.
   for(const width of [1280,390]) {
@@ -99,31 +100,37 @@ async function loadApp(page) {
       const metrics=[...host.children].map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return [r.width,r.height,s.backgroundColor,s.color];});host.remove();return metrics;
     },id);
     assert.deepEqual(boxes[0],boxes[1]);
+    assert.equal(await page.locator('#detailModalStudentBadge').innerText(),'문법 테스트 학생 학생 · 주간 복습');
+    await page.screenshot({path:`/tmp/yem-weekly-review-modal-${width}.png`,fullPage:true});
   }
   // Open after Saturday, exercising actual transaction grading against frozen questions.
   await page.clock.install({time:new Date('2026-11-07T03:00:00Z')});
   await page.evaluate(id=>App.startWeeklyReview(id),id);
   assert.equal(await page.locator('#weeklyReviewView').isVisible(),true);
   assert.equal(await page.evaluate(()=>App.state.weeklyReview.questions.length),4);
-  const spellingIndex=await page.evaluate(()=>App.state.weeklyReview.questions.findIndex(q=>q.mode==='SPELLING'));
-  await page.evaluate(index=>App.moveWeeklyReview(index),spellingIndex);
-  await page.locator('#weeklyReviewInput').fill('temporary answer');
+  assert.equal(await page.locator('[data-review-paper] fieldset').count(),4,'all questions render on one page');
+  assert.equal(await page.locator('.weekly-review-nav').count(),0,'no question navigation');
+  const spellingId=await page.evaluate(()=>App.state.weeklyReview.questions.find(q=>q.mode==='SPELLING').id);
+  await page.locator('#weeklyReviewInput_'+spellingId).fill('temporary answer');
+  assert.equal(await page.locator('#weeklyReviewAnsweredCount').innerText(),'1 / 4문항 작성');
   assert.equal(await page.evaluate(()=>Object.values(App.state.weeklyReview.answers)[0]),'temporary answer');
   await page.evaluate(()=>App.leaveWeeklyReview());
   assert.equal(await page.evaluate(id=>AppData.getWeeklyReviewResult(id),id),null,'leaving an unfinished round has no result or penalty');
   await page.evaluate(id=>App.startWeeklyReview(id),id);
   assert.equal(await page.evaluate(()=>Object.keys(App.state.weeklyReview.answers).length),0);
+  await page.locator('#testDetailModal').waitFor({state:'hidden'});
   await page.screenshot({path:'/tmp/yem-weekly-review-question-mobile.png',fullPage:true});
-  await page.evaluate(()=>App.moveWeeklyReview(3));
   let dialogText='';
   page.once('dialog',async dialog=>{dialogText=dialog.message();await dialog.dismiss();});
   await page.locator('#weeklyReviewSubmit').click();
   assert.match(dialogText,/4문제/);assert.equal(await page.evaluate(()=>AppData.getWeeklyReviewResult(App.state.weeklyReview.id)),null);
   // Fail-save preserves screen and answers, and is retryable.
-  await page.evaluate(()=>{
-    App.state.weeklyReview.questions.slice(0,2).forEach(q=>App.setWeeklyReviewAnswer(q.id,q.mode==='CHOICE'?q.word.ko:q.word.en));
-    window.failNextTransaction=true;
-  });
+  const answerQuestion=async q=> {
+    if(q.mode==='CHOICE') await page.locator('#weeklyReviewQuestion_'+q.id+' label').nth(q.choices.indexOf(q.word.ko)).click();
+    else await page.locator('#weeklyReviewInput_'+q.id).fill(q.word.en);
+  };
+  for(const q of await page.evaluate(()=>App.state.weeklyReview.questions.slice(0,2))) await answerQuestion(q);
+  await page.evaluate(()=>{window.failNextTransaction=true;});
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('#weeklyReviewSubmit').click();
   await page.waitForFunction(()=>document.getElementById('weeklyReviewSubmit')?.textContent==='다시 제출');
@@ -141,14 +148,14 @@ async function loadApp(page) {
   await page.evaluate(id=>App.showWeeklyReviewResult(id),id);
   await page.locator('#weeklyReviewRetry').click();
   assert.equal(await page.evaluate(()=>App.state.weeklyReview.questions.length),2);
-  await page.evaluate(()=>{ const q=App.state.weeklyReview.questions[0];App.setWeeklyReviewAnswer(q.id,q.mode==='CHOICE'?q.word.ko:q.word.en); App.moveWeeklyReview(1); });
+  await answerQuestion(await page.evaluate(()=>App.state.weeklyReview.questions[0]));
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('#weeklyReviewSubmit').click();
   await page.waitForSelector('#weeklyReviewRetry');
   result=await page.evaluate(id=>AppData.getWeeklyReviewResult(id),id);
   assert.equal(result.firstScore,50);assert.equal(result.remainingIds.length,1);
   await page.locator('#weeklyReviewRetry').click();
-  await page.evaluate(()=>{const q=App.state.weeklyReview.questions[0];App.setWeeklyReviewAnswer(q.id,q.mode==='CHOICE'?q.word.ko:q.word.en)});
+  await answerQuestion(await page.evaluate(()=>App.state.weeklyReview.questions[0]));
   await page.locator('#weeklyReviewSubmit').click();
   await page.waitForFunction(()=>document.getElementById('weeklyReviewView').innerText.includes('COMPLETE'));
   result=await page.evaluate(id=>AppData.getWeeklyReviewResult(id),id);
@@ -161,5 +168,5 @@ async function loadApp(page) {
     await page.screenshot({path:`/tmp/yem-weekly-review-complete-${width}.png`,fullPage:true});
   }
   assert.deepEqual(errors,[]);
-  console.log('Weekly review browser checks passed: readiness, generation, KST opening, calendar layout, blank confirmation/cancel, save retry, reload, 3 rounds, score preservation, mobile/desktop.');
+  console.log('Weekly review browser checks passed: readiness, generation, KST opening, unified modal, all questions on one page, progress counter, blank confirmation/cancel, save retry, reload, 3 rounds, score preservation, mobile/desktop.');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{if(browser) await browser.close();server.close();});
