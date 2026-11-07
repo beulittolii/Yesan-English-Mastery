@@ -224,3 +224,33 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 .pace-dialog-body>button[type=submit],.pace-dialog-body>button.grammar-button{background:#193f35!important;color:#f5f5ef!important;border:0!important;padding:13px 20px!important;min-height:48px;}
 .pace-dialog .pace-dialog-footer{flex-shrink:0;padding:16px 30px!important;border-top:1px solid #dce1d8;background:#f5f5ef!important;}
 @media(max-width:640px){.pace-dialog{padding:12px!important;}.pace-dialog>.pace-dialog-shell{max-height:calc(100dvh - 24px);border-radius:16px;}.pace-dialog .pace-dialog-heading{padding:22px 20px!important;gap:12px;}.pace-dialog-heading h3{font-size:21px!important;}.pace-dialog .pace-dialog-body{padding:24px 20px!important;}.pace-dialog .pace-dialog-footer{padding:14px 20px!important;}.pace-dialog-heading>div{min-width:0;}}
+
+/* Learning schedule details: reading order, facts, stages, then actions. */
+#testDetailModal>.modal-content{max-width:720px;}
+#testDetailModal .pace-detail-heading{background:#f5f5ef!important;color:#193f35;border-bottom:1px solid #dce1d8;}
+#testDetailModal #detailModalStudentBadge,#testDetailModal.grammar-detail-modal #detailModalStudentBadge{color:#65766b;margin-top:16px;}
+#testDetailModal #detailModalTitle{color:#193f35;font-size:30px;margin-top:8px;}
+#testDetailModal .pace-detail-close{color:#294235;border-color:#bfc9be;}
+#testDetailModal #detailModalBody{padding:28px 30px;}
+#detailModalBody.space-y-5>:not([hidden])~:not([hidden]){margin-top:26px;}
+#detailModalBody>.rounded-2xl:not(.pace-review-overview){background:transparent!important;border-width:0 0 1px;border-radius:0;padding:0 0 22px;box-shadow:none;}
+#detailModalBody .pace-schedule-facts{gap:24px;padding-bottom:24px;border-bottom:1px solid #dce1d8;}
+#detailModalBody .pace-schedule-facts>div{padding:0;border:0;border-radius:0;background:transparent;}
+#detailModalBody .pace-schedule-facts strong{display:block;font-size:16px;margin-top:8px;font-weight:650;}
+#detailModalBody .pace-schedule-resource{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;}
+#detailModalBody .pace-schedule-resource>div,#detailModalBody .pace-schedule-resource>p{padding-right:0;width:100%;}
+#detailModalBody .pace-schedule-resource>button{position:static;transform:none;margin-top:8px;min-height:44px;}
+#detailModalBody .pace-schedule-stages{grid-template-columns:1fr;gap:0;counter-reset:learning-stage;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card{counter-increment:learning-stage;position:relative;padding:22px 18px 22px 54px;background:transparent;border:0;border-bottom:1px solid #dce1d8;border-radius:0!important;display:grid;grid-template-columns:minmax(0,1fr) 160px;align-items:center;gap:20px;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card:before{content:'0' counter(learning-stage);position:absolute;left:12px;top:25px;font-size:11px;color:#65766b;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card.is-passed{background:#e7ecdf;border-radius:12px!important;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:first-child{font-size:15px;}
+#detailModalBody .grammar-latest-grid{gap:16px;}
+#detailModalBody .grammar-latest-card:not(.pace-review-overview){align-items:flex-start;text-align:left;min-height:150px;padding:22px;gap:18px;}
+#detailModalBody .pace-review-overview{padding:26px;background:#e7ecdf!important;align-items:stretch;gap:26px;}
+#detailModalBody .weekly-review-modal-stats{text-align:left;gap:20px;}
+#detailModalBody .weekly-review-modal-stats strong{font-size:24px;font-weight:650;margin-top:8px;}
+#detailModalBody .weekly-review-weekday-card{padding-top:22px;border-top:1px solid #cad4c5;}
+#detailModalBody .weekly-review-weekday-count{margin-top:20px;font-weight:500;}
+#detailModalBody>.space-y-2\.5 button{min-height:48px;border-radius:8px;}
+@media(max-width:640px){#testDetailModal #detailModalTitle{font-size:26px;}#testDetailModal #detailModalBody{padding:24px 20px;}#detailModalBody .pace-schedule-stages>.pace-vocab-card{grid-template-columns:1fr;padding:20px 16px 20px 44px;gap:14px;}#detailModalBody .pace-review-overview{padding:22px 16px;}#detailModalBody .weekly-review-modal-stats{gap:10px;}#detailModalBody .weekly-review-modal-stats strong{font-size:18px;}#detailModalBody .grammar-latest-card:not(.pace-review-overview){padding:18px 14px;}#detailModalBody .pace-schedule-facts{gap:16px;}}

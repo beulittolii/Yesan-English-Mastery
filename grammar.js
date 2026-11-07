@@ -102,7 +102,7 @@ Object.assign(App, {
     const actionClass = 'w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-violet-200 cursor-pointer';
     const resultButton = (attempt, part, compact = false) => `<button type="button" onclick="App.${part === 'concept' && isAdmin ? 'openGrammarGrading' : 'openGrammarResult'}('${attempt.id}'${part === 'concept' && isAdmin ? '' : `, '${part}'`})" class="w-full py-2.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-bold transition flex items-center justify-center gap-2 border border-violet-200"><i aria-hidden="true" class="fa-solid fa-${part === 'concept' && isAdmin ? 'clipboard-check' : 'file-circle-check'}"></i>${compact ? '' : GrammarLogic.label(part) + ' '}${part === 'concept' && isAdmin ? '채점 / 답안' : '결과 확인'}</button>`;
     document.getElementById('detailModalBody').innerHTML = `
-      <div data-grammar-summary class="grid grid-cols-2 gap-3 text-xs">
+      <div data-grammar-summary class="pace-schedule-facts grid grid-cols-2 gap-3 text-xs">
         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><span class="text-slate-400 font-bold block mb-0.5">응시 가능 일시</span><strong class="text-slate-800 font-extrabold">${this.escapeHtml(test.date)}${timeDisplay ? ` (${this.escapeHtml(timeDisplay)})` : ''}</strong></div>
         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><span class="text-slate-400 font-bold block mb-0.5">통과 커트라인</span><strong class="text-slate-800 font-extrabold">개념·실전 각각 80점 이상</strong></div>
       </div>
