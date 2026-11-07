@@ -590,7 +590,7 @@ const App = {
 
     // 모바일 햄버거 토글 버튼 표시 여부 갱신 (학생 대시보드 뷰 활성 시 노출, 데스크톱 lg: 화면에서는 항상 숨김)
     const stuDashboard = document.getElementById('studentDashboardView');
-    const isStudentActive = stuDashboard && !stuDashboard.classList.contains('hidden');
+    const isStudentActive = (this.state.isStudentLoggedIn || this.state.isAdminLoggedIn) && stuDashboard && !stuDashboard.classList.contains('hidden');
     const hideStudentMenu = this.isCalendarOnlyStudent();
     document.body.classList.toggle('calendar-only-student', Boolean(isStudentActive && hideStudentMenu));
 
@@ -670,7 +670,7 @@ const App = {
     const sidebar = document.getElementById('studentSidebar');
     const backdrop = document.getElementById('mobileSidebarBackdrop');
     const toggleBtn = document.getElementById('mobileSidebarToggleBtn');
-    if (!sidebar) return;
+    if (!sidebar || sidebar.classList.contains('hidden')) return;
 
     sidebar.classList.remove('translate-x-full');
     if (backdrop) backdrop.classList.remove('hidden');

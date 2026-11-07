@@ -373,9 +373,13 @@ body {
     gap: 0.35rem;
   }
 
+  #mobileSidebarToggleBtn.hidden {
+    display: none !important;
+  }
+
   /* Keep account actions reachable without consuming the entire app bar. */
   #headerNavActions button,
-  #mobileSidebarToggleBtn {
+  #mobileSidebarToggleBtn:not(.hidden) {
     display: inline-flex;
     align-items: center;
     align-self: center;
