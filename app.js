@@ -1047,7 +1047,7 @@ const App = {
         return;
       }
       if (test.type === 'GRAMMAR') {
-        if (test.date === dateStr) testsHtml += this.renderCalendarLearningTest(test, '문법 테스트', 'fa-book', 'openGrammarTestModal');
+        if (test.date === dateStr) testsHtml += this.renderCalendarLearningTest(test, '문법 테스트', 'pace-grammar-icon', 'openGrammarTestModal');
         return;
       }
       if (test.type === 'VOCAB') {

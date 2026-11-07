@@ -168,3 +168,7 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 .grammar-result-practice.is-unassigned{background:#eef0e9;color:#506156;}
 .weekly-review-day-circle{border-color:#bfc9be;}
 .weekly-review-day-circle.is-excluded{background:#eef0e9;border-color:#bfc9be;color:#65766b;}
+
+/* Grammar: letter A, sentence lines and a correction check. */
+.pace-grammar-icon{display:inline-block;width:1.25em;height:1.25em;flex-shrink:0;vertical-align:-.15em;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 13 6 3l4 10M3.6 9h4.8M14 4h8M14 9h5M2 18h8M2 22h6m5-4 3 3 6-7'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;}
+.pace-grammar-icon::before{content:none!important;}
