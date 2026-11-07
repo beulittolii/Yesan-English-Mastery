@@ -169,3 +169,10 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 .weekly-review-day-circle{border-color:#bfc9be;}
 .weekly-review-day-circle.is-excluded{background:#eef0e9;border-color:#bfc9be;color:#65766b;}
 
+/* Calendar states need stronger color separation at small sizes. */
+.test-event-pill.bg-emerald-100{background:#c9e4d5;color:#174b36;border-color:#78ad8c;}
+.test-event-pill.bg-blue-100{background:#d0e3ee;color:#244f68;border-color:#88afc5;}
+.test-event-pill.bg-amber-100{background:#f2e1b5;color:#705016;border-color:#c7a554;}
+.test-event-pill.bg-rose-100{background:#efd2cb;color:#783d35;border-color:#c68c80;}
+.test-event-pill:is(.bg-violet-100,.bg-indigo-100){background:#cce5dc;color:#174e42;border-color:#7faf9e;}
+.calendar-day-cell.today{background:#e1ede2;}
