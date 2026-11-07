@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css?v=20261107_pace01" />
-  <link rel="stylesheet" href="pace.css?v=20261107_pace11" />
+  <link rel="stylesheet" href="pace.css?v=20261107_pace12" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -1352,7 +1352,7 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex items-center justify-center">
-      <p>v2.0.9</p>
+      <p>v2.0.10</p>
     </div>
   </footer>
 
@@ -1361,10 +1361,10 @@
   <!-- ========================================== -->
 
   <!-- 1. Test Details Modal (시험 상세 보기 모달) -->
-  <div id="grammarAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="grammarAssignmentTitle" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content max-h-[92vh] overflow-y-auto">
-      <div class="p-5 bg-slate-900 text-white flex justify-between items-center"><h3 id="grammarAssignmentTitle" class="font-bold">문법 테스트 배정</h3><button type="button" onclick="App.hideModal('grammarAssignmentModal')" aria-label="닫기" class="p-2">✕</button></div>
-      <form onsubmit="App.saveGrammarAssignment(event)" class="p-5 space-y-4">
+  <div id="grammarAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="grammarAssignmentTitle" class="pace-dialog fixed inset-0 z-[60] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content max-h-[92vh] overflow-y-auto">
+      <div class="pace-dialog-heading p-5 bg-slate-900 text-white flex justify-between items-center"><h3 id="grammarAssignmentTitle" class="font-bold">문법 테스트 배정</h3><button type="button" onclick="App.hideModal('grammarAssignmentModal')" aria-label="닫기" class="p-2">✕</button></div>
+      <form onsubmit="App.saveGrammarAssignment(event)" class="pace-dialog-body p-5 space-y-4">
         <label class="grammar-field">학생<select id="grammarAssignmentStudent" onchange="App.renderGrammarAssignmentParts()" required></select></label>
         <div id="grammarAssignmentParts" class="grammar-notice"></div>
         <label class="grammar-field">시험 날짜<input id="grammarAssignmentDate" type="date" min="2026-11-01" required></label>
@@ -1374,17 +1374,17 @@
       </form>
     </div>
   </div>
-  <div id="grammarGradingModal" role="dialog" aria-modal="true" aria-labelledby="grammarGradingTitle" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content flex flex-col max-h-[92vh] overflow-hidden">
-      <div class="p-5 bg-slate-900 text-white flex justify-between gap-3"><div><h3 id="grammarGradingTitle" class="font-bold">개념 답안 수동 채점</h3><p id="grammarGradingSummary" class="text-xs mt-2" aria-live="polite"></p></div><button type="button" onclick="App.hideModal('grammarGradingModal')" aria-label="닫기">✕</button></div>
-      <div id="grammarGradingItems" class="p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
-      <div class="p-4 border-t"><button id="grammarGradingSave" type="button" onclick="App.saveGrammarGrading()" class="grammar-button w-full">채점 결과 저장</button></div>
+  <div id="grammarGradingModal" role="dialog" aria-modal="true" aria-labelledby="grammarGradingTitle" class="pace-dialog fixed inset-0 z-[70] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="pace-dialog-heading p-5 bg-slate-900 text-white flex justify-between gap-3"><div><h3 id="grammarGradingTitle" class="font-bold">개념 답안 수동 채점</h3><p id="grammarGradingSummary" class="text-xs mt-2" aria-live="polite"></p></div><button type="button" onclick="App.hideModal('grammarGradingModal')" aria-label="닫기">✕</button></div>
+      <div id="grammarGradingItems" class="pace-dialog-body p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
+      <div class="pace-dialog-footer p-4 border-t"><button id="grammarGradingSave" type="button" onclick="App.saveGrammarGrading()" class="grammar-button w-full">채점 결과 저장</button></div>
     </div>
   </div>
-  <div id="grammarResultModal" role="dialog" aria-modal="true" aria-labelledby="grammarResultTitle" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content flex flex-col max-h-[92vh] overflow-hidden">
-      <div class="p-5 bg-slate-900 text-white flex justify-between gap-3"><h3 id="grammarResultTitle" class="font-bold">문법 테스트 결과</h3><button type="button" onclick="App.hideModal('grammarResultModal')" aria-label="닫기">✕</button></div>
-      <div id="grammarResultBody" class="p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
+  <div id="grammarResultModal" role="dialog" aria-modal="true" aria-labelledby="grammarResultTitle" class="pace-dialog fixed inset-0 z-[70] hidden flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="pace-dialog-heading p-5 bg-slate-900 text-white flex justify-between gap-3"><h3 id="grammarResultTitle" class="font-bold">문법 테스트 결과</h3><button type="button" onclick="App.hideModal('grammarResultModal')" aria-label="닫기">✕</button></div>
+      <div id="grammarResultBody" class="pace-dialog-body p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
     </div>
   </div>
   <div id="testDetailModal" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
@@ -1414,10 +1414,10 @@
   </div>
 
   <!-- 1-1. Vocab Study Modal (단어장 크게 보기 모달) -->
-  <div id="vocabStudyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+  <div id="vocabStudyModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between flex-shrink-0">
+      <div class="pace-dialog-heading p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3 min-w-0">
           <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg border border-indigo-400/30 flex-shrink-0">
             <i class="fa-solid fa-book-open"></i>
@@ -1436,7 +1436,7 @@
       </div>
 
       <!-- Controls Toolbar -->
-      <div class="p-3 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-start gap-2.5 flex-shrink-0">
+      <div class="pace-dialog-footer p-3 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-start gap-2.5 flex-shrink-0">
         <!-- Search Input -->
         <div class="relative flex-1 min-w-[180px] max-w-xs order-last ml-auto">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -1488,21 +1488,21 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3" id="vocabStudyModalBody">
+      <div class="pace-dialog-body p-4 sm:p-6 overflow-y-auto flex-1 space-y-3" id="vocabStudyModalBody">
         <!-- Injected by JS -->
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 flex-shrink-0" id="vocabStudyModalFooter">
+      <div class="pace-dialog-footer p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 flex-shrink-0" id="vocabStudyModalFooter">
         <!-- Injected by JS -->
       </div>
     </div>
   </div>
 
   <!-- 3. Add / Edit Test Modal (선생님 시험 등록/수정 모달) -->
-  <div id="adminTestFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden">
-      <div class="p-6 bg-slate-900 text-white flex items-center justify-between">
+  <div id="adminTestFormModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden">
+      <div class="pace-dialog-heading p-6 bg-slate-900 text-white flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-lg text-white">
             <i class="fa-solid fa-pen-to-square"></i>
@@ -1517,7 +1517,7 @@
         </button>
       </div>
 
-      <form onsubmit="App.handleSaveTestForm(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+      <form onsubmit="App.handleSaveTestForm(event)" class="pace-dialog-body p-6 space-y-4 max-h-[75vh] overflow-y-auto">
         <input type="hidden" id="formTestId" />
 
         <div class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-2">
@@ -1949,10 +1949,10 @@
   </div>
 
   <!-- 4. Vocab Set Modal (단어 세트 등록/수정 모달) -->
-  <div id="vocabSetModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
+  <div id="vocabSetModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-2xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
       <!-- Modal Header -->
-      <div class="p-6 bg-gradient-to-r from-indigo-900 to-violet-900 text-white flex items-center justify-between flex-shrink-0">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-indigo-900 to-violet-900 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg">
             <i class="fa-solid fa-spell-check text-indigo-200"></i>
@@ -1968,7 +1968,7 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-6 space-y-5 overflow-y-auto flex-1">
+      <div class="pace-dialog-body p-6 space-y-5 overflow-y-auto flex-1">
         <input type="hidden" id="vocabSetId" />
 
         <!-- Book / Folder Name -->
@@ -2011,7 +2011,7 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
+      <div class="pace-dialog-footer p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
         <button onclick="App.closeVocabSetModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition">취소</button>
         <button onclick="App.handleSaveVocabSet()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-200">저장하기</button>
       </div>
@@ -2019,10 +2019,10 @@
   </div>
 
   <!-- Modal: Test Time Extension Modal (관리자 시간 연장 모달) -->
-  <div id="extendTestModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="glass-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white">
+  <div id="extendTestModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell glass-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white">
       <!-- Modal Header -->
-      <div class="p-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
+      <div class="pace-dialog-heading p-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg shadow-inner">
             <i class="fa-solid fa-clock-rotate-left"></i>
@@ -2038,7 +2038,7 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-6 space-y-4 text-xs sm:text-sm">
+      <div class="pace-dialog-body p-6 space-y-4 text-xs sm:text-sm">
         <input type="hidden" id="extendTestId" />
 
         <!-- 현재 시험 정보 카드 -->
@@ -2090,7 +2090,7 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 flex-shrink-0">
+      <div class="pace-dialog-footer p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 flex-shrink-0">
         <button id="cancelTestExtensionButton" type="button" onclick="App.cancelTestExtension()" class="hidden mr-auto px-4 py-2 rounded-xl border border-rose-200 bg-white text-rose-600 font-semibold text-xs hover:bg-rose-50 transition">
           <i class="fa-solid fa-rotate-left mr-1"></i> 연장 취소
         </button>
@@ -2105,10 +2105,10 @@
   </div>
 
   <!-- 시험 일정 이동 모달 (관리자용) -->
-  <div id="rescheduleTestModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col animate-scale-up">
+  <div id="rescheduleTestModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col animate-scale-up">
       <!-- Header -->
-      <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 p-6 text-white flex items-center justify-between flex-shrink-0">
+      <div class="pace-dialog-heading bg-gradient-to-r from-indigo-600 to-indigo-800 p-6 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg">
             <i class="fa-solid fa-calendar-days"></i>
@@ -2124,7 +2124,7 @@
       </div>
 
       <!-- Body -->
-      <div class="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+      <div class="pace-dialog-body p-6 space-y-5 overflow-y-auto max-h-[70vh]">
         <input type="hidden" id="rescheduleTestId" value="" />
 
         <!-- 현재 시험 정보 카드 -->
@@ -2195,7 +2195,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 flex-shrink-0">
+      <div class="pace-dialog-footer p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 flex-shrink-0">
         <button type="button" onclick="App.closeRescheduleModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-100 transition">
           취소
         </button>
@@ -2208,10 +2208,10 @@
   </div>
 
   <!-- 단어 시험 채점 및 답안 검토 모달 (관리자용) -->
-  <div id="vocabGradingModal" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-    <div class="glass-card rounded-3xl max-w-2xl w-full bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+  <div id="vocabGradingModal" class="pace-dialog fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="pace-dialog-shell glass-card rounded-3xl max-w-2xl w-full bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
       <!-- Modal Header -->
-      <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between flex-shrink-0 bg-slate-50/50">
+      <div class="pace-dialog-heading p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between flex-shrink-0 bg-slate-50/50">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold">
             <i class="fa-solid fa-clipboard-check"></i>
@@ -2227,17 +2227,17 @@
       </div>
 
       <!-- Quick Summary Bar -->
-      <div id="vocabGradingSummaryBar" class="px-6 py-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between gap-3 text-xs flex-wrap">
+      <div id="vocabGradingSummaryBar" class="pace-dialog-footer px-6 py-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between gap-3 text-xs flex-wrap">
         <!-- JS로 동적 주입 -->
       </div>
 
       <!-- Modal Body: Questions List -->
-      <div class="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1" id="vocabGradingQuestionsList">
+      <div class="pace-dialog-body p-5 sm:p-6 overflow-y-auto space-y-4 flex-1" id="vocabGradingQuestionsList">
         <!-- 문항별 채점 카드 목록 -->
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-shrink-0 flex-wrap">
+      <div class="pace-dialog-footer p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-shrink-0 flex-wrap">
         <button type="button" onclick="App.autoGradeWithAI()" class="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition border border-purple-200 flex items-center gap-1.5 shadow-xs">
           <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i>
           <span>AI 뜻 자동 채점</span>
@@ -2291,10 +2291,10 @@
   </div>
 
   <!-- ===== 본문암기 시험 결과 모달 ===== -->
-  <div id="textMemorizeResultModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-    <div class="glass-card w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white max-h-[90vh]">
+  <div id="textMemorizeResultModal" class="pace-dialog fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+    <div class="pace-dialog-shell glass-card w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white max-h-[90vh]">
       <!-- Header -->
-      <div class="p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex-shrink-0 text-center">
+      <div class="pace-dialog-heading p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex-shrink-0 text-center">
         <div class="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mx-auto mb-2 text-indigo-300" id="tmResultIcon">
           <i class="fa-solid fa-star"></i>
         </div>
@@ -2303,7 +2303,7 @@
       </div>
 
       <!-- Score display -->
-      <div class="px-6 pt-5 pb-3 flex-shrink-0">
+      <div class="pace-dialog-footer px-6 pt-5 pb-3 flex-shrink-0">
         <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-center space-y-1.5">
           <p class="text-[11px] font-bold text-indigo-700">내 점수</p>
           <p class="text-5xl font-black text-indigo-600" id="tmResultScore">--</p>
@@ -2317,21 +2317,21 @@
       </div>
 
       <!-- Wrong answers review -->
-      <div class="px-6 pb-4 flex-1 overflow-y-auto space-y-2.5" id="tmResultWrongList">
+      <div class="pace-dialog-body px-6 pb-4 flex-1 overflow-y-auto space-y-2.5" id="tmResultWrongList">
         <!-- wrong answers populated by JS -->
       </div>
 
       <!-- Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2 flex-shrink-0" id="tmResultFooter">
+      <div class="pace-dialog-footer p-4 bg-slate-50 border-t border-slate-100 flex gap-2 flex-shrink-0" id="tmResultFooter">
         <button onclick="App.closeTextMemorizeResult()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition">닫기</button>
       </div>
     </div>
   </div>
 
   <!-- ===== 캘린더에서 본문암기 시험 일정 상세 모달 ===== -->
-  <div id="textMemorizeScheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="glass-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white max-h-[90vh]">
-      <div class="p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between flex-shrink-0">
+  <div id="textMemorizeScheduleModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell glass-card w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col bg-white max-h-[90vh]">
+      <div class="pace-dialog-heading p-5 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-indigo-300">
             <i class="fa-solid fa-book-open"></i>
@@ -2345,17 +2345,17 @@
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      <div class="p-5 space-y-4 overflow-y-auto flex-1" id="tmScheduleBody">
+      <div class="pace-dialog-body p-5 space-y-4 overflow-y-auto flex-1" id="tmScheduleBody">
         <!-- Populated by JS -->
       </div>
     </div>
   </div>
 
   <!-- ===== 본문 암기학습 (미리 외우기) 모달 ===== -->
-  <div id="textMemorizeStudyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
+  <div id="textMemorizeStudyModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
       <!-- Header -->
-      <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between flex-shrink-0">
+      <div class="pace-dialog-heading p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3 min-w-0">
           <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg border border-indigo-400/30 flex-shrink-0">
             <i class="fa-solid fa-book-open-reader"></i>
@@ -2374,7 +2374,7 @@
       </div>
 
       <!-- Controls Toolbar -->
-      <div class="p-3 sm:p-4 bg-slate-50 border-b border-slate-200 space-y-2.5 flex-shrink-0">
+      <div class="pace-dialog-body p-3 sm:p-4 bg-slate-50 border-b border-slate-200 space-y-2.5 flex-shrink-0">
         <div class="flex flex-wrap items-center justify-between gap-2.5">
           <!-- 문단 선택 & 검색 필터 -->
           <div class="flex items-center gap-2 flex-1 min-w-[220px]">
@@ -2445,12 +2445,12 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4" id="tmStudyModalBody">
+      <div class="pace-dialog-body p-4 sm:p-6 overflow-y-auto flex-1 space-y-4" id="tmStudyModalBody">
         <!-- Populated by JS -->
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 flex-shrink-0" id="tmStudyModalFooter">
+      <div class="pace-dialog-footer p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 flex-shrink-0" id="tmStudyModalFooter">
         <!-- Populated by JS -->
       </div>
     </div>
@@ -2461,9 +2461,9 @@
   <!-- ========================================== -->
 
   <!-- 1. 수행평가 등록 / 수정 모달 -->
-  <div id="academicAssessmentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
-      <div class="p-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between flex-shrink-0">
+  <div id="academicAssessmentModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-emerald-100">
             <i class="fa-solid fa-list-check"></i>
@@ -2478,7 +2478,7 @@
         </button>
       </div>
 
-      <form onsubmit="AcademicManager.handleSaveAssessment(event)" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <form onsubmit="AcademicManager.handleSaveAssessment(event)" class="pace-dialog-body p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
         <input type="hidden" id="formAssessId" />
         <input type="hidden" id="formAssessStudentId" />
 
@@ -2846,9 +2846,9 @@
   </div>
 
   <!-- 3. 수행평가 학생 간편 점수 입력 모달 -->
-  <div id="academicAssessmentScoreModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden animate-scale-up">
-      <div class="p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+  <div id="academicAssessmentScoreModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-sm w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden animate-scale-up">
+      <div class="pace-dialog-heading p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-square-check text-xl"></i>
           <h3 class="text-base font-black">수행평가 점수 직접 입력</h3>
@@ -2857,7 +2857,7 @@
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="pace-dialog-body p-6 space-y-4">
         <input type="hidden" id="quickScoreAssessId" />
         <div>
           <span class="text-[11px] font-bold text-emerald-600" id="quickScoreSubject">과목</span>
@@ -2885,10 +2885,10 @@
   </div>
 
   <!-- 2.5. 지필고사 시험범위 등록 / 수정 모달 -->
-  <div id="academicExamScopeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+  <div id="academicExamScopeModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-4xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
       <!-- Modal Header -->
-      <div class="p-6 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between flex-shrink-0">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-amber-100">
             <i class="fa-solid fa-book-bookmark"></i>
@@ -2904,7 +2904,7 @@
       </div>
 
       <!-- Modal Body Form -->
-      <form onsubmit="AcademicManager.handleSaveExamScope(event)" class="p-6 space-y-6 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <form onsubmit="AcademicManager.handleSaveExamScope(event)" class="pace-dialog-body p-6 space-y-6 overflow-y-auto flex-1 text-xs sm:text-sm">
         <input type="hidden" id="formExamScopeId" />
         <input type="hidden" id="formExamScopeStudentId" />
 
@@ -3190,10 +3190,10 @@
   </div>
 
   <!-- 2.6. 지필고사 시험일 빠른 설정 & D-Day 모달 -->
-  <div id="academicExamDateModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col animate-scale-up">
+  <div id="academicExamDateModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-md w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col animate-scale-up">
       <!-- Modal Header -->
-      <div class="p-5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between flex-shrink-0">
+      <div class="pace-dialog-heading p-5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-2.5">
           <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-amber-100">
             <i class="fa-regular fa-calendar-check text-base"></i>
@@ -3209,7 +3209,7 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-5 space-y-4 text-xs sm:text-sm">
+      <div class="pace-dialog-body p-5 space-y-4 text-xs sm:text-sm">
         <input type="hidden" id="quickExamDateScopeId" />
 
         <div>
@@ -3247,7 +3247,7 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+      <div class="pace-dialog-footer p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
         <button type="button" onclick="AcademicManager.closeExamDateModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition">취소</button>
         <button type="button" onclick="AcademicManager.saveQuickExamDate()" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-md shadow-amber-200 flex items-center gap-1.5 cursor-pointer">
           <i class="fa-solid fa-check"></i>
@@ -3258,9 +3258,9 @@
   </div>
 
   <!-- 3. 내신 성적 등록 / 수정 모달 (한 학기 중간·기말·수행평가 완벽 통합!) -->
-  <div id="academicSchoolGradeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-5xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
-      <div class="p-6 bg-gradient-to-r from-violet-700 to-indigo-800 text-white flex items-center justify-between flex-shrink-0">
+  <div id="academicSchoolGradeModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-5xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-violet-700 to-indigo-800 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-violet-100">
             <i class="fa-solid fa-chart-column"></i>
@@ -3275,7 +3275,7 @@
         </button>
       </div>
 
-      <form onsubmit="AcademicManager.handleSaveSchoolGrade(event)" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <form onsubmit="AcademicManager.handleSaveSchoolGrade(event)" class="pace-dialog-body p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
         <input type="hidden" id="formSchoolGradeId" />
         <input type="hidden" id="formSchoolGradeStudentId" />
 
@@ -3505,9 +3505,9 @@
   </div>
 
   <!-- 4. 모의고사 성적 등록 / 수정 모달 -->
-  <div id="academicMockExamModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
-      <div class="p-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex items-center justify-between flex-shrink-0">
+  <div id="academicMockExamModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-3xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-blue-100">
             <i class="fa-solid fa-chart-line"></i>
@@ -3522,7 +3522,7 @@
         </button>
       </div>
 
-      <form onsubmit="AcademicManager.handleSaveMockExam(event)" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <form onsubmit="AcademicManager.handleSaveMockExam(event)" class="pace-dialog-body p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
         <input type="hidden" id="formMockExamId" />
         <input type="hidden" id="formMockExamStudentId" />
 
@@ -3674,9 +3674,9 @@
   </div>
 
   <!-- 5. 목표 대학 및 학과 설정 모달 -->
-  <div id="academicTargetUnivModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
-      <div class="p-6 bg-gradient-to-r from-rose-600 to-pink-700 text-white flex items-center justify-between flex-shrink-0">
+  <div id="academicTargetUnivModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-xl w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-rose-600 to-pink-700 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-rose-100">
             <i class="fa-solid fa-bullseye"></i>
@@ -3691,7 +3691,7 @@
         </button>
       </div>
 
-      <form onsubmit="AcademicManager.handleSaveTargetUniv(event)" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <form onsubmit="AcademicManager.handleSaveTargetUniv(event)" class="pace-dialog-body p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
         <input type="hidden" id="formTargetUnivStudentId" />
 
         <!-- 학생 선택 (관리자일 때만 노출) -->
@@ -4161,9 +4161,9 @@
   </div>
 
   <!-- 6. 공지사항 & 학업 안내 등록/수정 모달 -->
-  <div id="academicNoticeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
-    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
-      <div class="p-6 bg-gradient-to-r from-sky-600 to-indigo-600 text-white flex items-center justify-between flex-shrink-0">
+  <div id="academicNoticeModal" class="pace-dialog fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+    <div class="pace-dialog-shell bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden flex flex-col max-h-[92vh] animate-scale-up">
+      <div class="pace-dialog-heading p-6 bg-gradient-to-r from-sky-600 to-indigo-600 text-white flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg text-sky-100">
             <i class="fa-solid fa-bullhorn"></i>
@@ -4178,7 +4178,7 @@
         </button>
       </div>
 
-      <form id="academicNoticeForm" onsubmit="AcademicManager.saveNotice(event); return false;" class="p-6 overflow-y-auto space-y-4">
+      <form id="academicNoticeForm" onsubmit="AcademicManager.saveNotice(event); return false;" class="pace-dialog-body p-6 overflow-y-auto space-y-4">
         <input type="hidden" id="noticeEditId" value="" />
 
         <div>
