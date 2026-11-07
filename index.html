@@ -793,7 +793,7 @@
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-xl font-bold">선생님 학업관리 대시보드</h2>
+              <h2 class="text-xl font-bold">학업관리 대시보드</h2>
               <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500 text-white">인증됨</span>
             </div>
             <p class="text-xs text-slate-300 mt-0.5">학생별 수행평가, 내신 성적, 모의고사(사설 포함) 및 학습 시험 일정을 통합 관리하세요.</p>
@@ -1352,7 +1352,7 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex items-center justify-center">
-      <p>v2.0.7</p>
+      <p>v2.0.8</p>
     </div>
   </footer>
 
@@ -1369,7 +1369,7 @@
         <div id="grammarAssignmentParts" class="grammar-notice"></div>
         <label class="grammar-field">시험 날짜<input id="grammarAssignmentDate" type="date" min="2026-11-01" required></label>
         <div class="grid grid-cols-2 gap-3"><label class="grammar-field">시작 시간<input id="grammarAssignmentTime" type="time" required></label><label class="grammar-field">마감 시간<input id="grammarAssignmentEndTime" type="time" required></label></div>
-        <label class="grammar-field">선생님 안내<textarea id="grammarAssignmentNote" rows="3"></textarea></label>
+        <label class="grammar-field">안내<textarea id="grammarAssignmentNote" rows="3"></textarea></label>
         <button id="grammarAssignmentSave" type="submit" class="grammar-button w-full">시험 일정 저장</button>
       </form>
     </div>
@@ -1931,7 +1931,7 @@
 
         <!-- Teacher Note -->
         <div class="form-regular-only">
-          <label class="block text-xs font-bold text-slate-700 mb-1">선생님 피드백 / 코멘트</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">피드백 / 코멘트</label>
           <textarea id="formTeacherNote" rows="2" placeholder="학생에게 전달할 격려의 말이나 취약점 복습 가이드를 작성하세요." class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"></textarea>
         </div>
 
@@ -2671,9 +2671,9 @@
           <textarea id="formAssessContent" rows="2" placeholder="예: 분량 A4 2장 이내, 핵심 시어 3개 이상 분석, 교과서 45쪽 학습활동 연계" class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500"></textarea>
         </div>
 
-        <!-- 선생님 코멘트 / 피드백 -->
+        <!-- 코멘트 / 피드백 -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">선생님 피드백 / 코멘트 (선택)</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">피드백 / 코멘트 (선택)</label>
           <textarea id="formAssessNote" rows="2" placeholder="학생에게 전달할 보완점 또는 칭찬 코멘트를 작성하세요." class="w-full py-2 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500"></textarea>
         </div>
 
@@ -2813,11 +2813,11 @@
           <p id="detailAssessContent" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
         </div>
 
-        <!-- 5. 선생님 코멘트 -->
+        <!-- 5. 코멘트 -->
         <div id="detailNoteWrap" class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200/70 space-y-1">
           <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
             <i class="fa-solid fa-comment-dots text-indigo-500"></i>
-            <span>선생님 코멘트</span>
+            <span>코멘트</span>
           </span>
           <p id="detailAssessNote" class="text-xs text-indigo-950 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
         </div>
@@ -2894,7 +2894,7 @@
           </div>
           <div>
             <h3 class="text-lg font-bold" id="examScopeModalTitle">지필고사 시험범위 설정</h3>
-            <p class="text-xs text-amber-100">교과서 출판사 선택 목차 자동 불러오기, 국어·영어 모의고사 범위 생성, 담당 선생님 지정을 한 번에 설정하세요.</p>
+            <p class="text-xs text-amber-100">교과서 출판사 선택 목차 자동 불러오기, 국어·영어 모의고사 범위 생성, 담당 교사 지정을 한 번에 설정하세요.</p>
           </div>
         </div>
         <button onclick="AcademicManager.closeExamScopeModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
@@ -3015,7 +3015,7 @@
               </label>
               <div class="relative">
                 <i class="fa-solid fa-chalkboard-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" id="formExamScopeTextbookTeacher" placeholder="예: 김선생님, 박OO 쌤" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500" />
+                <input type="text" id="formExamScopeTextbookTeacher" placeholder="예: 김OO, 박OO" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500" />
               </div>
             </div>
           </div>
@@ -3067,7 +3067,7 @@
               </label>
               <div class="relative">
                 <i class="fa-solid fa-chalkboard-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" id="formExamScopeMockTeacher" placeholder="예: 이선생님, 정OO 쌤" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
+                <input type="text" id="formExamScopeMockTeacher" placeholder="예: 이OO, 정OO" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-sky-500" />
               </div>
             </div>
           </div>
@@ -3138,7 +3138,7 @@
               </label>
               <div class="relative">
                 <i class="fa-solid fa-chalkboard-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" id="formExamScopeCustomTeacher" placeholder="예: 최선생님" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500" />
+                <input type="text" id="formExamScopeCustomTeacher" placeholder="예: 최OO" class="w-full py-2 pl-8 pr-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
           </div>
@@ -4282,10 +4282,10 @@
 <script src="weekly_review_logic.js?v=20261106_07"></script>
 <script src="grammar_data.js?v=20261106_07"></script>
 <script src="data.js?v=20261107_pace01"></script>
-<script src="grammar_store.js?v=20261106_07"></script>
-<script src="weekly_review_store.js?v=20261106_08"></script>
-<script src="app.js?v=20261107_pace09"></script>
-<script src="grammar.js?v=20261107_pace01"></script>
+<script src="grammar_store.js?v=20261107_copy01"></script>
+<script src="weekly_review_store.js?v=20261107_copy01"></script>
+<script src="app.js?v=20261107_copy01"></script>
+<script src="grammar.js?v=20261107_copy01"></script>
 
 <script src="weekly_review.js?v=20261107_pace01"></script>
 
@@ -4533,7 +4533,7 @@ const AcademicManager = {
         studentId: 11, // 송규인
         term: '1-2',
         subject: '국어',
-        teacherName: '김국어 선생님',
+        teacherName: '김국어',
         title: '현대시 심층 비평문 작성 및 구술 발표',
         dueDate: '2026-09-24',
         dueTime: '17:00',
@@ -4551,7 +4551,7 @@ const AcademicManager = {
         studentId: 11,
         term: '1-2',
         subject: '수학',
-        teacherName: '이수학 선생님',
+        teacherName: '이수학',
         title: '지수·로그함수의 실생활 활용 탐구 보고서',
         dueDate: '2026-09-18',
         dueTime: '23:59',
@@ -4569,7 +4569,7 @@ const AcademicManager = {
         studentId: 11,
         term: '1-2',
         subject: '영어',
-        teacherName: '박영어 선생님',
+        teacherName: '박영어',
         title: 'TED 강연 비판적 에세이 및 영어 찬반 토론',
         dueDate: '2026-09-29',
         dueTime: '18:00',
@@ -4587,7 +4587,7 @@ const AcademicManager = {
         studentId: 1, // 김단하
         term: '1-2',
         subject: '통합과학',
-        teacherName: '최과학 선생님',
+        teacherName: '최과학',
         title: '신소재 그래핀과 초전도체의 물성 탐구 보고서',
         dueDate: '2026-09-22',
         dueTime: '18:00',
@@ -4605,7 +4605,7 @@ const AcademicManager = {
         studentId: 2, // 김성헌
         term: '1-2',
         subject: '정보',
-        teacherName: '정정보 선생님',
+        teacherName: '정정보',
         title: '알고리즘을 활용한 실생활 문제 해결 프로그래밍',
         dueDate: '2026-09-25',
         dueTime: '23:59',
@@ -4673,18 +4673,18 @@ const AcademicManager = {
         examDate: '2026-10-16',
         targetScore: '98점 (1등급)',
         textbookPublisher: '비상(박영민)',
-        teacherName: '김국어 선생님',
+        teacherName: '김국어',
         memo: '비상 박영민 1·2·4단원 본문 분석',
         sections: [
           {
             id: 'sec_sample_kor_tb',
             type: 'textbook',
             title: '교과서: 비상 (박영민)',
-            teacherName: '김국어 선생님',
+            teacherName: '김국어',
             items: [
-              { id: 'it_kor_tb_1', name: '1단원. 나, 너, 우리가 만나는 길 - (1) 문학의 해석과 생활화', subTitle: '한 그리움이 다른 그리움에게 / 나의 꿈', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
-              { id: 'it_kor_tb_2', name: '2단원. 미래로 이어지는 국어의 발자취 - (1) 국어의 어제와 오늘', subTitle: '세종어제훈민정음 창제 원리와 중세 국어 특징', teacherName: '김국어 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
-              { id: 'it_kor_tb_3', name: '4단원. 삶 속에 흐르는 문학 - (1) 사랑, 그 속에 담긴 아픔', subTitle: '서경별곡 / 제망매가 / 진달래꽃 (전통적 서정)', teacherName: '최문법 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
+              { id: 'it_kor_tb_1', name: '1단원. 나, 너, 우리가 만나는 길 - (1) 문학의 해석과 생활화', subTitle: '한 그리움이 다른 그리움에게 / 나의 꿈', teacherName: '김국어', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_kor_tb_2', name: '2단원. 미래로 이어지는 국어의 발자취 - (1) 국어의 어제와 오늘', subTitle: '세종어제훈민정음 창제 원리와 중세 국어 특징', teacherName: '김국어', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_kor_tb_3', name: '4단원. 삶 속에 흐르는 문학 - (1) 사랑, 그 속에 담긴 아픔', subTitle: '서경별곡 / 제망매가 / 진달래꽃 (전통적 서정)', teacherName: '최문법', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
             ]
           },
 
@@ -4699,27 +4699,27 @@ const AcademicManager = {
         examDate: '2026-10-14',
         targetScore: '96점 (1등급)',
         textbookPublisher: '신사고(고성은)',
-        teacherName: '이수학 선생님',
+        teacherName: '이수학',
         memo: '도형의 이동 대칭성 활용 문제 + 집합과 명제 증명 서술형',
         sections: [
           {
             id: 'sec_sample_math_tb',
             type: 'textbook',
             title: '교과서: 신사고 공통수학2',
-            teacherName: '이수학 선생님',
+            teacherName: '이수학',
             items: [
-              { id: 'it_math_tb_1', name: 'III. 도형의 방정식 - 3. 도형의 이동', subTitle: '평행이동과 대칭이동 대단원 종합문제', teacherName: '이수학 선생님', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
-              { id: 'it_math_tb_2', name: 'IV. 집합과 명제 - 1. 집합의 연산', subTitle: '부분집합의 개수 및 드모르간 법칙', teacherName: '이수학 선생님', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
-              { id: 'it_math_tb_3', name: 'IV. 집합과 명제 - 2. 명제와 절대부등식', subTitle: '귀류법, 산술기하평균 증명', teacherName: '이수학 선생님', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
+              { id: 'it_math_tb_1', name: 'III. 도형의 방정식 - 3. 도형의 이동', subTitle: '평행이동과 대칭이동 대단원 종합문제', teacherName: '이수학', passes: { pass1: true, pass2: true, pass3: true }, status: 'master' },
+              { id: 'it_math_tb_2', name: 'IV. 집합과 명제 - 1. 집합의 연산', subTitle: '부분집합의 개수 및 드모르간 법칙', teacherName: '이수학', passes: { pass1: true, pass2: true, pass3: false }, status: 'in_progress' },
+              { id: 'it_math_tb_3', name: 'IV. 집합과 명제 - 2. 명제와 절대부등식', subTitle: '귀류법, 산술기하평균 증명', teacherName: '이수학', passes: { pass1: true, pass2: false, pass3: false }, status: 'in_progress' }
             ]
           },
           {
             id: 'sec_sample_math_pr',
             type: 'custom',
             title: '수학 기출 심화 프린트 (1등급 킬러 문항)',
-            teacherName: '이수학 선생님',
+            teacherName: '이수학',
             items: [
-              { id: 'it_math_pr_1', name: '학평 기출 21번/30번 변형 모음 15문항', subTitle: '도형의 이동 최단거리/대칭', teacherName: '이수학 선생님', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
+              { id: 'it_math_pr_1', name: '학평 기출 21번/30번 변형 모음 15문항', subTitle: '도형의 이동 최단거리/대칭', teacherName: '이수학', passes: { pass1: false, pass2: false, pass3: false }, status: 'not_started' }
             ]
           }
         ]
@@ -6778,7 +6778,7 @@ const AcademicManager = {
 
             ${item.note ? `
               <div class="p-2 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900">
-                <i class="fa-solid fa-comment-dots text-indigo-500 mr-1"></i>선생님 코멘트: ${this.escapeHtml(item.note)}
+                <i class="fa-solid fa-comment-dots text-indigo-500 mr-1"></i>코멘트: ${this.escapeHtml(item.note)}
               </div>
             ` : ''}
           </div>
@@ -8307,7 +8307,7 @@ const AcademicManager = {
       if (contentWrap) contentWrap.classList.add('hidden');
     }
 
-    // 선생님 코멘트 (있는 경우만 표시)
+    // 코멘트 (있는 경우만 표시)
     const noteWrap = document.getElementById('detailNoteWrap');
     const noteEl = document.getElementById('detailAssessNote');
     if (item.note && item.note.trim()) {
@@ -10987,9 +10987,9 @@ const AcademicManager = {
 • 시험 시작부터 최종 제출까지 앱 내 화면 이동이 제한됩니다. 새로고침·탭 닫기에는 이탈 경고가 표시됩니다.
 
 02. 문법 채점·재시험 관리 개선
-• 개념은 모범답안과 일치하는 답을 자동 정답 처리하고, 다른 답안만 선생님이 검토합니다.
+• 개념은 모범답안과 일치하는 답을 자동 정답 처리하고, 다른 답안만 검토합니다.
 • 실전은 제출 즉시 점수와 PASS/FAIL을 확인할 수 있습니다.
-• 개념과 실전의 성적을 따로 관리하며, 미달한 영역은 선생님이 새 시험을 배정해야 다시 응시할 수 있습니다.
+• 개념과 실전의 성적을 따로 관리하며, 미달한 영역은 관리자가 새 시험을 배정해야 다시 응시할 수 있습니다.
 • 관리자에서 문법 시험의 일정 변경·시간 연장·삭제를 지원합니다. 최초 시험 삭제 시 연결된 재시험과 성적도 함께 삭제되므로 확인창을 확인해 주세요.
 
 03. 문법 성적 발표 화면 개편
@@ -11000,7 +11000,7 @@ const AcademicManager = {
 
 04. 단어 테스트 결과 화면 리뉴얼
 • 문법 성적표의 디자인을 바탕으로, 하나의 큰 성적 카드에 PASS/FAIL·점수·정답 수를 모았습니다.
-• 통과·미달·선생님 채점 대기 상태를 색상과 문구로 구분합니다. 통합 시험의 스펠링 1차 점수는 최종 성적과 구분해 표시합니다.
+• 통과·미달·채점 대기 상태를 색상과 문구로 구분합니다. 통합 시험의 스펠링 1차 점수는 최종 성적과 구분해 표시합니다.
 • 오답 노트와 재응시 대기·다음 회차 안내는 유지하면서 PC와 모바일에서 보기 좋게 정리했습니다.
 
 05. 캘린더·시험 상세 화면 정리

@@ -36,7 +36,7 @@ Object.assign(AppData, {
     }, 250);
   },
   async configureWeeklyReviewDays(id, excludedWeekdays) {
-    if (!App.state.isAdminLoggedIn) throw new Error('선생님만 제외 요일을 변경할 수 있습니다.');
+    if (!App.state.isAdminLoggedIn) throw new Error('관리자만 제외 요일을 변경할 수 있습니다.');
     const test = this.getTests().find(t => t.id === id && t.type === 'VOCAB_REVIEW');
     if (!test) throw new Error('복습 시험을 찾을 수 없습니다.');
     return this.createWeeklyReview({ studentId: test.studentId, monday: test.weekStart, reviewId: id, excludedWeekdays: WeeklyReviewLogic.normalizeExcludedWeekdays(excludedWeekdays) });
@@ -45,7 +45,7 @@ Object.assign(AppData, {
     if (!this.isFirebaseReady()) throw new Error('클라우드 연결이 필요합니다.');
     const { doc, runTransaction } = window.firebaseFns;
     const configuring = excludedWeekdays !== undefined;
-    if (configuring && !App.state.isAdminLoggedIn) throw new Error('선생님만 제외 요일을 변경할 수 있습니다.');
+    if (configuring && !App.state.isAdminLoggedIn) throw new Error('관리자만 제외 요일을 변경할 수 있습니다.');
     if (configuring) excludedWeekdays = WeeklyReviewLogic.normalizeExcludedWeekdays(excludedWeekdays);
     const id = reviewId || WeeklyReviewLogic.id(studentId, monday);
     const sourceTests = this.getTests().filter(t => t.type === 'VOCAB' && Number(t.studentId) === Number(studentId) && WeeklyReviewLogic.monday(t.date) === monday);
@@ -119,7 +119,7 @@ Object.assign(AppData, {
       const testSnapshot = await tx.get(testRef);
       if (!testSnapshot.exists()) throw new Error('복습 시험을 찾을 수 없습니다.');
       const test = testSnapshot.data(), previous = test.weeklyReviewResult || null;
-      if ((test.reviewRevision || 1) !== revision) throw new Error('선생님이 복습 범위를 변경했습니다. 복습을 다시 열어주세요.');
+      if ((test.reviewRevision || 1) !== revision) throw new Error('관리자가 복습 범위를 변경했습니다. 복습을 다시 열어주세요.');
       if (test.type !== 'VOCAB_REVIEW' || !WeeklyReviewLogic.available(test) || test.status === 'REVIEW_DATA_NEEDED') throw new Error('아직 응시할 수 없습니다.');
       if (!App.state.isAdminLoggedIn && Number(App.state.selectedStudentId) !== Number(test.studentId)) throw new Error('본인의 복습만 제출할 수 있습니다.');
       if ((previous?.rounds.length || 0) >= roundNumber) return { test, result: previous }; // 재전송은 기존 결과를 반환

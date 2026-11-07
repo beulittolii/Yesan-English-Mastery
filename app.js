@@ -633,7 +633,7 @@ const App = {
           ${this.state.view !== 'admin' ? `
             <button onclick="App.showAdminDashboard()" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
               <i class="fa-solid fa-gauge-high"></i>
-              <span>선생님 관리자</span>
+              <span>관리자</span>
             </button>
           ` : ''}
           <button onclick="App.logoutAdmin()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
@@ -754,7 +754,7 @@ const App = {
       return false;
     }
 
-    // 선생님 관리자 로그인 확인 (admin / 1357 또는 선생님 / 1357)
+    // 관리자 로그인 확인 (admin / 1357 또는 선생님 / 1357)
     const isTeacherId = (
       normalizedLoginId === TEACHER_LOGIN_ID.toLocaleLowerCase('en-US') ||
       loginId === '선생님' ||
@@ -767,7 +767,7 @@ const App = {
       this.state.isStudentLoggedIn = false;
       this.saveSession({ role: 'admin' });
       if (errorEl) errorEl.classList.add('hidden');
-      this.toast('선생님 관리자 모드로 로그인되었습니다.', 'success');
+      this.toast('관리자 모드로 로그인되었습니다.', 'success');
       this.showAdminDashboard();
       return false;
     }
@@ -820,7 +820,7 @@ const App = {
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">${this.escapeHtml(student.name)} 학생의 학습 공간</h2>
-              ${this.state.isAdminLoggedIn ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap"><i class="fa-solid fa-eye mr-1"></i>선생님 미리보기</span>' : ''}
+              ${this.state.isAdminLoggedIn ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap"><i class="fa-solid fa-eye mr-1"></i>관리자 미리보기</span>' : ''}
             </div>
             <p class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
               <i class="fa-solid fa-bullseye text-indigo-500"></i>
@@ -1992,7 +1992,7 @@ const App = {
         status: 'EXPIRED',
         label: '마감',
         canStart: false,
-        message: `시험 응시 기한(${effectiveEndDate})이 지났습니다. 관리자(선생님)에게 시간 연장을 요청하세요.`
+        message: `시험 응시 기한(${effectiveEndDate})이 지났습니다. 관리자에게 시간 연장을 요청하세요.`
       };
     }
 
@@ -2082,7 +2082,7 @@ const App = {
             </div>
           ` : `
             <div class="p-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold text-center">
-              <i class="fa-solid fa-clock mr-1"></i>아직 학생이 시험에 응시하지 않았습니다. (선생님은 위 버튼으로 직접 풀어보실 수 있습니다.)
+              <i class="fa-solid fa-clock mr-1"></i>아직 학생이 시험에 응시하지 않았습니다. (위 버튼으로 직접 풀어보실 수 있습니다.)
             </div>
           `)}
 
@@ -2165,7 +2165,7 @@ const App = {
             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">총 ${questions.length}문항</span>
           </div>
         </div>
-        <p class="text-xs text-slate-600 leading-relaxed">${this.escapeHtml(test.scope || '선생님이 출제한 5지선다 객관식 문제입니다.')}</p>
+        <p class="text-xs text-slate-600 leading-relaxed">${this.escapeHtml(test.scope || '5지선다 객관식 문제입니다.')}</p>
       </div>
 
       <div class="grid grid-cols-2 gap-3 text-xs">
@@ -3037,7 +3037,7 @@ const App = {
                   <!-- 4. 해설 -->
                   ${item.explanation ? `
                     <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-xs text-indigo-950 space-y-1">
-                      <strong class="font-bold text-indigo-700 flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> 선생님 해설:</strong>
+                      <strong class="font-bold text-indigo-700 flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> 해설:</strong>
                       <div class="text-xs text-slate-700 leading-relaxed">${this.renderRichText(item.explanation)}</div>
                     </div>
                   ` : ''}
@@ -3673,7 +3673,7 @@ const App = {
     }
     const normalizedLoginId = loginId.toLocaleLowerCase('en-US');
     if (normalizedLoginId === TEACHER_LOGIN_ID.toLocaleLowerCase('en-US')) {
-      this.toast('선생님 계정 아이디는 학생 계정으로 사용할 수 없습니다.', 'error');
+      this.toast('관리자 계정 아이디는 학생 계정으로 사용할 수 없습니다.', 'error');
       return false;
     }
     const duplicated = AppData.getStudents().some(student =>
@@ -4769,7 +4769,7 @@ const App = {
 
           <!-- 해설 / 오답노트 코멘트 -->
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">선생님 문제 해설 / 풀이 팁 (선택사항)</label>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">문제 해설 / 풀이 팁 (선택사항)</label>
             <textarea rows="2" placeholder="예: 관계대명사 뒤에는 불완전한 절이 와야 하므로 that이 적절합니다." oninput="App.updatePracticeQuestionField(${qIndex}, 'explanation', this.value)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xs bg-slate-50 leading-relaxed">${this.escapeHtml(q.explanation || '')}</textarea>
           </div>
         </div>
@@ -4849,7 +4849,7 @@ const App = {
         scope = '단어 세트 기반 5지선다 테스트';
       }
     } else if (isPracticeTest) {
-      scope = scope || '선생님 출제 5지선다 객관식 문제풀이';
+      scope = scope || '5지선다 객관식 문제풀이';
     } else if (isTextMemorize) {
       const allPassages = this.getAllTextMemorizePassages();
       const matched = allPassages.filter(p => selectedPassageIds.includes(p.id));
@@ -6518,7 +6518,7 @@ const App = {
           </div>
           <div class="w-full py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap overflow-hidden">
             <i class="fa-solid fa-hourglass-half text-amber-100 animate-pulse text-[11px]"></i>
-            <span class="truncate">선생님 채점 대기중</span>
+            <span class="truncate">채점 대기중</span>
           </div>
         </div>`;
     }
@@ -7275,7 +7275,7 @@ const App = {
     }
   },
 
-  // ── 단어 테스트 10분 재응시 대기시간 즉시 해제 (선생님 관리자 권한 일회성 허용) ──
+  // ── 단어 테스트 10분 재응시 대기시간 즉시 해제 (관리자 권한 일회성 허용) ──
   async resetVocabRetryCooldown(studentId, setId, direction, testId = null) {
     if (!this.state.isAdminLoggedIn) {
       this.toast('관리자 권한이 필요합니다.', 'error');
@@ -8337,9 +8337,9 @@ const App = {
     const student = AppData.getStudentById(vt.studentId);
     const verdict = waitingGrading ? 'REVIEW' : passed ? 'PASS' : 'FAIL';
     const resultClass = waitingGrading ? 'is-pending' : passed ? 'is-pass' : 'is-fail';
-    const resultMessage = waitingGrading ? '선생님 채점 대기 중' : passed ? '통과 기준을 달성했어요!' : '틀린 단어를 확인하고 다시 준비해 보세요.';
+    const resultMessage = waitingGrading ? '채점 대기 중' : passed ? '통과 기준을 달성했어요!' : '틀린 단어를 확인하고 다시 준비해 보세요.';
     const nextMessage = waitingGrading
-      ? '스펠링 1차 채점을 통과했습니다. 선생님이 한국어 뜻을 확인한 뒤 최종 통과 여부가 반영됩니다.'
+      ? '스펠링 1차 채점을 통과했습니다. 한국어 뜻을 확인한 뒤 최종 통과 여부가 반영됩니다.'
       : !passed
         ? `10분 후 다시 도전할 수 있습니다. ${`다음 ${currentRound + 1}회차 통과 기준은 ${nextCutoff}점입니다.`}`
         : '이번 단계를 통과했습니다. 학습공간에서 다음 학습을 확인해 보세요.';
@@ -8348,7 +8348,7 @@ const App = {
         <header class="grammar-result-heading"><div><p class="grammar-result-eyebrow">VOCABULARY TEST · ${currentRound}회차</p><h1>단어 테스트를 마쳤어요.</h1><p class="grammar-result-subtitle">${this.escapeHtml(student?.name || '')} 학생 · ${this.escapeHtml(vt.setTitle)} · ${this.escapeHtml(directionLabel)}</p></div><button type="button" class="grammar-result-back" onclick="App.exitVocabTest()">학습공간으로 돌아가기 <span aria-hidden="true">→</span></button></header>
         <section class="grammar-result-panel grammar-result-practice vocab-single-result ${resultClass}">
           <div class="grammar-result-panel-top"><span class="grammar-result-eyebrow">${this.escapeHtml(directionLabel)} · ${currentRound}회차</span><span class="grammar-result-tag">${waitingGrading ? '채점 대기' : '채점 완료'}</span></div>
-          <div class="grammar-result-main"><h2 class="grammar-completion-verdict">${verdict}</h2><p>${resultMessage}</p><div class="grammar-completion-score vocab-score-value">${score}<span>점</span></div>${waitingGrading ? '<p>스펠링 1차 점수 · 최종 성적은 선생님 채점 후 확정</p>' : ''}
+          <div class="grammar-result-main"><h2 class="grammar-completion-verdict">${verdict}</h2><p>${resultMessage}</p><div class="grammar-completion-score vocab-score-value">${score}<span>점</span></div>${waitingGrading ? '<p>스펠링 1차 점수 · 최종 성적은 채점 후 확정</p>' : ''}
             <div class="vocab-result-stats"><div><strong>${total}</strong><span>출제 단어</span></div><div><strong>${correctCount}</strong><span>${vt.direction === 4 ? '스펠링 정답' : '정답'}</span></div><div><strong>${wrongAnswers.length}</strong><span>${vt.direction === 4 ? '스펠링 오답' : '오답'}</span></div></div>
             <div class="grammar-result-score-track"><div style="width:${score}%"></div><span style="left:${cutoffScore}%" title="통과 기준 ${cutoffScore}점"></span></div>
           </div>
@@ -8370,7 +8370,7 @@ const App = {
           </div>
         ` : `
           <div class="p-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">
-            ${waitingGrading ? '스펠링 1차 채점이 끝났습니다. 한국어 뜻은 선생님 채점 후 최종 성적에 반영됩니다.' : vt.direction === 3 ? '모든 스펠링 문제를 완벽하게 맞혔습니다! (100점)' : (vt.direction === 2 ? '모든 객관식 문제를 완벽하게 맞혔습니다! (100점)' : '모든 단어 문제를 완벽하게 맞혔습니다! (100점)')}
+            ${waitingGrading ? '스펠링 1차 채점이 끝났습니다. 한국어 뜻은 채점 후 최종 성적에 반영됩니다.' : vt.direction === 3 ? '모든 스펠링 문제를 완벽하게 맞혔습니다! (100점)' : (vt.direction === 2 ? '모든 객관식 문제를 완벽하게 맞혔습니다! (100점)' : '모든 단어 문제를 완벽하게 맞혔습니다! (100점)')}
           </div>
         `}
 
@@ -9373,7 +9373,7 @@ const App = {
       return;
     }
     if (existingResult && !existingResult.passed && !test.allowRetest && !this.state.isAdminLoggedIn) {
-      this.toast('선생님(관리자)의 재시험 허용 후 다시 응시할 수 있습니다.', 'warning');
+      this.toast('관리자의 재시험 허용 후 다시 응시할 수 있습니다.', 'warning');
       return;
     }
 

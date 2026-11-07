@@ -26,7 +26,7 @@ Object.assign(AppData, {
   },
 
   async deleteGrammarTest(id) {
-    if (!App.state.isAdminLoggedIn) throw new Error('선생님만 삭제할 수 있습니다.');
+    if (!App.state.isAdminLoggedIn) throw new Error('관리자만 삭제할 수 있습니다.');
     if (!this.isFirebaseReady()) throw new Error('클라우드 연결 후 다시 시도해주세요.');
     const target = this.getTests().find(t => t.id === id && t.type === 'GRAMMAR');
     if (!target) throw new Error('시험을 찾을 수 없습니다.');
@@ -57,7 +57,7 @@ Object.assign(AppData, {
 
   async assignGrammarTest({ studentId, date, time, endTime, parts, note }) {
     if (!this.isFirebaseReady()) throw new Error('클라우드 연결 후 다시 배정해주세요.');
-    if (!App.state.isAdminLoggedIn) throw new Error('선생님만 배정할 수 있습니다.');
+    if (!App.state.isAdminLoggedIn) throw new Error('관리자만 배정할 수 있습니다.');
     if (!shouldKeepTest({ date })) throw new Error('등록 가능한 날짜를 선택해주세요.');
     if (!parts.length || parts.some(p => !GrammarLogic.parts.includes(p))) throw new Error('배정할 영역을 선택해주세요.');
     const { doc, runTransaction } = window.firebaseFns;

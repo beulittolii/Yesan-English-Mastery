@@ -405,7 +405,7 @@ Object.assign(App, {
       <div class="grammar-result-panels">
         ${concept && !concept.waitingGrading && concept.score != null ? scoredPanel('concept', concept, '01 / CONCEPT') : `
         <section data-grammar-score-part="concept" class="grammar-result-panel grammar-result-concept"><div class="grammar-result-panel-top"><span class="grammar-result-eyebrow">01 / CONCEPT</span><span class="grammar-result-tag">개념</span></div>
-          <div class="grammar-result-main">${concept ? '<span class="grammar-result-symbol" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>' : ''}<h2 class="grammar-completion-concept">${concept ? '채점 대기 중' : '미배정'}</h2><p>${concept ? '선생님이 답안을 확인하고 있어요.<br>채점이 끝나면 점수와 통과 여부를 확인할 수 있습니다.' : '이번 시험에는 개념이 포함되지 않았습니다.'}</p></div>
+          <div class="grammar-result-main">${concept ? '<span class="grammar-result-symbol" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>' : ''}<h2 class="grammar-completion-concept">${concept ? '채점 대기 중' : '미배정'}</h2><p>${concept ? '답안을 확인하고 있어요.<br>채점이 끝나면 점수와 통과 여부를 확인할 수 있습니다.' : '이번 시험에는 개념이 포함되지 않았습니다.'}</p></div>
           <div class="grammar-result-panel-bottom"><span>통과 기준 <strong>80점 이상</strong></span>${concept ? action('concept', '개념 답안 확인') : ''}</div>
         </section>`}
         ${scoredPanel('practice', practice, '02 / PRACTICE')}
