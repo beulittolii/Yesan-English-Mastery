@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css?v=20261107_pace01" />
-  <link rel="stylesheet" href="pace.css?v=20261107_pace01" />
+  <link rel="stylesheet" href="pace.css?v=20261107_pace03" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -282,7 +282,7 @@
     <!-- ========================================== -->
     <!-- 1. LANDING VIEW: UNIFIED LOGIN (통합 로그인) -->
     <!-- ========================================== -->
-    <section id="landingView" class="pace-landing"><div class="pace-intro"><span class="pace-kicker">A LITTLE, EVERY DAY.</span><h1>배움의 속도는<br>달라도,<br><em>앞으로.</em></h1><p>하루의 공부가 내일의 자신감이 되도록.<br>나의 리듬을 만들어가는 학습 공간, PACE.</p><div class="pace-intro-foot"><span>YOUR OWN PACE.</span><span>01 — 시작하기</span></div></div>
+    <section id="landingView" class="pace-landing"><div class="pace-intro"><span class="pace-kicker">A LITTLE, EVERY DAY.</span><h1>배움의 속도는<br>달라도,<br><em>앞으로.</em></h1><p>하루의 공부가 내일의 자신감이 되도록.<br>나의 리듬을 만들어가는 학습 공간, PACE.</p><div class="pace-intro-foot"><span>YOUR OWN PACE.</span></div></div>
       <div class="max-w-sm mx-auto glass-card rounded-3xl p-6 sm:p-8 shadow-sm border border-indigo-100 mt-8">
         <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl mx-auto mb-3 shadow-md shadow-indigo-200">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><path fill="currentColor" fill-rule="evenodd" d="M18 82V14h33c20 0 31 11 31 28S71 70 51 70H38V82H18zm20-32h13c7 0 11-3 11-8s-4-8-11-8H38v16z"/><path fill="currentColor" d="M18 14h20v20H18z"/><path fill="#bfe4d0" d="M18 60h20v10H18z"/></svg>
@@ -1352,7 +1352,7 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>v1.0.13</p>
+      <p>v2.0.0</p>
       <p class="flex items-center gap-2">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
         <span>나만의 학습 페이스</span>
@@ -1391,21 +1391,15 @@
       <div id="grammarResultBody" class="p-4 sm:p-5 space-y-3 overflow-y-auto"></div>
     </div>
   </div>
-  <div id="testDetailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+  <div id="testDetailModal" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
     <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-slate-100 overflow-hidden">
-      <!-- Modal Header -->
-      <div class="p-6 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg text-indigo-300">
-            <i class="fa-solid fa-file-signature"></i>
-          </div>
-          <div>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-400/30" id="detailModalStudentBadge">학생 이름</span>
-            <h3 class="text-lg font-bold mt-1 text-white" id="detailModalTitle">시험명</h3>
-          </div>
+      <div class="pace-detail-heading">
+        <div class="pace-detail-heading-copy">
+          <span id="detailModalStudentBadge">학생 이름</span>
+          <h3 id="detailModalTitle">시험명</h3>
         </div>
-        <button onclick="App.closeTestDetailModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition">
-          <i class="fa-solid fa-xmark"></i>
+        <button type="button" onclick="App.closeTestDetailModal()" class="pace-detail-close" aria-label="상세 닫기">
+          <span aria-hidden="true">✕</span>
         </button>
       </div>
 

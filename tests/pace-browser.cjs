@@ -59,6 +59,14 @@ const server = http.createServer((req, res) => {
   });
   assert.equal(await page.title(), 'PACE | 나만의 학습 페이스');
   assert.equal(await page.getByRole('button', { name: '학생 체험' }).count(), 0);
+  for (const width of [390, 639, 768, 1440]) {
+    await page.setViewportSize({ width, height: 950 });
+    assert.equal(await page.locator('#mobileSidebarToggleBtn').isVisible(), false, 'Login hides the menu at every viewport');
+    await page.evaluate(() => App.openMobileSidebar());
+    assert.equal(await page.locator('#mobileSidebarBackdrop').isVisible(), false);
+  }
+  assert.equal(await page.getByText('01 — 시작하기', { exact: true }).count(), 0);
+  await page.setViewportSize({ width: 1440, height: 1050 });
   await page.screenshot({ path: '/private/tmp/pace-production-login.png', fullPage: true });
   await page.getByLabel('아이디', { exact: true }).fill('pace-test');
   await page.getByLabel('비밀번호', { exact: true }).fill('1234');
@@ -108,13 +116,23 @@ const server = http.createServer((req, res) => {
   await page.getByRole('button', { name: '복습 준비 현황 보기' }).click();
   assert.equal(await page.locator('#testDetailModal').isVisible(), true);
   assert.equal(await page.locator('[data-weekly-review-modal="english-review"]').count(), 1);
-  await page.evaluate(() => App.closeAllModals());
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#testDetailModal .modal-content')).opacity) === 1);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 850 });
+    await page.screenshot({ path: `/private/tmp/pace-detail-${width}.png` });
+    assert.equal(await page.locator('#testDetailModal .modal-content').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+  }
+  await page.getByRole('button', { name: '상세 닫기', exact: true }).click();
+  await page.waitForFunction(() => document.getElementById('testDetailModal').classList.contains('hidden'));
   await page.evaluate(() => {
     const date=App.getTodayDateString(), weekStart=WeeklyReviewLogic.monday(date);
     const tests=[{id:'preview',type:'VOCAB_REVIEW',isPreview:true,date,weekStart},{id:'actual',type:'VOCAB_REVIEW',date,weekStart}];
     window.selectedReview=App.paceReview(tests).id;
   });
   assert.equal(await page.evaluate(() => selectedReview), 'actual');
+  await page.evaluate(() => App.showLanding());
+  await page.setViewportSize({ width: 390, height: 950 });
+  assert.equal(await page.locator('#mobileSidebarToggleBtn').isVisible(), false, 'Returning to login hides the menu');
   assert.deepEqual(errors, []);
   assert.deepEqual(externalRequests, []);
   console.log('PACE production checks passed: login, student identity, actual grades, pending exclusion, live update, empty state, permissions, review selection, mobile/desktop.');
