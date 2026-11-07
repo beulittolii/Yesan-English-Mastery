@@ -156,3 +156,15 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 .pace-vocab-card.is-passed> :last-child{background:#143e35;color:#f3f4e9;}
 .pace-vocab-card button[onclick^="App.startVocabTest("]{background:#174e42;color:#f5f5ef;}
 .pace-vocab-card button[onclick^="App.startVocabTest("]:hover{background:#103e34;}
+
+/* Site-wide PACE palette: sage success, clay errors, ochre warnings, blue-grey schedules. */
+.calendar-day-cell.today{background:#e7ecdf;}
+.calendar-day-cell.other-month{background:#f7f8f4;}
+.test-event-pill{box-shadow:none!important;border-radius:6px;}
+[class*="shadow-emerald"],[class*="shadow-green"],[class*="shadow-blue"],[class*="shadow-rose"],[class*="shadow-amber"],[class*="shadow-teal"]{--tw-shadow-color:transparent!important;}
+.grammar-pass{background:#e7ecdf;border-color:#cad4c5;color:#244b31;}
+.grammar-fail{background:#f2e5e1;border-color:#e5cac3;color:#733e3b;}
+.grammar-result-practice.is-pending{background:#775e30;border-color:#775e30;color:#f8f5ed;}
+.grammar-result-practice.is-unassigned{background:#eef0e9;color:#506156;}
+.weekly-review-day-circle{border-color:#bfc9be;}
+.weekly-review-day-circle.is-excluded{background:#eef0e9;border-color:#bfc9be;color:#65766b;}
