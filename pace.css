@@ -288,3 +288,21 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2)>span:first-child{color:#65766b;font-size:11px;font-weight:600;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2)>span:last-child{color:#294235;font-size:15px;letter-spacing:-.035em;}
 @media(max-width:640px){#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){justify-content:flex-start;gap:8px;}}
+
+/* Exam type controls and admin tables keep labels intact at narrow widths. */
+.test-type-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+.test-type-options label{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border:1px solid #cad4c5;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;}
+.test-type-options label:has(input:checked){background:#e7ecdf;border-color:#174e42;color:#174e42;}
+.test-type-options input{flex-shrink:0;accent-color:#174e42;}
+#adminTabContentTests table{min-width:1100px;}
+#adminTabContentTests th,#adminTabContentTests button,#adminTestCountBadge{white-space:nowrap;flex-shrink:0;}
+#adminTestsTableBody td:nth-child(2){min-width:260px;max-width:360px;}
+#adminTestsTableBody td:nth-child(2)>div:first-child{align-items:flex-start;}
+#adminTestsTableBody td:nth-child(2)>div:first-child>span:first-child{white-space:nowrap;flex-shrink:0;}
+#adminTestsTableBody td:nth-child(2)>div:first-child>span:last-child{min-width:0;word-break:keep-all;overflow-wrap:anywhere;}
+#adminSelectedStudentInfo button{white-space:nowrap;flex-shrink:0;}
+#adminTestFormModal .pace-dialog-heading>div{min-width:0;}
+#adminTestFormModal .pace-dialog-heading>button{flex-shrink:0;}
+@media(max-width:480px){.test-type-options{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+.test-type-options label:has(input:disabled){opacity:.45;cursor:not-allowed;}

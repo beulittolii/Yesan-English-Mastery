@@ -22,8 +22,8 @@
   <!-- Font Awesome Icons CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css?v=20261107_pace02" />
-  <link rel="stylesheet" href="pace.css?v=20261107_pace20" />
+  <link rel="stylesheet" href="style.css?v=20261107_skeleton01" />
+  <link rel="stylesheet" href="pace.css?v=exam_types01_20261107_pace20" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -58,67 +58,11 @@
 
   <!-- Cloud data is loaded before the application UI is rendered. -->
   <div id="initialLoadingSkeleton" class="initial-loading-skeleton" role="status" aria-label="데이터를 준비하고 있습니다">
-    <div class="initial-loading-skeleton__header">
-      <div class="initial-loading-skeleton__brand">
-        <div class="initial-loading-skeleton__logo skeleton-shimmer"></div>
-        <div class="space-y-2">
-          <div class="h-5 w-14 rounded skeleton-shimmer"></div>
-          <div class="h-2.5 w-36 rounded skeleton-shimmer"></div>
-        </div>
-      </div>
-      <div class="initial-loading-skeleton__header-actions">
-        <div class="h-9 w-20 rounded-xl skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__menu-button skeleton-shimmer"></div>
-      </div>
-    </div>
+    <div class="initial-loading-skeleton__header" aria-hidden="true"><div class="loading-brand"><img src="pace-symbol.svg" alt="" width="32" height="32"><strong>PACE</strong></div><div class="loading-header-action"><div class="loading-button skeleton-shimmer"></div></div></div>
     <div class="initial-loading-skeleton__content" aria-hidden="true">
-      <div class="initial-loading-skeleton__login-card">
-        <div class="initial-loading-skeleton__login-icon skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__title skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__subtitle skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__description skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__field-label skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__field skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__field-label skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__field skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__login-button skeleton-shimmer"></div>
-        <div class="initial-loading-skeleton__admin-link skeleton-shimmer"></div>
-      </div>
-
-      <div class="initial-loading-skeleton__dashboard">
-        <div class="initial-loading-skeleton__profile-card">
-          <div class="initial-loading-skeleton__avatar skeleton-shimmer"></div>
-          <div class="initial-loading-skeleton__profile-copy">
-            <div class="initial-loading-skeleton__profile-title skeleton-shimmer"></div>
-            <div class="initial-loading-skeleton__profile-subtitle skeleton-shimmer"></div>
-          </div>
-          <div class="initial-loading-skeleton__profile-action skeleton-shimmer"></div>
-        </div>
-        <div class="initial-loading-skeleton__tabs">
-          <div class="initial-loading-skeleton__tab skeleton-shimmer"></div>
-          <div class="initial-loading-skeleton__tab skeleton-shimmer"></div>
-          <div class="initial-loading-skeleton__toolbar-action skeleton-shimmer"></div>
-        </div>
-        <div class="initial-loading-skeleton__calendar-card">
-          <div class="initial-loading-skeleton__calendar-heading">
-            <div class="initial-loading-skeleton__month skeleton-shimmer"></div>
-            <div class="initial-loading-skeleton__month-controls">
-              <div class="initial-loading-skeleton__month-control skeleton-shimmer"></div>
-              <div class="initial-loading-skeleton__month-control skeleton-shimmer"></div>
-            </div>
-          </div>
-          <div class="initial-loading-skeleton__weekdays">
-            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-          </div>
-          <div class="initial-loading-skeleton__calendar-grid">
-            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
-            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
-            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
-            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
-            <div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div><div class="skeleton-shimmer"></div>
-          </div>
-        </div>
-      </div>
+      <div class="loading-login"><div class="loading-intro dark"><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-title skeleton-shimmer"></div><div class="loading-title short skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-intro-foot"><div class="loading-eyebrow skeleton-shimmer"></div></div></div><div class="loading-form"><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-title skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-fields"><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-field skeleton-shimmer"></div><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-field skeleton-shimmer"></div><div class="loading-button skeleton-shimmer"></div></div></div></div>
+      <div class="loading-student"><div class="loading-heading"><div><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-title skeleton-shimmer"></div><div class="loading-title short skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-profile skeleton-shimmer"></div></div><div class="loading-date"><div class="loading-line skeleton-shimmer"></div><div class="loading-eyebrow skeleton-shimmer"></div></div></div><div class="loading-panels"><div class="loading-panel dark"><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-panel-copy"><div class="loading-title skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-button skeleton-shimmer"></div></div><div class="loading-panel sage"><div class="loading-eyebrow skeleton-shimmer"></div><div class="loading-panel-copy"><div class="loading-title skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-button skeleton-shimmer"></div></div></div><div class="loading-toolbar"><div class="loading-button skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-calendar"><div class="loading-toolbar"><div class="loading-month skeleton-shimmer"></div><div class="loading-profile skeleton-shimmer"></div></div><div class="loading-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="loading-calendar-grid"><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div><div class="loading-event skeleton-shimmer"></div></div><div><div class="loading-day skeleton-shimmer"></div></div></div></div></div>
+      <div class="loading-admin"><div class="loading-title skeleton-shimmer"></div><div class="loading-toolbar"><div class="loading-button skeleton-shimmer"></div><div class="loading-button skeleton-shimmer"></div><div class="loading-button skeleton-shimmer"></div></div><div class="loading-admin-card"><div class="loading-toolbar"><div class="loading-month skeleton-shimmer"></div><div class="loading-profile skeleton-shimmer"></div></div><div class="loading-table-row"><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-table-row"><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-table-row"><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-table-row"><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-table-row"><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div><div class="loading-table-row"><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div><div class="loading-line skeleton-shimmer"></div></div></div></div>
     </div>
   </div>
   <script>
@@ -128,7 +72,7 @@
       const isStudentSession = session?.role === 'student' && session.studentId;
       const isAdminSession = session?.role === 'admin';
       if (isStudentSession || isAdminSession) {
-        document.getElementById('initialLoadingSkeleton')?.classList.add('initial-loading-skeleton--authenticated');
+        document.getElementById('initialLoadingSkeleton')?.classList.add(isAdminSession ? 'initial-loading-skeleton--admin' : 'initial-loading-skeleton--student');
       }
     } catch (_) {
       // Invalid or unavailable local storage intentionally falls back to login skeleton.
@@ -837,7 +781,6 @@
             <!-- Populated by JS -->
           </div>
           <div class="flex flex-wrap gap-2">
-          <button onclick="App.openGrammarAssignmentModal()" class="px-4 py-2 rounded-xl bg-violet-600 text-white font-semibold text-xs sm:text-sm hover:bg-violet-700 transition whitespace-nowrap">문법 테스트 추가</button>
           <button onclick="App.openAddTestModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs sm:text-sm hover:bg-indigo-700 shadow-md shadow-indigo-200 transition flex items-center gap-2 whitespace-nowrap">
             <i class="fa-solid fa-plus"></i>
             <span>새 시험 일정 추가</span>
@@ -1335,7 +1278,7 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex items-center justify-center">
-      <p>v2.0.23</p>
+      <p>v2.0.24</p>
     </div>
   </footer>
 
@@ -1502,23 +1445,16 @@
 
       <form onsubmit="App.handleSaveTestForm(event)" class="pace-dialog-body p-6 space-y-4 max-h-[75vh] overflow-y-auto">
         <input type="hidden" id="formTestId" />
+        <input type="radio" name="formTestType" value="REGULAR" hidden aria-hidden="true" tabindex="-1">
 
         <div class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-2">
           <label class="block text-xs font-bold text-indigo-900">추가할 일정 유형</label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <label class="flex items-center justify-center p-2.5 rounded-xl border border-indigo-300 bg-white cursor-pointer text-xs font-bold text-indigo-800">
-              <input type="radio" name="formTestType" value="REGULAR" class="mr-1.5" checked onchange="App.toggleTestFormType()" /> 일반 시험
-            </label>
-            <label class="flex items-center justify-center p-2.5 rounded-xl border border-violet-300 bg-violet-50 cursor-pointer text-xs font-bold text-violet-800">
-              <input type="radio" name="formTestType" value="VOCAB" class="mr-1.5" onchange="App.toggleTestFormType()" /> 단어 테스트
-            </label>
-            <label class="flex items-center justify-center p-2.5 rounded-xl border border-emerald-300 bg-emerald-50 cursor-pointer text-xs font-bold text-emerald-800">
-              <input type="radio" name="formTestType" value="PRACTICE" class="mr-1.5" onchange="App.toggleTestFormType()" /> 문제풀이
-            </label>
-            <label class="flex items-center justify-center p-2.5 rounded-xl border border-indigo-300 bg-indigo-50 cursor-pointer text-xs font-bold text-indigo-800">
-              <input type="radio" name="formTestType" value="TEXT_MEMORIZE" class="mr-1.5" onchange="App.toggleTestFormType()" /> 본문암기
-            </label>
-            <button type="button" onclick="App.openGrammarAssignmentModal()" class="p-2.5 rounded-xl border border-violet-300 bg-violet-50 text-xs font-bold text-violet-800">문법 테스트</button>
+          <div class="test-type-options">
+            <label><input type="radio" name="formTestType" value="VOCAB" checked onchange="App.toggleTestFormType()"> <span>단어</span></label>
+            <label><input type="radio" name="formTestType" value="PRACTICE"  onchange="App.toggleTestFormType()"> <span>문제풀이</span></label>
+            <label><input type="radio" name="formTestType" value="TEXT_MEMORIZE"  onchange="App.toggleTestFormType()"> <span>본문암기</span></label>
+            <label><input type="radio" name="formTestType" value="GRAMMAR"  onchange="App.toggleTestFormType()"> <span>문법</span></label>
+
           </div>
         </div>
 
@@ -1545,6 +1481,12 @@
           <div id="formStudentCheckboxGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <!-- Populated dynamically by JS -->
           </div>
+        </div>
+
+        <div id="formGrammarSection" class="hidden space-y-4">
+          <div><label for="formGrammarStudent" class="block text-xs font-bold mb-2">대상 학생</label>
+            <select id="formGrammarStudent" onchange="App.renderGrammarAssignmentParts(true)" class="w-full p-3 border border-slate-300 rounded-xl"></select></div>
+          <div id="formGrammarParts"></div>
         </div>
 
         <!-- Title -->
@@ -1913,7 +1855,7 @@
         </div>
 
         <!-- Teacher Note -->
-        <div class="form-regular-only">
+        <div class="form-regular-only" id="formTeacherNoteSection">
           <label class="block text-xs font-bold text-slate-700 mb-1">피드백 / 코멘트</label>
           <textarea id="formTeacherNote" rows="2" placeholder="학생에게 전달할 격려의 말이나 취약점 복습 가이드를 작성하세요." class="w-full py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm"></textarea>
         </div>
@@ -4268,8 +4210,8 @@
 <script src="data.js?v=20261107_pace01"></script>
 <script src="grammar_store.js?v=20261107_copy01"></script>
 <script src="weekly_review_store.js?v=20261107_copy01"></script>
-<script src="app.js?v=20261107_student_preview02"></script>
-<script src="grammar.js?v=20261107_schedule01"></script>
+<script src="app.js?v=20261107_exam_types01"></script>
+<script src="grammar.js?v=exam_types01_20261107_schedule01"></script>
 
 <script src="weekly_review.js?v=20261107_schedule01"></script>
 

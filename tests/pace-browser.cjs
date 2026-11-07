@@ -185,6 +185,36 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => App.state.isAdminLoggedIn && !App.state.isStudentLoggedIn && !App.state.isAdminStudentPreview), true);
     assert.equal(await page.evaluate(() => App.state.adminSelectedStudentId), studentId);
   }
+  await page.evaluate(async () => { App.state.isAdminLoggedIn = true; await App.showAdminDashboard(); App.openAddTestModal(); });
+  assert.equal(await page.getByRole('button', { name: '문법 테스트 추가', exact: true }).count(), 0);
+  assert.deepEqual(await page.locator('.test-type-options input').evaluateAll(els => els.map(el => el.value)), ['VOCAB', 'PRACTICE', 'TEXT_MEMORIZE', 'GRAMMAR']);
+  assert.equal(await page.locator('[name="formTestType"]:checked').inputValue(), 'VOCAB');
+  for (const type of ['GRAMMAR', 'PRACTICE', 'TEXT_MEMORIZE', 'VOCAB', 'GRAMMAR']) {
+    await page.locator(`.test-type-options input[value="${type}"]`).check();
+    assert.equal(await page.locator('#formGrammarSection').isVisible(), type === 'GRAMMAR');
+    assert.equal(await page.locator('#formStudentSection').isVisible(), type !== 'GRAMMAR');
+  }
+  assert.equal(await page.locator('#grammarAssignmentModal').isVisible(), false);
+  assert.equal(await page.locator('[name="formGrammarPart"]:checked').count(), 2);
+  await page.locator('#formTeacherNote').fill('통합 창 문법 배정');
+  await page.evaluate(() => {
+    window.originalAssignGrammarTest = AppData.assignGrammarTest;
+    AppData.assignGrammarTest = async input => { window.savedGrammarAssignment = input; };
+  });
+  await page.locator('#adminTestFormModal button[type="submit"]').click();
+  await page.waitForFunction(() => Boolean(window.savedGrammarAssignment));
+  assert.deepEqual(await page.evaluate(() => savedGrammarAssignment.parts), ['concept', 'practice']);
+  assert.equal(await page.evaluate(() => savedGrammarAssignment.note), '통합 창 문법 배정');
+  await page.evaluate(() => { AppData.assignGrammarTest = window.originalAssignGrammarTest; });
+  await page.waitForFunction(() => document.getElementById('adminTestFormModal').classList.contains('hidden'));
+  const vocabRow = page.locator('#adminTestsTableBody tr').filter({ hasText: 'VOCAB 일정' });
+  assert.equal(await vocabRow.locator('td:nth-child(2)>div:first-child>span:first-child').innerText(), '단어');
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 950 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.equal(await vocabRow.locator('td:nth-child(2)>div:first-child>span:first-child').evaluate(el => getComputedStyle(el).whiteSpace), 'nowrap');
+    await page.screenshot({ path: `/private/tmp/pace-admin-types-${width}.png`, fullPage: true });
+  }
   await page.evaluate(() => App.showLanding());
   await page.setViewportSize({ width: 390, height: 950 });
   assert.equal(await page.locator('#mobileSidebarToggleBtn').isVisible(), false, 'Returning to login hides the menu');

@@ -3306,7 +3306,7 @@ const App = {
           <!-- 시험명 & 범위 -->
           <td class="py-3.5 px-4 max-w-xs">
             <div class="font-bold text-slate-900 text-sm hover:text-indigo-600 cursor-pointer flex items-center gap-1.5" onclick="App.openTestDetailModal('${test.id}')">
-              ${test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : (test.type === 'TEXT_MEMORIZE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">본문암기</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">일반</span>')}
+              ${test.type === 'PRACTICE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">문제풀이</span>' : (test.type === 'TEXT_MEMORIZE' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">본문암기</span>' : (test.type === 'VOCAB' ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-800">단어</span>' : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">기존 시험</span>'))}
               <span>${this.escapeHtml(test.title)}</span>
             </div>
             <div class="text-xs text-slate-500 truncate mt-0.5">${this.escapeHtml(test.scope || '-')}</div>
@@ -3859,7 +3859,8 @@ const App = {
     // 라디오 버튼 초기화
     document.querySelector('input[name="formStatus"][value="SCHEDULED"]').checked = true;
     document.querySelector('input[name="formRetestStatus"][value="NONE"]').checked = true;
-    document.querySelector('input[name="formTestType"][value="REGULAR"]').checked = true;
+    document.querySelector('input[name="formTestType"][value="VOCAB"]').checked = true;
+    this.initUnifiedGrammarForm();
     this.toggleTestFormType();
 
     this.showModal('adminTestFormModal');
@@ -4234,20 +4235,27 @@ const App = {
   },
 
   toggleTestFormType() {
-    const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'REGULAR';
+    const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'VOCAB';
+    const isGrammar = testType === 'GRAMMAR';
+    // Existing non-grammar records cannot be converted into a new grammar assignment.
+    document.querySelector('.test-type-options input[value="GRAMMAR"]').disabled = Boolean(document.getElementById('formTestId').value);
+    document.getElementById('formGrammarSection').classList.toggle('hidden', !isGrammar);
+    document.getElementById('formStudentSection').classList.toggle('hidden', isGrammar);
+    if (isGrammar) this.renderGrammarAssignmentParts(true);
     const isVocab = testType === 'VOCAB';
     const isPractice = testType === 'PRACTICE';
     const isTextMemorize = testType === 'TEXT_MEMORIZE';
     const isRegular = testType === 'REGULAR';
 
     document.querySelectorAll('.form-regular-only').forEach(element => element.classList.toggle('hidden', !isRegular));
-    document.querySelectorAll('.form-regular-or-practice').forEach(element => element.classList.toggle('hidden', isVocab || isTextMemorize));
+    document.getElementById('formTeacherNoteSection').classList.toggle('hidden', !isRegular && !isGrammar);
+    document.querySelectorAll('.form-regular-or-practice').forEach(element => element.classList.toggle('hidden', isVocab || isTextMemorize || isGrammar));
     document.querySelectorAll('.form-time-applicable').forEach(element => element.classList.remove('hidden'));
 
     // 본문 암기 및 단어 테스트는 제목 입력창 숨김 및 자동 고정
     const formTitleSection = document.getElementById('formTitleSection');
     if (formTitleSection) {
-      formTitleSection.classList.toggle('hidden', isVocab || isTextMemorize);
+      formTitleSection.classList.toggle('hidden', isVocab || isTextMemorize || isGrammar);
     }
 
     document.getElementById('formVocabSetSection').classList.toggle('hidden', !isVocab);
@@ -4259,7 +4267,9 @@ const App = {
 
     const title = document.getElementById('formTitle');
     if (title) {
-      if (isTextMemorize) {
+      if (isGrammar) {
+        title.required = false;
+      } else if (isTextMemorize) {
         title.value = '본문암기 테스트';
         title.required = false;
       } else if (isVocab) {
@@ -4810,7 +4820,8 @@ const App = {
     e.preventDefault();
 
     const id = document.getElementById('formTestId').value.trim();
-    const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'REGULAR';
+    const testType = document.querySelector('input[name="formTestType"]:checked')?.value || 'VOCAB';
+    if (testType === 'GRAMMAR') { await this.saveUnifiedGrammarAssignment(e); return; }
     const isVocabTest = testType === 'VOCAB';
     const isPracticeTest = testType === 'PRACTICE';
     const isRegularTest = testType === 'REGULAR';

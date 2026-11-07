@@ -30,6 +30,35 @@ Object.assign(App, {
     return `<button type="button" onclick="${action}" class="grammar-button ${secondary ? 'grammar-button-secondary' : ''}">${label}</button>`;
   },
 
+  initUnifiedGrammarForm() {
+    const select = document.getElementById('formGrammarStudent');
+    select.innerHTML = AppData.getStudents().map(s => `<option value="${s.id}">${this.escapeHtml(s.name)}</option>`).join('');
+    select.value = this.state.adminSelectedStudentId;
+    this.renderGrammarAssignmentParts(true);
+  },
+  async saveUnifiedGrammarAssignment(event) {
+    if (!this.state.isAdminLoggedIn || this._grammarAssignmentSaving) return;
+    const studentId = Number(document.getElementById('formGrammarStudent').value);
+    const date = document.getElementById('formDate').value;
+    const time = document.getElementById('formTime').value || '00:00';
+    const endTime = document.getElementById('formEndTime').value || '23:59';
+    const note = document.getElementById('formTeacherNote').value.trim();
+    if (!AppData.getStudentById(studentId) || !shouldKeepTest({ date }) || endTime < time) {
+      this.toast('학생·날짜·응시 시간을 확인해주세요.', 'error'); return;
+    }
+    const button = document.querySelector('#adminTestFormModal button[type="submit"]');
+    this._grammarAssignmentSaving = true;
+    button.disabled = true;
+    try {
+      const parts = [...document.querySelectorAll('[name="formGrammarPart"]:checked')].map(el => el.value);
+      await AppData.assignGrammarTest({ studentId, date, time, endTime, parts, note });
+      this.closeAdminTestFormModal();
+      this.renderAdminTestsTab();
+      this.toast('문법 시험 일정이 저장되었습니다.', 'success');
+    } catch (error) { this.toast(error.message || '저장하지 못했습니다. 다시 시도해주세요.', 'error'); }
+    finally { this._grammarAssignmentSaving = false; button.disabled = false; }
+  },
+
   openGrammarAssignmentModal(testId = null, studentId = null) {
     if (!this.state.isAdminLoggedIn) return;
     this.closeAllModals();
@@ -46,18 +75,18 @@ Object.assign(App, {
     this.renderGrammarAssignmentParts();
     this.showModal('grammarAssignmentModal');
   },
-  renderGrammarAssignmentParts() {
-    const studentId = Number(document.getElementById('grammarAssignmentStudent').value);
+  renderGrammarAssignmentParts(unified = false) {
+    const studentId = Number(document.getElementById(unified ? 'formGrammarStudent' : 'grammarAssignmentStudent').value);
     const tests = AppData.getTests();
     const existing = tests.some(t => t.type === 'GRAMMAR' && Number(t.studentId) === studentId && t.grammarUnitId === GRAMMAR_UNIT.id);
-    const editing = this.grammarTestById(this._grammarAssignmentId);
+    const editing = unified ? null : this.grammarTestById(this._grammarAssignmentId);
     const eligible = GrammarLogic.eligible(tests, studentId, GRAMMAR_UNIT.id);
-    document.getElementById('grammarAssignmentParts').innerHTML = `<p class="text-sm font-bold mb-3">가정법 · 영역별 80점 이상 통과</p>
+    document.getElementById(unified ? 'formGrammarParts' : 'grammarAssignmentParts').innerHTML = `<p class="text-sm font-bold mb-3">가정법 · 영역별 80점 이상 통과</p>
       <p class="text-xs text-slate-500 mb-3">${editing ? '배정 영역과 출제 내용은 유지하고 일정·안내를 수정합니다.' : existing ? '미달이 확정된 영역만 다시 배정할 수 있습니다.' : '최초 시험은 개념과 실전이 함께 배정됩니다.'}</p>
       <div class="flex flex-wrap gap-4">${GrammarLogic.parts.map(part => {
         const enabled = !editing && existing && eligible.includes(part);
         const checked = editing ? editing.grammarParts.includes(part) : !existing || enabled;
-        return `<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="grammarPart" value="${part}" ${checked ? 'checked' : ''} ${enabled ? '' : 'disabled'}> ${GrammarLogic.label(part)}${existing && !editing && !enabled ? ' (재배정 불가)' : ''}</label>`;
+        return `<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="${unified ? 'formGrammarPart' : 'grammarPart'}" value="${part}" ${checked ? 'checked' : ''} ${enabled ? '' : 'disabled'}> ${GrammarLogic.label(part)}${existing && !editing && !enabled ? ' (재배정 불가)' : ''}</label>`;
       }).join('')}</div>`;
   },
   async saveGrammarAssignment(event) {
