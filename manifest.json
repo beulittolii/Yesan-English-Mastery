@@ -1,7 +1,7 @@
 {
-  "name": "PACE · 나만의 학습 페이스",
+  "name": "PACE",
   "short_name": "PACE",
-  "description": "나만의 학습 페이스를 만드는 학업관리 플랫폼",
+  "description": "학업관리 플랫폼",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

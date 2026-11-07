@@ -57,7 +57,7 @@ const server = http.createServer((req, res) => {
     AcademicManager.hookIntoApp();
     App.init();
   });
-  assert.equal(await page.title(), 'PACE | 나만의 학습 페이스');
+  assert.equal(await page.title(), 'PACE');
   assert.equal(await page.getByRole('button', { name: '학생 체험' }).count(), 0);
   for (const width of [390, 639, 768, 1440]) {
     await page.setViewportSize({ width, height: 950 });

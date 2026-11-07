@@ -1506,8 +1506,8 @@ const App = {
     document.getElementById('detailModalTitle').innerText = cleanModalTitle;
     document.getElementById('detailModalBody').innerHTML = `
       <div class="pace-schedule-resource relative p-4 rounded-2xl bg-violet-50 border border-violet-200">
-        <div class="flex items-center justify-between gap-2 flex-wrap mb-1.5 ${'pr-28'}">
-          <div class="flex items-center gap-1.5 flex-wrap">
+        <div class="flex items-center justify-between gap-2 flex-wrap mb-0 ${'pr-28'}">
+          <div class="flex items-center gap-1 flex-wrap">
             ${hasSpecialBook ? `
               <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-600 text-white shadow-2xs inline-flex items-center gap-1">
                 <i class="fa-solid fa-book text-[9px]"></i> ${this.escapeHtml(bookName)}
@@ -1516,7 +1516,7 @@ const App = {
             <p class="text-xs sm:text-sm font-black text-violet-950">${this.escapeHtml(cleanCardTitle)}</p>
           </div>
         </div>
-        <p class="text-xs text-slate-600 mt-1 ${'pr-28'}">
+        <p class="text-xs text-slate-600 mt-0 ${'pr-28'}">
           시험일: <strong>${test.date}</strong> · ${scheduleSummary}
         </p>
         ${`
