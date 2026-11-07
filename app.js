@@ -1509,8 +1509,9 @@ const App = {
         <div class="flex items-center justify-between gap-2 flex-wrap mb-0 ${'pr-28'}">
           <div class="flex items-center gap-1 flex-wrap">
             ${hasSpecialBook ? `
-              <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-600 text-white shadow-2xs inline-flex items-center gap-1">
-                <i class="fa-solid fa-book text-[9px]"></i> ${this.escapeHtml(bookName)}
+              <span class="pace-vocab-book-badge" title="${this.escapeHtml(bookName)}">
+                <i class="fa-solid fa-book text-[9px]" aria-hidden="true"></i>
+                <span>${this.escapeHtml(bookName)}</span>
               </span>
             ` : ''}
             <p class="text-xs sm:text-sm font-black text-violet-950">${this.escapeHtml(cleanCardTitle)}</p>
