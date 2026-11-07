@@ -274,3 +274,6 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>button:disabled{background:#dce1d8;color:#65766b;}
 @media(max-width:640px){#detailModalBody .pace-schedule-resource{grid-template-columns:1fr;}#detailModalBody .pace-schedule-resource>button{grid-column:1;grid-row:auto;justify-self:start;margin-top:8px;}#detailModalBody .pace-schedule-stages{grid-template-columns:1fr;padding:6px 20px;}#detailModalBody .pace-schedule-stages>.pace-vocab-card{padding:20px 0;min-height:0;gap:16px;border-right:0;border-bottom:1px solid #cad4c5;}#detailModalBody .pace-schedule-stages>.pace-vocab-card:last-child{border-bottom:0;}#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){flex-direction:row;justify-content:space-between;margin-top:12px;}}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card.is-passed{border-radius:0!important;}
+/* Keep each metric label and value visually grouped. */
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){margin-top:10px;gap:2px;line-height:1.5;justify-content:flex-start;}
+@media(max-width:640px){#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){justify-content:flex-start;gap:8px;}}
