@@ -509,6 +509,8 @@ const App = {
 
     // Keep the persisted admin session, but use the actual student UI and rules.
     if (this.state.isAdminLoggedIn) {
+      this.closeAllModals();
+      if (typeof AcademicManager !== 'undefined') AcademicManager.studentTab = 'schedule';
       this.state.isAdminStudentPreview = true;
       this.state.isAdminLoggedIn = false;
       this.state.isStudentLoggedIn = true;

@@ -130,6 +130,14 @@ const server = http.createServer((req, res) => {
     window.selectedReview=App.paceReview(tests).id;
   });
   assert.equal(await page.evaluate(() => selectedReview), 'actual');
+  await page.evaluate(() => {
+    FirebaseStore.vocabSets = [{ id: 'preview-words', title: 'Preview words', words: [{ en: 'apple', ko: '사과' }] }];
+    FirebaseStore.tests = [501, 502].flatMap(studentId => ['REGULAR', 'VOCAB', 'PRACTICE', 'VOCAB_REVIEW'].map(type => ({
+      id: `parity-${studentId}-${type}`, studentId, type, title: `${type} 일정`, date: App.getTodayDateString(),
+      status: 'SCHEDULED', vocabSetId: 'preview-words', questions: [], reviewStage: 'LOCKED',
+      weekStart: WeeklyReviewLogic.monday(App.getTodayDateString()), weekdayCompletion: [false, false, false, false, false]
+    })));
+  });
   // Admin preview shares the student renderer, permissions, and navigation.
   for (const studentId of [501, 502]) {
     await page.evaluate(async id => {
@@ -138,6 +146,16 @@ const server = http.createServer((req, res) => {
       await App.selectStudent(id);
     }, studentId);
     const studentMarkup = await page.locator('#studentDashboardView').innerHTML();
+    const readDetails = () => page.evaluate(id => {
+      const details = {};
+      for (const test of AppData.getTestsByStudentId(id)) {
+        App.openTestDetailModal(test.id);
+        details[test.type] = document.getElementById('detailModalBody').innerHTML;
+        App.closeAllModals();
+      }
+      return details;
+    }, studentId);
+    const studentDetails = await readDetails();
     await page.evaluate(async id => {
       App.state.isAdminLoggedIn = true;
       App.state.isStudentLoggedIn = false;
@@ -145,6 +163,17 @@ const server = http.createServer((req, res) => {
       await App.selectStudent(id);
     }, studentId);
     assert.equal(await page.locator('#studentDashboardView').innerHTML(), studentMarkup);
+    assert.deepEqual(await readDetails(), studentDetails, 'Every schedule detail matches the student view');
+    for (const detail of Object.values(await readDetails())) {
+      assert.doesNotMatch(detail, /전체 수정|일정 이동|시간 연장|체험 및 풀이|요일 제외 설정/);
+    }
+    if (studentId === 502) {
+      assert.equal(await page.locator('#studentSidebar').isVisible(), false);
+      for (const tab of ['Assessment', 'SchoolGrade', 'TargetUniv', 'Notice']) {
+        assert.equal(await page.locator(`#stuTab${tab}`).isVisible(), false);
+        assert.equal(await page.locator(`#stuContent${tab}`).isVisible(), false);
+      }
+    }
     assert.equal(await page.locator('#headerNavActions button').count(), 1);
     assert.equal(await page.locator('#headerNavActions').innerText(), '관리자 탭으로 돌아가기');
     assert.equal(await page.evaluate(() => App.state.isAdminLoggedIn), false);
