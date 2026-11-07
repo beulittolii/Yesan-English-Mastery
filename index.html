@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css?v=20261107_pace01" />
-  <link rel="stylesheet" href="pace.css?v=20261107_pace10" />
+  <link rel="stylesheet" href="pace.css?v=20261107_pace11" />
   <style>
     /* 시험지 밑줄: 보라색 선 절대 방지, 시험지 표준 진회색 밑줄 강제 */
     u, .font-exam u, .passage-text u {
@@ -1352,7 +1352,7 @@
 
   <footer class="mt-auto border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 flex items-center justify-center">
-      <p>v2.0.8</p>
+      <p>v2.0.9</p>
     </div>
   </footer>
 
@@ -2691,13 +2691,13 @@
   </div>
 
   <!-- 2. 수행평가 상세 확인 및 점수 입력 모달 (심플 & 모던 뷰) -->
-  <div id="academicAssessmentDetailModal" class="fixed inset-0 z-[65] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
+  <div id="academicAssessmentDetailModal" role="dialog" aria-modal="true" aria-labelledby="detailAssessTitle" class="fixed inset-0 z-[65] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm modal-overlay">
     <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl modal-content transform scale-95 opacity-0 border border-emerald-100/50 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
       
       <!-- Modal Header (수행평가 시그니처 에메랄드/틸 그라데이션) -->
-      <div class="p-5 sm:p-6 pb-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-start justify-between gap-3 flex-shrink-0 shadow-sm">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1.5 flex-wrap">
+      <div class="pace-assess-heading">
+        <div class="min-w-0 flex-1"><p class="pace-kicker">ASSESSMENT / 수행평가</p>
+          <div class="pace-assess-meta">
             <span id="detailAssessSubject" class="px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-white text-emerald-800 shadow-3xs">과목</span>
             <span id="detailAssessTeacherBadge" class="hidden px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-900/50 text-emerald-100 border border-emerald-300/30 flex items-center gap-1 shadow-3xs">
               <i class="fa-solid fa-chalkboard-user text-emerald-300 text-[10px]"></i>
@@ -2708,17 +2708,17 @@
           </div>
           <h3 id="detailAssessTitle" class="text-lg sm:text-xl font-black text-white mt-2 leading-snug break-keep drop-shadow-xs">수행평가 과제명</h3>
         </div>
-        <button type="button" onclick="AcademicManager.closeAssessmentDetailModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition flex-shrink-0 -mr-1 -mt-1 cursor-pointer">
+        <button type="button" aria-label="수행평가 상세 닫기" onclick="AcademicManager.closeAssessmentDetailModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition flex-shrink-0 -mr-1 -mt-1 cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
       <!-- Modal Body -->
-      <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <div class="pace-assess-body">
         <input type="hidden" id="detailAssessId" />
 
         <!-- 1. 학교 일정 & 배점 카드 (에메랄드/틸 산뜻한 2열 카드) -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="pace-assess-facts">
           <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-0.5 min-w-0">
             <span class="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
               <i class="fa-solid fa-calendar-day text-emerald-600 text-[10px]"></i>
@@ -2751,8 +2751,25 @@
           <div id="detailMultiSessionsList" class="grid grid-cols-1 gap-1.5 pt-0.5"></div>
         </div>
 
+        <!-- 4. 과제 내용 및 평가 방식 -->
+        <div id="detailContentWrap" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+          <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-file-lines text-slate-400"></i>
+            <span>과제 내용 및 안내</span>
+          </span>
+          <p id="detailAssessContent" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
+        </div>
+
+        <!-- 5. 코멘트 -->
+        <div id="detailNoteWrap" class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200/70 space-y-1">
+          <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-comment-dots text-indigo-500"></i>
+            <span>코멘트</span>
+          </span>
+          <p id="detailAssessNote" class="text-xs text-indigo-950 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
+        </div>
         <!-- 2. 진행 상태 3단계 퀵 탭 -->
-        <div class="space-y-1.5">
+        <div class="pace-assess-progress">
           <div class="flex items-center justify-between text-xs">
             <span class="font-bold text-slate-800 flex items-center gap-1.5">
               <i class="fa-solid fa-bars-progress text-emerald-600"></i>
@@ -2763,7 +2780,7 @@
             </span>
           </div>
           
-          <div class="p-1 rounded-xl bg-slate-100 grid grid-cols-3 gap-1">
+          <div class="pace-assess-steps">
             <button type="button" id="detailStatusBtnBefore" onclick="AcademicManager.changeDetailModalStatus('준비 전')" class="py-2 px-2 rounded-lg text-xs font-medium transition text-center cursor-pointer">
               준비 전
             </button>
@@ -2777,7 +2794,7 @@
         </div>
 
         <!-- 3. 점수 직접 입력 & 실시간 내신 기여도 카드 -->
-        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-teal-50/20 to-white border border-emerald-200/90 space-y-2.5 shadow-xs">
+        <div class="pace-assess-score">
           <div class="flex items-center justify-between">
             <label for="detailScoreInput" class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
               <i class="fa-solid fa-award text-emerald-600"></i>
@@ -2804,23 +2821,7 @@
           </div>
         </div>
 
-        <!-- 4. 과제 내용 및 평가 방식 -->
-        <div id="detailContentWrap" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-          <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <i class="fa-solid fa-file-lines text-slate-400"></i>
-            <span>과제 내용 및 안내</span>
-          </span>
-          <p id="detailAssessContent" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
-        </div>
 
-        <!-- 5. 코멘트 -->
-        <div id="detailNoteWrap" class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200/70 space-y-1">
-          <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-            <i class="fa-solid fa-comment-dots text-indigo-500"></i>
-            <span>코멘트</span>
-          </span>
-          <p id="detailAssessNote" class="text-xs text-indigo-950 whitespace-pre-line leading-relaxed font-normal pt-0.5"></p>
-        </div>
       </div>
 
       <!-- Modal Footer -->

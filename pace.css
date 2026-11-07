@@ -176,3 +176,32 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 .test-event-pill.bg-rose-100{background:#efd2cb;color:#783d35;border-color:#c68c80;}
 .test-event-pill:is(.bg-violet-100,.bg-indigo-100){background:#cce5dc;color:#174e42;border-color:#7faf9e;}
 .calendar-day-cell.today{background:#e1ede2;}
+
+/* Assessment details: task first, then preparation and score. */
+#academicAssessmentDetailModal>.modal-content{max-width:720px;max-height:calc(100dvh - 32px);border-radius:20px;border:1px solid #dce1d8;background:#f5f5ef;}
+.pace-assess-heading{display:flex;align-items:flex-start;gap:20px;padding:30px 32px 24px;background:#f5f5ef;border-bottom:1px solid #dce1d8;}
+.pace-assess-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;align-items:center;}
+#academicAssessmentDetailModal #detailAssessTitle{font-size:30px;line-height:1.25;letter-spacing:-.055em;color:#193f35;margin-top:14px;font-weight:750;filter:none;overflow-wrap:anywhere;}
+#detailAssessSubject,#detailAssessTeacherBadge,#detailAssessLinkBadge{background:transparent!important;color:#506156!important;padding:0!important;border:0!important;box-shadow:none!important;}
+#detailAssessSubject{font-weight:750!important;}
+#detailAssessLinkBadge{padding-left:8px!important;border-left:1px solid #bfc9be!important;}
+.pace-assess-heading>button{width:40px;height:40px;margin:0;border:1px solid #bfc9be;background:transparent;color:#193f35;}
+.pace-assess-body{padding:28px 32px;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:24px;font-size:13px;line-height:1.7;}
+.pace-assess-facts{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding-bottom:24px;border-bottom:1px solid #dce1d8;}
+.pace-assess-facts>div{background:transparent;border:0;border-radius:0;padding:0;}
+.pace-assess-facts>div>span{color:#65766b;font-weight:500;}
+#detailAssessSchedule,#detailAssessRatio{white-space:normal;overflow:visible;font-size:17px;line-height:1.5;margin-top:8px;color:#193f35;}
+#detailContentWrap,#detailNoteWrap{background:transparent;border:0;padding:0;}
+#detailAssessContent,#detailAssessNote{font-size:13px;line-height:1.85;color:#506156;margin-top:8px;}
+#detailNoteWrap{padding-left:16px;border-left:2px solid #a7c0af;border-radius:0;}
+.pace-assess-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;counter-reset:step;}
+.pace-assess-steps>button{counter-increment:step;min-height:70px;border:1px solid #dce1d8;border-radius:10px;box-shadow:none;}
+.pace-assess-steps>button:before{content:'0' counter(step);display:block;font-size:11px;opacity:.65;margin-bottom:5px;}
+.pace-assess-steps>button.text-white{background:#193f35;}
+.pace-assess-score{padding:24px;background:#e7ecdf;border-radius:14px;display:flex;flex-direction:column;gap:16px;}
+#detailScoreInput{font-size:30px;font-weight:650;letter-spacing:-.04em;padding:12px 32px 12px 16px;border-radius:8px;border-color:#bfc9be;box-shadow:none;}
+.pace-assess-score button{background:#193f35;border-radius:8px;min-height:64px;padding:12px 24px;box-shadow:none;}
+#detailScoreContribResult{background:transparent;border:0;border-top:1px solid #cad4c5;border-radius:0;text-align:left;padding:14px 0 0;box-shadow:none;color:#294235;}
+#academicAssessmentDetailModal>.modal-content>div:last-child{padding:16px 32px;background:#f5f5ef;border-color:#dce1d8;}
+#academicAssessmentDetailModal>.modal-content>div:last-child button{min-height:40px;border-radius:8px;box-shadow:none;}
+@media(max-width:640px){.pace-assess-heading{padding:24px 20px;}.pace-assess-body{padding:24px 20px;}.pace-assess-facts{gap:16px;}#academicAssessmentDetailModal #detailAssessTitle{font-size:26px;}.pace-assess-score{padding:18px;}#academicAssessmentDetailModal>.modal-content>div:last-child{padding:14px 20px;}}
