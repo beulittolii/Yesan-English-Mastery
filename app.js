@@ -3160,6 +3160,7 @@ const App = {
   },
 
   switchAdminTab(tabName) {
+    if (!['tests', 'students', 'vocab', 'backup'].includes(tabName)) tabName = 'tests';
     this.state.adminTab = tabName;
     // 모든 관리자 탭을 한 곳에서 토글해, 이전 카테고리 내용이 함께 남지 않게 한다.
     ['Tests', 'Assessment', 'SchoolGrade', 'TargetUniv', 'Overview', 'Students', 'Backup', 'Vocab'].forEach(t => {
