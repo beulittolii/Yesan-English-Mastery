@@ -254,3 +254,16 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 #detailModalBody .weekly-review-weekday-count{margin-top:20px;font-weight:500;}
 #detailModalBody>.space-y-2\.5 button{min-height:48px;border-radius:8px;}
 @media(max-width:640px){#testDetailModal #detailModalTitle{font-size:26px;}#testDetailModal #detailModalBody{padding:24px 20px;}#detailModalBody .pace-schedule-stages>.pace-vocab-card{grid-template-columns:1fr;padding:20px 16px 20px 44px;gap:14px;}#detailModalBody .pace-review-overview{padding:22px 16px;}#detailModalBody .weekly-review-modal-stats{gap:10px;}#detailModalBody .weekly-review-modal-stats strong{font-size:18px;}#detailModalBody .grammar-latest-card:not(.pace-review-overview){padding:18px 14px;}#detailModalBody .pace-schedule-facts{gap:16px;}}
+
+/* Compact vocabulary comparison cards, without editorial step numbers. */
+#testDetailModal #detailModalStudentBadge,#testDetailModal.grammar-detail-modal #detailModalStudentBadge{margin-top:0;}
+.pace-assess-meta{margin-top:0;}
+#detailModalBody .pace-schedule-stages{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;padding:20px 16px;gap:24px;min-height:190px;border:1px solid #dce1d8;border-radius:14px!important;background:#fff;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card:before{content:none;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card.is-passed{border-color:#cad4c5;background:#e7ecdf;border-radius:14px!important;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child{align-items:flex-start;gap:8px;flex-wrap:wrap;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:first-child{font-size:17px;letter-spacing:-.035em;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){flex-direction:column;align-items:flex-start;gap:6px;margin-top:18px;font-size:12px;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>:last-child{min-height:44px;}
+@media(max-width:640px){#detailModalBody .pace-schedule-stages{grid-template-columns:1fr;gap:12px;}#detailModalBody .pace-schedule-stages>.pace-vocab-card{padding:18px;min-height:0;gap:18px;}#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){flex-direction:row;justify-content:space-between;margin-top:12px;}}
