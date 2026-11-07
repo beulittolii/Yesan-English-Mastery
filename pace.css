@@ -109,7 +109,8 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 #testDetailModal>.modal-content{display:flex;flex-direction:column;max-width:600px;max-height:calc(100dvh - 32px);border:1px solid var(--pace-line);border-radius:20px;background:var(--pace-paper);box-shadow:0 24px 80px rgb(18 38 32 / .2);}
 #testDetailModal .pace-detail-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:30px 30px 26px;background:var(--pace-deep)!important;color:#f5f5ef;flex-shrink:0;}
 .pace-detail-heading-copy{min-width:0;}
-#testDetailModal #detailModalStudentBadge{display:block;background:none;border:0;padding:0;color:#b7cbbb;font-size:12px;font-weight:500;line-height:1.6;}
+#testDetailModal #detailModalStudentBadge,
+#testDetailModal.grammar-detail-modal #detailModalStudentBadge{display:block;background:none;border:0;padding:0;color:#b7cbbb;font-size:12px;font-weight:500;line-height:1.6;}
 #testDetailModal #detailModalTitle{margin-top:10px;color:#f5f5ef;font-size:clamp(24px,4vw,32px);font-weight:750;letter-spacing:-.055em;line-height:1.25;overflow-wrap:anywhere;}
 #testDetailModal .pace-detail-close{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:40px;height:40px;border:1px solid #6a897a;border-radius:50%;color:#e8eee3;background:transparent;}
 #testDetailModal .pace-detail-close:hover{background:#ffffff15;}
@@ -140,3 +141,8 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
   #detailModalBody .weekly-review-modal-stats strong{font-size:16px;}
   #detailModalBody .weekly-review-summary{padding:20px 12px;}
 }
+
+/* Test type is conveyed by its label; all start actions share the PACE tone. */
+#detailModalBody button[onclick^="App.startVocabTest("]{background:#174e42;background-image:none;border:1px solid #174e42;border-radius:8px;color:#f5f5ef;box-shadow:none;font-weight:650;}
+#detailModalBody button[onclick^="App.startVocabTest("]:hover{background:#103e34;border-color:#103e34;}
+#detailModalBody button[onclick^="App.startVocabTest("]:active{background:#0c332b;}
