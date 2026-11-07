@@ -146,3 +146,13 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 #detailModalBody button[onclick^="App.startVocabTest("]{background:#174e42;background-image:none;border:1px solid #174e42;border-radius:8px;color:#f5f5ef;box-shadow:none;font-weight:650;}
 #detailModalBody button[onclick^="App.startVocabTest("]:hover{background:#103e34;border-color:#103e34;}
 #detailModalBody button[onclick^="App.startVocabTest("]:active{background:#0c332b;}
+
+/* One geometry for completed, available and locked vocabulary actions. */
+.pace-vocab-card{border-radius:12px!important;box-shadow:none!important;}
+.pace-vocab-card> :last-child{min-height:40px;border-radius:8px!important;box-shadow:none!important;font-weight:650;}
+.pace-vocab-card button{border-radius:8px!important;}
+.pace-vocab-card.is-passed{background:#e7ecdf;border-color:#cad4c5;}
+.pace-vocab-card.is-passed :is(.text-emerald-950,.text-emerald-800,.text-emerald-700){color:#294235;}
+.pace-vocab-card.is-passed> :last-child{background:#143e35;color:#f3f4e9;}
+.pace-vocab-card button[onclick^="App.startVocabTest("]{background:#174e42;color:#f5f5ef;}
+.pace-vocab-card button[onclick^="App.startVocabTest("]:hover{background:#103e34;}

@@ -6454,7 +6454,7 @@ const App = {
     if (result?.passed) {
       const passedCutoff = result.cutoffScore || this.getBaseVocabCutoffScore(testOrSet, direction);
       return `
-        <div class="h-full rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
+        <div class="pace-vocab-card is-passed h-full rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-emerald-950 truncate">${label}</span>
@@ -6480,7 +6480,7 @@ const App = {
     const unlockCheck = this.isVocabTestUnlocked(studentId, set.id, direction, effectiveTestId);
     if (!unlockCheck.unlocked) {
       return `
-        <div class="h-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs opacity-85">
+        <div class="pace-vocab-card h-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs opacity-85">
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-slate-500 truncate">${label}</span>
@@ -6503,7 +6503,7 @@ const App = {
     // 4. 주관식 채점 대기중 상태
     if (result?.direction === 4 && result?.waitingGrading && !result?.gradedByAdmin) {
       return `
-        <div class="h-full rounded-2xl border border-amber-300 bg-amber-50/80 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
+        <div class="pace-vocab-card h-full rounded-2xl border border-amber-300 bg-amber-50/80 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-amber-950 truncate">${label}</span>
@@ -6526,7 +6526,7 @@ const App = {
     // 5. 10분 재응시 대기 중 (불합격 - 쿨다운 진행 중)
     if (result && result.retryAvailableAt && new Date(result.retryAvailableAt) > new Date()) {
       return `
-        <div class="h-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
+        <div class="pace-vocab-card h-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between gap-2.5 shadow-2xs">
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-slate-700 truncate">${label}</span>
@@ -6560,7 +6560,7 @@ const App = {
         ? '응시 기한 종료'
         : (timeStatus.status === 'NOT_STARTED' ? '응시 시작 전' : '응시 불가');
       return `
-        <div class="h-full rounded-2xl border border-slate-200 bg-slate-50/80 p-3 flex flex-col justify-between gap-2.5">
+        <div class="pace-vocab-card h-full rounded-2xl border border-slate-200 bg-slate-50/80 p-3 flex flex-col justify-between gap-2.5">
           <div class="space-y-1">
             <div class="flex items-center justify-between gap-1.5 min-w-0">
               <span class="text-xs font-black text-slate-600 truncate">${label}</span>
@@ -6586,7 +6586,7 @@ const App = {
     const buttonIcon = isRetest ? 'fa-rotate-right' : 'fa-play';
     const targetTestId = effectiveTestId ? `'${effectiveTestId}'` : 'null';
     return `
-      <div class="h-full rounded-2xl border border-slate-200/90 bg-white p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
+      <div class="pace-vocab-card h-full rounded-2xl border border-slate-200/90 bg-white p-3 flex flex-col justify-between gap-2.5 shadow-xs hover:border-indigo-300 hover:shadow-sm transition group">
         <div class="space-y-1">
           <div class="flex items-center justify-between gap-1.5 min-w-0">
             <span class="text-xs font-black text-slate-900 group-hover:text-indigo-600 transition truncate">${label}</span>
