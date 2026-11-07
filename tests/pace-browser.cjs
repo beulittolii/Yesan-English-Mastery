@@ -130,6 +130,32 @@ const server = http.createServer((req, res) => {
     window.selectedReview=App.paceReview(tests).id;
   });
   assert.equal(await page.evaluate(() => selectedReview), 'actual');
+  // Admin preview shares the student renderer, permissions, and navigation.
+  for (const studentId of [501, 502]) {
+    await page.evaluate(async id => {
+      App.state.isAdminLoggedIn = false;
+      App.state.isStudentLoggedIn = true;
+      await App.selectStudent(id);
+    }, studentId);
+    const studentMarkup = await page.locator('#studentDashboardView').innerHTML();
+    await page.evaluate(async id => {
+      App.state.isAdminLoggedIn = true;
+      App.state.isStudentLoggedIn = false;
+      App.state.adminSelectedStudentId = id;
+      await App.selectStudent(id);
+    }, studentId);
+    assert.equal(await page.locator('#studentDashboardView').innerHTML(), studentMarkup);
+    assert.equal(await page.locator('#headerNavActions button').count(), 1);
+    assert.equal(await page.locator('#headerNavActions').innerText(), '관리자 탭으로 돌아가기');
+    assert.equal(await page.evaluate(() => App.state.isAdminLoggedIn), false);
+    assert.equal(await page.evaluate(() => App.isCalendarOnlyStudent()), studentId === 502);
+    await page.evaluate(() => App.handleLogoClick());
+    assert.equal(await page.evaluate(() => App.state.view), 'student');
+    await page.locator('#headerNavActions button').click();
+    await page.waitForFunction(() => App.state.view === 'admin');
+    assert.equal(await page.evaluate(() => App.state.isAdminLoggedIn && !App.state.isStudentLoggedIn && !App.state.isAdminStudentPreview), true);
+    assert.equal(await page.evaluate(() => App.state.adminSelectedStudentId), studentId);
+  }
   await page.evaluate(() => App.showLanding());
   await page.setViewportSize({ width: 390, height: 950 });
   assert.equal(await page.locator('#mobileSidebarToggleBtn').isVisible(), false, 'Returning to login hides the menu');

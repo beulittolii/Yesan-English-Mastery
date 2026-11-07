@@ -10,6 +10,7 @@ const App = {
     selectedStudentId: 1,
     adminSelectedStudentId: 1,
     isAdminLoggedIn: false,
+    isAdminStudentPreview: false,
     isStudentLoggedIn: false,
     calendarDate: new Date(),
     studentViewTab: 'calendar', // 'calendar' | 'list'
@@ -472,6 +473,7 @@ const App = {
     this.state.practiceTest = null;
     this.state.isStudentLoggedIn = false;
     this.state.isAdminLoggedIn = false;
+    this.state.isAdminStudentPreview = false;
     this.state.view = 'landing';
     document.getElementById('landingView').classList.remove('hidden');
     document.getElementById('studentDashboardView').classList.add('hidden');
@@ -505,6 +507,12 @@ const App = {
       if (!(await this.checkAndConfirmVocabTestExit())) return;
     }
 
+    // Keep the persisted admin session, but use the actual student UI and rules.
+    if (this.state.isAdminLoggedIn) {
+      this.state.isAdminStudentPreview = true;
+      this.state.isAdminLoggedIn = false;
+      this.state.isStudentLoggedIn = true;
+    }
     this.clearVocabQuestionTimer();
     this.state.selectedStudentId = normalizedStudentId;
     this.state.view = 'student';
@@ -538,6 +546,12 @@ const App = {
   async showAdminDashboard() {
     if (!(await this.checkAndConfirmVocabTestExit())) return;
     this.clearVocabQuestionTimer();
+    if (this.state.isAdminStudentPreview) {
+      this.state.isAdminStudentPreview = false;
+      this.state.isAdminLoggedIn = true;
+      this.state.isStudentLoggedIn = false;
+      this.closeAllModals();
+    }
     this.state.view = 'admin';
     document.getElementById('landingView').classList.add('hidden');
     document.getElementById('studentDashboardView').classList.add('hidden');
@@ -627,7 +641,14 @@ const App = {
       return;
     }
 
-    if (this.state.isAdminLoggedIn) {
+    if (this.state.isAdminStudentPreview) {
+      container.innerHTML = `
+        <button onclick="App.showAdminDashboard()" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>관리자 탭으로 돌아가기</span>
+        </button>
+      `;
+    } else if (this.state.isAdminLoggedIn) {
       container.innerHTML = `
         <div class="flex items-center gap-2">
           ${this.state.view !== 'admin' ? `
