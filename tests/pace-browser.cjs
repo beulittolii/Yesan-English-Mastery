@@ -90,9 +90,25 @@ const server = http.createServer((req, res) => {
   assert.equal(await page.locator('.pace-report-score').innerText(), '—');
   assert.match(await page.locator('.pace-history').innerText(), /아직 채점이 완료된/);
   await page.evaluate(async () => { App.state.isAdminLoggedIn = false; await App.selectStudent(502); });
-  assert.equal(await page.locator('.pace-home-panels').count(), 0, 'Calendar-only student retains restricted navigation');
-  await page.evaluate(() => App.showPaceLearningReport());
-  assert.equal(await page.locator('#paceReportView').isVisible(), false);
+  assert.equal(await page.locator('.pace-home-panels').isVisible(), true, 'English-only students see review and scores');
+  assert.equal(await page.locator('#studentSidebar').isVisible(), false);
+  await page.getByRole('button', { name: '나의 성적 살펴보기' }).click();
+  assert.equal(await page.locator('#paceReportView').isVisible(), true);
+  assert.equal(await page.locator('.pace-report-score').innerText(), '—');
+  await page.evaluate(() => {
+    const date = App.getTodayDateString();
+    FirebaseStore.tests = [
+      { id: 'other', studentId: 502, type: 'VOCAB', title: '영어 전용 학생 성적', date, status: 'PASS', score: 100 },
+      { id: 'english-review', studentId: 502, type: 'VOCAB_REVIEW', date, weekStart: WeeklyReviewLogic.monday(date), reviewStage: 'LOCKED', questions: [], weekdayCompletion: [false,false,false,false,false] }
+    ];
+    AppData.refreshCloudScreens();
+  });
+  assert.equal(await page.locator('.pace-report-score').innerText(), '100점', 'English-only report uses own results');
+  await page.locator('#paceReportView').getByRole('button', { name: '학습공간으로 돌아가기' }).click();
+  await page.getByRole('button', { name: '복습 준비 현황 보기' }).click();
+  assert.equal(await page.locator('#testDetailModal').isVisible(), true);
+  assert.equal(await page.locator('[data-weekly-review-modal="english-review"]').count(), 1);
+  await page.evaluate(() => App.closeAllModals());
   await page.evaluate(() => {
     const date=App.getTodayDateString(), weekStart=WeeklyReviewLogic.monday(date);
     const tests=[{id:'preview',type:'VOCAB_REVIEW',isPreview:true,date,weekStart},{id:'actual',type:'VOCAB_REVIEW',date,weekStart}];

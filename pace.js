@@ -25,11 +25,11 @@ Object.assign(App, {
     const university = (AcademicManager.getTargetUnivs()[student.id] || []).find(item => item.rank === 1);
     const goal = university?.name ? `${university.name}${university.major ? ' · ' + university.major : ''}` : student.target || '나만의 속도로 쌓아가는 배움';
     banner.innerHTML = `<div class="pace-home-heading"><div><span class="pace-kicker">MY LEARNING SPACE</span><h2>${e(student.name)}님의<br>오늘도, 한 걸음.</h2><p>${e(goal)}</p><button type="button" class="pace-profile-action" onclick="AcademicManager.openTargetUnivModal(App.state.selectedStudentId)">목표 대학 설정</button></div><div class="pace-home-date"><span>${new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' })}</span><small>YOUR OWN PACE.</small></div></div>
-      ${this.isCalendarOnlyStudent() ? '' : `<div class="pace-home-panels"><section class="pace-focus"><div class="pace-panel-top"><span>01 / WEEKLY REVIEW</span><span>이번 주 복습</span></div><div class="pace-focus-body"><h3>배운 것을,<br>내 것으로.</h3><p>${review ? '한 번 더 떠올리면 더 오래 남습니다.' : '복습 일정이 준비되면 여기서 확인할 수 있어요.'}</p></div><button type="button" ${review ? '' : 'disabled'} onclick="App.openPaceReview()">${reviewLabel} <span aria-hidden="true">↗</span></button></section><section class="pace-progress"><div class="pace-panel-top"><span>02 / YOUR PROGRESS</span><span>학습 기록</span></div><div class="pace-progress-body"><strong>${String(done).padStart(2, '0')}<small> / ${String(total).padStart(2, '0')}</small></strong><p>완료한 학습 · 작은 성취가 쌓이고 있어요.</p></div><button type="button" onclick="App.showPaceLearningReport()">나의 성적 살펴보기 <span aria-hidden="true">↗</span></button></section></div>`}`;
+      <div class="pace-home-panels"><section class="pace-focus"><div class="pace-panel-top"><span>01 / WEEKLY REVIEW</span><span>이번 주 복습</span></div><div class="pace-focus-body"><h3>배운 것을,<br>내 것으로.</h3><p>${review ? '한 번 더 떠올리면 더 오래 남습니다.' : '복습 일정이 준비되면 여기서 확인할 수 있어요.'}</p></div><button type="button" ${review ? '' : 'disabled'} onclick="App.openPaceReview()">${reviewLabel} <span aria-hidden="true">↗</span></button></section><section class="pace-progress"><div class="pace-panel-top"><span>02 / YOUR PROGRESS</span><span>학습 기록</span></div><div class="pace-progress-body"><strong>${String(done).padStart(2, '0')}<small> / ${String(total).padStart(2, '0')}</small></strong><p>완료한 학습 · 작은 성취가 쌓이고 있어요.</p></div><button type="button" onclick="App.showPaceLearningReport()">나의 성적 살펴보기 <span aria-hidden="true">↗</span></button></section></div>`;
   },
   openPaceReview() {
     const student = this.paceStudent();
-    if (!student || this.isCalendarOnlyStudent()) return;
+    if (!student) return;
     const review = this.paceReview(AppData.getTestsByStudentId(student.id));
     if (review) this.openWeeklyReviewModal(review.id);
   },
@@ -63,7 +63,7 @@ Object.assign(App, {
     return records.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   },
   async showPaceLearningReport() {
-    if (!this.paceStudent() || this.isCalendarOnlyStudent()) return;
+    if (!this.paceStudent()) return;
     if (!(await this.checkAndConfirmVocabTestExit())) return;
     this.closeAllModals();
     this.clearVocabQuestionTimer();
@@ -75,7 +75,7 @@ Object.assign(App, {
   },
   renderPaceReport() {
     const student = this.paceStudent();
-    if (!student || this.isCalendarOnlyStudent()) return;
+    if (!student) return;
     const records = this.paceScoreRecords(student.id), e = value => this.escapeHtml(String(value ?? ''));
     const average = records.length ? Math.round(records.reduce((sum, result) => sum + result.score, 0) / records.length) : null;
     document.getElementById('paceReportView').innerHTML = `<div class="pace-report"><header class="grammar-result-heading"><div><p class="pace-kicker">LEARNING REPORT / ${e(this.getTodayDateString())}</p><h1>쌓인 노력은,<br>숫자로 남아요.</h1><p class="grammar-result-subtitle">${e(student.name)}님의 채점이 완료된 단어 학습 기록입니다.</p></div><button type="button" class="grammar-result-back" onclick="App.selectStudent(App.state.selectedStudentId)">학습공간으로 돌아가기 ↗</button></header><div class="grammar-result-panels"><section class="grammar-result-panel pace-report-primary"><div class="pace-panel-top"><span>01 / AVERAGE</span><span>채점 완료 결과 평균</span></div><div class="grammar-result-main"><h2>${records.length ? 'YOUR RECORD.' : 'YOUR NEXT STEP.'}</h2><div class="pace-report-score">${average ?? '—'}${average === null ? '' : '<span>점</span>'}</div><p>${records.length ? '꾸준함이 만든 오늘의 결과.' : '첫 번째 학습 기록을 기다리고 있어요.'}</p></div><div class="grammar-result-panel-bottom"><span>시험 유형별 최신 채점 결과 ${records.length}건 기준</span><span>KEEP YOUR PACE.</span></div></section><section class="grammar-result-panel pace-report-history"><div class="pace-panel-top"><span>02 / HISTORY</span><span>한 걸음씩 쌓은 기록</span></div><div class="pace-history">${records.length ? records.map((result, index) => `<div><span class="pace-history-index">${String(index + 1).padStart(2, '0')}</span><div><h3>${e(result.title)}</h3><p>${e(result.date)}</p></div><strong>${result.score}<small>점</small></strong></div>`).join('') : '<p class="pace-report-empty">아직 채점이 완료된 단어 시험이 없습니다.<br>학습을 마치면 이곳에 기록이 쌓입니다.</p>'}</div><div class="grammar-result-panel-bottom"><span>다음 한 걸음도 나의 속도로.</span></div></section></div></div>`;
