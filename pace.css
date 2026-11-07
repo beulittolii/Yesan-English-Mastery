@@ -265,14 +265,15 @@ body:has(#paceReportView:not(.hidden)) #studentSidebar{display:none!important;}
 #detailModalBody .pace-vocab-book-badge{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 9px;border:1px solid #cad4c5;border-radius:999px;background:#f7f8f4;color:#294235;font-size:11px;font-weight:700;line-height:1.2;letter-spacing:-.02em;box-shadow:none;}
 #detailModalBody .pace-vocab-book-badge i{color:#65766b;flex:0 0 auto;}
 #detailModalBody .pace-vocab-book-badge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#detailModalBody .pace-schedule-resource>div>div{column-gap:12px;row-gap:8px;}
 #detailModalBody .pace-schedule-stages{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:18px 8px;background:#e7ecdf;border-radius:14px;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;padding:0 18px;gap:18px;min-height:156px;border:0;border-right:1px solid #cad4c5;border-radius:0!important;background:transparent!important;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card:last-child{border-right:0;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card:before{content:none;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child{align-items:flex-start;gap:8px;flex-wrap:nowrap;min-height:24px;align-content:flex-start;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:first-child{min-width:0;}
-#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:last-child{min-height:20px;display:inline-flex;align-items:center;}
-#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:first-child{font-size:17px;letter-spacing:-.035em;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:last-child:not(:first-child){min-height:20px;display:inline-flex;align-items:center;}
+#detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:first-child>span:first-child{font-size:17px;line-height:24px;letter-spacing:-.035em;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>div:first-child>div:nth-child(2){flex-direction:column;align-items:flex-start;gap:6px;margin-top:18px;font-size:12px;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card>:last-child{min-height:44px;}
 #detailModalBody .pace-schedule-stages>.pace-vocab-card.is-passed>:last-child{background:transparent;color:#294235;border:1px solid #a7bca3;}
